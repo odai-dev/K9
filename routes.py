@@ -531,6 +531,9 @@ def projects_list():
 def projects_add():
     if request.method == 'POST':
         try:
+            # Allow GENERAL_ADMIN to assign any manager, PROJECT_MANAGER assigns to themselves
+            manager_id = request.form.get('manager_id') if current_user.role == UserRole.GENERAL_ADMIN else current_user.id
+            
             project = Project(
                 name=request.form['name'],
                 code=request.form['code'],
@@ -538,7 +541,7 @@ def projects_add():
                 location=request.form.get('location'),
                 mission_type=request.form.get('mission_type'),
                 priority=request.form.get('priority', 'MEDIUM'),
-                manager_id=current_user.id
+                manager_id=manager_id
             )
             
             if request.form.get('start_date'):
@@ -547,6 +550,20 @@ def projects_add():
                 project.expected_completion_date = datetime.strptime(request.form['expected_completion_date'], '%Y-%m-%d').date()
             
             db.session.add(project)
+            db.session.flush()  # Get the project ID
+            
+            # Assign employees to project
+            employee_ids = request.form.getlist('employee_ids')
+            if employee_ids:
+                employees = Employee.query.filter(Employee.id.in_(employee_ids)).all()
+                project.assigned_employees.extend(employees)
+            
+            # Assign dogs to project
+            dog_ids = request.form.getlist('dog_ids')
+            if dog_ids:
+                dogs = Dog.query.filter(Dog.id.in_(dog_ids)).all()
+                project.assigned_dogs.extend(dogs)
+            
             db.session.commit()
             
             log_audit(current_user.id, 'CREATE', 'Project', str(project.id), {'name': project.name, 'code': project.code})
@@ -558,7 +575,17 @@ def projects_add():
             db.session.rollback()
             flash(f'حدث خطأ أثناء إضافة المشروع: {str(e)}', 'error')
     
-    return render_template('projects/add.html')
+    # Get employees, dogs and managers for the form
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        employees = Employee.query.filter_by(is_active=True).all()
+        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+        managers = User.query.filter_by(role=UserRole.PROJECT_MANAGER, active=True).all()
+    else:
+        employees = Employee.query.filter_by(assigned_to_user_id=current_user.id, is_active=True).all()
+        dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+        managers = []  # PROJECT_MANAGER users can only assign to themselves
+    
+    return render_template('projects/add.html', employees=employees, dogs=dogs, managers=managers)
 
 # Attendance routes
 @main_bp.route('/attendance')
@@ -654,3 +681,417 @@ def search():
         'dogs': [{'id': str(d.id), 'name': d.name, 'code': d.code} for d in dogs],
         'employees': [{'id': str(e.id), 'name': e.name, 'employee_id': e.employee_id} for e in employees]
     })
+
+# ================ BREEDING/PRODUCTION SYSTEM ROUTES (8 Sections) ================
+
+@main_bp.route('/breeding')
+@login_required  
+def breeding_index():
+    """Main breeding dashboard with all 8 sections"""
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+    else:
+        dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+    
+    # Get breeding-ready females (mature females who have had 3+ heat cycles)
+    breeding_ready_females = []
+    for dog in dogs:
+        if dog.gender == DogGender.FEMALE:
+            heat_cycles = HeatCycle.query.filter_by(dog_id=dog.id).count()
+            if heat_cycles >= 3 and dog.maturity_record and dog.maturity_record.maturity_status == MaturityStatus.MATURE:
+                breeding_ready_females.append(dog)
+    
+    # Get available males for breeding
+    breeding_males = [dog for dog in dogs if dog.gender == DogGender.MALE and dog.maturity_record and dog.maturity_record.maturity_status == MaturityStatus.MATURE]
+    
+    stats = {
+        'total_dogs': len(dogs),
+        'mature_dogs': len([d for d in dogs if d.maturity_record and d.maturity_record.maturity_status == MaturityStatus.MATURE]),
+        'breeding_ready_females': len(breeding_ready_females),
+        'breeding_males': len(breeding_males),
+        'active_pregnancies': PregnancyRecord.query.filter_by(status=PregnancyStatus.PREGNANT).count(),
+        'recent_births': DeliveryRecord.query.filter(DeliveryRecord.delivery_date >= (datetime.now().date().replace(day=1))).count()
+    }
+    
+    return render_template('breeding/index.html', stats=stats, dogs=dogs, breeding_ready_females=breeding_ready_females)
+
+# Section 1 & 2: General Information + Maturity (البلوغ)
+@main_bp.route('/breeding/maturity')
+@login_required
+def maturity_list():
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        maturity_records = DogMaturity.query.join(Dog).order_by(DogMaturity.created_at.desc()).all()
+    else:
+        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
+        maturity_records = DogMaturity.query.filter(DogMaturity.dog_id.in_(assigned_dog_ids)).order_by(DogMaturity.created_at.desc()).all()
+    
+    return render_template('breeding/maturity_list.html', records=maturity_records)
+
+@main_bp.route('/breeding/maturity/add', methods=['GET', 'POST'])
+@login_required
+def maturity_add():
+    if request.method == 'POST':
+        try:
+            maturity = DogMaturity(
+                dog_id=request.form['dog_id'],
+                maturity_date=datetime.strptime(request.form['maturity_date'], '%Y-%m-%d').date(),
+                maturity_status=MaturityStatus.MATURE,
+                weight_at_maturity=float(request.form['weight_at_maturity']) if request.form.get('weight_at_maturity') else None,
+                height_at_maturity=float(request.form['height_at_maturity']) if request.form.get('height_at_maturity') else None,
+                notes=request.form.get('notes')
+            )
+            
+            db.session.add(maturity)
+            db.session.commit()
+            
+            log_audit(current_user.id, 'CREATE', 'DogMaturity', str(maturity.id), {'dog': maturity.dog.name})
+            flash('تم تسجيل بلوغ الكلب بنجاح', 'success')
+            return redirect(url_for('main.maturity_list'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء تسجيل البلوغ: {str(e)}', 'error')
+    
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+    else:
+        dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+    
+    return render_template('breeding/maturity_add.html', dogs=dogs)
+
+# Section 3: Heat Cycles (الدورة)
+@main_bp.route('/breeding/heat-cycles')
+@login_required
+def heat_cycles_list():
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        cycles = HeatCycle.query.join(Dog).order_by(HeatCycle.start_date.desc()).all()
+    else:
+        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
+        cycles = HeatCycle.query.filter(HeatCycle.dog_id.in_(assigned_dog_ids)).order_by(HeatCycle.start_date.desc()).all()
+    
+    return render_template('breeding/heat_cycles_list.html', cycles=cycles)
+
+@main_bp.route('/breeding/heat-cycles/add', methods=['GET', 'POST'])
+@login_required
+def heat_cycles_add():
+    if request.method == 'POST':
+        try:
+            # Get the cycle number (count existing cycles + 1)
+            existing_cycles = HeatCycle.query.filter_by(dog_id=request.form['dog_id']).count()
+            
+            cycle = HeatCycle(
+                dog_id=request.form['dog_id'],
+                cycle_number=existing_cycles + 1,
+                start_date=datetime.strptime(request.form['start_date'], '%Y-%m-%d').date(),
+                end_date=datetime.strptime(request.form['end_date'], '%Y-%m-%d').date() if request.form.get('end_date') else None,
+                behavioral_changes=request.form.get('behavioral_changes'),
+                physical_signs=request.form.get('physical_signs'),
+                appetite_changes=request.form.get('appetite_changes'),
+                notes=request.form.get('notes')
+            )
+            
+            # Calculate duration if end date is provided
+            if cycle.end_date:
+                cycle.duration_days = (cycle.end_date - cycle.start_date).days
+                cycle.status = HeatStatus.POST_HEAT
+            
+            db.session.add(cycle)
+            db.session.commit()
+            
+            log_audit(current_user.id, 'CREATE', 'HeatCycle', str(cycle.id), {'dog': cycle.dog.name, 'cycle_number': cycle.cycle_number})
+            flash(f'تم تسجيل الدورة رقم {cycle.cycle_number} بنجاح', 'success')
+            return redirect(url_for('main.heat_cycles_list'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء تسجيل الدورة: {str(e)}', 'error')
+    
+    # Only show mature females
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE, gender=DogGender.FEMALE).join(DogMaturity).filter_by(maturity_status=MaturityStatus.MATURE).all()
+    else:
+        dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE, gender=DogGender.FEMALE).join(DogMaturity).filter_by(maturity_status=MaturityStatus.MATURE).all()
+    
+    return render_template('breeding/heat_cycles_add.html', dogs=dogs)
+
+# Section 4: Mating Records (التزاوج)
+@main_bp.route('/breeding/mating')
+@login_required
+def mating_list():
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        matings = MatingRecord.query.order_by(MatingRecord.mating_date.desc()).all()
+    else:
+        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
+        matings = MatingRecord.query.filter((MatingRecord.female_id.in_(assigned_dog_ids)) | (MatingRecord.male_id.in_(assigned_dog_ids))).order_by(MatingRecord.mating_date.desc()).all()
+    
+    return render_template('breeding/mating_list.html', matings=matings)
+
+@main_bp.route('/breeding/mating/add', methods=['GET', 'POST'])
+@login_required
+def mating_add():
+    if request.method == 'POST':
+        try:
+            mating = MatingRecord(
+                female_id=request.form['female_id'],
+                male_id=request.form['male_id'],
+                heat_cycle_id=request.form['heat_cycle_id'],
+                mating_date=datetime.strptime(request.form['mating_date'], '%Y-%m-%d').date(),
+                mating_time=datetime.strptime(request.form['mating_time'], '%H:%M').time() if request.form.get('mating_time') else None,
+                location=request.form.get('location'),
+                supervised_by=request.form.get('supervised_by') if request.form.get('supervised_by') else None,
+                success_rate=int(request.form['success_rate']) if request.form.get('success_rate') else None,
+                duration_minutes=int(request.form['duration_minutes']) if request.form.get('duration_minutes') else None,
+                behavior_observed=request.form.get('behavior_observed'),
+                complications=request.form.get('complications'),
+                notes=request.form.get('notes')
+            )
+            
+            db.session.add(mating)
+            db.session.commit()
+            
+            log_audit(current_user.id, 'CREATE', 'MatingRecord', str(mating.id), {'female': mating.female.name, 'male': mating.male.name})
+            flash('تم تسجيل التزاوج بنجاح', 'success')
+            return redirect(url_for('main.mating_list'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء تسجيل التزاوج: {str(e)}', 'error')
+    
+    # Get breeding-ready females (those with 3+ heat cycles)
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        all_females = Dog.query.filter_by(current_status=DogStatus.ACTIVE, gender=DogGender.FEMALE).all()
+        males = Dog.query.filter_by(current_status=DogStatus.ACTIVE, gender=DogGender.MALE).join(DogMaturity).filter_by(maturity_status=MaturityStatus.MATURE).all()
+        employees = Employee.query.filter_by(is_active=True).all()
+    else:
+        all_females = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE, gender=DogGender.FEMALE).all()
+        males = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE, gender=DogGender.MALE).join(DogMaturity).filter_by(maturity_status=MaturityStatus.MATURE).all()
+        employees = Employee.query.filter_by(assigned_to_user_id=current_user.id, is_active=True).all()
+    
+    # Filter females that have 3+ heat cycles
+    breeding_females = []
+    for female in all_females:
+        heat_count = HeatCycle.query.filter_by(dog_id=female.id).count()
+        if heat_count >= 3:
+            breeding_females.append(female)
+    
+    return render_template('breeding/mating_add.html', females=breeding_females, males=males, employees=employees)
+
+# Section 5: Pregnancy Records (الحمل)
+@main_bp.route('/breeding/pregnancy')
+@login_required
+def pregnancy_list():
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        pregnancies = PregnancyRecord.query.order_by(PregnancyRecord.confirmed_date.desc()).all()
+    else:
+        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
+        pregnancies = PregnancyRecord.query.filter(PregnancyRecord.dog_id.in_(assigned_dog_ids)).order_by(PregnancyRecord.confirmed_date.desc()).all()
+    
+    return render_template('breeding/pregnancy_list.html', pregnancies=pregnancies)
+
+@main_bp.route('/breeding/pregnancy/add', methods=['GET', 'POST'])
+@login_required
+def pregnancy_add():
+    if request.method == 'POST':
+        try:
+            pregnancy = PregnancyRecord(
+                mating_record_id=request.form['mating_record_id'],
+                dog_id=request.form['dog_id'],
+                confirmed_date=datetime.strptime(request.form['confirmed_date'], '%Y-%m-%d').date(),
+                expected_delivery_date=datetime.strptime(request.form['expected_delivery_date'], '%Y-%m-%d').date(),
+                status=PregnancyStatus.PREGNANT,
+                special_diet=request.form.get('special_diet'),
+                exercise_restrictions=request.form.get('exercise_restrictions'),
+                notes=request.form.get('notes')
+            )
+            
+            db.session.add(pregnancy)
+            db.session.commit()
+            
+            log_audit(current_user.id, 'CREATE', 'PregnancyRecord', str(pregnancy.id), {'dog': pregnancy.dog.name})
+            flash('تم تسجيل الحمل بنجاح', 'success')
+            return redirect(url_for('main.pregnancy_list'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء تسجيل الحمل: {str(e)}', 'error')
+    
+    # Get mating records that don't have pregnancy records yet
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        available_matings = MatingRecord.query.outerjoin(PregnancyRecord).filter(PregnancyRecord.id == None).all()
+    else:
+        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
+        available_matings = MatingRecord.query.filter(MatingRecord.female_id.in_(assigned_dog_ids)).outerjoin(PregnancyRecord).filter(PregnancyRecord.id == None).all()
+    
+    return render_template('breeding/pregnancy_add.html', matings=available_matings)
+
+# Section 6: Delivery Records (الولادة)
+@main_bp.route('/breeding/delivery')
+@login_required
+def delivery_list():
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        deliveries = DeliveryRecord.query.order_by(DeliveryRecord.delivery_date.desc()).all()
+    else:
+        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
+        deliveries = DeliveryRecord.query.join(PregnancyRecord).filter(PregnancyRecord.dog_id.in_(assigned_dog_ids)).order_by(DeliveryRecord.delivery_date.desc()).all()
+    
+    return render_template('breeding/delivery_list.html', deliveries=deliveries)
+
+@main_bp.route('/breeding/delivery/add', methods=['GET', 'POST'])
+@login_required
+def delivery_add():
+    if request.method == 'POST':
+        try:
+            delivery = DeliveryRecord(
+                pregnancy_record_id=request.form['pregnancy_record_id'],
+                delivery_date=datetime.strptime(request.form['delivery_date'], '%Y-%m-%d').date(),
+                delivery_start_time=datetime.strptime(request.form['delivery_start_time'], '%H:%M').time() if request.form.get('delivery_start_time') else None,
+                delivery_end_time=datetime.strptime(request.form['delivery_end_time'], '%H:%M').time() if request.form.get('delivery_end_time') else None,
+                location=request.form.get('location'),
+                vet_present=request.form.get('vet_present') if request.form.get('vet_present') else None,
+                handler_present=request.form.get('handler_present') if request.form.get('handler_present') else None,
+                assistance_required=bool(request.form.get('assistance_required')),
+                assistance_type=request.form.get('assistance_type'),
+                total_puppies=int(request.form['total_puppies']),
+                live_births=int(request.form['live_births']),
+                stillbirths=int(request.form['stillbirths']),
+                delivery_complications=request.form.get('delivery_complications'),
+                mother_condition=request.form.get('mother_condition'),
+                notes=request.form.get('notes')
+            )
+            
+            db.session.add(delivery)
+            
+            # Update pregnancy status
+            pregnancy = PregnancyRecord.query.get(request.form['pregnancy_record_id'])
+            pregnancy.status = PregnancyStatus.DELIVERED
+            
+            db.session.commit()
+            
+            log_audit(current_user.id, 'CREATE', 'DeliveryRecord', str(delivery.id), {'puppies': delivery.total_puppies})
+            flash('تم تسجيل الولادة بنجاح', 'success')
+            return redirect(url_for('main.delivery_list'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء تسجيل الولادة: {str(e)}', 'error')
+    
+    # Get pregnant dogs without delivery records
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        available_pregnancies = PregnancyRecord.query.filter_by(status=PregnancyStatus.PREGNANT).outerjoin(DeliveryRecord).filter(DeliveryRecord.id == None).all()
+        employees = Employee.query.filter_by(is_active=True).all()
+    else:
+        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
+        available_pregnancies = PregnancyRecord.query.filter(PregnancyRecord.dog_id.in_(assigned_dog_ids), PregnancyRecord.status == PregnancyStatus.PREGNANT).outerjoin(DeliveryRecord).filter(DeliveryRecord.id == None).all()
+        employees = Employee.query.filter_by(assigned_to_user_id=current_user.id, is_active=True).all()
+    
+    return render_template('breeding/delivery_add.html', pregnancies=available_pregnancies, employees=employees)
+
+# Section 7: Puppy Records (الجراء)
+@main_bp.route('/breeding/puppies')
+@login_required
+def puppies_list():
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        puppies = PuppyRecord.query.order_by(PuppyRecord.created_at.desc()).all()
+    else:
+        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
+        puppies = PuppyRecord.query.join(DeliveryRecord).join(PregnancyRecord).filter(PregnancyRecord.dog_id.in_(assigned_dog_ids)).order_by(PuppyRecord.created_at.desc()).all()
+    
+    return render_template('breeding/puppies_list.html', puppies=puppies)
+
+@main_bp.route('/breeding/puppies/add', methods=['GET', 'POST'])
+@login_required
+def puppies_add():
+    if request.method == 'POST':
+        try:
+            puppy = PuppyRecord(
+                delivery_record_id=request.form['delivery_record_id'],
+                puppy_number=int(request.form['puppy_number']),
+                name=request.form.get('name'),
+                temporary_id=request.form.get('temporary_id'),
+                gender=DogGender(request.form['gender']),
+                birth_weight=float(request.form['birth_weight']) if request.form.get('birth_weight') else None,
+                birth_time=datetime.strptime(request.form['birth_time'], '%H:%M').time() if request.form.get('birth_time') else None,
+                birth_order=int(request.form['birth_order']) if request.form.get('birth_order') else None,
+                alive_at_birth=bool(request.form.get('alive_at_birth', True)),
+                current_status=request.form.get('current_status', 'جيد'),
+                color=request.form.get('color'),
+                markings=request.form.get('markings'),
+                birth_defects=request.form.get('birth_defects'),
+                notes=request.form.get('notes')
+            )
+            
+            db.session.add(puppy)
+            db.session.commit()
+            
+            log_audit(current_user.id, 'CREATE', 'PuppyRecord', str(puppy.id), {'name': puppy.name or f'Puppy #{puppy.puppy_number}'})
+            flash('تم تسجيل الجرو بنجاح', 'success')
+            return redirect(url_for('main.puppies_list'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء تسجيل الجرو: {str(e)}', 'error')
+    
+    # Get deliveries
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        deliveries = DeliveryRecord.query.order_by(DeliveryRecord.delivery_date.desc()).all()
+    else:
+        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
+        deliveries = DeliveryRecord.query.join(PregnancyRecord).filter(PregnancyRecord.dog_id.in_(assigned_dog_ids)).order_by(DeliveryRecord.delivery_date.desc()).all()
+    
+    return render_template('breeding/puppies_add.html', deliveries=deliveries)
+
+# Section 8: Puppy Training (تدريب الجراء)
+@main_bp.route('/breeding/puppy-training')
+@login_required
+def puppy_training_list():
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        training_sessions = PuppyTraining.query.order_by(PuppyTraining.session_date.desc()).all()
+    else:
+        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
+        training_sessions = PuppyTraining.query.join(PuppyRecord).join(DeliveryRecord).join(PregnancyRecord).filter(PregnancyRecord.dog_id.in_(assigned_dog_ids)).order_by(PuppyTraining.session_date.desc()).all()
+    
+    return render_template('breeding/puppy_training_list.html', sessions=training_sessions)
+
+@main_bp.route('/breeding/puppy-training/add', methods=['GET', 'POST'])
+@login_required
+def puppy_training_add():
+    if request.method == 'POST':
+        try:
+            training = PuppyTraining(
+                puppy_id=request.form['puppy_id'],
+                trainer_id=request.form['trainer_id'],
+                training_name=request.form['training_name'],
+                training_type=TrainingCategory(request.form['training_type']),
+                session_date=datetime.strptime(request.form['session_date'], '%Y-%m-%dT%H:%M'),
+                duration=int(request.form['duration']),
+                puppy_age_weeks=int(request.form['puppy_age_weeks']) if request.form.get('puppy_age_weeks') else None,
+                developmental_stage=request.form.get('developmental_stage'),
+                success_rating=int(request.form['success_rating']),
+                behavior_observations=request.form.get('behavior_observations'),
+                location=request.form.get('location'),
+                weather_conditions=request.form.get('weather_conditions'),
+                areas_for_improvement=request.form.get('areas_for_improvement'),
+                notes=request.form.get('notes')
+            )
+            
+            db.session.add(training)
+            db.session.commit()
+            
+            log_audit(current_user.id, 'CREATE', 'PuppyTraining', str(training.id), {'puppy': training.puppy.name, 'training': training.training_name})
+            flash('تم تسجيل تدريب الجرو بنجاح', 'success')
+            return redirect(url_for('main.puppy_training_list'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء تسجيل تدريب الجرو: {str(e)}', 'error')
+    
+    # Get available puppies and trainers
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        puppies = PuppyRecord.query.filter(PuppyRecord.alive_at_birth == True, PuppyRecord.current_status != 'متوفي').all()
+        trainers = Employee.query.filter_by(role=EmployeeRole.TRAINER, is_active=True).all()
+    else:
+        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
+        puppies = PuppyRecord.query.join(DeliveryRecord).join(PregnancyRecord).filter(PregnancyRecord.dog_id.in_(assigned_dog_ids), PuppyRecord.alive_at_birth == True, PuppyRecord.current_status != 'متوفي').all()
+        trainers = Employee.query.filter_by(assigned_to_user_id=current_user.id, role=EmployeeRole.TRAINER, is_active=True).all()
+    
+    return render_template('breeding/puppy_training_add.html', puppies=puppies, trainers=trainers, categories=TrainingCategory)

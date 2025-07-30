@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}نظام الإنتاج{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-heart me-2"></i>
+                نظام الإنتاج
+            </h1>
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('main.maturity_add') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    تسجيل بلوغ
+                </a>
+                <a href="{{ url_for('main.heat_cycles_add') }}" class="btn btn-success">
+                    <i class="fas fa-plus me-2"></i>
+                    تسجيل دورة
+                </a>
+                <a href="{{ url_for('main.mating_add') }}" class="btn btn-warning">
+                    <i class="fas fa-plus me-2"></i>
+                    تسجيل تزاوج
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-dog fa-2x mb-2"></i>
+                <h4>{{ stats.total_dogs }}</h4>
+                <p class="mb-0">إجمالي الكلاب</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                <h4>{{ stats.mature_dogs }}</h4>
+                <p class="mb-0">كلاب بالغة</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-venus fa-2x mb-2"></i>
+                <h4>{{ stats.breeding_ready_females }}</h4>
+                <p class="mb-0">إناث جاهزة للتزاوج</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-mars fa-2x mb-2"></i>
+                <h4>{{ stats.breeding_males }}</h4>
+                <p class="mb-0">ذكور للتزاوج</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-danger text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-baby fa-2x mb-2"></i>
+                <h4>{{ stats.active_pregnancies }}</h4>
+                <p class="mb-0">حمل نشط</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-secondary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-paw fa-2x mb-2"></i>
+                <h4>{{ stats.recent_births }}</h4>
+                <p class="mb-0">ولادات هذا الشهر</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Breeding System Sections -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    أقسام نظام الإنتاج
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Section 1 & 2: General Info + Maturity -->
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-calendar-check fa-3x text-primary mb-3"></i>
+                                <h6>1. معلومات عامة + البلوغ</h6>
+                                <p class="text-muted small">تسجيل تاريخ بلوغ الكلاب</p>
+                                <div class="btn-group-vertical w-100">
+                                    <a href="{{ url_for('main.maturity_list') }}" class="btn btn-outline-primary btn-sm">عرض السجلات</a>
+                                    <a href="{{ url_for('main.maturity_add') }}" class="btn btn-primary btn-sm">تسجيل بلوغ</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Heat Cycles -->
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-thermometer-half fa-3x text-success mb-3"></i>
+                                <h6>3. الدورة</h6>
+                                <p class="text-muted small">تتبع دورات الحرارة للإناث</p>
+                                <div class="btn-group-vertical w-100">
+                                    <a href="{{ url_for('main.heat_cycles_list') }}" class="btn btn-outline-success btn-sm">عرض الدورات</a>
+                                    <a href="{{ url_for('main.heat_cycles_add') }}" class="btn btn-success btn-sm">تسجيل دورة</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 4: Mating -->
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-heart fa-3x text-warning mb-3"></i>
+                                <h6>4. التزاوج</h6>
+                                <p class="text-muted small">تسجيل عمليات التزاوج</p>
+                                <div class="btn-group-vertical w-100">
+                                    <a href="{{ url_for('main.mating_list') }}" class="btn btn-outline-warning btn-sm">عرض التزاوج</a>
+                                    <a href="{{ url_for('main.mating_add') }}" class="btn btn-warning btn-sm">تسجيل تزاوج</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 5: Pregnancy -->
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-baby fa-3x text-info mb-3"></i>
+                                <h6>5. الحمل</h6>
+                                <p class="text-muted small">متابعة فترة الحمل أسبوعياً</p>
+                                <div class="btn-group-vertical w-100">
+                                    <a href="{{ url_for('main.pregnancy_list') }}" class="btn btn-outline-info btn-sm">عرض الحمل</a>
+                                    <a href="{{ url_for('main.pregnancy_add') }}" class="btn btn-info btn-sm">تسجيل حمل</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 6: Delivery -->
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-hospital fa-3x text-danger mb-3"></i>
+                                <h6>6. الولادة</h6>
+                                <p class="text-muted small">تسجيل تفاصيل الولادة</p>
+                                <div class="btn-group-vertical w-100">
+                                    <a href="{{ url_for('main.delivery_list') }}" class="btn btn-outline-danger btn-sm">عرض الولادات</a>
+                                    <a href="{{ url_for('main.delivery_add') }}" class="btn btn-danger btn-sm">تسجيل ولادة</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 7: Puppies -->
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-paw fa-3x text-secondary mb-3"></i>
+                                <h6>7. الجراء</h6>
+                                <p class="text-muted small">إدارة وتتبع الجراء</p>
+                                <div class="btn-group-vertical w-100">
+                                    <a href="{{ url_for('main.puppies_list') }}" class="btn btn-outline-secondary btn-sm">عرض الجراء</a>
+                                    <a href="{{ url_for('main.puppies_add') }}" class="btn btn-secondary btn-sm">تسجيل جرو</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 8: Puppy Training -->
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-graduation-cap fa-3x text-dark mb-3"></i>
+                                <h6>8. تدريب الجراء</h6>
+                                <p class="text-muted small">تدريب مخصص للجراء</p>
+                                <div class="btn-group-vertical w-100">
+                                    <a href="{{ url_for('main.puppy_training_list') }}" class="btn btn-outline-dark btn-sm">عرض التدريب</a>
+                                    <a href="{{ url_for('main.puppy_training_add') }}" class="btn btn-dark btn-sm">تسجيل تدريب</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Breeding Ready Females Info -->
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <div class="card h-100 border-info">
+                            <div class="card-body text-center">
+                                <i class="fas fa-info-circle fa-3x text-info mb-3"></i>
+                                <h6>معايير التزاوج</h6>
+                                <p class="text-muted small">
+                                    <strong>للإناث:</strong> 3 دورات حرارة مكتملة<br>
+                                    <strong>للذكور:</strong> بلوغ مُسجل
+                                </p>
+                                <small class="text-info">{{ breeding_ready_females|length }} أنثى جاهزة للتزاوج</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

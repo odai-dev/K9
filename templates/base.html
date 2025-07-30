@@ -92,11 +92,18 @@
                     {% if permissions.breeding %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="breedingDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-heart"></i> التكاثر
+                            <i class="fas fa-heart"></i> الإنتاج
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_list') }}">دورات التكاثر</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_add') }}">إضافة دورة</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_index') }}">لوحة الإنتاج</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.maturity_list') }}">البلوغ</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.heat_cycles_list') }}">الدورة</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.mating_list') }}">التزاوج</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.pregnancy_list') }}">الحمل</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.delivery_list') }}">الولادة</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.puppies_list') }}">الجراء</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.puppy_training_list') }}">تدريب الجراء</a></li>
                         </ul>
                     </li>
                     {% endif %}
