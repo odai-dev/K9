@@ -12,8 +12,10 @@ class UserRole(Enum):
 
 class EmployeeRole(Enum):
     HANDLER = "سائس"
+    TRAINER = "مدرب"
     VET = "طبيب"
     PROJECT_MANAGER = "مسؤول مشروع"
+    OPERATIONS = "عمليات"
 
 class DogStatus(Enum):
     ACTIVE = "ACTIVE"
@@ -45,6 +47,21 @@ class BreedingResult(Enum):
     SUCCESSFUL = "SUCCESSFUL"
     FAILED = "FAILED"
     UNKNOWN = "UNKNOWN"
+
+class MaturityStatus(Enum):
+    JUVENILE = "يافع"
+    MATURE = "بالغ"
+    RETIRED = "متقاعد"
+
+class HeatStatus(Enum):
+    NOT_IN_HEAT = "لا توجد دورة"
+    IN_HEAT = "في الدورة"
+    POST_HEAT = "بعد الدورة"
+
+class PregnancyStatus(Enum):
+    NOT_PREGNANT = "غير حامل"
+    PREGNANT = "حامل"
+    DELIVERED = "ولدت"
 
 class ProjectStatus(Enum):
     PLANNING = "PLANNING"
@@ -352,3 +369,239 @@ class AuditLog(db.Model):
     
     def __repr__(self):
         return f'<AuditLog {self.action_type.value} - {self.model_target}>'
+
+# Production System Models (8 sections as requested)
+
+class DogMaturity(db.Model):
+    """Section 1: General Information + Section 2: Maturity (البلوغ)"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    dog_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'), nullable=False)
+    maturity_date = db.Column(db.Date)  # تاريخ البلوغ
+    maturity_status = db.Column(db.Enum(MaturityStatus), default=MaturityStatus.JUVENILE)
+    weight_at_maturity = db.Column(db.Float)
+    height_at_maturity = db.Column(db.Float)
+    notes = db.Column(Text)
+    
+    # Relationships
+    dog = db.relationship('Dog', backref='maturity_record')
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class HeatCycle(db.Model):
+    """Section 3: Heat Cycle (الدورة)"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    dog_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'), nullable=False)
+    cycle_number = db.Column(db.Integer, nullable=False)  # رقم الدورة (1، 2، 3...)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date)
+    duration_days = db.Column(db.Integer)
+    status = db.Column(db.Enum(HeatStatus), default=HeatStatus.IN_HEAT)
+    
+    # Physical signs
+    behavioral_changes = db.Column(Text)
+    physical_signs = db.Column(Text)
+    appetite_changes = db.Column(db.String(100))
+    
+    notes = db.Column(Text)
+    
+    # Relationships
+    dog = db.relationship('Dog', backref='heat_cycles')
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class MatingRecord(db.Model):
+    """Section 4: Mating (التزاوج)"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    female_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'), nullable=False)
+    male_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'), nullable=False)
+    heat_cycle_id = db.Column(UUID(as_uuid=True), db.ForeignKey('heat_cycle.id'), nullable=False)
+    
+    mating_date = db.Column(db.Date, nullable=False)
+    mating_time = db.Column(db.Time)
+    location = db.Column(db.String(100))
+    supervised_by = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'))
+    
+    # Mating details
+    success_rate = db.Column(db.Integer)  # 0-10
+    duration_minutes = db.Column(db.Integer)
+    behavior_observed = db.Column(Text)
+    complications = db.Column(Text)
+    
+    notes = db.Column(Text)
+    
+    # Relationships
+    female = db.relationship('Dog', foreign_keys=[female_id], backref='matings_as_female')
+    male = db.relationship('Dog', foreign_keys=[male_id], backref='matings_as_male')
+    heat_cycle = db.relationship('HeatCycle', backref='mating_records')
+    supervisor = db.relationship('Employee', backref='supervised_matings')
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class PregnancyRecord(db.Model):
+    """Section 5: Pregnancy (الحمل)"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    mating_record_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mating_record.id'), nullable=False)
+    dog_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'), nullable=False)
+    
+    # Pregnancy timeline
+    confirmed_date = db.Column(db.Date)  # تاريخ تأكيد الحمل
+    expected_delivery_date = db.Column(db.Date)  # تاريخ الولادة المتوقع
+    status = db.Column(db.Enum(PregnancyStatus), default=PregnancyStatus.NOT_PREGNANT)
+    
+    # Health monitoring
+    week_1_checkup = db.Column(JSON, default=dict)  # {weight, appetite, behavior}
+    week_2_checkup = db.Column(JSON, default=dict)
+    week_3_checkup = db.Column(JSON, default=dict)
+    week_4_checkup = db.Column(JSON, default=dict)
+    week_5_checkup = db.Column(JSON, default=dict)
+    week_6_checkup = db.Column(JSON, default=dict)
+    week_7_checkup = db.Column(JSON, default=dict)
+    week_8_checkup = db.Column(JSON, default=dict)
+    
+    # Ultrasound results
+    ultrasound_results = db.Column(JSON, default=list)  # [{date, puppies_count, notes}]
+    
+    # Nutrition and care
+    special_diet = db.Column(Text)
+    exercise_restrictions = db.Column(Text)
+    medications = db.Column(JSON, default=list)
+    
+    notes = db.Column(Text)
+    
+    # Relationships
+    mating_record = db.relationship('MatingRecord', backref='pregnancy_records')
+    dog = db.relationship('Dog', backref='pregnancy_records')
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class DeliveryRecord(db.Model):
+    """Section 6: Delivery/Birth (الولادة)"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    pregnancy_record_id = db.Column(UUID(as_uuid=True), db.ForeignKey('pregnancy_record.id'), nullable=False)
+    
+    # Delivery details
+    delivery_date = db.Column(db.Date, nullable=False)
+    delivery_start_time = db.Column(db.Time)
+    delivery_end_time = db.Column(db.Time)
+    location = db.Column(db.String(100))
+    
+    # Assistance
+    vet_present = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'))
+    handler_present = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'))
+    assistance_required = db.Column(db.Boolean, default=False)
+    assistance_type = db.Column(Text)  # cesarean, manual assistance, etc.
+    
+    # Results
+    total_puppies = db.Column(db.Integer, default=0)
+    live_births = db.Column(db.Integer, default=0)
+    stillbirths = db.Column(db.Integer, default=0)
+    
+    # Complications
+    delivery_complications = db.Column(Text)
+    mother_condition = db.Column(Text)
+    
+    notes = db.Column(Text)
+    
+    # Relationships
+    pregnancy_record = db.relationship('PregnancyRecord', backref='delivery_records')
+    vet = db.relationship('Employee', foreign_keys=[vet_present], backref='assisted_deliveries')
+    handler = db.relationship('Employee', foreign_keys=[handler_present], backref='handled_deliveries')
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class PuppyRecord(db.Model):
+    """Section 7: Puppies (الجراء)"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    delivery_record_id = db.Column(UUID(as_uuid=True), db.ForeignKey('delivery_record.id'), nullable=False)
+    
+    # Puppy identification
+    puppy_number = db.Column(db.Integer, nullable=False)  # 1, 2, 3...
+    name = db.Column(db.String(100))
+    temporary_id = db.Column(db.String(20))  # temporary ID until official registration
+    gender = db.Column(db.Enum(DogGender), nullable=False)
+    
+    # Birth details
+    birth_weight = db.Column(db.Float)
+    birth_time = db.Column(db.Time)
+    birth_order = db.Column(db.Integer)
+    
+    # Health status
+    alive_at_birth = db.Column(db.Boolean, default=True)
+    current_status = db.Column(db.String(50), default='جيد')  # جيد، ضعيف، متوفي
+    
+    # Physical characteristics
+    color = db.Column(db.String(50))
+    markings = db.Column(Text)
+    birth_defects = db.Column(Text)
+    
+    # Weekly weight tracking
+    week_1_weight = db.Column(db.Float)
+    week_2_weight = db.Column(db.Float)
+    week_3_weight = db.Column(db.Float)
+    week_4_weight = db.Column(db.Float)
+    week_5_weight = db.Column(db.Float)
+    week_6_weight = db.Column(db.Float)
+    week_7_weight = db.Column(db.Float)
+    week_8_weight = db.Column(db.Float)
+    
+    # Weaning and placement
+    weaning_date = db.Column(db.Date)
+    placement_date = db.Column(db.Date)
+    placement_location = db.Column(db.String(100))
+    
+    # Link to adult dog record (if kept in program)
+    adult_dog_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'))
+    
+    notes = db.Column(Text)
+    
+    # Relationships
+    delivery_record = db.relationship('DeliveryRecord', backref='puppies')
+    adult_dog = db.relationship('Dog', backref='puppy_record')
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class PuppyTraining(db.Model):
+    """Section 8: Puppy Training (تدريب الجراء)"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    puppy_id = db.Column(UUID(as_uuid=True), db.ForeignKey('puppy_record.id'), nullable=False)
+    trainer_id = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'), nullable=False)
+    
+    # Training details
+    training_name = db.Column(db.String(200), nullable=False)  # اسم التدريب
+    training_type = db.Column(db.Enum(TrainingCategory), nullable=False)  # نوع التدريب
+    session_date = db.Column(db.DateTime, nullable=False)
+    duration = db.Column(db.Integer, nullable=False)  # minutes
+    
+    # Age-appropriate training
+    puppy_age_weeks = db.Column(db.Integer)
+    developmental_stage = db.Column(db.String(50))  # socialization, basic commands, etc.
+    
+    # Performance
+    success_rating = db.Column(db.Integer, nullable=False)  # 0-10
+    skills_learned = db.Column(JSON, default=list)  # ["sit", "stay", "come"]
+    behavior_observations = db.Column(Text)
+    
+    # Environment
+    location = db.Column(db.String(100))
+    weather_conditions = db.Column(db.String(100))
+    equipment_used = db.Column(JSON, default=list)
+    
+    # Progress tracking
+    previous_skills = db.Column(JSON, default=list)
+    new_skills_acquired = db.Column(JSON, default=list)
+    areas_for_improvement = db.Column(Text)
+    
+    notes = db.Column(Text)
+    
+    # Relationships
+    puppy = db.relationship('PuppyRecord', backref='training_sessions')
+    trainer = db.relationship('Employee', backref='puppy_training_sessions')
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<PuppyTraining {self.training_name} - {self.puppy.name}>'

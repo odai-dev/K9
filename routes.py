@@ -2,7 +2,13 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app import db
-from models import Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCycle, Project, AttendanceRecord, AuditLog, UserRole, DogStatus, EmployeeRole, TrainingCategory, VisitType
+from models import (Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCycle, 
+                   Project, AttendanceRecord, AuditLog, UserRole, DogStatus, 
+                   EmployeeRole, TrainingCategory, VisitType, BreedingCycleType, 
+                   BreedingResult, ProjectStatus, AuditAction, DogGender, User,
+                   DogMaturity, HeatCycle, MatingRecord, PregnancyRecord, 
+                   DeliveryRecord, PuppyRecord, PuppyTraining, MaturityStatus,
+                   HeatStatus, PregnancyStatus)
 from utils import log_audit, allowed_file, generate_pdf_report
 import os
 from datetime import datetime, date
