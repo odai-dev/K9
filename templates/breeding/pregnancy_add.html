@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}تسجيل حمل{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-plus me-2"></i>
+                تسجيل حمل جديد
+            </h1>
+            <a href="{{ url_for('main.pregnancy_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right me-2"></i>
+                العودة إلى القائمة
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-baby me-2"></i>
+                    معلومات الحمل
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label for="mating_record_id" class="form-label">سجل التزاوج <span class="text-danger">*</span></label>
+                            <select class="form-select" id="mating_record_id" name="mating_record_id" required onchange="updateDogField()">
+                                <option value="">اختر سجل التزاوج</option>
+                                {% for mating in matings %}
+                                    <option value="{{ mating.id }}" data-dog-id="{{ mating.female.id }}">
+                                        {{ mating.female.name }} × {{ mating.male.name }} - {{ mating.mating_date.strftime('%Y-%m-%d') }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="dog_id" name="dog_id">
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="confirmed_date" class="form-label">تاريخ تأكيد الحمل <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="confirmed_date" name="confirmed_date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="expected_delivery_date" class="form-label">تاريخ الولادة المتوقع <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="expected_delivery_date" name="expected_delivery_date" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="special_diet" class="form-label">النظام الغذائي الخاص</label>
+                            <textarea class="form-control" id="special_diet" name="special_diet" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="exercise_restrictions" class="form-label">قيود التمارين</label>
+                            <textarea class="form-control" id="exercise_restrictions" name="exercise_restrictions" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">ملاحظات</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>
+                            حفظ
+                        </button>
+                        <a href="{{ url_for('main.pregnancy_list') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>
+                            إلغاء
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateDogField() {
+    const matingSelect = document.getElementById('mating_record_id');
+    const dogField = document.getElementById('dog_id');
+    const selectedOption = matingSelect.selectedOptions[0];
+    
+    if (selectedOption && selectedOption.dataset.dogId) {
+        dogField.value = selectedOption.dataset.dogId;
+    } else {
+        dogField.value = '';
+    }
+}
+
+// Auto-calculate expected delivery date (63 days from confirmation)
+document.getElementById('confirmed_date').addEventListener('change', function() {
+    const confirmedDate = new Date(this.value);
+    if (confirmedDate) {
+        const expectedDate = new Date(confirmedDate);
+        expectedDate.setDate(expectedDate.getDate() + 63);
+        document.getElementById('expected_delivery_date').value = expectedDate.toISOString().split('T')[0];
+    }
+});
+</script>
+{% endblock %}

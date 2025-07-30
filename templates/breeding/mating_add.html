@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}تسجيل تزاوج{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-plus me-2"></i>
+                تسجيل تزاوج جديد
+            </h1>
+            <a href="{{ url_for('main.mating_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right me-2"></i>
+                العودة إلى القائمة
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-heart me-2"></i>
+                    معلومات التزاوج
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="female_id" class="form-label">الأنثى <span class="text-danger">*</span></label>
+                            <select class="form-select" id="female_id" name="female_id" required>
+                                <option value="">اختر الأنثى</option>
+                                {% for female in females %}
+                                    <option value="{{ female.id }}">{{ female.name }} - {{ female.code }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">الإناث الجاهزة للتزاوج (3 دورات مكتملة)</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="male_id" class="form-label">الذكر <span class="text-danger">*</span></label>
+                            <select class="form-select" id="male_id" name="male_id" required>
+                                <option value="">اختر الذكر</option>
+                                {% for male in males %}
+                                    <option value="{{ male.id }}">{{ male.name }} - {{ male.code }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="heat_cycle_id" class="form-label">دورة الحرارة المرتبطة</label>
+                            <select class="form-select" id="heat_cycle_id" name="heat_cycle_id">
+                                <option value="">اختر الدورة</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="mating_date" class="form-label">تاريخ التزاوج <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="mating_date" name="mating_date" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="mating_time" class="form-label">وقت التزاوج</label>
+                            <input type="time" class="form-control" id="mating_time" name="mating_time">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="location" class="form-label">الموقع</label>
+                            <input type="text" class="form-control" id="location" name="location">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="supervised_by" class="form-label">المشرف</label>
+                            <select class="form-select" id="supervised_by" name="supervised_by">
+                                <option value="">اختر المشرف</option>
+                                {% for employee in employees %}
+                                    <option value="{{ employee.id }}">{{ employee.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="duration_minutes" class="form-label">المدة (دقائق)</label>
+                            <input type="number" class="form-control" id="duration_minutes" name="duration_minutes">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="success_rate" class="form-label">نسبة النجاح (%)</label>
+                            <input type="number" min="0" max="100" class="form-control" id="success_rate" name="success_rate">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="behavior_observed" class="form-label">السلوك المراقب</label>
+                            <textarea class="form-control" id="behavior_observed" name="behavior_observed" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="complications" class="form-label">المضاعفات</label>
+                            <textarea class="form-control" id="complications" name="complications" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">ملاحظات</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>
+                            حفظ
+                        </button>
+                        <a href="{{ url_for('main.mating_list') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>
+                            إلغاء
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
