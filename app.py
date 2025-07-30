@@ -48,12 +48,16 @@ def create_app():
     login_manager.login_message_category = 'info'
     
     # Import models
-    from models import User, Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCycle, Project, AttendanceRecord, AuditLog
+    from models import User, Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCycle, Project, AttendanceRecord, AuditLog, UserRole
     
     # User loader
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
+    
+    # Register template functions
+    from utils import get_user_permissions
+    app.jinja_env.globals.update(get_user_permissions=get_user_permissions)
     
     # Register blueprints
     from routes import main_bp
@@ -74,9 +78,9 @@ def create_app():
                 username='admin',
                 email='admin@k9operations.mil',
                 password_hash=generate_password_hash('admin123'),
-                role='GENERAL_ADMIN',
+                role=UserRole.GENERAL_ADMIN,
                 full_name='مدير النظام العام',
-                is_active=True
+                active=True
             )
             db.session.add(admin_user)
             db.session.commit()

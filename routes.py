@@ -196,7 +196,7 @@ def dogs_edit(dog_id):
             
             db.session.commit()
             
-            new_data = {'name': dog.name, 'code': dog.code, 'status': dog.current_status.value}
+            new_data = {'name': dog.name, 'code': dog.code, 'status': dog.current_status.value if hasattr(dog.current_status, 'value') else dog.current_status}
             log_audit(current_user.id, 'EDIT', 'Dog', str(dog.id), {'old': old_data, 'new': new_data})
             
             flash('تم تحديث بيانات الكلب بنجاح', 'success')
@@ -269,7 +269,7 @@ def employees_edit(employee_id):
     
     if request.method == 'POST':
         try:
-            old_data = {'name': employee.name, 'role': employee.role.value, 'active': employee.is_active}
+            old_data = {'name': employee.name, 'role': employee.role.value if hasattr(employee.role, 'value') else employee.role, 'active': employee.is_active}
             
             employee.name = request.form['name']
             employee.employee_id = request.form['employee_id']
@@ -285,7 +285,7 @@ def employees_edit(employee_id):
             
             db.session.commit()
             
-            new_data = {'name': employee.name, 'role': employee.role.value, 'active': employee.is_active}
+            new_data = {'name': employee.name, 'role': employee.role.value if hasattr(employee.role, 'value') else employee.role, 'active': employee.is_active}
             log_audit(current_user.id, 'EDIT', 'Employee', str(employee.id), {'old': old_data, 'new': new_data})
             
             flash('تم تحديث بيانات الموظف بنجاح', 'success')

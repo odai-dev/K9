@@ -85,7 +85,11 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.Enum(UserRole), nullable=False, default=UserRole.PROJECT_MANAGER)
     full_name = db.Column(db.String(100), nullable=False)
-    is_active = db.Column(db.Boolean, default=True)
+    active = db.Column(db.Boolean, default=True)
+    
+    @property
+    def is_active(self):
+        return self.active
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
     
