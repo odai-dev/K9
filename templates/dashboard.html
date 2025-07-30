@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة التحكم{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-tachometer-alt me-2"></i>
+            لوحة التحكم
+        </h1>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stats-card bg-primary">
+            <div class="stats-content">
+                <div class="stats-icon">
+                    <i class="fas fa-dog"></i>
+                </div>
+                <div class="stats-info">
+                    <h3>{{ stats.total_dogs }}</h3>
+                    <p>إجمالي الكلاب</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stats-card bg-success">
+            <div class="stats-content">
+                <div class="stats-icon">
+                    <i class="fas fa-heartbeat"></i>
+                </div>
+                <div class="stats-info">
+                    <h3>{{ stats.active_dogs }}</h3>
+                    <p>الكلاب النشطة</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stats-card bg-info">
+            <div class="stats-content">
+                <div class="stats-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stats-info">
+                    <h3>{{ stats.total_employees }}</h3>
+                    <p>إجمالي الموظفين</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stats-card bg-warning">
+            <div class="stats-content">
+                <div class="stats-icon">
+                    <i class="fas fa-project-diagram"></i>
+                </div>
+                <div class="stats-info">
+                    <h3>{{ stats.total_projects }}</h3>
+                    <p>المشاريع</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="activity-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-dumbbell me-2"></i>
+                    آخر جلسات التدريب
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_training %}
+                    <div class="list-group list-group-flush">
+                        {% for session in recent_training %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ session.dog.name }} - {{ session.subject }}</h6>
+                                    <p class="mb-1 text-muted">المدرب: {{ session.trainer.name }}</p>
+                                    <small class="text-muted">{{ session.session_date.strftime('%Y-%m-%d') }}</small>
+                                </div>
+                                <span class="badge bg-{{ 'success' if session.success_rating >= 7 else 'warning' if session.success_rating >= 5 else 'danger' }}">
+                                    {{ session.success_rating }}/10
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center py-4">لا توجد جلسات تدريب حديثة</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="activity-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-stethoscope me-2"></i>
+                    آخر الزيارات البيطرية
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_vet_visits %}
+                    <div class="list-group list-group-flush">
+                        {% for visit in recent_vet_visits %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ visit.dog.name }}</h6>
+                                    <p class="mb-1 text-muted">الطبيب: {{ visit.vet.name }}</p>
+                                    <small class="text-muted">{{ visit.visit_date.strftime('%Y-%m-%d') }}</small>
+                                </div>
+                                <span class="badge bg-{{ 'danger' if visit.visit_type.value == 'EMERGENCY' else 'info' if visit.visit_type.value == 'VACCINATION' else 'primary' }}">
+                                    {% if visit.visit_type.value == 'ROUTINE' %}روتينية{% endif %}
+                                    {% if visit.visit_type.value == 'EMERGENCY' %}طارئة{% endif %}
+                                    {% if visit.visit_type.value == 'VACCINATION' %}تطعيم{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center py-4">لا توجد زيارات بيطرية حديثة</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="quick-actions-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    إجراءات سريعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% set permissions = get_user_permissions(current_user) %}
+                    
+                    {% if permissions.dogs %}
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <a href="{{ url_for('main.dogs_add') }}" class="quick-action-btn">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>إضافة كلب جديد</span>
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if permissions.training %}
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <a href="{{ url_for('main.training_add') }}" class="quick-action-btn">
+                            <i class="fas fa-dumbbell"></i>
+                            <span>إضافة جلسة تدريب</span>
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if permissions.veterinary %}
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <a href="{{ url_for('main.veterinary_add') }}" class="quick-action-btn">
+                            <i class="fas fa-stethoscope"></i>
+                            <span>إضافة زيارة بيطرية</span>
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if permissions.reports %}
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <a href="{{ url_for('main.reports_index') }}" class="quick-action-btn">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>إنشاء تقرير</span>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.stats-card {
+    background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-primary) 100%);
+    border-radius: 15px;
+    padding: 1.5rem;
+    color: white;
+    transition: transform 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+}
+
+.stats-card.bg-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.stats-card.bg-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%);
+}
+
+.stats-card.bg-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+}
+
+.stats-content {
+    display: flex;
+    align-items: center;
+}
+
+.stats-icon {
+    font-size: 3rem;
+    margin-left: 1rem;
+    opacity: 0.8;
+}
+
+.stats-info h3 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.stats-info p {
+    margin: 0;
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.activity-card, .quick-actions-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: none;
+    margin-bottom: 1.5rem;
+}
+
+.activity-card .card-header, .quick-actions-card .card-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 15px 15px 0 0;
+    padding: 1rem 1.5rem;
+}
+
+.quick-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 15px;
+    text-decoration: none;
+    color: #495057;
+    transition: all 0.3s ease;
+    min-height: 120px;
+}
+
+.quick-action-btn:hover {
+    background: #e9ecef;
+    border-color: #667eea;
+    color: #667eea;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+}
+
+.quick-action-btn i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.quick-action-btn span {
+    font-weight: 600;
+    text-align: center;
+}
+</style>
+{% endblock %}

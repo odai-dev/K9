@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل {{ employee.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-edit me-2"></i>
+                تعديل {{ employee.name }}
+            </h1>
+            <a href="{{ url_for('main.employees_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right me-2"></i>
+                العودة إلى القائمة
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2"></i>
+                    تعديل معلومات الموظف
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <!-- Basic Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">المعلومات الأساسية</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">الاسم الكامل <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ employee.name }}" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="employee_id" class="form-label">رقم الموظف <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="employee_id" name="employee_id" value="{{ employee.employee_id }}" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="id_number" class="form-label">الرقم المدني <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="id_number" name="id_number" value="{{ employee.id_number }}" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="role" class="form-label">المنصب <span class="text-danger">*</span></label>
+                            <select class="form-select" id="role" name="role" required>
+                                {% for role in employee_roles %}
+                                    <option value="{{ role.value }}" {{ 'selected' if employee.role.value == role.value else '' }}>
+                                        {% if role.value == 'HANDLER' %}سائس
+                                        {% elif role.value == 'TRAINER' %}مدرب
+                                        {% elif role.value == 'VET' %}طبيب بيطري
+                                        {% elif role.value == 'OPERATIONS' %}عمليات
+                                        {% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="hire_date" class="form-label">تاريخ التوظيف <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="hire_date" name="hire_date" value="{{ employee.hire_date.isoformat() }}" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="is_active" class="form-label">الحالة</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {{ 'checked' if employee.is_active else '' }}>
+                                <label class="form-check-label" for="is_active">
+                                    موظف نشط
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">معلومات الاتصال</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label">رقم الهاتف</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" value="{{ employee.phone or '' }}">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">البريد الإلكتروني</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ employee.email or '' }}">
+                        </div>
+                    </div>
+
+                    <!-- Work Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">معلومات العمل</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="department" class="form-label">القسم</label>
+                            <input type="text" class="form-control" id="department" name="department" value="{{ employee.department or '' }}">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="rank" class="form-label">الرتبة</label>
+                            <select class="form-select" id="rank" name="rank">
+                                <option value="">اختر الرتبة</option>
+                                <option value="جندي" {{ 'selected' if employee.rank == 'جندي' else '' }}>جندي</option>
+                                <option value="جندي أول" {{ 'selected' if employee.rank == 'جندي أول' else '' }}>جندي أول</option>
+                                <option value="عريف" {{ 'selected' if employee.rank == 'عريف' else '' }}>عريف</option>
+                                <option value="رقيب" {{ 'selected' if employee.rank == 'رقيب' else '' }}>رقيب</option>
+                                <option value="رقيب أول" {{ 'selected' if employee.rank == 'رقيب أول' else '' }}>رقيب أول</option>
+                                <option value="مساعد" {{ 'selected' if employee.rank == 'مساعد' else '' }}>مساعد</option>
+                                <option value="ملازم" {{ 'selected' if employee.rank == 'ملازم' else '' }}>ملازم</option>
+                                <option value="ملازم أول" {{ 'selected' if employee.rank == 'ملازم أول' else '' }}>ملازم أول</option>
+                                <option value="نقيب" {{ 'selected' if employee.rank == 'نقيب' else '' }}>نقيب</option>
+                                <option value="رائد" {{ 'selected' if employee.rank == 'رائد' else '' }}>رائد</option>
+                                <option value="مقدم" {{ 'selected' if employee.rank == 'مقدم' else '' }}>مقدم</option>
+                                <option value="عقيد" {{ 'selected' if employee.rank == 'عقيد' else '' }}>عقيد</option>
+                                <option value="عميد" {{ 'selected' if employee.rank == 'عميد' else '' }}>عميد</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>
+                                    حفظ التغييرات
+                                </button>
+                                <a href="{{ url_for('main.employees_list') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>
+                                    إلغاء
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

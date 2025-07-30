@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}الحضور والغياب{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-clock me-2"></i>
+        الحضور والغياب
+    </h1>
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-primary" onclick="filterByDate('today')">
+            <i class="fas fa-calendar-day me-2"></i>
+            اليوم
+        </button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterByDate('week')">
+            <i class="fas fa-calendar-week me-2"></i>
+            هذا الأسبوع
+        </button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterByDate('month')">
+            <i class="fas fa-calendar-alt me-2"></i>
+            هذا الشهر
+        </button>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="dateFilter" class="form-label">التاريخ</label>
+                <input type="date" class="form-control" id="dateFilter" onchange="applyFilters()">
+            </div>
+            <div class="col-md-3">
+                <label for="shiftFilter" class="form-label">المناوبة</label>
+                <select class="form-select" id="shiftFilter" onchange="applyFilters()">
+                    <option value="">جميع المناوبات</option>
+                    <option value="MORNING">صباحية</option>
+                    <option value="EVENING">مسائية</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="statusFilter" class="form-label">الحالة</label>
+                <select class="form-select" id="statusFilter" onchange="applyFilters()">
+                    <option value="">جميع الحالات</option>
+                    <option value="PRESENT">حاضر</option>
+                    <option value="ABSENT">غائب</option>
+                    <option value="LATE">متأخر</option>
+                    <option value="LEAVE">إجازة</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="button" class="btn btn-secondary w-100" onclick="clearFilters()">
+                    <i class="fas fa-times me-2"></i>
+                    مسح المرشحات
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if records %}
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="attendanceTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>الموظف</th>
+                        <th>المناوبة</th>
+                        <th>الوقت المقرر</th>
+                        <th>الوقت الفعلي</th>
+                        <th>الحالة</th>
+                        <th>نوع الإجازة</th>
+                        <th>البديل</th>
+                        <th>الملاحظات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr data-date="{{ record.date.isoformat() }}" 
+                        data-shift="{{ record.shift }}" 
+                        data-status="{{ record.status }}">
+                        <td>
+                            <strong>{{ record.date.strftime('%Y-%m-%d') }}</strong>
+                            <br>
+                            <small class="text-muted">{{ record.date.strftime('%A') }}</small>
+                        </td>
+                        <td>
+                            <strong>{{ record.employee.name }}</strong>
+                            <br>
+                            <small class="text-muted">{{ record.employee.employee_id }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'warning' if record.shift == 'MORNING' else 'info' }}">
+                                {{ 'صباحية' if record.shift == 'MORNING' else 'مسائية' }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if record.scheduled_start and record.scheduled_end %}
+                                {{ record.scheduled_start.strftime('%H:%M') }} - {{ record.scheduled_end.strftime('%H:%M') }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if record.actual_start and record.actual_end %}
+                                {{ record.actual_start.strftime('%H:%M') }} - {{ record.actual_end.strftime('%H:%M') }}
+                            {% elif record.actual_start %}
+                                {{ record.actual_start.strftime('%H:%M') }} - جاري
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set status_map = {
+                                'PRESENT': {'class': 'success', 'text': 'حاضر'},
+                                'ABSENT': {'class': 'danger', 'text': 'غائب'},
+                                'LATE': {'class': 'warning', 'text': 'متأخر'},
+                                'LEAVE': {'class': 'info', 'text': 'إجازة'}
+                            } %}
+                            <span class="badge bg-{{ status_map[record.status]['class'] }}">
+                                {{ status_map[record.status]['text'] }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if record.leave_type %}
+                                {% set leave_type_map = {
+                                    'ANNUAL': 'سنوية',
+                                    'SICK': 'مرضية',
+                                    'EMERGENCY': 'طارئة'
+                                } %}
+                                <span class="badge bg-secondary">
+                                    {{ leave_type_map.get(record.leave_type, record.leave_type) }}
+                                </span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if record.substitute %}
+                                {{ record.substitute.name }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if record.notes %}
+                                <span class="text-truncate d-inline-block" style="max-width: 150px;" title="{{ record.notes }}">
+                                    {{ record.notes }}
+                                </span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h4 id="presentCount">0</h4>
+                <p class="mb-0">حاضر</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body text-center">
+                <h4 id="absentCount">0</h4>
+                <p class="mb-0">غائب</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <h4 id="lateCount">0</h4>
+                <p class="mb-0">متأخر</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h4 id="leaveCount">0</h4>
+                <p class="mb-0">إجازة</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-clock fa-5x text-muted mb-3"></i>
+    <h3 class="text-muted">لا توجد سجلات حضور وغياب</h3>
+    <p class="text-muted">سيتم عرض سجلات الحضور والغياب هنا عند توفرها</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Filter functions
+function filterByDate(period) {
+    const today = new Date();
+    const dateFilter = document.getElementById('dateFilter');
+    
+    switch(period) {
+        case 'today':
+            dateFilter.value = today.toISOString().split('T')[0];
+            break;
+        case 'week':
+            const weekStart = new Date(today.setDate(today.getDate() - today.getDay()));
+            dateFilter.value = weekStart.toISOString().split('T')[0];
+            break;
+        case 'month':
+            const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+            dateFilter.value = monthStart.toISOString().split('T')[0];
+            break;
+    }
+    
+    applyFilters();
+}
+
+function applyFilters() {
+    const dateFilter = document.getElementById('dateFilter').value;
+    const shiftFilter = document.getElementById('shiftFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    const rows = document.querySelectorAll('#attendanceTable tbody tr');
+    
+    let visibleRows = 0;
+    
+    rows.forEach(row => {
+        let show = true;
+        
+        if (dateFilter && row.dataset.date !== dateFilter) {
+            show = false;
+        }
+        
+        if (shiftFilter && row.dataset.shift !== shiftFilter) {
+            show = false;
+        }
+        
+        if (statusFilter && row.dataset.status !== statusFilter) {
+            show = false;
+        }
+        
+        row.style.display = show ? '' : 'none';
+        if (show) visibleRows++;
+    });
+    
+    updateSummary();
+}
+
+function clearFilters() {
+    document.getElementById('dateFilter').value = '';
+    document.getElementById('shiftFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    
+    const rows = document.querySelectorAll('#attendanceTable tbody tr');
+    rows.forEach(row => {
+        row.style.display = '';
+    });
+    
+    updateSummary();
+}
+
+function updateSummary() {
+    const visibleRows = document.querySelectorAll('#attendanceTable tbody tr:not([style*="display: none"])');
+    
+    let presentCount = 0;
+    let absentCount = 0;
+    let lateCount = 0;
+    let leaveCount = 0;
+    
+    visibleRows.forEach(row => {
+        const status = row.dataset.status;
+        switch(status) {
+            case 'PRESENT': presentCount++; break;
+            case 'ABSENT': absentCount++; break;
+            case 'LATE': lateCount++; break;
+            case 'LEAVE': leaveCount++; break;
+        }
+    });
+    
+    document.getElementById('presentCount').textContent = presentCount;
+    document.getElementById('absentCount').textContent = absentCount;
+    document.getElementById('lateCount').textContent = lateCount;
+    document.getElementById('leaveCount').textContent = leaveCount;
+}
+
+// Initialize summary on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateSummary();
+});
+</script>
+
+<style>
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+
+.btn-group .btn {
+    white-space: nowrap;
+}
+</style>
+{% endblock %}
