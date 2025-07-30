@@ -11,10 +11,9 @@ class UserRole(Enum):
     PROJECT_MANAGER = "PROJECT_MANAGER"
 
 class EmployeeRole(Enum):
-    HANDLER = "HANDLER"
-    TRAINER = "TRAINER"
-    VET = "VET"
-    OPERATIONS = "OPERATIONS"
+    HANDLER = "سائس"
+    VET = "طبيب"
+    PROJECT_MANAGER = "مسؤول مشروع"
 
 class DogStatus(Enum):
     ACTIVE = "ACTIVE"
@@ -161,7 +160,11 @@ class Employee(db.Model):
     
     # Relationships
     assigned_to_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    assigned_to_user = db.relationship('User', backref='assigned_employees')
+    assigned_to_user = db.relationship('User', foreign_keys=[assigned_to_user_id], backref='assigned_employees')
+    
+    # For project managers - link to their user account
+    user_account_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_account = db.relationship('User', foreign_keys=[user_account_id], backref='employee_profile')
     
     # Many-to-many relationships
     assigned_dogs = db.relationship('Dog', secondary=employee_dog_assignment, back_populates='assigned_employees')

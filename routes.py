@@ -244,6 +244,43 @@ def employees_add():
             )
             
             db.session.add(employee)
+            db.session.flush()  # Get the employee ID
+            
+            # If this is a project manager, create a user account
+            if request.form['role'] == EmployeeRole.PROJECT_MANAGER.value and current_user.role == UserRole.GENERAL_ADMIN:
+                if request.form.get('create_user_account') == 'on':
+                    from werkzeug.security import generate_password_hash
+                    
+                    # Get the selected sections
+                    allowed_sections = []
+                    section_checkboxes = ['dogs', 'employees', 'training', 'veterinary', 'breeding', 'projects', 'attendance', 'reports']
+                    for section in section_checkboxes:
+                        if request.form.get(f'section_{section}') == 'on':
+                            allowed_sections.append(section)
+                    
+                    # Create user account
+                    user_account = User(
+                        username=request.form['username'],
+                        email=request.form.get('email', f"{request.form['username']}@k9operations.mil"),
+                        password_hash=generate_password_hash(request.form['password']),
+                        role=UserRole.PROJECT_MANAGER,
+                        full_name=request.form['name'],
+                        active=True,
+                        allowed_sections=allowed_sections
+                    )
+                    
+                    db.session.add(user_account)
+                    db.session.flush()  # Get the user ID
+                    
+                    # Link the employee to the user account
+                    employee.user_account_id = user_account.id
+                    
+                    log_audit(current_user.id, 'CREATE', 'User', str(user_account.id), {
+                        'username': user_account.username, 
+                        'role': 'PROJECT_MANAGER',
+                        'allowed_sections': allowed_sections
+                    })
+            
             db.session.commit()
             
             log_audit(current_user.id, 'CREATE', 'Employee', str(employee.id), {'name': employee.name, 'employee_id': employee.employee_id})
@@ -533,7 +570,31 @@ def attendance_list():
 @main_bp.route('/reports')
 @login_required
 def reports_index():
-    return render_template('reports/index.html')
+    # Calculate stats for the reports page
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        total_dogs = Dog.query.count()
+        total_employees = Employee.query.count()
+        total_sessions = TrainingSession.query.count()
+        total_vet_visits = VeterinaryVisit.query.count()
+    else:
+        assigned_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id).all()
+        assigned_employees = Employee.query.filter_by(assigned_to_user_id=current_user.id).all()
+        dog_ids = [d.id for d in assigned_dogs]
+        employee_ids = [e.id for e in assigned_employees]
+        
+        total_dogs = len(assigned_dogs)
+        total_employees = len(assigned_employees)
+        total_sessions = TrainingSession.query.filter(TrainingSession.dog_id.in_(dog_ids)).count() if dog_ids else 0
+        total_vet_visits = VeterinaryVisit.query.filter(VeterinaryVisit.dog_id.in_(dog_ids)).count() if dog_ids else 0
+    
+    stats = {
+        'total_dogs': total_dogs,
+        'total_employees': total_employees,
+        'total_sessions': total_sessions,
+        'total_vet_visits': total_vet_visits
+    }
+    
+    return render_template('reports/index.html', stats=stats)
 
 @main_bp.route('/reports/generate', methods=['POST'])
 @login_required
