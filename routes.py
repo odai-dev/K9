@@ -706,15 +706,30 @@ def breeding_index():
     for dog in dogs:
         if dog.gender == DogGender.FEMALE:
             heat_cycles = HeatCycle.query.filter_by(dog_id=dog.id).count()
-            if heat_cycles >= 3 and dog.maturity_record and dog.maturity_record.maturity_status == MaturityStatus.MATURE:
-                breeding_ready_females.append(dog)
+            if heat_cycles >= 3 and dog.maturity_record:
+                latest_maturity = dog.maturity_record[-1] if isinstance(dog.maturity_record, list) else dog.maturity_record
+                if latest_maturity and latest_maturity.maturity_status == MaturityStatus.MATURE:
+                    breeding_ready_females.append(dog)
     
     # Get available males for breeding
-    breeding_males = [dog for dog in dogs if dog.gender == DogGender.MALE and dog.maturity_record and dog.maturity_record.maturity_status == MaturityStatus.MATURE]
+    breeding_males = []
+    for dog in dogs:
+        if dog.gender == DogGender.MALE and dog.maturity_record:
+            latest_maturity = dog.maturity_record[-1] if isinstance(dog.maturity_record, list) else dog.maturity_record
+            if latest_maturity and latest_maturity.maturity_status == MaturityStatus.MATURE:
+                breeding_males.append(dog)
+    
+    # Count mature dogs safely
+    mature_count = 0
+    for dog in dogs:
+        if dog.maturity_record:
+            latest_maturity = dog.maturity_record[-1] if isinstance(dog.maturity_record, list) else dog.maturity_record
+            if latest_maturity and latest_maturity.maturity_status == MaturityStatus.MATURE:
+                mature_count += 1
     
     stats = {
         'total_dogs': len(dogs),
-        'mature_dogs': len([d for d in dogs if d.maturity_record and d.maturity_record.maturity_status == MaturityStatus.MATURE]),
+        'mature_dogs': mature_count,
         'breeding_ready_females': len(breeding_ready_females),
         'breeding_males': len(breeding_males),
         'active_pregnancies': PregnancyRecord.query.filter_by(status=PregnancyStatus.PREGNANT).count(),
