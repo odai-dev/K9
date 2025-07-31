@@ -141,6 +141,7 @@ def dogs_add():
 @main_bp.route('/dogs/<dog_id>')
 @login_required
 def dogs_view(dog_id):
+    from datetime import date
     dog = Dog.query.get_or_404(dog_id)
     
     # Check access permissions
@@ -154,7 +155,7 @@ def dogs_view(dog_id):
     breeding_cycles = BreedingCycle.query.filter((BreedingCycle.female_id == dog.id) | (BreedingCycle.male_id == dog.id)).all()
     
     return render_template('dogs/view.html', dog=dog, training_sessions=training_sessions, 
-                         vet_visits=vet_visits, breeding_cycles=breeding_cycles)
+                         vet_visits=vet_visits, breeding_cycles=breeding_cycles, today=date.today())
 
 @main_bp.route('/dogs/<dog_id>/edit', methods=['GET', 'POST'])
 @login_required
