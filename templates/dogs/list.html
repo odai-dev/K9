@@ -58,7 +58,7 @@
                             </span>
                         </td>
                         <td>
-                            {% set age = (date.today() - dog.birth_date).days // 365 %}
+                            {% set age = (today - dog.birth_date).days // 365 %}
                             {{ age }} سنة
                         </td>
                         <td>

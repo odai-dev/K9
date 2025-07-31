@@ -62,12 +62,13 @@ def dashboard():
 @main_bp.route('/dogs')
 @login_required
 def dogs_list():
+    from datetime import date
     if current_user.role == UserRole.GENERAL_ADMIN:
         dogs = Dog.query.order_by(Dog.name).all()
     else:
         dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id).order_by(Dog.name).all()
     
-    return render_template('dogs/list.html', dogs=dogs)
+    return render_template('dogs/list.html', dogs=dogs, today=date.today())
 
 @main_bp.route('/dogs/add', methods=['GET', 'POST'])
 @login_required
