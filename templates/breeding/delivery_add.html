@@ -68,7 +68,7 @@
                             <select class="form-select" id="vet_present" name="vet_present">
                                 <option value="">لا يوجد</option>
                                 {% for employee in employees %}
-                                    {% if employee.role.name == 'VET' %}
+                                    {% if employee.role.value == 'طبيب' %}
                                         <option value="{{ employee.id }}">{{ employee.name }}</option>
                                     {% endif %}
                                 {% endfor %}
@@ -82,7 +82,7 @@
                             <select class="form-select" id="handler_present" name="handler_present">
                                 <option value="">لا يوجد</option>
                                 {% for employee in employees %}
-                                    {% if employee.role.name in ['HANDLER', 'TRAINER'] %}
+                                    {% if employee.role.value in ['سائس', 'مدرب'] %}
                                         <option value="{{ employee.id }}">{{ employee.name }}</option>
                                     {% endif %}
                                 {% endfor %}

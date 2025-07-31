@@ -47,14 +47,21 @@
                         <td>{{ employee.id_number }}</td>
                         <td>
                             {% set role_map = {
-                                'HANDLER': {'class': 'primary', 'text': 'سائس'},
-                                'TRAINER': {'class': 'success', 'text': 'مدرب'},
-                                'VET': {'class': 'info', 'text': 'طبيب بيطري'},
-                                'OPERATIONS': {'class': 'warning', 'text': 'عمليات'}
+                                'سائس': {'class': 'primary', 'text': 'سائس'},
+                                'مدرب': {'class': 'success', 'text': 'مدرب'},
+                                'طبيب': {'class': 'info', 'text': 'طبيب بيطري'},
+                                'مسؤول مشروع': {'class': 'danger', 'text': 'مسؤول مشروع'},
+                                'عمليات': {'class': 'warning', 'text': 'عمليات'}
                             } %}
-                            <span class="badge bg-{{ role_map[employee.role.value]['class'] }}">
-                                {{ role_map[employee.role.value]['text'] }}
-                            </span>
+                            {% if employee.role.value in role_map %}
+                                <span class="badge bg-{{ role_map[employee.role.value]['class'] }}">
+                                    {{ role_map[employee.role.value]['text'] }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">
+                                    {{ employee.role.value }}
+                                </span>
+                            {% endif %}
                         </td>
                         <td>{{ employee.department or '-' }}</td>
                         <td>{{ employee.rank or '-' }}</td>
