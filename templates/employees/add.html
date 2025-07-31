@@ -54,9 +54,11 @@
                             <label for="role" class="form-label">المنصب <span class="text-danger">*</span></label>
                             <select class="form-select" id="role" name="role" required onchange="toggleProjectManagerFields()">
                                 <option value="">اختر المنصب</option>
-                                {% for role in employee_roles %}
-                                    <option value="{{ role.value }}">{{ role.value }}</option>
-                                {% endfor %}
+                                <option value="HANDLER">معالج</option>
+                                <option value="TRAINER">مدرب</option>
+                                <option value="VET">طبيب بيطري</option>
+                                <option value="PROJECT_MANAGER">مسؤول مشروع</option>
+                                <option value="OPERATIONS">عمليات</option>
                             </select>
                         </div>
                         
