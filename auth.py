@@ -94,11 +94,20 @@ def create_manager():
                 password_hash=generate_password_hash(request.form['password']),
                 role=UserRole.PROJECT_MANAGER,
                 full_name=request.form['full_name'],
-                is_active=True,
+                active=True,
                 allowed_sections=request.form.getlist('allowed_sections')
             )
             
             db.session.add(manager)
+            db.session.flush()  # Get the manager ID
+            
+            # Link the employee to the user account if employee was selected
+            if request.form.get('employee_id'):
+                from models import Employee
+                employee = Employee.query.get(request.form['employee_id'])
+                if employee:
+                    employee.user_account_id = manager.id
+            
             db.session.commit()
             
             log_audit(current_user.id, 'CREATE', 'User', str(manager.id), 
@@ -123,4 +132,10 @@ def create_manager():
         {'key': 'reports', 'name': 'التقارير'},
     ]
     
-    return render_template('auth/create_manager.html', available_sections=available_sections)
+    # Get employees who don't have user accounts yet
+    from models import Employee
+    employees_without_accounts = Employee.query.filter_by(user_account_id=None, is_active=True).all()
+    
+    return render_template('auth/create_manager.html', 
+                         available_sections=available_sections,
+                         employees=employees_without_accounts)

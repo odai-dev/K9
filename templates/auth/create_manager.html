@@ -41,8 +41,25 @@
                         </div>
                         
                         <div class="col-md-6 mb-3">
+                            <label for="employee_id" class="form-label">اختر الموظف <span class="text-danger">*</span></label>
+                            <select class="form-select" id="employee_id" name="employee_id" required onchange="fillEmployeeData()">
+                                <option value="">اختر الموظف المراد إنشاء حساب مدير مشروع له</option>
+                                {% for employee in employees %}
+                                    <option value="{{ employee.id }}" 
+                                            data-name="{{ employee.name }}" 
+                                            data-email="{{ employee.email or '' }}">
+                                        {{ employee.name }} - {{ employee.employee_id }}
+                                        {% if employee.department %} ({{ employee.department }}){% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">يظهر فقط الموظفين الذين ليس لديهم حسابات مستخدمين</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
                             <label for="full_name" class="form-label">الاسم الكامل <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="full_name" name="full_name" required>
+                            <input type="text" class="form-control" id="full_name" name="full_name" required readonly>
+                            <small class="form-text text-muted">سيتم ملء هذا الحقل تلقائياً عند اختيار الموظف</small>
                         </div>
                         
                         <div class="col-md-6 mb-3">
@@ -54,6 +71,7 @@
                         <div class="col-md-6 mb-3">
                             <label for="email" class="form-label">البريد الإلكتروني <span class="text-danger">*</span></label>
                             <input type="email" class="form-control" id="email" name="email" required>
+                            <small class="form-text text-muted">سيتم ملء هذا الحقل تلقائياً إذا كان للموظف بريد إلكتروني</small>
                         </div>
                         
                         <div class="col-md-6 mb-3">
@@ -149,6 +167,30 @@
 
 {% block scripts %}
 <script>
+function fillEmployeeData() {
+    const employeeSelect = document.getElementById('employee_id');
+    const selectedOption = employeeSelect.options[employeeSelect.selectedIndex];
+    
+    if (selectedOption.value) {
+        // Fill the full name field
+        const fullNameField = document.getElementById('full_name');
+        fullNameField.value = selectedOption.getAttribute('data-name');
+        
+        // Fill the email field if available
+        const emailField = document.getElementById('email');
+        const employeeEmail = selectedOption.getAttribute('data-email');
+        if (employeeEmail) {
+            emailField.value = employeeEmail;
+        } else {
+            emailField.value = '';
+        }
+    } else {
+        // Clear fields if no employee selected
+        document.getElementById('full_name').value = '';
+        document.getElementById('email').value = '';
+    }
+}
+
 function selectAllSections() {
     const checkboxes = document.querySelectorAll('input[name="allowed_sections"]');
     checkboxes.forEach(checkbox => {
