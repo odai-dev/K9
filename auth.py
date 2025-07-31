@@ -132,9 +132,13 @@ def create_manager():
         {'key': 'reports', 'name': 'التقارير'},
     ]
     
-    # Get employees who don't have user accounts yet
-    from models import Employee
-    employees_without_accounts = Employee.query.filter_by(user_account_id=None, is_active=True).all()
+    # Get employees who are project managers and don't have user accounts yet
+    from models import Employee, EmployeeRole
+    employees_without_accounts = Employee.query.filter_by(
+        role=EmployeeRole.PROJECT_MANAGER,
+        user_account_id=None, 
+        is_active=True
+    ).all()
     
     return render_template('auth/create_manager.html', 
                          available_sections=available_sections,
