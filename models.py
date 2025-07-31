@@ -75,6 +75,7 @@ class AuditAction(Enum):
     DELETE = "DELETE"
     EXPORT = "EXPORT"
     LOGIN = "LOGIN"
+    LOGOUT = "LOGOUT"
 
 # Association table for many-to-many relationship between employees and dogs
 employee_dog_assignment = db.Table('employee_dog_assignment',

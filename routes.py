@@ -243,11 +243,11 @@ def employees_add():
                 employee_id=request.form['employee_id'],
                 id_number=request.form['id_number'],
                 role=request.form['role'],
-                phone=request.form.get('phone'),
-                email=request.form.get('email'),
+                phone=request.form.get('phone') or None,
+                email=request.form.get('email') or None,
                 hire_date=datetime.strptime(request.form['hire_date'], '%Y-%m-%d').date(),
-                department=request.form.get('department'),
-                rank=request.form.get('rank'),
+                department=request.form.get('department') or None,
+                rank=request.form.get('rank') or None,
                 assigned_to_user_id=current_user.id if current_user.role == UserRole.PROJECT_MANAGER else None
             )
             
@@ -298,7 +298,13 @@ def employees_add():
             
         except Exception as e:
             db.session.rollback()
-            flash(f'حدث خطأ أثناء إضافة الموظف: {str(e)}', 'error')
+            error_msg = str(e)
+            if 'duplicate key value violates unique constraint "employee_id_number_key"' in error_msg:
+                flash('رقم الهوية المدني موجود بالفعل. يرجى استخدام رقم مختلف.', 'error')
+            elif 'duplicate key value violates unique constraint "employee_employee_id_key"' in error_msg:
+                flash('رقم الموظف موجود بالفعل. يرجى استخدام رقم مختلف.', 'error')
+            else:
+                flash(f'حدث خطأ أثناء إضافة الموظف: {error_msg}', 'error')
     
     return render_template('employees/add.html', employee_roles=EmployeeRole)
 
