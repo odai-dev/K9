@@ -466,7 +466,7 @@ def veterinary_add():
     return render_template('veterinary/add.html', dogs=dogs, vets=vets, visit_types=VisitType)
 
 # Breeding routes
-@main_bp.route('/breeding')
+@main_bp.route('/breeding/list')
 @login_required
 def breeding_list():
     if current_user.role == UserRole.GENERAL_ADMIN:
