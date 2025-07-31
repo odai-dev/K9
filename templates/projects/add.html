@@ -102,7 +102,10 @@
                             <select class="form-select" id="manager_id" name="manager_id">
                                 <option value="">اختر مدير المشروع</option>
                                 {% for manager in managers %}
-                                    <option value="{{ manager.id }}">{{ manager.username }}</option>
+                                    <option value="{{ manager.id }}">
+                                        {{ manager.full_name }} ({{ manager.username }})
+                                        {% if manager.email %} - {{ manager.email }}{% endif %}
+                                    </option>
                                 {% endfor %}
                             </select>
                         </div>
