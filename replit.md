@@ -10,6 +10,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (Updated - August 2, 2025)
 
+✅ **Bulk Employee Assignment Feature - August 2, 2025**
+- Added one-click multi-select feature for bulk project assignments
+- New "إضافة عدة موظفين" button allows selecting multiple employees at once
+- Select All/Deselect All buttons for quick selection management
+- Visual counter shows number of selected employees
+- Bulk assignment handles duplicate detection and error reporting
+- Preserves automatic role mapping and simplified assignment process
+
 ✅ **Project Assignment Simplified - August 2, 2025**
 - Simplified project employee assignment by removing redundant role selection
 - Employee roles are now automatically used when assigning to projects (سائس/طبيب/مسؤول مشروع)

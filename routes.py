@@ -756,6 +756,107 @@ def project_assignment_add(project_id):
     
     return render_template('projects/assignment_add.html', project=project, employees=employees)
 
+@main_bp.route('/projects/<project_id>/assignments/bulk-add', methods=['POST'])
+@login_required
+def project_bulk_assignment_add(project_id):
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    employee_ids = request.form.getlist('employee_ids')
+    if not employee_ids:
+        flash('يرجى تحديد موظف واحد على الأقل', 'error')
+        return redirect(url_for('main.project_assignments', project_id=project_id))
+    
+    try:
+        assigned_count = 0
+        already_assigned = []
+        errors = []
+        
+        for employee_id in employee_ids:
+            try:
+                # Check if employee is already assigned
+                existing_assignment = ProjectAssignment.query.filter_by(
+                    project_id=project_uuid, 
+                    employee_id=employee_id
+                ).first()
+                
+                if existing_assignment:
+                    employee = Employee.query.get(employee_id)
+                    if employee:
+                        already_assigned.append(employee.name)
+                    continue
+                
+                # Get the employee to determine their role
+                employee = Employee.query.get(employee_id)
+                if not employee:
+                    errors.append(f'موظف غير موجود: {employee_id}')
+                    continue
+                
+                # Map employee role to project role
+                role_mapping = {
+                    EmployeeRole.HANDLER: ProjectRole.HANDLER,
+                    EmployeeRole.VET: ProjectRole.VET,
+                    EmployeeRole.PROJECT_MANAGER: ProjectRole.PROJECT_MANAGER
+                }
+                
+                project_role = role_mapping.get(employee.role)
+                if not project_role:
+                    errors.append(f'دور غير مدعوم للموظف: {employee.name}')
+                    continue
+                
+                # Create assignment
+                assignment = ProjectAssignment(
+                    project_id=project_uuid,
+                    employee_id=employee_id,
+                    role=project_role,
+                    period=PeriodType.MORNING,  # Default period
+                    is_present=True,  # Default to present
+                    leave_type=None
+                )
+                
+                db.session.add(assignment)
+                assigned_count += 1
+                
+                # Log the assignment
+                log_audit(current_user.id, 'CREATE', 'ProjectAssignment', str(assignment.id), 
+                         {'project': project.name, 'employee': employee.name, 'bulk': True})
+                
+            except Exception as e:
+                errors.append(f'خطأ في تعيين الموظف {employee_id}: {str(e)}')
+                continue
+        
+        db.session.commit()
+        
+        # Create success message
+        messages = []
+        if assigned_count > 0:
+            messages.append(f'تم تعيين {assigned_count} موظف بنجاح')
+        
+        if already_assigned:
+            messages.append(f'الموظفون التالون مُعينون مسبقاً: {", ".join(already_assigned[:3])}{"..." if len(already_assigned) > 3 else ""}')
+        
+        if errors:
+            messages.append(f'حدثت أخطاء في {len(errors)} تعيين')
+        
+        if messages:
+            flash(' | '.join(messages), 'success' if assigned_count > 0 else 'warning')
+        
+        return redirect(url_for('main.project_assignments', project_id=project_id))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء التعيين المجمع: {str(e)}', 'error')
+        return redirect(url_for('main.project_assignments', project_id=project_id))
+
 # Project Status Management
 @main_bp.route('/projects/<project_id>/status', methods=['POST'])
 @login_required

@@ -89,6 +89,9 @@
                             <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#assignEmployeeModal">
                                 <i class="fas fa-plus me-2"></i>إضافة موظف
                             </button>
+                            <button class="btn btn-success btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#bulkAssignModal">
+                                <i class="fas fa-users me-2"></i>إضافة عدة موظفين
+                            </button>
                         </div>
                         <div class="card-body">
                             {% if assignments %}
@@ -293,6 +296,65 @@
     </div>
 </div>
 
+<!-- Bulk Employee Assignment Modal -->
+<div class="modal fade" id="bulkAssignModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('main.project_bulk_assignment_add', project_id=project.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">إضافة عدة موظفين للمشروع</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label">اختر الموظفين:</label>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllEmployees()">
+                                    <i class="fas fa-check-double me-1"></i>تحديد الكل
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="deselectAllEmployees()">
+                                    <i class="fas fa-times me-1"></i>إلغاء التحديد
+                                </button>
+                            </div>
+                        </div>
+                        <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                            {% for employee in available_employees %}
+                            <div class="form-check mb-2">
+                                <input class="form-check-input employee-checkbox" type="checkbox" 
+                                       name="employee_ids" value="{{ employee.id }}" id="emp_{{ employee.id }}">
+                                <label class="form-check-label w-100" for="emp_{{ employee.id }}">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>{{ employee.name }}</strong>
+                                            <br><small class="text-muted">{{ employee.employee_id }}</small>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-{% if employee.role.value == 'HANDLER' %}primary{% elif employee.role.value == 'VET' %}info{% elif employee.role.value == 'PROJECT_MANAGER' %}danger{% endif %}">
+                                                {% if employee.role.value == 'HANDLER' %}سائس{% elif employee.role.value == 'VET' %}طبيب{% elif employee.role.value == 'PROJECT_MANAGER' %}مسؤول مشروع{% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div id="selectedEmployeesCount" class="alert alert-info" style="display: none;">
+                        <strong>تم تحديد <span id="selectedCount">0</span> موظف</strong>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-success" id="bulkAssignBtn" disabled>
+                        <i class="fas fa-users me-2"></i>تعيين الموظفين المحددين
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Dog Assignment Modal -->
 <div class="modal fade" id="assignDogModal" tabindex="-1">
     <div class="modal-dialog">
@@ -395,7 +457,7 @@ function showEmployeeRoleModal() {
     const roleDisplay = document.getElementById('roleDisplayModal');
     const roleContainer = document.getElementById('selectedEmployeeRoleModal');
     
-    if (select.value) {
+    if (select && select.value && roleDisplay && roleContainer) {
         const selectedOption = select.options[select.selectedIndex];
         const role = selectedOption.getAttribute('data-role');
         
@@ -406,9 +468,46 @@ function showEmployeeRoleModal() {
         
         roleDisplay.textContent = roleText;
         roleContainer.style.display = 'block';
-    } else {
+    } else if (roleContainer) {
         roleContainer.style.display = 'none';
     }
 }
+
+// Bulk assignment functions
+function selectAllEmployees() {
+    const checkboxes = document.querySelectorAll('.employee-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    updateSelectedCount();
+}
+
+function deselectAllEmployees() {
+    const checkboxes = document.querySelectorAll('.employee-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('.employee-checkbox:checked');
+    const count = checkboxes.length;
+    const countDisplay = document.getElementById('selectedCount');
+    const countContainer = document.getElementById('selectedEmployeesCount');
+    const submitBtn = document.getElementById('bulkAssignBtn');
+    
+    if (countDisplay) countDisplay.textContent = count;
+    if (countContainer) countContainer.style.display = count > 0 ? 'block' : 'none';
+    if (submitBtn) submitBtn.disabled = count === 0;
+}
+
+// Initialize bulk assignment event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.employee-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectedCount);
+    });
+});
 </script>
 {% endblock %}
