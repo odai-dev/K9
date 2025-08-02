@@ -596,7 +596,12 @@ def projects_add():
 @main_bp.route('/projects/<project_id>/dashboard')
 @login_required
 def project_dashboard(project_id):
-    project = Project.query.get_or_404(project_id)
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
     
     # Check permissions
     if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
@@ -607,22 +612,22 @@ def project_dashboard(project_id):
     stats = {}
     
     # Assignment statistics
-    employee_assignments = ProjectAssignment.query.filter_by(project_id=project_id).count()
-    dog_assignments = ProjectDog.query.filter_by(project_id=project_id).count()
-    active_employee_assignments = ProjectAssignment.query.filter_by(project_id=project_id, is_present=True).count()
-    active_dog_assignments = ProjectDog.query.filter_by(project_id=project_id, is_active=True).count()
+    employee_assignments = ProjectAssignment.query.filter_by(project_id=project_uuid).count()
+    dog_assignments = ProjectDog.query.filter_by(project_id=project_uuid).count()
+    active_employee_assignments = ProjectAssignment.query.filter_by(project_id=project_uuid, is_present=True).count()
+    active_dog_assignments = ProjectDog.query.filter_by(project_id=project_uuid, is_active=True).count()
     
     # Incident statistics
-    total_incidents = Incident.query.filter_by(project_id=project_id).count()
-    resolved_incidents = Incident.query.filter_by(project_id=project_id, resolved=True).count()
+    total_incidents = Incident.query.filter_by(project_id=project_uuid).count()
+    resolved_incidents = Incident.query.filter_by(project_id=project_uuid, resolved=True).count()
     pending_incidents = total_incidents - resolved_incidents
     
     # Suspicion statistics
-    total_suspicions = Suspicion.query.filter_by(project_id=project_id).count()
-    confirmed_suspicions = Suspicion.query.filter_by(project_id=project_id, evidence_collected=True).count()
+    total_suspicions = Suspicion.query.filter_by(project_id=project_uuid).count()
+    confirmed_suspicions = Suspicion.query.filter_by(project_id=project_uuid, evidence_collected=True).count()
     
     # Evaluation statistics
-    total_evaluations = PerformanceEvaluation.query.filter_by(project_id=project_id).count()
+    total_evaluations = PerformanceEvaluation.query.filter_by(project_id=project_uuid).count()
     
     stats = {
         'employee_assignments': employee_assignments,
@@ -638,9 +643,9 @@ def project_dashboard(project_id):
     }
     
     # Recent activities
-    recent_incidents = Incident.query.filter_by(project_id=project_id).order_by(Incident.incident_date.desc()).limit(5).all()
-    recent_suspicions = Suspicion.query.filter_by(project_id=project_id).order_by(Suspicion.discovery_date.desc()).limit(5).all()
-    recent_evaluations = PerformanceEvaluation.query.filter_by(project_id=project_id).order_by(PerformanceEvaluation.evaluation_date.desc()).limit(5).all()
+    recent_incidents = Incident.query.filter_by(project_id=project_uuid).order_by(Incident.incident_date.desc()).limit(5).all()
+    recent_suspicions = Suspicion.query.filter_by(project_id=project_uuid).order_by(Suspicion.discovery_date.desc()).limit(5).all()
+    recent_evaluations = PerformanceEvaluation.query.filter_by(project_id=project_uuid).order_by(PerformanceEvaluation.evaluation_date.desc()).limit(5).all()
     
     return render_template('projects/dashboard.html', 
                          project=project, 
@@ -653,15 +658,20 @@ def project_dashboard(project_id):
 @main_bp.route('/projects/<project_id>/assignments')
 @login_required
 def project_assignments(project_id):
-    project = Project.query.get_or_404(project_id)
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
     
     # Check permissions
     if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects_list'))
     
-    assignments = ProjectAssignment.query.filter_by(project_id=project_id).all()
-    dog_assignments = ProjectDog.query.filter_by(project_id=project_id).all()
+    assignments = ProjectAssignment.query.filter_by(project_id=project_uuid).all()
+    dog_assignments = ProjectDog.query.filter_by(project_id=project_uuid).all()
     
     # Get available employees and dogs for assignments
     if current_user.role == UserRole.GENERAL_ADMIN:
@@ -684,7 +694,12 @@ def project_assignments(project_id):
 @main_bp.route('/projects/<project_id>/assignments/add', methods=['GET', 'POST'])
 @login_required
 def project_assignment_add(project_id):
-    project = Project.query.get_or_404(project_id)
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
     
     # Check permissions
     if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
@@ -694,7 +709,7 @@ def project_assignment_add(project_id):
     if request.method == 'POST':
         try:
             assignment = ProjectAssignment(
-                project_id=project_id,
+                project_id=project_uuid,
                 employee_id=request.form['employee_id'],
                 role=ProjectRole(request.form['role']),
                 period=PeriodType(request.form['period']),
@@ -727,7 +742,12 @@ def project_assignment_add(project_id):
 @main_bp.route('/projects/<project_id>/status', methods=['POST'])
 @login_required
 def project_status_change(project_id):
-    project = Project.query.get_or_404(project_id)
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
     
     # Check permissions
     if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
@@ -775,7 +795,12 @@ def project_status_change(project_id):
 @main_bp.route('/projects/<project_id>/dogs/add', methods=['GET', 'POST'])
 @login_required
 def project_dog_add(project_id):
-    project = Project.query.get_or_404(project_id)
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
     
     # Check permissions
     if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
@@ -785,7 +810,7 @@ def project_dog_add(project_id):
     if request.method == 'POST':
         try:
             dog_assignment = ProjectDog(
-                project_id=project_id,
+                project_id=project_uuid,
                 dog_id=request.form['dog_id'],
                 is_active=True,
                 assigned_date=date.today()
@@ -819,7 +844,13 @@ def project_change_manager(project_id):
         flash('غير مسموح لك بتغيير مدير المشروع', 'error')
         return redirect(url_for('main.projects_list'))
     
-    project = Project.query.get_or_404(project_id)
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
+    
     new_manager_id = request.form.get('manager_id')
     
     if new_manager_id:
@@ -838,7 +869,12 @@ def project_change_manager(project_id):
 @main_bp.route('/projects/<project_id>/assignments/remove')
 @login_required
 def project_assignment_remove(project_id):
-    project = Project.query.get_or_404(project_id)
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
     
     # Check permissions
     if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
@@ -861,7 +897,12 @@ def project_assignment_remove(project_id):
 @main_bp.route('/projects/<project_id>/dogs/toggle')
 @login_required
 def project_dog_toggle(project_id):
-    project = Project.query.get_or_404(project_id)
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
     
     # Check permissions
     if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
@@ -884,7 +925,12 @@ def project_dog_toggle(project_id):
 @main_bp.route('/projects/<project_id>/dogs/remove')
 @login_required
 def project_dog_remove(project_id):
-    project = Project.query.get_or_404(project_id)
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
     
     # Check permissions
     if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
@@ -908,21 +954,31 @@ def project_dog_remove(project_id):
 @main_bp.route('/projects/<project_id>/incidents')
 @login_required
 def project_incidents(project_id):
-    project = Project.query.get_or_404(project_id)
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
     
     # Check permissions
     if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects_list'))
     
-    incidents = Incident.query.filter_by(project_id=project_id).order_by(Incident.incident_date.desc()).all()
+    incidents = Incident.query.filter_by(project_id=project_uuid).order_by(Incident.incident_date.desc()).all()
     
     return render_template('projects/incidents.html', project=project, incidents=incidents)
 
 @main_bp.route('/projects/<project_id>/incidents/resolve')
 @login_required
 def project_resolve_incident(project_id):
-    project = Project.query.get_or_404(project_id)
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
     
     # Check permissions
     if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
@@ -944,7 +1000,12 @@ def project_resolve_incident(project_id):
 @main_bp.route('/projects/<project_id>/incidents/add', methods=['GET', 'POST'])
 @login_required
 def project_incident_add(project_id):
-    project = Project.query.get_or_404(project_id)
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
     
     # Check permissions
     if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
@@ -954,7 +1015,7 @@ def project_incident_add(project_id):
     if request.method == 'POST':
         try:
             incident = Incident(
-                project_id=project_id,
+                project_id=project_uuid,
                 name=request.form['name'],
                 incident_date=datetime.strptime(request.form['incident_date'], '%Y-%m-%d').date(),
                 incident_time=datetime.strptime(request.form['incident_time'], '%H:%M').time(),
@@ -997,21 +1058,31 @@ def project_incident_add(project_id):
 @main_bp.route('/projects/<project_id>/suspicions')
 @login_required
 def project_suspicions(project_id):
-    project = Project.query.get_or_404(project_id)
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
     
     # Check permissions
     if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects_list'))
     
-    suspicions = Suspicion.query.filter_by(project_id=project_id).order_by(Suspicion.discovery_date.desc()).all()
+    suspicions = Suspicion.query.filter_by(project_id=project_uuid).order_by(Suspicion.discovery_date.desc()).all()
     
     return render_template('projects/suspicions.html', project=project, suspicions=suspicions)
 
 @main_bp.route('/projects/<project_id>/suspicions/add', methods=['GET', 'POST'])
 @login_required
 def project_suspicion_add(project_id):
-    project = Project.query.get_or_404(project_id)
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
     
     # Check permissions
     if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
@@ -1021,7 +1092,7 @@ def project_suspicion_add(project_id):
     if request.method == 'POST':
         try:
             suspicion = Suspicion(
-                project_id=project_id,
+                project_id=project_uuid,
                 element_type=ElementType(request.form['element_type']),
                 subtype=request.form.get('subtype'),
                 discovery_date=datetime.strptime(request.form['discovery_date'], '%Y-%m-%d').date(),
@@ -1064,21 +1135,31 @@ def project_suspicion_add(project_id):
 @main_bp.route('/projects/<project_id>/evaluations')
 @login_required
 def project_evaluations(project_id):
-    project = Project.query.get_or_404(project_id)
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
     
     # Check permissions
     if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects_list'))
     
-    evaluations = PerformanceEvaluation.query.filter_by(project_id=project_id).order_by(PerformanceEvaluation.evaluation_date.desc()).all()
+    evaluations = PerformanceEvaluation.query.filter_by(project_id=project_uuid).order_by(PerformanceEvaluation.evaluation_date.desc()).all()
     
     return render_template('projects/evaluations.html', project=project, evaluations=evaluations)
 
 @main_bp.route('/projects/<project_id>/evaluations/add', methods=['GET', 'POST'])
 @login_required
 def project_evaluation_add(project_id):
-    project = Project.query.get_or_404(project_id)
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
     
     # Check permissions
     if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
@@ -1088,7 +1169,7 @@ def project_evaluation_add(project_id):
     if request.method == 'POST':
         try:
             evaluation = PerformanceEvaluation(
-                project_id=project_id,
+                project_id=project_uuid,
                 evaluator_id=current_user.id,
                 target_type=TargetType(request.form['target_type']),
                 target_employee_id=request.form.get('target_employee_id') if request.form.get('target_employee_id') else None,
