@@ -22,7 +22,13 @@ def create_app():
     
     # Configuration
     app.secret_key = os.environ.get("SESSION_SECRET", "k9-operations-secret-key")
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost/k9_operations")
+    
+    # Database configuration - use SQLite for development in Replit
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        # Default to SQLite for development
+        database_url = "sqlite:///k9_operations.db"
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
         "pool_recycle": 300,
         "pool_pre_ping": True,
