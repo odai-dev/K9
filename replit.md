@@ -10,6 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (Updated - August 2, 2025)
 
+✅ **Employee Role System Simplified - August 2, 2025**
+- Simplified employee roles to only three options as requested:
+  * سائس (Handler) - for dog handlers
+  * طبيب (Vet) - for veterinarians  
+  * مسؤول مشروع (Project Manager) - for project managers
+- Updated add/edit employee forms to show only these three roles
+- Fixed role display in employee list with correct Arabic names
+- Removed unnecessary TRAINER and OPERATIONS roles from templates
+
 ✅ **Project Attendance Tracking System Added - August 2, 2025**
 - Added comprehensive project attendance tracking system based on attached document specification
 - Created ProjectAttendance, AttendanceEntry, and LeaveRequest models for daily attendance management
