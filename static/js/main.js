@@ -122,6 +122,10 @@ function handleSearchKeydown(event) {
 function performSearch(query) {
     // Show loading state
     const searchInput = document.getElementById('globalSearch');
+    if (!searchInput) {
+        console.warn('Search input not found');
+        return;
+    }
     const originalPlaceholder = searchInput.placeholder;
     searchInput.placeholder = 'جاري البحث...';
     searchInput.classList.add('loading');
@@ -139,13 +143,19 @@ function performSearch(query) {
         })
         .finally(() => {
             // Restore original state
-            searchInput.placeholder = originalPlaceholder;
-            searchInput.classList.remove('loading');
+            if (searchInput) {
+                searchInput.placeholder = originalPlaceholder;
+                searchInput.classList.remove('loading');
+            }
         });
 }
 
 function displaySearchResults(data) {
     const resultsContainer = document.getElementById('searchResults');
+    if (!resultsContainer) {
+        console.warn('Search results container not found');
+        return;
+    }
     let html = '';
     
     if (data.dogs.length === 0 && data.employees.length === 0) {
@@ -188,7 +198,9 @@ function displaySearchResults(data) {
         }
     }
     
-    resultsContainer.innerHTML = html;
+    if (resultsContainer) {
+        resultsContainer.innerHTML = html;
+    }
 }
 
 // Form handling

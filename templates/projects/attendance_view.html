@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+
+{% block title %}كشف الحضور - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-clipboard-list me-2"></i>كشف التحضير اليومي</h2>
+            <div>
+                <button onclick="window.print()" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-print me-2"></i>طباعة
+                </button>
+                <a href="{{ url_for('main.project_attendance_list', project_id=project.id) }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>العودة
+                </a>
+            </div>
+        </div>
+
+        <!-- Header Information -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-project-diagram me-2"></i>{{ project.name }}</h5>
+                        <p class="mb-1"><strong>الكود:</strong> {{ project.code }}</p>
+                        <p class="mb-1"><strong>الموقع:</strong> {{ project.location or 'غير محدد' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-md-end">
+                            <p class="mb-1"><strong>التاريخ:</strong> {{ attendance_record.attendance_date.strftime('%Y-%m-%d') }}</p>
+                            <p class="mb-1"><strong>اليوم:</strong> {{ attendance_record.attendance_date.strftime('%A') }}</p>
+                            <p class="mb-1"><strong>الفترة:</strong> 
+                                {% if attendance_record.period.value == 'MORNING' %}
+                                    <span class="badge bg-warning">صباحي</span>
+                                {% elif attendance_record.period.value == 'EVENING' %}
+                                    <span class="badge bg-info">مسائي</span>
+                                {% else %}
+                                    <span class="badge bg-dark">ليلي</span>
+                                {% endif %}
+                            </p>
+                            {% if attendance_record.weather_conditions %}
+                            <p class="mb-1"><strong>حالة الطقس:</strong> {{ attendance_record.weather_conditions }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Group 1 -->
+        {% if entries_group_1 %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-users me-2"></i>المجموعة الأولى</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>اسم الموظف</th>
+                                <th>الموظف البديل إن وجد</th>
+                                <th>اسم الكلب</th>
+                                <th>وقت الحضور</th>
+                                <th>التوقيع</th>
+                                <th>وقت الانصراف</th>
+                                <th>التوقيع</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in entries_group_1 %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>
+                                    <strong>{{ entry.employee.name }}</strong><br>
+                                    <small class="text-muted">{{ entry.employee.employee_id }}</small>
+                                </td>
+                                <td>
+                                    {% if entry.substitute %}
+                                        {{ entry.substitute.name }}
+                                    {% else %}
+                                        <span class="text-muted">لا يوجد</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if entry.dog %}
+                                        {{ entry.dog.name }}<br>
+                                        <small class="text-muted">{{ entry.dog.code }}</small>
+                                    {% else %}
+                                        <span class="text-muted">لا يوجد</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if entry.arrival_time %}
+                                        {{ entry.arrival_time.strftime('%H:%M') }}
+                                    {% else %}
+                                        <span class="text-muted">غير محدد</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if entry.arrival_signature %}
+                                        <i class="fas fa-check text-success"></i>
+                                    {% else %}
+                                        <span class="text-muted">_______________</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if entry.departure_time %}
+                                        {{ entry.departure_time.strftime('%H:%M') }}
+                                    {% else %}
+                                        <span class="text-muted">غير محدد</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if entry.departure_signature %}
+                                        <i class="fas fa-check text-success"></i>
+                                    {% else %}
+                                        <span class="text-muted">_______________</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if entry.present %}
+                                        <span class="badge bg-success">حاضر</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">غائب</span>
+                                    {% endif %}
+                                    {% if entry.late_arrival %}
+                                        <br><span class="badge bg-warning">متأخر</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Group 2 -->
+        {% if entries_group_2 %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-users me-2"></i>المجموعة الثانية</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>اسم الموظف</th>
+                                <th>الموظف البديل إن وجد</th>
+                                <th>اسم الكلب</th>
+                                <th>وقت الحضور</th>
+                                <th>التوقيع</th>
+                                <th>وقت الانصراف</th>
+                                <th>التوقيع</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in entries_group_2 %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>
+                                    <strong>{{ entry.employee.name }}</strong><br>
+                                    <small class="text-muted">{{ entry.employee.employee_id }}</small>
+                                </td>
+                                <td>
+                                    {% if entry.substitute %}
+                                        {{ entry.substitute.name }}
+                                    {% else %}
+                                        <span class="text-muted">لا يوجد</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if entry.dog %}
+                                        {{ entry.dog.name }}<br>
+                                        <small class="text-muted">{{ entry.dog.code }}</small>
+                                    {% else %}
+                                        <span class="text-muted">لا يوجد</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if entry.arrival_time %}
+                                        {{ entry.arrival_time.strftime('%H:%M') }}
+                                    {% else %}
+                                        <span class="text-muted">غير محدد</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if entry.arrival_signature %}
+                                        <i class="fas fa-check text-success"></i>
+                                    {% else %}
+                                        <span class="text-muted">_______________</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if entry.departure_time %}
+                                        {{ entry.departure_time.strftime('%H:%M') }}
+                                    {% else %}
+                                        <span class="text-muted">غير محدد</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if entry.departure_signature %}
+                                        <i class="fas fa-check text-success"></i>
+                                    {% else %}
+                                        <span class="text-muted">_______________</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if entry.present %}
+                                        <span class="badge bg-success">حاضر</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">غائب</span>
+                                    {% endif %}
+                                    {% if entry.late_arrival %}
+                                        <br><span class="badge bg-warning">متأخر</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Leave Requests -->
+        {% if leave_requests %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-calendar-times me-2"></i>الإجازات</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>اسم الفرد المجاز</th>
+                                <th>نوع الإجازة</th>
+                                <th>السبب</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for leave in leave_requests %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ leave.employee.name }}</td>
+                                <td>
+                                    {% if leave.leave_type.value == 'ANNUAL' %}
+                                        <span class="badge bg-primary">سنوية</span>
+                                    {% elif leave.leave_type.value == 'OFFICIAL' %}
+                                        <span class="badge bg-info">مرضية</span>
+                                    {% elif leave.leave_type.value == 'EMERGENCY' %}
+                                        <span class="badge bg-warning">طارئة</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">أخرى</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ leave.reason or 'غير محدد' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Signatures Section -->
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="text-center">
+                            <p><strong>مسؤول المشروع الفترة الصباحية:</strong></p>
+                            <div class="border-bottom" style="height: 60px; margin: 10px 0;"></div>
+                            <p>التوقيع: _________________________</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-center">
+                            <p><strong>مسؤول المشروع الفترة المسائية:</strong></p>
+                            <div class="border-bottom" style="height: 60px; margin: 10px 0;"></div>
+                            <p>التوقيع: _________________________</p>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if attendance_record.shift_manager %}
+                <div class="text-center mt-4">
+                    <p><strong>مسؤول هذه الفترة:</strong> {{ attendance_record.shift_manager.name }}</p>
+                </div>
+                {% endif %}
+                
+                {% if attendance_record.notes %}
+                <div class="mt-4">
+                    <h6><strong>ملاحظات:</strong></h6>
+                    <p>{{ attendance_record.notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .btn, .card-header, nav, .d-flex {
+        display: none !important;
+    }
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    body {
+        background: white !important;
+    }
+}
+</style>
+{% endblock %}

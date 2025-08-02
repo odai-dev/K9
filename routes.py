@@ -10,7 +10,8 @@ from models import (Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCyc
                    DeliveryRecord, PuppyRecord, PuppyTraining, MaturityStatus,
                    HeatStatus, PregnancyStatus, ProjectAssignment, ProjectDog, 
                    Incident, Suspicion, PerformanceEvaluation, ProjectRole, 
-                   PeriodType, LeaveType, ElementType, PerformanceRating, TargetType)
+                   PeriodType, LeaveType, ElementType, PerformanceRating, TargetType,
+                   ProjectAttendance, AttendanceEntry, LeaveRequest)
 from utils import log_audit, allowed_file, generate_pdf_report
 import os
 from datetime import datetime, date
@@ -1217,6 +1218,182 @@ def project_evaluation_add(project_id):
     
     return render_template('projects/evaluation_add.html', project=project, employees=employees, dogs=dogs, 
                          target_types=TargetType, ratings=PerformanceRating)
+
+# Project Attendance routes (كشوفات التحضير)
+@main_bp.route('/projects/<project_id>/attendance')
+@login_required
+def project_attendance_list(project_id):
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    # Get attendance records for this project
+    attendance_records = ProjectAttendance.query.filter_by(project_id=project_uuid).order_by(
+        ProjectAttendance.attendance_date.desc(), ProjectAttendance.period
+    ).all()
+    
+    return render_template('projects/attendance_list.html', project=project, attendance_records=attendance_records)
+
+@main_bp.route('/projects/<project_id>/attendance/add', methods=['GET', 'POST'])
+@login_required  
+def project_attendance_add(project_id):
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    if request.method == 'POST':
+        try:
+            # Create attendance record
+            attendance_record = ProjectAttendance(
+                project_id=project_uuid,
+                attendance_date=datetime.strptime(request.form['attendance_date'], '%Y-%m-%d').date(),
+                period=PeriodType(request.form['period']),
+                shift_manager_id=request.form.get('shift_manager_id') if request.form.get('shift_manager_id') else None,
+                notes=request.form.get('notes'),
+                weather_conditions=request.form.get('weather_conditions')
+            )
+            
+            db.session.add(attendance_record)
+            db.session.flush()  # Get the attendance record ID
+            
+            # Process attendance entries
+            employee_ids = request.form.getlist('employee_ids[]')
+            substitute_ids = request.form.getlist('substitute_ids[]')
+            dog_ids = request.form.getlist('dog_ids[]')
+            group_numbers = request.form.getlist('group_numbers[]')
+            arrival_times = request.form.getlist('arrival_times[]')
+            departure_times = request.form.getlist('departure_times[]')
+            present_flags = request.form.getlist('present[]')
+            
+            for i, employee_id in enumerate(employee_ids):
+                if employee_id:  # Only create entry if employee is selected
+                    entry = AttendanceEntry(
+                        attendance_record_id=attendance_record.id,
+                        employee_id=employee_id,
+                        substitute_employee_id=substitute_ids[i] if i < len(substitute_ids) and substitute_ids[i] else None,
+                        dog_id=dog_ids[i] if i < len(dog_ids) and dog_ids[i] else None,
+                        group_number=int(group_numbers[i]) if i < len(group_numbers) and group_numbers[i] else 1,
+                        arrival_time=datetime.strptime(arrival_times[i], '%H:%M').time() if i < len(arrival_times) and arrival_times[i] else None,
+                        departure_time=datetime.strptime(departure_times[i], '%H:%M').time() if i < len(departure_times) and departure_times[i] else None,
+                        present=str(employee_id) in present_flags
+                    )
+                    db.session.add(entry)
+            
+            # Process leave requests if any
+            leave_employee_ids = request.form.getlist('leave_employee_ids[]')
+            leave_types = request.form.getlist('leave_types[]')
+            leave_reasons = request.form.getlist('leave_reasons[]')
+            
+            for i, employee_id in enumerate(leave_employee_ids):
+                if employee_id and i < len(leave_types) and leave_types[i]:
+                    leave_request = LeaveRequest(
+                        project_id=project_uuid,
+                        attendance_record_id=attendance_record.id,
+                        employee_id=employee_id,
+                        leave_type=LeaveType(leave_types[i]),
+                        leave_date=attendance_record.attendance_date,
+                        reason=leave_reasons[i] if i < len(leave_reasons) else None,
+                        approved=True  # Auto-approve for now
+                    )
+                    db.session.add(leave_request)
+            
+            db.session.commit()
+            
+            log_audit(current_user.id, 'CREATE', 'ProjectAttendance', str(attendance_record.id), 
+                     {'project': project.name, 'date': attendance_record.attendance_date.strftime('%Y-%m-%d'), 'period': attendance_record.period.value})
+            flash('تم تسجيل كشف الحضور بنجاح', 'success')
+            return redirect(url_for('main.project_attendance_list', project_id=project_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء تسجيل الحضور: {str(e)}', 'error')
+    
+    # Get assigned employees and dogs for this project
+    assigned_employees = []
+    assigned_dogs = []
+    
+    # Get project assignments
+    employee_assignments = ProjectAssignment.query.filter_by(project_id=project_uuid).all()
+    dog_assignments = ProjectDog.query.filter_by(project_id=project_uuid).all()
+    
+    for assignment in employee_assignments:
+        if assignment.employee and assignment.employee.is_active:
+            assigned_employees.append(assignment.employee)
+    
+    for assignment in dog_assignments:
+        if assignment.dog and assignment.dog.current_status == DogStatus.ACTIVE:
+            assigned_dogs.append(assignment.dog)
+    
+    # Get all active employees as potential substitutes
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        all_employees = Employee.query.filter_by(is_active=True).all()
+    else:
+        all_employees = Employee.query.filter_by(assigned_to_user_id=current_user.id, is_active=True).all()
+    
+    return render_template('projects/attendance_add.html', 
+                         project=project, 
+                         assigned_employees=assigned_employees,
+                         assigned_dogs=assigned_dogs,
+                         all_employees=all_employees,
+                         periods=PeriodType,
+                         leave_types=LeaveType)
+
+@main_bp.route('/projects/<project_id>/attendance/<attendance_id>')
+@login_required
+def project_attendance_view(project_id, attendance_id):
+    try:
+        project_uuid = uuid.UUID(project_id)
+        attendance_uuid = uuid.UUID(attendance_id)
+        project = Project.query.get_or_404(project_uuid)
+        attendance_record = ProjectAttendance.query.get_or_404(attendance_uuid)
+    except ValueError:
+        flash('معرف غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    if attendance_record.project_id != project_uuid:
+        flash('كشف الحضور غير متطابق مع المشروع', 'error')
+        return redirect(url_for('main.project_attendance_list', project_id=project_id))
+    
+    # Get attendance entries grouped by group number
+    entries_group_1 = AttendanceEntry.query.filter_by(
+        attendance_record_id=attendance_uuid, group_number=1
+    ).all()
+    entries_group_2 = AttendanceEntry.query.filter_by(
+        attendance_record_id=attendance_uuid, group_number=2
+    ).all()
+    
+    # Get leave requests for this date
+    leave_requests = LeaveRequest.query.filter_by(
+        attendance_record_id=attendance_uuid
+    ).all()
+    
+    return render_template('projects/attendance_view.html', 
+                         project=project, 
+                         attendance_record=attendance_record,
+                         entries_group_1=entries_group_1,
+                         entries_group_2=entries_group_2,
+                         leave_requests=leave_requests)
 
 # Attendance routes
 @main_bp.route('/attendance')

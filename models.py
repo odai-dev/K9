@@ -809,3 +809,101 @@ class PuppyTraining(db.Model):
 
     def __repr__(self):
         return f'<PuppyTraining {self.training_name} - {self.puppy.name}>'
+
+class ProjectAttendance(db.Model):
+    """Daily attendance tracking for project personnel (كشف التحضير اليومي)"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project.id'), nullable=False)
+    attendance_date = db.Column(db.Date, nullable=False, default=date.today)
+    period = db.Column(db.Enum(PeriodType), nullable=False)  # صباحي/مسائي/ليلي
+    
+    # Project manager for this shift
+    shift_manager_id = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'))
+    manager_signature = db.Column(db.String(200))  # Could store signature image path
+    
+    # Overall attendance notes
+    notes = db.Column(Text)
+    weather_conditions = db.Column(db.String(100))
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    project = db.relationship('Project', backref='attendance_records')
+    shift_manager = db.relationship('Employee', backref='managed_shifts')
+    
+    # Unique constraint to prevent duplicate records for same project/date/period
+    __table_args__ = (db.UniqueConstraint('project_id', 'attendance_date', 'period', name='unique_project_attendance'),)
+    
+    def __repr__(self):
+        return f'<ProjectAttendance {self.project.name} - {self.attendance_date}>'
+
+class AttendanceEntry(db.Model):
+    """Individual attendance entries for employees and dogs (إدخالات الحضور)"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    attendance_record_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project_attendance.id'), nullable=False)
+    group_number = db.Column(db.Integer, default=1)  # المجموعة الأولى/الثانية
+    
+    # Employee information
+    employee_id = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'), nullable=False)
+    substitute_employee_id = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'))  # الموظف البديل
+    
+    # Dog information
+    dog_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'))
+    
+    # Attendance times
+    arrival_time = db.Column(db.Time)  # وقت الحضور
+    departure_time = db.Column(db.Time)  # وقت الانصراف
+    
+    # Signatures (could store image paths or just text confirmation)
+    arrival_signature = db.Column(db.String(200))  # توقيع الحضور
+    departure_signature = db.Column(db.String(200))  # توقيع الانصراف
+    
+    # Status flags
+    present = db.Column(db.Boolean, default=True)
+    late_arrival = db.Column(db.Boolean, default=False)
+    early_departure = db.Column(db.Boolean, default=False)
+    
+    # Notes for this entry
+    notes = db.Column(Text)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    attendance_record = db.relationship('ProjectAttendance', backref='entries')
+    employee = db.relationship('Employee', foreign_keys=[employee_id], backref='attendance_entries')
+    substitute = db.relationship('Employee', foreign_keys=[substitute_employee_id], backref='substitute_entries')
+    dog = db.relationship('Dog', backref='attendance_entries')
+    
+    def __repr__(self):
+        return f'<AttendanceEntry {self.employee.name} - {self.attendance_record.attendance_date}>'
+
+class LeaveRequest(db.Model):
+    """Leave requests tracking (الإجازات)"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project.id'), nullable=False)
+    attendance_record_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project_attendance.id'))
+    
+    employee_id = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'), nullable=False)
+    leave_type = db.Column(db.Enum(LeaveType), nullable=False)  # سنوية/مرضية/طارئة/أخرى
+    leave_date = db.Column(db.Date, nullable=False)
+    
+    # Additional leave types not in enum
+    other_leave_type = db.Column(db.String(100))  # for "أخرى" type
+    
+    # Leave details
+    reason = db.Column(Text)
+    approved = db.Column(db.Boolean, default=False)
+    approved_by = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'))
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    project = db.relationship('Project', backref='leave_requests')
+    attendance_record = db.relationship('ProjectAttendance', backref='leave_requests')
+    employee = db.relationship('Employee', foreign_keys=[employee_id], backref='leave_requests')
+    approver = db.relationship('Employee', foreign_keys=[approved_by], backref='approved_leaves')
+    
+    def __repr__(self):
+        return f'<LeaveRequest {self.employee.name} - {self.leave_type.value}>'

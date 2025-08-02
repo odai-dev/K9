@@ -188,24 +188,34 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-3 mb-2">
+                        <div class="col-md-2 mb-2">
                             <a href="{{ url_for('main.project_assignments', project_id=project.id) }}" class="btn btn-outline-primary w-100">
                                 <i class="fas fa-users me-2"></i>إدارة التعيينات
                             </a>
                         </div>
-                        <div class="col-md-3 mb-2">
+                        <div class="col-md-2 mb-2">
+                            <a href="{{ url_for('main.project_attendance_list', project_id=project.id) }}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-clipboard-list me-2"></i>كشوفات الحضور
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-2">
                             <a href="{{ url_for('main.project_incidents', project_id=project.id) }}" class="btn btn-outline-danger w-100">
                                 <i class="fas fa-exclamation-triangle me-2"></i>إدارة الحوادث
                             </a>
                         </div>
-                        <div class="col-md-3 mb-2">
+                        <div class="col-md-2 mb-2">
                             <a href="{{ url_for('main.project_suspicions', project_id=project.id) }}" class="btn btn-outline-info w-100">
                                 <i class="fas fa-search me-2"></i>إدارة الاشتباهات
                             </a>
                         </div>
-                        <div class="col-md-3 mb-2">
+                        <div class="col-md-2 mb-2">
                             <a href="{{ url_for('main.project_evaluations', project_id=project.id) }}" class="btn btn-outline-success w-100">
                                 <i class="fas fa-star me-2"></i>إدارة التقييمات
+                            </a>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <a href="{{ url_for('main.projects_list') }}" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-arrow-left me-2"></i>جميع المشاريع
                             </a>
                         </div>
                     </div>
