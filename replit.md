@@ -10,6 +10,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (Updated - August 2, 2025)
 
+✅ **Project Manager Assignment Logic - August 2, 2025**
+- Implemented single project manager constraint - only one allowed per project
+- Automatic replacement of existing project manager when new one is assigned
+- JavaScript prevents selecting multiple project managers in bulk assignment
+- Clear warning messages when project manager replacement occurs
+- Both single and bulk assignment respect project manager uniqueness rule
+
 ✅ **Bulk Employee Assignment Feature - August 2, 2025**
 - Added one-click multi-select feature for bulk project assignments
 - New "إضافة عدة موظفين" button allows selecting multiple employees at once

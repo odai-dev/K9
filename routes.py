@@ -715,6 +715,18 @@ def project_assignment_add(project_id):
                 flash('الموظف المحدد غير موجود', 'error')
                 return redirect(url_for('main.project_assignment_add', project_id=project_id))
             
+            # Check if trying to assign a project manager when one already exists
+            if employee.role == EmployeeRole.PROJECT_MANAGER:
+                existing_pm = ProjectAssignment.query.filter_by(
+                    project_id=project_uuid, 
+                    role=ProjectRole.PROJECT_MANAGER
+                ).first()
+                
+                if existing_pm:
+                    # Replace existing project manager
+                    db.session.delete(existing_pm)
+                    flash(f'تم استبدال مسؤول المشروع السابق: {existing_pm.employee.name}', 'info')
+            
             # Map employee role to project role
             role_mapping = {
                 EmployeeRole.HANDLER: ProjectRole.HANDLER,
@@ -781,6 +793,28 @@ def project_bulk_assignment_add(project_id):
         already_assigned = []
         errors = []
         
+        # Check if there's already a project manager assigned
+        existing_pm = ProjectAssignment.query.filter_by(
+            project_id=project_uuid, 
+            role=ProjectRole.PROJECT_MANAGER
+        ).first()
+        
+        # Get selected employees and check for project managers
+        selected_employees = Employee.query.filter(Employee.id.in_(employee_ids)).all()
+        project_managers = [emp for emp in selected_employees if emp.role == EmployeeRole.PROJECT_MANAGER]
+        
+        # Handle project manager logic
+        if project_managers:
+            if existing_pm:
+                # Replace existing project manager
+                db.session.delete(existing_pm)
+                flash(f'تم استبدال مسؤول المشروع السابق: {existing_pm.employee.name}', 'info')
+            
+            if len(project_managers) > 1:
+                # Only assign the first project manager
+                project_managers = project_managers[:1]
+                flash(f'يمكن تعيين مسؤول مشروع واحد فقط. تم تعيين: {project_managers[0].name}', 'warning')
+        
         for employee_id in employee_ids:
             try:
                 # Check if employee is already assigned
@@ -789,7 +823,7 @@ def project_bulk_assignment_add(project_id):
                     employee_id=employee_id
                 ).first()
                 
-                if existing_assignment:
+                if existing_assignment and existing_assignment.role != ProjectRole.PROJECT_MANAGER:
                     employee = Employee.query.get(employee_id)
                     if employee:
                         already_assigned.append(employee.name)
@@ -799,6 +833,10 @@ def project_bulk_assignment_add(project_id):
                 employee = Employee.query.get(employee_id)
                 if not employee:
                     errors.append(f'موظف غير موجود: {employee_id}')
+                    continue
+                
+                # Skip if this is not the first project manager in the list
+                if employee.role == EmployeeRole.PROJECT_MANAGER and employee not in project_managers:
                     continue
                 
                 # Map employee role to project role
