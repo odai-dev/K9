@@ -64,10 +64,41 @@ class PregnancyStatus(Enum):
     DELIVERED = "ولدت"
 
 class ProjectStatus(Enum):
-    PLANNING = "PLANNING"
+    PLANNED = "PLANNED"
     ACTIVE = "ACTIVE"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
+
+class ProjectRole(Enum):
+    PROJECT_MANAGER = "PROJECT_MANAGER"
+    HANDLER = "HANDLER"
+    TRAINER = "TRAINER"
+    VET = "VET"
+
+class PeriodType(Enum):
+    MORNING = "MORNING"
+    EVENING = "EVENING"
+    NIGHT = "NIGHT"
+
+class LeaveType(Enum):
+    ANNUAL = "ANNUAL"
+    OFFICIAL = "OFFICIAL"
+    EMERGENCY = "EMERGENCY"
+
+class ElementType(Enum):
+    WEAPON = "WEAPON"
+    DRUG = "DRUG"
+    EXPLOSIVE = "EXPLOSIVE"
+    OTHER = "OTHER"
+
+class PerformanceRating(Enum):
+    EXCELLENT = "EXCELLENT"
+    GOOD = "GOOD"
+    WEAK = "WEAK"
+
+class TargetType(Enum):
+    EMPLOYEE = "EMPLOYEE"
+    DOG = "DOG"
 
 class AuditAction(Enum):
     CREATE = "CREATE"
@@ -288,12 +319,14 @@ class Project(db.Model):
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = db.Column(db.String(200), nullable=False)
     code = db.Column(db.String(20), unique=True, nullable=False)
+    main_task = db.Column(Text)  # المهمة الأساسية
     description = db.Column(Text)
-    status = db.Column(db.Enum(ProjectStatus), default=ProjectStatus.PLANNING)
+    status = db.Column(db.Enum(ProjectStatus), default=ProjectStatus.PLANNED)
     
     # Dates
-    start_date = db.Column(db.Date)
-    end_date = db.Column(db.Date)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    duration_days = db.Column(db.Integer)  # computed field
     expected_completion_date = db.Column(db.Date)
     
     # Location and mission details
@@ -317,8 +350,181 @@ class Project(db.Model):
     assigned_dogs = db.relationship('Dog', secondary=project_dog_assignment, back_populates='projects')
     assigned_employees = db.relationship('Employee', secondary=project_employee_assignment, back_populates='projects')
     
+    def calculate_duration(self):
+        if self.start_date and self.end_date:
+            return (self.end_date - self.start_date).days + 1
+        return 0
+    
     def __repr__(self):
         return f'<Project {self.name} ({self.code})>'
+
+class ProjectAssignment(db.Model):
+    """Employee assignments to projects with periods and attendance tracking"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project.id'), nullable=False)
+    employee_id = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'), nullable=False)
+    role = db.Column(db.Enum(ProjectRole), nullable=False)
+    period = db.Column(db.Enum(PeriodType), nullable=False)  # صباحي/مسائي/ثالثة
+    is_present = db.Column(db.Boolean, default=True)  # حضور/غياب
+    leave_type = db.Column(db.Enum(LeaveType))  # نوع الإجازة
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    project = db.relationship('Project', backref='employee_assignments')
+    employee = db.relationship('Employee', backref='project_assignments')
+    
+    # Unique constraint to prevent duplicate assignments
+    __table_args__ = (db.UniqueConstraint('project_id', 'employee_id', name='unique_project_employee'),)
+    
+    def __repr__(self):
+        return f'<ProjectAssignment {self.employee.name} -> {self.project.name}>'
+
+class ProjectDog(db.Model):
+    """Dog assignments to projects"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project.id'), nullable=False)
+    dog_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    assigned_date = db.Column(db.Date, default=date.today)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    project = db.relationship('Project', backref='dog_assignments')
+    dog = db.relationship('Dog', backref='project_dog_assignments')
+    
+    # Unique constraint to prevent duplicate assignments
+    __table_args__ = (db.UniqueConstraint('project_id', 'dog_id', name='unique_project_dog'),)
+    
+    def __repr__(self):
+        return f'<ProjectDog {self.dog.name} -> {self.project.name}>'
+
+class Incident(db.Model):
+    """Incident logging for projects"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project.id'), nullable=False)
+    name = db.Column(db.String(200), nullable=False)  # اسم الحادث
+    incident_date = db.Column(db.Date, nullable=False)
+    incident_time = db.Column(db.Time, nullable=False)
+    incident_type = db.Column(db.String(100), nullable=False)  # نوع الحادث
+    description = db.Column(Text)
+    location = db.Column(db.String(200))
+    severity = db.Column(db.String(20), default='MEDIUM')  # LOW, MEDIUM, HIGH
+    
+    # People involved
+    reported_by = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'))
+    people_involved = db.Column(JSON, default=list)  # List of employee IDs
+    dogs_involved = db.Column(JSON, default=list)  # List of dog IDs
+    
+    # Attachments and evidence
+    attachments = db.Column(JSON, default=list)  # File paths/URLs for photos, PDFs
+    witness_statements = db.Column(Text)
+    
+    # Follow-up
+    resolved = db.Column(db.Boolean, default=False)
+    resolution_notes = db.Column(Text)
+    resolution_date = db.Column(db.Date)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    project = db.relationship('Project', backref='incidents')
+    reporter = db.relationship('Employee', backref='reported_incidents')
+    
+    def __repr__(self):
+        return f'<Incident {self.name} - {self.project.name}>'
+
+class Suspicion(db.Model):
+    """Suspicion/discovery logging for projects"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project.id'), nullable=False)
+    element_type = db.Column(db.Enum(ElementType), nullable=False)  # سلاح/مخدرات/متفجرات/أخرى
+    subtype = db.Column(db.String(100))  # نوع السلاح/العبوة
+    discovery_date = db.Column(db.Date, nullable=False)
+    discovery_time = db.Column(db.Time, nullable=False)
+    location = db.Column(db.String(200), nullable=False)
+    
+    # Detection details
+    detected_by_dog = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'))
+    handler = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'))
+    detection_method = db.Column(db.String(100))  # Visual, K9 Alert, Equipment, etc.
+    
+    # Description and evidence
+    description = db.Column(Text)
+    quantity_estimate = db.Column(db.String(100))
+    attachments = db.Column(JSON, default=list)  # Photos, evidence logs
+    
+    # Follow-up actions
+    authorities_notified = db.Column(db.Boolean, default=False)
+    evidence_collected = db.Column(db.Boolean, default=False)
+    follow_up_required = db.Column(db.Boolean, default=True)
+    follow_up_notes = db.Column(Text)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    project = db.relationship('Project', backref='suspicions')
+    detecting_dog = db.relationship('Dog', backref='detections')
+    handling_employee = db.relationship('Employee', backref='handled_detections')
+    
+    def __repr__(self):
+        return f'<Suspicion {self.element_type.value} - {self.project.name}>'
+
+class PerformanceEvaluation(db.Model):
+    """Performance evaluation for employees and dogs in projects"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project.id'), nullable=False)
+    evaluator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    target_type = db.Column(db.Enum(TargetType), nullable=False)  # EMPLOYEE or DOG
+    
+    # Target identification (generic approach)
+    target_employee_id = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'))
+    target_dog_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'))
+    
+    # Evaluation details
+    evaluation_date = db.Column(db.Date, nullable=False, default=date.today)
+    rating = db.Column(db.Enum(PerformanceRating), nullable=False)  # ممتاز/جيد/ضعيف
+    
+    # Specific criteria (primarily for employees)
+    uniform_ok = db.Column(db.Boolean, default=True)  # زي الموظف
+    id_card_ok = db.Column(db.Boolean, default=True)  # البطاقة
+    appearance_ok = db.Column(db.Boolean, default=True)  # المظهر
+    cleanliness_ok = db.Column(db.Boolean, default=True)  # النظافة
+    
+    # Performance metrics
+    punctuality = db.Column(db.Integer)  # 1-10 scale
+    job_knowledge = db.Column(db.Integer)  # 1-10 scale
+    teamwork = db.Column(db.Integer)  # 1-10 scale
+    communication = db.Column(db.Integer)  # 1-10 scale
+    
+    # For dogs - specific metrics
+    obedience_level = db.Column(db.Integer)  # 1-10 scale
+    detection_accuracy = db.Column(db.Integer)  # 1-10 scale
+    physical_condition = db.Column(db.Integer)  # 1-10 scale
+    handler_relationship = db.Column(db.Integer)  # 1-10 scale
+    
+    # General assessment
+    strengths = db.Column(Text)
+    areas_for_improvement = db.Column(Text)
+    comments = db.Column(Text)
+    recommendations = db.Column(Text)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    project = db.relationship('Project', backref='performance_evaluations')
+    evaluator = db.relationship('User', backref='conducted_evaluations')
+    target_employee = db.relationship('Employee', backref='performance_evaluations')
+    target_dog = db.relationship('Dog', backref='performance_evaluations')
+    
+    def __repr__(self):
+        target_name = self.target_employee.name if self.target_employee else self.target_dog.name
+        return f'<PerformanceEvaluation {target_name} - {self.rating.value}>'
 
 class AttendanceRecord(db.Model):
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

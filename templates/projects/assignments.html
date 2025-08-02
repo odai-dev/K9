@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}تعيينات المشروع - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>تعيينات المشروع: {{ project.name }}</h2>
+                <div>
+                    <a href="{{ url_for('main.project_assignment_add', project_id=project.id) }}" class="btn btn-primary me-2">
+                        <i class="fas fa-plus"></i> إضافة موظف
+                    </a>
+                    <a href="{{ url_for('main.project_dog_add', project_id=project.id) }}" class="btn btn-success me-2">
+                        <i class="fas fa-dog"></i> إضافة كلب
+                    </a>
+                    <a href="{{ url_for('main.projects_list') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-right"></i> العودة للمشاريع
+                    </a>
+                </div>
+            </div>
+
+            <!-- Project Navigation Tabs -->
+            <nav class="nav nav-tabs mb-4">
+                <a class="nav-link active" href="{{ url_for('main.project_assignments', project_id=project.id) }}">التعيينات</a>
+                <a class="nav-link" href="{{ url_for('main.project_incidents', project_id=project.id) }}">الحوادث</a>
+                <a class="nav-link" href="{{ url_for('main.project_suspicions', project_id=project.id) }}">الاشتباهات</a>
+                <a class="nav-link" href="{{ url_for('main.project_evaluations', project_id=project.id) }}">التقييمات</a>
+            </nav>
+
+            <!-- Employee Assignments -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">تعيينات الموظفين</h5>
+                </div>
+                <div class="card-body">
+                    {% if assignments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>اسم الموظف</th>
+                                        <th>الدور</th>
+                                        <th>الفترة</th>
+                                        <th>الحالة</th>
+                                        <th>نوع الإجازة</th>
+                                        <th>تاريخ التعيين</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for assignment in assignments %}
+                                    <tr>
+                                        <td>{{ assignment.employee.name }}</td>
+                                        <td>
+                                            {% if assignment.role.value == 'PROJECT_MANAGER' %}
+                                                <span class="badge bg-primary">مسؤول مشروع</span>
+                                            {% elif assignment.role.value == 'HANDLER' %}
+                                                <span class="badge bg-info">سائس</span>
+                                            {% elif assignment.role.value == 'TRAINER' %}
+                                                <span class="badge bg-success">مدرب</span>
+                                            {% elif assignment.role.value == 'VET' %}
+                                                <span class="badge bg-warning">طبيب</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if assignment.period.value == 'MORNING' %}
+                                                صباحي
+                                            {% elif assignment.period.value == 'EVENING' %}
+                                                مسائي
+                                            {% elif assignment.period.value == 'NIGHT' %}
+                                                ليلي
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if assignment.is_present %}
+                                                <span class="badge bg-success">حاضر</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">غائب</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if assignment.leave_type %}
+                                                {% if assignment.leave_type.value == 'ANNUAL' %}
+                                                    إجازة سنوية
+                                                {% elif assignment.leave_type.value == 'OFFICIAL' %}
+                                                    إجازة رسمية
+                                                {% elif assignment.leave_type.value == 'EMERGENCY' %}
+                                                    إجازة طارئة
+                                                {% endif %}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ assignment.created_at.strftime('%Y-%m-%d') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-users fa-3x mb-3"></i>
+                            <p>لا توجد تعيينات موظفين لهذا المشروع بعد</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Dog Assignments -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">تعيينات الكلاب</h5>
+                </div>
+                <div class="card-body">
+                    {% if dog_assignments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>اسم الكلب</th>
+                                        <th>الكود</th>
+                                        <th>السلالة</th>
+                                        <th>الحالة</th>
+                                        <th>تاريخ التعيين</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for dog_assignment in dog_assignments %}
+                                    <tr>
+                                        <td>{{ dog_assignment.dog.name }}</td>
+                                        <td>{{ dog_assignment.dog.code }}</td>
+                                        <td>{{ dog_assignment.dog.breed }}</td>
+                                        <td>
+                                            {% if dog_assignment.is_active %}
+                                                <span class="badge bg-success">نشط</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">غير نشط</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ dog_assignment.assigned_date.strftime('%Y-%m-%d') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-dog fa-3x mb-3"></i>
+                            <p>لا توجد كلاب مُعيَّنة لهذا المشروع بعد</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

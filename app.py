@@ -48,7 +48,9 @@ def create_app():
     login_manager.login_message_category = 'info'
     
     # Import models
-    from models import User, Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCycle, Project, AttendanceRecord, AuditLog, UserRole
+    from models import (User, Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCycle, Project, 
+                        AttendanceRecord, AuditLog, UserRole, ProjectAssignment, ProjectDog, Incident, 
+                        Suspicion, PerformanceEvaluation)
     
     # User loader
     @login_manager.user_loader

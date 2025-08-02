@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة تقييم أداء - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h4>إضافة تقييم أداء للمشروع: {{ project.name }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="evaluationForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="target_type" class="form-label">نوع المُقيَّم *</label>
+                                    <select class="form-select" id="target_type" name="target_type" required onchange="toggleTargetFields()">
+                                        <option value="">اختر النوع</option>
+                                        {% for target in target_types %}
+                                        <option value="{{ target.value }}">
+                                            {% if target.value == 'EMPLOYEE' %}
+                                                موظف
+                                            {% else %}
+                                                كلب
+                                            {% endif %}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="evaluation_date" class="form-label">تاريخ التقييم *</label>
+                                    <input type="date" class="form-control" id="evaluation_date" name="evaluation_date" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Employee Selection -->
+                        <div class="row" id="employeeSection" style="display: none;">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="target_employee_id" class="form-label">الموظف المُقيَّم</label>
+                                    <select class="form-select" id="target_employee_id" name="target_employee_id">
+                                        <option value="">اختر الموظف</option>
+                                        {% for employee in employees %}
+                                        <option value="{{ employee.id }}">{{ employee.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dog Selection -->
+                        <div class="row" id="dogSection" style="display: none;">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="target_dog_id" class="form-label">الكلب المُقيَّم</label>
+                                    <select class="form-select" id="target_dog_id" name="target_dog_id">
+                                        <option value="">اختر الكلب</option>
+                                        {% for dog in dogs %}
+                                        <option value="{{ dog.id }}">{{ dog.name }} ({{ dog.code }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="rating" class="form-label">التقييم العام *</label>
+                                    <select class="form-select" id="rating" name="rating" required>
+                                        <option value="">اختر التقييم</option>
+                                        {% for rating in ratings %}
+                                        <option value="{{ rating.value }}">
+                                            {% if rating.value == 'EXCELLENT' %}
+                                                ممتاز
+                                            {% elif rating.value == 'GOOD' %}
+                                                جيد
+                                            {% else %}
+                                                ضعيف
+                                            {% endif %}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Employee-specific evaluation fields -->
+                        <div id="employeeFields" style="display: none;">
+                            <h5 class="mt-4 mb-3">معايير المظهر والسلوك</h5>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="uniform_ok" name="uniform_ok" checked>
+                                            <label class="form-check-label" for="uniform_ok">
+                                                الزي مناسب
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="id_card_ok" name="id_card_ok" checked>
+                                            <label class="form-check-label" for="id_card_ok">
+                                                البطاقة موجودة
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="appearance_ok" name="appearance_ok" checked>
+                                            <label class="form-check-label" for="appearance_ok">
+                                                المظهر مناسب
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="cleanliness_ok" name="cleanliness_ok" checked>
+                                            <label class="form-check-label" for="cleanliness_ok">
+                                                النظافة جيدة
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="mt-4 mb-3">تقييمات الأداء (1-10)</h5>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="punctuality" class="form-label">الالتزام بالمواعيد</label>
+                                        <input type="number" class="form-control" id="punctuality" name="punctuality" min="1" max="10">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="job_knowledge" class="form-label">المعرفة المهنية</label>
+                                        <input type="number" class="form-control" id="job_knowledge" name="job_knowledge" min="1" max="10">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="teamwork" class="form-label">العمل الجماعي</label>
+                                        <input type="number" class="form-control" id="teamwork" name="teamwork" min="1" max="10">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="communication" class="form-label">التواصل</label>
+                                        <input type="number" class="form-control" id="communication" name="communication" min="1" max="10">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dog-specific evaluation fields -->
+                        <div id="dogFields" style="display: none;">
+                            <h5 class="mt-4 mb-3">تقييمات الكلب (1-10)</h5>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="obedience_level" class="form-label">مستوى الطاعة</label>
+                                        <input type="number" class="form-control" id="obedience_level" name="obedience_level" min="1" max="10">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="detection_accuracy" class="form-label">دقة الاكتشاف</label>
+                                        <input type="number" class="form-control" id="detection_accuracy" name="detection_accuracy" min="1" max="10">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="physical_condition" class="form-label">الحالة الجسدية</label>
+                                        <input type="number" class="form-control" id="physical_condition" name="physical_condition" min="1" max="10">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="handler_relationship" class="form-label">العلاقة مع السائس</label>
+                                        <input type="number" class="form-control" id="handler_relationship" name="handler_relationship" min="1" max="10">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h5 class="mt-4 mb-3">التقييم التفصيلي</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="strengths" class="form-label">نقاط القوة</label>
+                                    <textarea class="form-control" id="strengths" name="strengths" rows="3" 
+                                              placeholder="اذكر نقاط القوة الملاحظة"></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="areas_for_improvement" class="form-label">مجالات التحسين</label>
+                                    <textarea class="form-control" id="areas_for_improvement" name="areas_for_improvement" rows="3" 
+                                              placeholder="اذكر المجالات التي تحتاج لتحسين"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="comments" class="form-label">تعليقات إضافية</label>
+                                    <textarea class="form-control" id="comments" name="comments" rows="3" 
+                                              placeholder="أي تعليقات إضافية"></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="recommendations" class="form-label">التوصيات</label>
+                                    <textarea class="form-control" id="recommendations" name="recommendations" rows="3" 
+                                              placeholder="التوصيات للمستقبل"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('main.project_evaluations', project_id=project.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-right"></i> إلغاء
+                            </a>
+                            <button type="submit" class="btn btn-info">
+                                <i class="fas fa-save"></i> حفظ التقييم
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleTargetFields() {
+    const targetType = document.getElementById('target_type').value;
+    const employeeSection = document.getElementById('employeeSection');
+    const dogSection = document.getElementById('dogSection');
+    const employeeFields = document.getElementById('employeeFields');
+    const dogFields = document.getElementById('dogFields');
+    
+    if (targetType === 'EMPLOYEE') {
+        employeeSection.style.display = 'block';
+        dogSection.style.display = 'none';
+        employeeFields.style.display = 'block';
+        dogFields.style.display = 'none';
+        
+        // Make employee field required
+        document.getElementById('target_employee_id').required = true;
+        document.getElementById('target_dog_id').required = false;
+    } else if (targetType === 'DOG') {
+        employeeSection.style.display = 'none';
+        dogSection.style.display = 'block';
+        employeeFields.style.display = 'none';
+        dogFields.style.display = 'block';
+        
+        // Make dog field required
+        document.getElementById('target_employee_id').required = false;
+        document.getElementById('target_dog_id').required = true;
+    } else {
+        employeeSection.style.display = 'none';
+        dogSection.style.display = 'none';
+        employeeFields.style.display = 'none';
+        dogFields.style.display = 'none';
+        
+        document.getElementById('target_employee_id').required = false;
+        document.getElementById('target_dog_id').required = false;
+    }
+}
+
+// Set today's date as default
+document.getElementById('evaluation_date').valueAsDate = new Date();
+</script>
+{% endblock %}

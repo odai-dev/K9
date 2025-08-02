@@ -8,7 +8,9 @@ from models import (Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCyc
                    BreedingResult, ProjectStatus, AuditAction, DogGender, User,
                    DogMaturity, HeatCycle, MatingRecord, PregnancyRecord, 
                    DeliveryRecord, PuppyRecord, PuppyTraining, MaturityStatus,
-                   HeatStatus, PregnancyStatus)
+                   HeatStatus, PregnancyStatus, ProjectAssignment, ProjectDog, 
+                   Incident, Suspicion, PerformanceEvaluation, ProjectRole, 
+                   PeriodType, LeaveType, ElementType, PerformanceRating, TargetType)
 from utils import log_audit, allowed_file, generate_pdf_report
 import os
 from datetime import datetime, date
@@ -539,6 +541,7 @@ def projects_add():
             project = Project(
                 name=request.form['name'],
                 code=request.form['code'],
+                main_task=request.form.get('main_task'),  # المهمة الأساسية
                 description=request.form.get('description'),
                 location=request.form.get('location'),
                 mission_type=request.form.get('mission_type'),
@@ -548,8 +551,14 @@ def projects_add():
             
             if request.form.get('start_date'):
                 project.start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d').date()
+            if request.form.get('end_date'):
+                project.end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d').date()
             if request.form.get('expected_completion_date'):
                 project.expected_completion_date = datetime.strptime(request.form['expected_completion_date'], '%Y-%m-%d').date()
+            
+            # Calculate duration automatically
+            if project.start_date and project.end_date:
+                project.duration_days = project.calculate_duration()
             
             db.session.add(project)
             db.session.flush()  # Get the project ID
@@ -588,6 +597,314 @@ def projects_add():
         managers = []  # PROJECT_MANAGER users can only assign to themselves
     
     return render_template('projects/add.html', employees=employees, dogs=dogs, managers=managers)
+
+# Enhanced Projects Section - Project Assignments
+@main_bp.route('/projects/<project_id>/assignments')
+@login_required
+def project_assignments(project_id):
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    assignments = ProjectAssignment.query.filter_by(project_id=project_id).all()
+    dog_assignments = ProjectDog.query.filter_by(project_id=project_id).all()
+    
+    return render_template('projects/assignments.html', project=project, assignments=assignments, dog_assignments=dog_assignments)
+
+@main_bp.route('/projects/<project_id>/assignments/add', methods=['GET', 'POST'])
+@login_required
+def project_assignment_add(project_id):
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    if request.method == 'POST':
+        try:
+            assignment = ProjectAssignment(
+                project_id=project_id,
+                employee_id=request.form['employee_id'],
+                role=ProjectRole(request.form['role']),
+                period=PeriodType(request.form['period']),
+                is_present=True,
+                leave_type=LeaveType(request.form['leave_type']) if request.form.get('leave_type') else None
+            )
+            
+            db.session.add(assignment)
+            db.session.commit()
+            
+            log_audit(current_user.id, 'CREATE', 'ProjectAssignment', str(assignment.id), 
+                     {'project': project.name, 'employee': assignment.employee.name})
+            flash('تم تعيين الموظف للمشروع بنجاح', 'success')
+            return redirect(url_for('main.project_assignments', project_id=project_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء التعيين: {str(e)}', 'error')
+    
+    # Get available employees
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        employees = Employee.query.filter_by(is_active=True).all()
+    else:
+        employees = Employee.query.filter_by(assigned_to_user_id=current_user.id, is_active=True).all()
+    
+    return render_template('projects/assignment_add.html', project=project, employees=employees, 
+                         roles=ProjectRole, periods=PeriodType, leave_types=LeaveType)
+
+@main_bp.route('/projects/<project_id>/dogs/add', methods=['GET', 'POST'])
+@login_required
+def project_dog_add(project_id):
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    if request.method == 'POST':
+        try:
+            dog_assignment = ProjectDog(
+                project_id=project_id,
+                dog_id=request.form['dog_id'],
+                is_active=True,
+                assigned_date=date.today()
+            )
+            
+            db.session.add(dog_assignment)
+            db.session.commit()
+            
+            log_audit(current_user.id, 'CREATE', 'ProjectDog', str(dog_assignment.id), 
+                     {'project': project.name, 'dog': dog_assignment.dog.name})
+            flash('تم تعيين الكلب للمشروع بنجاح', 'success')
+            return redirect(url_for('main.project_assignments', project_id=project_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء التعيين: {str(e)}', 'error')
+    
+    # Get available dogs
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+    else:
+        dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+    
+    return render_template('projects/dog_add.html', project=project, dogs=dogs)
+
+# Enhanced Projects Section - Incidents
+@main_bp.route('/projects/<project_id>/incidents')
+@login_required
+def project_incidents(project_id):
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    incidents = Incident.query.filter_by(project_id=project_id).order_by(Incident.incident_date.desc()).all()
+    
+    return render_template('projects/incidents.html', project=project, incidents=incidents)
+
+@main_bp.route('/projects/<project_id>/incidents/add', methods=['GET', 'POST'])
+@login_required
+def project_incident_add(project_id):
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    if request.method == 'POST':
+        try:
+            incident = Incident(
+                project_id=project_id,
+                name=request.form['name'],
+                incident_date=datetime.strptime(request.form['incident_date'], '%Y-%m-%d').date(),
+                incident_time=datetime.strptime(request.form['incident_time'], '%H:%M').time(),
+                incident_type=request.form['incident_type'],
+                description=request.form.get('description'),
+                location=request.form.get('location'),
+                severity=request.form.get('severity', 'MEDIUM'),
+                reported_by=request.form.get('reported_by') if request.form.get('reported_by') else None,
+                people_involved=request.form.getlist('people_involved'),
+                dogs_involved=request.form.getlist('dogs_involved'),
+                witness_statements=request.form.get('witness_statements'),
+                resolved=bool(request.form.get('resolved')),
+                resolution_notes=request.form.get('resolution_notes'),
+                resolution_date=datetime.strptime(request.form['resolution_date'], '%Y-%m-%d').date() if request.form.get('resolution_date') else None
+            )
+            
+            db.session.add(incident)
+            db.session.commit()
+            
+            log_audit(current_user.id, 'CREATE', 'Incident', str(incident.id), 
+                     {'project': project.name, 'incident': incident.name})
+            flash('تم تسجيل الحادث بنجاح', 'success')
+            return redirect(url_for('main.project_incidents', project_id=project_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء تسجيل الحادث: {str(e)}', 'error')
+    
+    # Get employees and dogs for the form
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        employees = Employee.query.filter_by(is_active=True).all()
+        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+    else:
+        employees = Employee.query.filter_by(assigned_to_user_id=current_user.id, is_active=True).all()
+        dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+    
+    return render_template('projects/incident_add.html', project=project, employees=employees, dogs=dogs)
+
+# Enhanced Projects Section - Suspicions
+@main_bp.route('/projects/<project_id>/suspicions')
+@login_required
+def project_suspicions(project_id):
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    suspicions = Suspicion.query.filter_by(project_id=project_id).order_by(Suspicion.discovery_date.desc()).all()
+    
+    return render_template('projects/suspicions.html', project=project, suspicions=suspicions)
+
+@main_bp.route('/projects/<project_id>/suspicions/add', methods=['GET', 'POST'])
+@login_required
+def project_suspicion_add(project_id):
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    if request.method == 'POST':
+        try:
+            suspicion = Suspicion(
+                project_id=project_id,
+                element_type=ElementType(request.form['element_type']),
+                subtype=request.form.get('subtype'),
+                discovery_date=datetime.strptime(request.form['discovery_date'], '%Y-%m-%d').date(),
+                discovery_time=datetime.strptime(request.form['discovery_time'], '%H:%M').time(),
+                location=request.form['location'],
+                detected_by_dog=request.form.get('detected_by_dog') if request.form.get('detected_by_dog') else None,
+                handler=request.form.get('handler') if request.form.get('handler') else None,
+                detection_method=request.form.get('detection_method'),
+                description=request.form.get('description'),
+                quantity_estimate=request.form.get('quantity_estimate'),
+                authorities_notified=bool(request.form.get('authorities_notified')),
+                evidence_collected=bool(request.form.get('evidence_collected')),
+                follow_up_required=bool(request.form.get('follow_up_required')),
+                follow_up_notes=request.form.get('follow_up_notes')
+            )
+            
+            db.session.add(suspicion)
+            db.session.commit()
+            
+            log_audit(current_user.id, 'CREATE', 'Suspicion', str(suspicion.id), 
+                     {'project': project.name, 'element': suspicion.element_type.value})
+            flash('تم تسجيل الاشتباه بنجاح', 'success')
+            return redirect(url_for('main.project_suspicions', project_id=project_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء تسجيل الاشتباه: {str(e)}', 'error')
+    
+    # Get employees and dogs for the form
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        employees = Employee.query.filter_by(is_active=True).all()
+        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+    else:
+        employees = Employee.query.filter_by(assigned_to_user_id=current_user.id, is_active=True).all()
+        dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+    
+    return render_template('projects/suspicion_add.html', project=project, employees=employees, dogs=dogs, element_types=ElementType)
+
+# Enhanced Projects Section - Performance Evaluations
+@main_bp.route('/projects/<project_id>/evaluations')
+@login_required
+def project_evaluations(project_id):
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    evaluations = PerformanceEvaluation.query.filter_by(project_id=project_id).order_by(PerformanceEvaluation.evaluation_date.desc()).all()
+    
+    return render_template('projects/evaluations.html', project=project, evaluations=evaluations)
+
+@main_bp.route('/projects/<project_id>/evaluations/add', methods=['GET', 'POST'])
+@login_required
+def project_evaluation_add(project_id):
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    if request.method == 'POST':
+        try:
+            evaluation = PerformanceEvaluation(
+                project_id=project_id,
+                evaluator_id=current_user.id,
+                target_type=TargetType(request.form['target_type']),
+                target_employee_id=request.form.get('target_employee_id') if request.form.get('target_employee_id') else None,
+                target_dog_id=request.form.get('target_dog_id') if request.form.get('target_dog_id') else None,
+                evaluation_date=datetime.strptime(request.form['evaluation_date'], '%Y-%m-%d').date(),
+                rating=PerformanceRating(request.form['rating']),
+                uniform_ok=bool(request.form.get('uniform_ok')),
+                id_card_ok=bool(request.form.get('id_card_ok')),
+                appearance_ok=bool(request.form.get('appearance_ok')),
+                cleanliness_ok=bool(request.form.get('cleanliness_ok')),
+                punctuality=int(request.form['punctuality']) if request.form.get('punctuality') else None,
+                job_knowledge=int(request.form['job_knowledge']) if request.form.get('job_knowledge') else None,
+                teamwork=int(request.form['teamwork']) if request.form.get('teamwork') else None,
+                communication=int(request.form['communication']) if request.form.get('communication') else None,
+                obedience_level=int(request.form['obedience_level']) if request.form.get('obedience_level') else None,
+                detection_accuracy=int(request.form['detection_accuracy']) if request.form.get('detection_accuracy') else None,
+                physical_condition=int(request.form['physical_condition']) if request.form.get('physical_condition') else None,
+                handler_relationship=int(request.form['handler_relationship']) if request.form.get('handler_relationship') else None,
+                strengths=request.form.get('strengths'),
+                areas_for_improvement=request.form.get('areas_for_improvement'),
+                comments=request.form.get('comments'),
+                recommendations=request.form.get('recommendations')
+            )
+            
+            db.session.add(evaluation)
+            db.session.commit()
+            
+            target_name = evaluation.target_employee.name if evaluation.target_employee else evaluation.target_dog.name
+            log_audit(current_user.id, 'CREATE', 'PerformanceEvaluation', str(evaluation.id), 
+                     {'project': project.name, 'target': target_name, 'rating': evaluation.rating.value})
+            flash('تم تسجيل التقييم بنجاح', 'success')
+            return redirect(url_for('main.project_evaluations', project_id=project_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء تسجيل التقييم: {str(e)}', 'error')
+    
+    # Get employees and dogs for the form
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        employees = Employee.query.filter_by(is_active=True).all()
+        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+    else:
+        employees = Employee.query.filter_by(assigned_to_user_id=current_user.id, is_active=True).all()
+        dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+    
+    return render_template('projects/evaluation_add.html', project=project, employees=employees, dogs=dogs, 
+                         target_types=TargetType, ratings=PerformanceRating)
 
 # Attendance routes
 @main_bp.route('/attendance')
