@@ -48,7 +48,7 @@
                         <td>{{ project.manager.full_name if project.manager else '-' }}</td>
                         <td>
                             {% set status_map = {
-                                'PLANNING': {'class': 'info', 'text': 'تخطيط'},
+                                'PLANNED': {'class': 'info', 'text': 'مخطط'},
                                 'ACTIVE': {'class': 'success', 'text': 'نشط'},
                                 'COMPLETED': {'class': 'primary', 'text': 'مكتمل'},
                                 'CANCELLED': {'class': 'danger', 'text': 'ملغي'}
