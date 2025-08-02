@@ -709,10 +709,28 @@ def project_assignment_add(project_id):
     
     if request.method == 'POST':
         try:
+            # Get the employee to determine their role
+            employee = Employee.query.get(request.form['employee_id'])
+            if not employee:
+                flash('الموظف المحدد غير موجود', 'error')
+                return redirect(url_for('main.project_assignment_add', project_id=project_id))
+            
+            # Map employee role to project role
+            role_mapping = {
+                EmployeeRole.HANDLER: ProjectRole.HANDLER,
+                EmployeeRole.VET: ProjectRole.VET,
+                EmployeeRole.PROJECT_MANAGER: ProjectRole.PROJECT_MANAGER
+            }
+            
+            project_role = role_mapping.get(employee.role)
+            if not project_role:
+                flash('دور الموظف غير مدعوم في المشاريع', 'error')
+                return redirect(url_for('main.project_assignment_add', project_id=project_id))
+            
             assignment = ProjectAssignment(
                 project_id=project_uuid,
                 employee_id=request.form['employee_id'],
-                role=ProjectRole(request.form['role']),
+                role=project_role,
                 period=PeriodType(request.form['period']),
                 is_present=True,
                 leave_type=LeaveType(request.form['leave_type']) if request.form.get('leave_type') else None
@@ -737,7 +755,7 @@ def project_assignment_add(project_id):
         employees = Employee.query.filter_by(assigned_to_user_id=current_user.id, is_active=True).all()
     
     return render_template('projects/assignment_add.html', project=project, employees=employees, 
-                         roles=ProjectRole, periods=PeriodType, leave_types=LeaveType)
+                         periods=PeriodType, leave_types=LeaveType)
 
 # Project Status Management
 @main_bp.route('/projects/<project_id>/status', methods=['POST'])

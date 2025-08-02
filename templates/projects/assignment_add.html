@@ -13,36 +13,21 @@
                 <div class="card-body">
                     <form method="POST">
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <div class="mb-3">
                                     <label for="employee_id" class="form-label">الموظف *</label>
-                                    <select class="form-select" id="employee_id" name="employee_id" required>
+                                    <select class="form-select" id="employee_id" name="employee_id" required onchange="showEmployeeRole()">
                                         <option value="">اختر موظف</option>
                                         {% for employee in employees %}
-                                        <option value="{{ employee.id }}">{{ employee.name }} - {{ employee.employee_id }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="role" class="form-label">الدور *</label>
-                                    <select class="form-select" id="role" name="role" required>
-                                        <option value="">اختر الدور</option>
-                                        {% for role in roles %}
-                                        <option value="{{ role.value }}">
-                                            {% if role.value == 'PROJECT_MANAGER' %}
-                                                مسؤول مشروع
-                                            {% elif role.value == 'HANDLER' %}
-                                                سائس
-                                            {% elif role.value == 'TRAINER' %}
-                                                مدرب
-                                            {% elif role.value == 'VET' %}
-                                                طبيب
-                                            {% endif %}
+                                        <option value="{{ employee.id }}" data-role="{{ employee.role.value }}">
+                                            {{ employee.name }} - {{ employee.employee_id }} 
+                                            ({% if employee.role.value == 'HANDLER' %}سائس{% elif employee.role.value == 'VET' %}طبيب{% elif employee.role.value == 'PROJECT_MANAGER' %}مسؤول مشروع{% endif %})
                                         </option>
                                         {% endfor %}
                                     </select>
+                                </div>
+                                <div id="selectedEmployeeRole" class="alert alert-info" style="display: none;">
+                                    <strong>دور الموظف:</strong> <span id="roleDisplay"></span>
                                 </div>
                             </div>
                         </div>
@@ -102,4 +87,27 @@
         </div>
     </div>
 </div>
+
+<script>
+function showEmployeeRole() {
+    const select = document.getElementById('employee_id');
+    const roleDisplay = document.getElementById('roleDisplay');
+    const roleContainer = document.getElementById('selectedEmployeeRole');
+    
+    if (select.value) {
+        const selectedOption = select.options[select.selectedIndex];
+        const role = selectedOption.getAttribute('data-role');
+        
+        let roleText = '';
+        if (role === 'HANDLER') roleText = 'سائس';
+        else if (role === 'VET') roleText = 'طبيب';
+        else if (role === 'PROJECT_MANAGER') roleText = 'مسؤول مشروع';
+        
+        roleDisplay.textContent = roleText;
+        roleContainer.style.display = 'block';
+    } else {
+        roleContainer.style.display = 'none';
+    }
+}
+</script>
 {% endblock %}

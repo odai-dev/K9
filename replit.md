@@ -10,6 +10,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (Updated - August 2, 2025)
 
+✅ **Project Assignment Simplified - August 2, 2025**
+- Simplified project employee assignment by removing redundant role selection
+- Employee roles are now automatically used when assigning to projects (سائس/طبيب/مسؤول مشروع)
+- Assignment form now shows employee role inline and maps it automatically
+- Added JavaScript to display selected employee's role for confirmation
+- No need to re-specify roles when adding employees to projects
+
 ✅ **Employee Role System Simplified - August 2, 2025**
 - Simplified employee roles to only three options as requested:
   * سائس (Handler) - for dog handlers
