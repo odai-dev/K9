@@ -8,7 +8,7 @@ This is a comprehensive K9 operations management system built for military/polic
 
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes (Migration Completed - July 31, 2025)
+## Recent Changes (Updated - August 2, 2025)
 
 ✅ **Production/Breeding System Enhancement** (8 comprehensive sections)
 - Added complete breeding management system as requested:
@@ -35,8 +35,15 @@ Preferred communication style: Simple, everyday language.
 - Application now running on port 5000 with gunicorn
 - Fixed template date calculation errors in dog views
 - Fixed role mapping issues in employee templates
-- Resolved microchip_id unique constraint issues (empty strings converted to NULL)
+- Resolved microchip_id unique constraint issues (empty strings converted to NULL)  
 - All console errors eliminated and application fully functional
+
+✅ **Employee Form Cleanup - August 2, 2025**
+- Removed "الرقم المدني" (Civil ID) field from employee management
+- Removed "القسم" (Department) and "الرتبة" (Rank) fields from work information section
+- Updated Employee model, templates (add.html, edit.html, list.html), and routes
+- Cleaned database by dropping unused columns
+- Simplified employee forms to show only essential information
 
 ✅ **Production/Breeding System Enhancement** (8 comprehensive sections)
 - Added complete breeding management system as requested:
