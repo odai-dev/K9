@@ -598,6 +598,63 @@ def projects_add():
     
     return render_template('projects/add.html', employees=employees, dogs=dogs, managers=managers)
 
+# Project Dashboard Route
+@main_bp.route('/projects/<project_id>/dashboard')
+@login_required
+def project_dashboard(project_id):
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    # Get dashboard statistics
+    stats = {}
+    
+    # Assignment statistics
+    employee_assignments = ProjectAssignment.query.filter_by(project_id=project_id).count()
+    dog_assignments = ProjectDog.query.filter_by(project_id=project_id).count()
+    active_employee_assignments = ProjectAssignment.query.filter_by(project_id=project_id, is_present=True).count()
+    active_dog_assignments = ProjectDog.query.filter_by(project_id=project_id, is_active=True).count()
+    
+    # Incident statistics
+    total_incidents = Incident.query.filter_by(project_id=project_id).count()
+    resolved_incidents = Incident.query.filter_by(project_id=project_id, resolved=True).count()
+    pending_incidents = total_incidents - resolved_incidents
+    
+    # Suspicion statistics
+    total_suspicions = Suspicion.query.filter_by(project_id=project_id).count()
+    confirmed_suspicions = Suspicion.query.filter_by(project_id=project_id, is_confirmed=True).count()
+    
+    # Evaluation statistics
+    total_evaluations = PerformanceEvaluation.query.filter_by(project_id=project_id).count()
+    
+    stats = {
+        'employee_assignments': employee_assignments,
+        'dog_assignments': dog_assignments,
+        'active_employee_assignments': active_employee_assignments,
+        'active_dog_assignments': active_dog_assignments,
+        'total_incidents': total_incidents,
+        'resolved_incidents': resolved_incidents,
+        'pending_incidents': pending_incidents,
+        'total_suspicions': total_suspicions,
+        'confirmed_suspicions': confirmed_suspicions,
+        'total_evaluations': total_evaluations
+    }
+    
+    # Recent activities
+    recent_incidents = Incident.query.filter_by(project_id=project_id).order_by(Incident.incident_date.desc()).limit(5).all()
+    recent_suspicions = Suspicion.query.filter_by(project_id=project_id).order_by(Suspicion.discovery_date.desc()).limit(5).all()
+    recent_evaluations = PerformanceEvaluation.query.filter_by(project_id=project_id).order_by(PerformanceEvaluation.evaluation_date.desc()).limit(5).all()
+    
+    return render_template('projects/dashboard.html', 
+                         project=project, 
+                         stats=stats,
+                         recent_incidents=recent_incidents,
+                         recent_suspicions=recent_suspicions,
+                         recent_evaluations=recent_evaluations)
+
 # Enhanced Projects Section - Project Assignments
 @main_bp.route('/projects/<project_id>/assignments')
 @login_required

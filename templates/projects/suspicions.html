@@ -18,13 +18,26 @@
                 </div>
             </div>
 
-            <!-- Project Navigation Tabs -->
-            <nav class="nav nav-tabs mb-4">
-                <a class="nav-link" href="{{ url_for('main.project_assignments', project_id=project.id) }}">التعيينات</a>
-                <a class="nav-link" href="{{ url_for('main.project_incidents', project_id=project.id) }}">الحوادث</a>
-                <a class="nav-link active" href="{{ url_for('main.project_suspicions', project_id=project.id) }}">الاشتباهات</a>
-                <a class="nav-link" href="{{ url_for('main.project_evaluations', project_id=project.id) }}">التقييمات</a>
-            </nav>
+            <!-- Project Navigation -->
+            <div class="mb-3">
+                <div class="btn-group w-100" role="group">
+                    <a href="{{ url_for('main.project_dashboard', project_id=project.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-tachometer-alt me-2"></i>لوحة التحكم
+                    </a>
+                    <a href="{{ url_for('main.project_assignments', project_id=project.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-users me-2"></i>التعيينات
+                    </a>
+                    <a href="{{ url_for('main.project_incidents', project_id=project.id) }}" class="btn btn-outline-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>الحوادث
+                    </a>
+                    <a href="{{ url_for('main.project_suspicions', project_id=project.id) }}" class="btn btn-info">
+                        <i class="fas fa-search me-2"></i>الاشتباهات
+                    </a>
+                    <a href="{{ url_for('main.project_evaluations', project_id=project.id) }}" class="btn btn-outline-success">
+                        <i class="fas fa-star me-2"></i>التقييمات
+                    </a>
+                </div>
+            </div>
 
             <!-- Suspicions List -->
             <div class="card">
