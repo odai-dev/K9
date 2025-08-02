@@ -246,10 +246,10 @@
                                 </div>
                                 <small class="text-nowrap">{{ suspicion.discovery_date.strftime('%Y-%m-%d') }}</small>
                             </div>
-                            {% if suspicion.is_confirmed %}
-                                <span class="badge bg-success mt-1">مؤكد</span>
+                            {% if suspicion.evidence_collected %}
+                                <span class="badge bg-success mt-1">تم جمع الأدلة</span>
                             {% else %}
-                                <span class="badge bg-warning mt-1">غير مؤكد</span>
+                                <span class="badge bg-warning mt-1">في الانتظار</span>
                             {% endif %}
                         </div>
                         {% endfor %}

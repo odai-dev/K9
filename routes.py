@@ -625,7 +625,7 @@ def project_dashboard(project_id):
     
     # Suspicion statistics
     total_suspicions = Suspicion.query.filter_by(project_id=project_id).count()
-    confirmed_suspicions = Suspicion.query.filter_by(project_id=project_id, is_confirmed=True).count()
+    confirmed_suspicions = Suspicion.query.filter_by(project_id=project_id, evidence_collected=True).count()
     
     # Evaluation statistics
     total_evaluations = PerformanceEvaluation.query.filter_by(project_id=project_id).count()
@@ -766,6 +766,28 @@ def project_incidents(project_id):
     incidents = Incident.query.filter_by(project_id=project_id).order_by(Incident.incident_date.desc()).all()
     
     return render_template('projects/incidents.html', project=project, incidents=incidents)
+
+@main_bp.route('/projects/<project_id>/incidents/resolve')
+@login_required
+def project_resolve_incident(project_id):
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    incident_id = request.args.get('incident_id')
+    if incident_id:
+        incident = Incident.query.get_or_404(incident_id)
+        incident.resolved = True
+        incident.resolution_date = datetime.now().date()
+        db.session.commit()
+        
+        log_audit(current_user.id, 'UPDATE', 'Incident', str(incident.id), {'resolved': True})
+        flash('تم تمييز الحادث كمحلول', 'success')
+    
+    return redirect(url_for('main.project_incidents', project_id=project_id))
 
 @main_bp.route('/projects/<project_id>/incidents/add', methods=['GET', 'POST'])
 @login_required
