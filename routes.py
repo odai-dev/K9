@@ -731,9 +731,9 @@ def project_assignment_add(project_id):
                 project_id=project_uuid,
                 employee_id=request.form['employee_id'],
                 role=project_role,
-                period=PeriodType(request.form['period']),
-                is_present=True,
-                leave_type=LeaveType(request.form['leave_type']) if request.form.get('leave_type') else None
+                period=PeriodType.MORNING,  # Default period
+                is_present=True,  # Default to present
+                leave_type=None
             )
             
             db.session.add(assignment)
@@ -754,8 +754,7 @@ def project_assignment_add(project_id):
     else:
         employees = Employee.query.filter_by(assigned_to_user_id=current_user.id, is_active=True).all()
     
-    return render_template('projects/assignment_add.html', project=project, employees=employees, 
-                         periods=PeriodType, leave_types=LeaveType)
+    return render_template('projects/assignment_add.html', project=project, employees=employees)
 
 # Project Status Management
 @main_bp.route('/projects/<project_id>/status', methods=['POST'])

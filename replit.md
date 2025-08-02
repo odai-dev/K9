@@ -13,9 +13,10 @@ Preferred communication style: Simple, everyday language.
 ✅ **Project Assignment Simplified - August 2, 2025**
 - Simplified project employee assignment by removing redundant role selection
 - Employee roles are now automatically used when assigning to projects (سائس/طبيب/مسؤول مشروع)
+- Removed period selection (الفترة) and attendance checkbox since attendance is managed separately
 - Assignment form now shows employee role inline and maps it automatically
-- Added JavaScript to display selected employee's role for confirmation
-- No need to re-specify roles when adding employees to projects
+- Simple employee selection process - just choose employees to add to project
+- Period and attendance details are handled in the dedicated attendance tracking system
 
 ✅ **Employee Role System Simplified - August 2, 2025**
 - Simplified employee roles to only three options as requested:
