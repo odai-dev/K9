@@ -28,12 +28,10 @@
                             <strong>الحالة:</strong><br>
                             {% if project.status == 'PLANNED' %}
                                 <span class="badge bg-info">مخطط</span>
-                            {% elif project.status == 'IN_PROGRESS' %}
-                                <span class="badge bg-warning">قيد التنفيذ</span>
+                            {% elif project.status == 'ACTIVE' %}
+                                <span class="badge bg-warning">نشط</span>
                             {% elif project.status == 'COMPLETED' %}
                                 <span class="badge bg-success">مكتمل</span>
-                            {% elif project.status == 'ON_HOLD' %}
-                                <span class="badge bg-secondary">معلق</span>
                             {% elif project.status == 'CANCELLED' %}
                                 <span class="badge bg-danger">ملغي</span>
                             {% endif %}
@@ -65,6 +63,40 @@
                             <span class="text-muted">{{ project.location or '-' }}</span>
                         </div>
                     </div>
+                    
+                    <!-- Project Status Actions -->
+                    {% if project.status != 'COMPLETED' and project.status != 'CANCELLED' %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="d-flex gap-2 justify-content-center">
+                                {% if project.status == 'PLANNED' %}
+                                    <form method="POST" action="{{ url_for('main.project_status_change', project_id=project.id) }}" class="d-inline">
+                                        <input type="hidden" name="status" value="ACTIVE">
+                                        <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('هل أنت متأكد من بدء المشروع؟')">
+                                            <i class="fas fa-play me-2"></i>بدء المشروع
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                
+                                {% if project.status == 'ACTIVE' %}
+                                    <form method="POST" action="{{ url_for('main.project_status_change', project_id=project.id) }}" class="d-inline">
+                                        <input type="hidden" name="status" value="COMPLETED">
+                                        <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('هل أنت متأكد من إنهاء المشروع؟ سيتم تسجيل تاريخ الانتهاء تلقائياً.')">
+                                            <i class="fas fa-check me-2"></i>إنهاء المشروع
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                
+                                <form method="POST" action="{{ url_for('main.project_status_change', project_id=project.id) }}" class="d-inline">
+                                    <input type="hidden" name="status" value="CANCELLED">
+                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('هل أنت متأكد من إلغاء المشروع؟')">
+                                        <i class="fas fa-times me-2"></i>إلغاء المشروع
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

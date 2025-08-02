@@ -551,14 +551,8 @@ def projects_add():
             
             if request.form.get('start_date'):
                 project.start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d').date()
-            if request.form.get('end_date'):
-                project.end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d').date()
             if request.form.get('expected_completion_date'):
                 project.expected_completion_date = datetime.strptime(request.form['expected_completion_date'], '%Y-%m-%d').date()
-            
-            # Calculate duration automatically
-            if project.start_date and project.end_date:
-                project.duration_days = project.calculate_duration()
             
             db.session.add(project)
             db.session.flush()  # Get the project ID
@@ -728,6 +722,55 @@ def project_assignment_add(project_id):
     
     return render_template('projects/assignment_add.html', project=project, employees=employees, 
                          roles=ProjectRole, periods=PeriodType, leave_types=LeaveType)
+
+# Project Status Management
+@main_bp.route('/projects/<project_id>/status', methods=['POST'])
+@login_required
+def project_status_change(project_id):
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بتغيير حالة هذا المشروع', 'error')
+        return redirect(url_for('main.project_dashboard', project_id=project_id))
+    
+    new_status = request.form.get('status')
+    if not new_status or new_status not in ['PLANNED', 'ACTIVE', 'COMPLETED', 'CANCELLED']:
+        flash('حالة المشروع غير صحيحة', 'error')
+        return redirect(url_for('main.project_dashboard', project_id=project_id))
+    
+    try:
+        old_status = project.status
+        project.status = ProjectStatus(new_status)
+        
+        # If completing the project, automatically set end_date and calculate duration
+        if new_status == 'COMPLETED' and not project.end_date:
+            project.end_date = datetime.now().date()
+            if project.start_date:
+                project.duration_days = (project.end_date - project.start_date).days
+        
+        db.session.commit()
+        
+        # Log the status change
+        log_audit(current_user.id, 'UPDATE', 'Project', str(project.id), 
+                 {'status_change': f'{old_status} -> {new_status}', 'end_date': str(project.end_date) if project.end_date else None})
+        
+        status_names = {
+            'PLANNED': 'مخطط',
+            'ACTIVE': 'نشط', 
+            'COMPLETED': 'مكتمل',
+            'CANCELLED': 'ملغي'
+        }
+        
+        flash(f'تم تغيير حالة المشروع إلى: {status_names.get(new_status, new_status)}', 'success')
+        if new_status == 'COMPLETED':
+            flash(f'تم إنهاء المشروع بتاريخ: {project.end_date.strftime("%Y-%m-%d")}', 'info')
+            
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء تغيير حالة المشروع: {str(e)}', 'error')
+    
+    return redirect(url_for('main.project_dashboard', project_id=project_id))
 
 @main_bp.route('/projects/<project_id>/dogs/add', methods=['GET', 'POST'])
 @login_required
