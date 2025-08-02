@@ -76,14 +76,13 @@ def create_app():
         admin_user = User.query.filter_by(username='admin').first()
         if not admin_user:
             from werkzeug.security import generate_password_hash
-            admin_user = User(
-                username='admin',
-                email='admin@k9operations.mil',
-                password_hash=generate_password_hash('admin123'),
-                role=UserRole.GENERAL_ADMIN,
-                full_name='مدير النظام العام',
-                active=True
-            )
+            admin_user = User()
+            admin_user.username = 'admin'
+            admin_user.email = 'admin@k9operations.mil'
+            admin_user.password_hash = generate_password_hash('admin123')
+            admin_user.role = UserRole.GENERAL_ADMIN
+            admin_user.full_name = 'مدير النظام العام'
+            admin_user.active = True
             db.session.add(admin_user)
             db.session.commit()
             logging.info("Default admin user created: admin/admin123")
