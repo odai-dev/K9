@@ -46,11 +46,6 @@
                         </div>
                         
                         <div class="col-md-6 mb-3">
-                            <label for="id_number" class="form-label">الرقم المدني <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="id_number" name="id_number" required>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
                             <label for="role" class="form-label">المنصب <span class="text-danger">*</span></label>
                             <select class="form-select" id="role" name="role" required onchange="toggleProjectManagerFields()">
                                 <option value="">اختر المنصب</option>
@@ -85,37 +80,7 @@
                         </div>
                     </div>
 
-                    <!-- Work Information -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">معلومات العمل</h6>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="department" class="form-label">القسم</label>
-                            <input type="text" class="form-control" id="department" name="department">
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="rank" class="form-label">الرتبة</label>
-                            <select class="form-select" id="rank" name="rank">
-                                <option value="">اختر الرتبة</option>
-                                <option value="جندي">جندي</option>
-                                <option value="جندي أول">جندي أول</option>
-                                <option value="عريف">عريف</option>
-                                <option value="رقيب">رقيب</option>
-                                <option value="رقيب أول">رقيب أول</option>
-                                <option value="مساعد">مساعد</option>
-                                <option value="ملازم">ملازم</option>
-                                <option value="ملازم أول">ملازم أول</option>
-                                <option value="نقيب">نقيب</option>
-                                <option value="رائد">رائد</option>
-                                <option value="مقدم">مقدم</option>
-                                <option value="عقيد">عقيد</option>
-                                <option value="عميد">عميد</option>
-                            </select>
-                        </div>
-                    </div>
+
 
                     <!-- Project Manager Account Creation (only visible for General Admin) -->
                     {% if current_user.role.value == 'GENERAL_ADMIN' %}

@@ -46,11 +46,6 @@
                         </div>
                         
                         <div class="col-md-6 mb-3">
-                            <label for="id_number" class="form-label">الرقم المدني <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="id_number" name="id_number" value="{{ employee.id_number }}" required>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
                             <label for="role" class="form-label">المنصب <span class="text-danger">*</span></label>
                             <select class="form-select" id="role" name="role" required>
                                 <option value="HANDLER" {{ 'selected' if employee.role.name == 'HANDLER' else '' }}>معالج</option>
@@ -91,38 +86,6 @@
                         <div class="col-md-6 mb-3">
                             <label for="email" class="form-label">البريد الإلكتروني</label>
                             <input type="email" class="form-control" id="email" name="email" value="{{ employee.email or '' }}">
-                        </div>
-                    </div>
-
-                    <!-- Work Information -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">معلومات العمل</h6>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="department" class="form-label">القسم</label>
-                            <input type="text" class="form-control" id="department" name="department" value="{{ employee.department or '' }}">
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="rank" class="form-label">الرتبة</label>
-                            <select class="form-select" id="rank" name="rank">
-                                <option value="">اختر الرتبة</option>
-                                <option value="جندي" {{ 'selected' if employee.rank == 'جندي' else '' }}>جندي</option>
-                                <option value="جندي أول" {{ 'selected' if employee.rank == 'جندي أول' else '' }}>جندي أول</option>
-                                <option value="عريف" {{ 'selected' if employee.rank == 'عريف' else '' }}>عريف</option>
-                                <option value="رقيب" {{ 'selected' if employee.rank == 'رقيب' else '' }}>رقيب</option>
-                                <option value="رقيب أول" {{ 'selected' if employee.rank == 'رقيب أول' else '' }}>رقيب أول</option>
-                                <option value="مساعد" {{ 'selected' if employee.rank == 'مساعد' else '' }}>مساعد</option>
-                                <option value="ملازم" {{ 'selected' if employee.rank == 'ملازم' else '' }}>ملازم</option>
-                                <option value="ملازم أول" {{ 'selected' if employee.rank == 'ملازم أول' else '' }}>ملازم أول</option>
-                                <option value="نقيب" {{ 'selected' if employee.rank == 'نقيب' else '' }}>نقيب</option>
-                                <option value="رائد" {{ 'selected' if employee.rank == 'رائد' else '' }}>رائد</option>
-                                <option value="مقدم" {{ 'selected' if employee.rank == 'مقدم' else '' }}>مقدم</option>
-                                <option value="عقيد" {{ 'selected' if employee.rank == 'عقيد' else '' }}>عقيد</option>
-                                <option value="عميد" {{ 'selected' if employee.rank == 'عميد' else '' }}>عميد</option>
-                            </select>
                         </div>
                     </div>
 

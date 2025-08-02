@@ -161,7 +161,6 @@ class Employee(db.Model):
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = db.Column(db.String(100), nullable=False)
     employee_id = db.Column(db.String(20), unique=True, nullable=False)
-    id_number = db.Column(db.String(20), unique=True, nullable=False)
     role = db.Column(db.Enum(EmployeeRole), nullable=False)
     phone = db.Column(db.String(20))
     email = db.Column(db.String(120))
@@ -169,8 +168,6 @@ class Employee(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     
     # Additional info
-    department = db.Column(db.String(100))
-    rank = db.Column(db.String(50))
     certifications = db.Column(JSON, default=list)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

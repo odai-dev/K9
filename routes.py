@@ -241,13 +241,10 @@ def employees_add():
             employee = Employee(
                 name=request.form['name'],
                 employee_id=request.form['employee_id'],
-                id_number=request.form['id_number'],
                 role=request.form['role'],
                 phone=request.form.get('phone') or None,
                 email=request.form.get('email') or None,
                 hire_date=datetime.strptime(request.form['hire_date'], '%Y-%m-%d').date(),
-                department=request.form.get('department') or None,
-                rank=request.form.get('rank') or None,
                 assigned_to_user_id=current_user.id if current_user.role == UserRole.PROJECT_MANAGER else None
             )
             
@@ -324,13 +321,10 @@ def employees_edit(employee_id):
             
             employee.name = request.form['name']
             employee.employee_id = request.form['employee_id']
-            employee.id_number = request.form['id_number']
             employee.role = request.form['role']
             employee.phone = request.form.get('phone')
             employee.email = request.form.get('email')
             employee.hire_date = datetime.strptime(request.form['hire_date'], '%Y-%m-%d').date()
-            employee.department = request.form.get('department')
-            employee.rank = request.form.get('rank')
             employee.is_active = request.form.get('is_active') == 'on'
             employee.updated_at = datetime.utcnow()
             
