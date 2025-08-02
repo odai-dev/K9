@@ -6,25 +6,57 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 class="mb-0">{{ project.name }}</h2>
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">الرئيسية</a></li>
-                            <li class="breadcrumb-item"><a href="{{ url_for('main.projects_list') }}">المشاريع</a></li>
-                            <li class="breadcrumb-item active">التعيينات</li>
-                        </ol>
-                    </nav>
+            <!-- Project Header -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h4 class="mb-0">
+                                <i class="fas fa-project-diagram me-2"></i>
+                                {{ project.name }}
+                            </h4>
+                            <small>{{ project.main_task or 'لا توجد مهمة محددة' }}</small>
+                        </div>
+                        <div class="col-auto">
+                            <span class="badge bg-light text-dark">{{ project.code }}</span>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <a href="{{ url_for('main.project_dashboard', project_id=project.id) }}" class="btn btn-outline-primary">
-                        <i class="fas fa-chart-line me-2"></i>لوحة التحكم
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>تاريخ البداية:</strong><br>
+                            <span class="text-muted">{{ project.start_date.strftime('%Y-%m-%d') if project.start_date else '-' }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>تاريخ الانتهاء:</strong><br>
+                            <span class="text-muted">{{ project.end_date.strftime('%Y-%m-%d') if project.end_date else '-' }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>المدة:</strong><br>
+                            <span class="text-muted">{{ project.duration_days or 0 }} يوم</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>الموقع:</strong><br>
+                            <span class="text-muted">{{ project.location or '-' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Navigation -->
+            <div class="mb-3">
+                <div class="btn-group w-100" role="group">
+                    <a href="{{ url_for('main.project_dashboard', project_id=project.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-tachometer-alt me-2"></i>لوحة التحكم
                     </a>
-                    <a href="{{ url_for('main.project_incidents', project_id=project.id) }}" class="btn btn-outline-warning">
+                    <a href="{{ url_for('main.project_assignments', project_id=project.id) }}" class="btn btn-primary">
+                        <i class="fas fa-users me-2"></i>التعيينات
+                    </a>
+                    <a href="{{ url_for('main.project_incidents', project_id=project.id) }}" class="btn btn-outline-danger">
                         <i class="fas fa-exclamation-triangle me-2"></i>الحوادث
                     </a>
-                    <a href="{{ url_for('main.project_suspicions', project_id=project.id) }}" class="btn btn-outline-danger">
+                    <a href="{{ url_for('main.project_suspicions', project_id=project.id) }}" class="btn btn-outline-info">
                         <i class="fas fa-search me-2"></i>الاشتباهات
                     </a>
                     <a href="{{ url_for('main.project_evaluations', project_id=project.id) }}" class="btn btn-outline-success">
@@ -67,18 +99,18 @@
             <ul class="nav nav-tabs" id="projectTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="employees-tab" data-bs-toggle="tab" data-bs-target="#employees" type="button" role="tab">
-                        <i class="fas fa-users me-2"></i>الموظفون المكلفون
+                        <i class="fas fa-users me-2"></i>تعيين الموظفين
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="dogs-tab" data-bs-toggle="tab" data-bs-target="#dogs" type="button" role="tab">
-                        <i class="fas fa-dog me-2"></i>الكلاب المكلفة
+                        <i class="fas fa-dog me-2"></i>تعيين الكلاب
                     </button>
                 </li>
             </ul>
 
             <!-- Tab Content -->
-            <div class="tab-content mt-3">
+            <div class="tab-content" id="projectTabsContent">
                 <!-- Employee Assignments Tab -->
                 <div class="tab-pane fade show active" id="employees" role="tabpanel">
                     <div class="card">
@@ -91,10 +123,10 @@
                             </button>
                         </div>
                         <div class="card-body">
-                            {% if assignments %}
+                            {% if employee_assignments %}
                             <div class="table-responsive">
                                 <table class="table table-hover">
-                                    <thead>
+                                    <thead class="table-light">
                                         <tr>
                                             <th>الموظف</th>
                                             <th>الدور</th>
@@ -106,15 +138,15 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for assignment in assignments %}
+                                        {% for assignment in employee_assignments %}
                                         <tr>
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
-                                                        {{ assignment.employee.name[0] if assignment.employee.name else 'M' }}
+                                                    <div class="avatar bg-primary text-white rounded-circle me-2" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
+                                                        {{ assignment.employee.full_name[:1] }}
                                                     </div>
                                                     <div>
-                                                        <strong>{{ assignment.employee.name }}</strong><br>
+                                                        <strong>{{ assignment.employee.full_name }}</strong><br>
                                                         <small class="text-muted">{{ assignment.employee.employee_id }}</small>
                                                     </div>
                                                 </div>
@@ -188,7 +220,7 @@
                             <h5 class="mb-0">
                                 <i class="fas fa-dog me-2"></i>الكلاب المكلفة
                             </h5>
-                            <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#assignDogModal">
+                            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#assignDogModal">
                                 <i class="fas fa-plus me-2"></i>إضافة كلب
                             </button>
                         </div>
@@ -196,11 +228,11 @@
                             {% if dog_assignments %}
                             <div class="table-responsive">
                                 <table class="table table-hover">
-                                    <thead>
+                                    <thead class="table-light">
                                         <tr>
                                             <th>الكلب</th>
                                             <th>الكود</th>
-                                            <th>السلالة</th>
+                                            <th>النوع</th>
                                             <th>التخصص</th>
                                             <th>الحالة</th>
                                             <th>تاريخ التعيين</th>
@@ -212,9 +244,14 @@
                                         <tr>
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    <div class="avatar-sm bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                    {% if assignment.dog.photo %}
+                                                    <img src="{{ url_for('static', filename='uploads/' + assignment.dog.photo) }}" 
+                                                         class="rounded-circle me-2" style="width: 35px; height: 35px; object-fit: cover;">
+                                                    {% else %}
+                                                    <div class="avatar bg-info text-white rounded-circle me-2" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
                                                         <i class="fas fa-dog"></i>
                                                     </div>
+                                                    {% endif %}
                                                     <strong>{{ assignment.dog.name }}</strong>
                                                 </div>
                                             </td>
@@ -408,6 +445,68 @@ function toggleDogStatus(assignmentId) {
 function removeDogAssignment(assignmentId) {
     if (confirm('هل تريد إزالة هذا الكلب من المشروع؟')) {
         window.location.href = "{{ url_for('main.project_dog_remove', project_id=project.id) }}?assignment_id=" + assignmentId;
+    }
+}
+</script>
+            <form method="POST" action="{{ url_for('main.project_dog_add', project_id=project.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">تعيين كلب للمشروع</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="dog_id" class="form-label">الكلب *</label>
+                        <select class="form-select" id="dog_id" name="dog_id" required>
+                            <option value="">اختر كلب...</option>
+                            {% for dog in available_dogs %}
+                            <option value="{{ dog.id }}">{{ dog.name }} - {{ dog.code }} ({{ dog.breed }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assigned_date" class="form-label">تاريخ التعيين</label>
+                        <input type="date" class="form-control" id="assigned_date" name="assigned_date" value="{{ today }}">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                            <label class="form-check-label" for="is_active">
+                                نشط
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">تعيين الكلب</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editAssignment(assignmentId) {
+    // Implementation for editing assignment
+    alert('تعديل التعيين: ' + assignmentId);
+}
+
+function removeAssignment(assignmentId) {
+    if (confirm('هل أنت متأكد من إزالة هذا التعيين؟')) {
+        // Implementation for removing assignment
+        window.location.href = "{{ url_for('main.project_remove_employee', project_id=project.id) }}?assignment_id=" + assignmentId;
+    }
+}
+
+function toggleDogStatus(assignmentId) {
+    // Implementation for toggling dog status
+    alert('تغيير حالة الكلب: ' + assignmentId);
+}
+
+function removeDogAssignment(assignmentId) {
+    if (confirm('هل أنت متأكد من إزالة هذا الكلب من المشروع؟')) {
+        // Implementation for removing dog assignment
+        window.location.href = "{{ url_for('main.project_remove_dog', project_id=project.id) }}?assignment_id=" + assignmentId;
     }
 }
 </script>
