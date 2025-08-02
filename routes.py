@@ -669,7 +669,23 @@ def project_assignments(project_id):
     assignments = ProjectAssignment.query.filter_by(project_id=project_id).all()
     dog_assignments = ProjectDog.query.filter_by(project_id=project_id).all()
     
-    return render_template('projects/assignments.html', project=project, assignments=assignments, dog_assignments=dog_assignments)
+    # Get available employees and dogs for assignments
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        available_employees = Employee.query.filter_by(is_active=True).all()
+        available_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+        available_managers = User.query.filter_by(role=UserRole.PROJECT_MANAGER, active=True).all()
+    else:
+        available_employees = Employee.query.filter_by(assigned_to_user_id=current_user.id, is_active=True).all()
+        available_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+        available_managers = []  # PROJECT_MANAGER users can't change managers
+    
+    return render_template('projects/assignments.html', 
+                         project=project, 
+                         assignments=assignments, 
+                         dog_assignments=dog_assignments,
+                         available_employees=available_employees,
+                         available_dogs=available_dogs,
+                         available_managers=available_managers)
 
 @main_bp.route('/projects/<project_id>/assignments/add', methods=['GET', 'POST'])
 @login_required
@@ -751,6 +767,99 @@ def project_dog_add(project_id):
         dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
     
     return render_template('projects/dog_add.html', project=project, dogs=dogs)
+
+# Project Manager Change Route
+@main_bp.route('/projects/<project_id>/change-manager', methods=['POST'])
+@login_required
+def project_change_manager(project_id):
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('غير مسموح لك بتغيير مدير المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    project = Project.query.get_or_404(project_id)
+    new_manager_id = request.form.get('manager_id')
+    
+    if new_manager_id:
+        old_manager = project.manager.username if project.manager else 'غير محدد'
+        project.manager_id = new_manager_id
+        db.session.commit()
+        
+        new_manager = User.query.get(new_manager_id)
+        log_audit(current_user.id, 'UPDATE', 'Project', str(project.id), 
+                 {'manager_changed': f'من {old_manager} إلى {new_manager.username}'})
+        flash('تم تغيير مدير المشروع بنجاح', 'success')
+    
+    return redirect(url_for('main.project_assignments', project_id=project_id))
+
+# Assignment Management Routes
+@main_bp.route('/projects/<project_id>/assignments/remove')
+@login_required
+def project_assignment_remove(project_id):
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    assignment_id = request.args.get('assignment_id')
+    if assignment_id:
+        assignment = ProjectAssignment.query.get_or_404(assignment_id)
+        employee_name = assignment.employee.name
+        db.session.delete(assignment)
+        db.session.commit()
+        
+        log_audit(current_user.id, 'DELETE', 'ProjectAssignment', str(assignment.id), 
+                 {'project': project.name, 'employee': employee_name})
+        flash('تم حذف تعيين الموظف', 'success')
+    
+    return redirect(url_for('main.project_assignments', project_id=project_id))
+
+@main_bp.route('/projects/<project_id>/dogs/toggle')
+@login_required
+def project_dog_toggle(project_id):
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    assignment_id = request.args.get('assignment_id')
+    if assignment_id:
+        assignment = ProjectDog.query.get_or_404(assignment_id)
+        assignment.is_active = not assignment.is_active
+        db.session.commit()
+        
+        status = 'نشط' if assignment.is_active else 'غير نشط'
+        log_audit(current_user.id, 'UPDATE', 'ProjectDog', str(assignment.id), 
+                 {'dog': assignment.dog.name, 'status': status})
+        flash(f'تم تغيير حالة الكلب إلى {status}', 'success')
+    
+    return redirect(url_for('main.project_assignments', project_id=project_id))
+
+@main_bp.route('/projects/<project_id>/dogs/remove')
+@login_required
+def project_dog_remove(project_id):
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    assignment_id = request.args.get('assignment_id')
+    if assignment_id:
+        assignment = ProjectDog.query.get_or_404(assignment_id)
+        dog_name = assignment.dog.name
+        db.session.delete(assignment)
+        db.session.commit()
+        
+        log_audit(current_user.id, 'DELETE', 'ProjectDog', str(assignment.id), 
+                 {'project': project.name, 'dog': dog_name})
+        flash('تم حذف تعيين الكلب', 'success')
+    
+    return redirect(url_for('main.project_assignments', project_id=project_id))
 
 # Enhanced Projects Section - Incidents
 @main_bp.route('/projects/<project_id>/incidents')

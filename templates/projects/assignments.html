@@ -64,6 +64,36 @@
                     </a>
                 </div>
             </div>
+
+            <!-- Project Manager Section -->
+            {% if current_user.role.value == 'GENERAL_ADMIN' %}
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-tie me-2"></i>مدير المشروع
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <strong>المدير الحالي:</strong>
+                            <span class="badge bg-primary ms-2">
+                                {% if project.manager %}
+                                    {{ project.manager.username }}
+                                {% else %}
+                                    غير محدد
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#changeManagerModal">
+                                <i class="fas fa-edit me-2"></i>تغيير المدير
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
             
             <!-- Navigation Tabs -->
             <ul class="nav nav-tabs" id="projectTabs" role="tablist">
@@ -325,6 +355,99 @@
 <div class="modal fade" id="assignDogModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
+            <form method="POST" action="{{ url_for('main.project_dog_add', project_id=project.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">تعيين كلب للمشروع</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="dog_id" class="form-label">الكلب *</label>
+                        <select class="form-select" id="dog_id" name="dog_id" required>
+                            <option value="">اختر كلب...</option>
+                            {% for dog in available_dogs %}
+                            <option value="{{ dog.id }}">{{ dog.name }} - {{ dog.code }} ({{ dog.breed }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                            <label class="form-check-label" for="is_active">
+                                نشط في المشروع
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-success">تعيين الكلب</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Change Manager Modal -->
+{% if current_user.role.value == 'GENERAL_ADMIN' %}
+<div class="modal fade" id="changeManagerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('main.project_change_manager', project_id=project.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">تغيير مدير المشروع</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="manager_id" class="form-label">المدير الجديد *</label>
+                        <select class="form-select" id="manager_id" name="manager_id" required>
+                            <option value="">اختر مدير...</option>
+                            {% for manager in available_managers %}
+                            <option value="{{ manager.id }}" {% if project.manager_id == manager.id %}selected{% endif %}>
+                                {{ manager.username }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <small>سيتم تغيير مدير المشروع وصلاحيات الوصول تبعاً لذلك</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">تغيير المدير</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function editAssignment(assignmentId) {
+    alert('تعديل التعيين: ' + assignmentId);
+}
+
+function removeAssignment(assignmentId) {
+    if (confirm('هل تريد حذف هذا التعيين؟')) {
+        window.location.href = "{{ url_for('main.project_assignment_remove', project_id=project.id) }}?assignment_id=" + assignmentId;
+    }
+}
+
+function toggleDogStatus(assignmentId) {
+    if (confirm('هل تريد تغيير حالة هذا الكلب؟')) {
+        window.location.href = "{{ url_for('main.project_dog_toggle', project_id=project.id) }}?assignment_id=" + assignmentId;
+    }
+}
+
+function removeDogAssignment(assignmentId) {
+    if (confirm('هل تريد إزالة هذا الكلب من المشروع؟')) {
+        window.location.href = "{{ url_for('main.project_dog_remove', project_id=project.id) }}?assignment_id=" + assignmentId;
+    }
+}
+</script>
             <form method="POST" action="{{ url_for('main.project_assign_dog', project_id=project.id) }}">
                 <div class="modal-header">
                     <h5 class="modal-title">تعيين كلب للمشروع</h5>

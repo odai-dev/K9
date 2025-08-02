@@ -10,6 +10,20 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (Updated - August 2, 2025)
 
+✅ **Project Dashboard & Enhanced Assignment System - August 2, 2025**
+- Created comprehensive project dashboard system with real-time statistics
+- Added centralized overview for each project showing resources, incidents, suspicions, and evaluations
+- Enhanced project assignment management with improved UI and functionality:
+  * Project manager assignment and change capabilities (GENERAL_ADMIN only)
+  * Employee assignment with role selection (Handler, Trainer, Vet, Operations)
+  * Dog assignment with activity status tracking
+  * Period management (Morning, Evening, Night shifts)
+  * Easy removal and status toggle functionality
+- Fixed template routing errors (project_add_incident, project_assign_employee)
+- Added navigation between all project sections with consistent UI
+- Updated Suspicion model queries to use correct field names (evidence_collected)
+- All project functionality now accessible through intuitive dashboard interface
+
 ✅ **Migration to Replit Environment Completed - August 2, 2025**
 - Successfully migrated K9 Operations Management System from Replit Agent to Replit environment
 - Database provisioned and connected (PostgreSQL) with all environment variables configured
