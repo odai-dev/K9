@@ -1352,7 +1352,8 @@ def project_attendance_add(project_id):
                          assigned_dogs=assigned_dogs,
                          all_employees=all_employees,
                          periods=PeriodType,
-                         leave_types=LeaveType)
+                         leave_types=LeaveType,
+                         date=date)
 
 @main_bp.route('/projects/<project_id>/attendance/<attendance_id>')
 @login_required
