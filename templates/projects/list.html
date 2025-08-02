@@ -47,15 +47,17 @@
                         </td>
                         <td>{{ project.manager.full_name if project.manager else '-' }}</td>
                         <td>
-                            {% set status_map = {
-                                'PLANNED': {'class': 'info', 'text': 'مخطط'},
-                                'ACTIVE': {'class': 'success', 'text': 'نشط'},
-                                'COMPLETED': {'class': 'primary', 'text': 'مكتمل'},
-                                'CANCELLED': {'class': 'danger', 'text': 'ملغي'}
-                            } %}
-                            <span class="badge bg-{{ status_map[project.status.value]['class'] }}">
-                                {{ status_map[project.status.value]['text'] }}
-                            </span>
+                            {% if project.status.value == 'PLANNED' %}
+                                <span class="badge bg-info">مخطط</span>
+                            {% elif project.status.value == 'ACTIVE' %}
+                                <span class="badge bg-success">نشط</span>
+                            {% elif project.status.value == 'COMPLETED' %}
+                                <span class="badge bg-primary">مكتمل</span>
+                            {% elif project.status.value == 'CANCELLED' %}
+                                <span class="badge bg-danger">ملغي</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ project.status.value }}</span>
+                            {% endif %}
                         </td>
                         <td>
                             {% if project.start_date %}
