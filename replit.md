@@ -10,6 +10,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (Updated - August 2, 2025)
 
+✅ **Project Finish Date Management Enhancement - August 2, 2025**
+- Removed manual finish date input field from project creation form
+- Made end_date nullable in Project model (set automatically on completion)
+- Added automatic end date setting when project status changes to COMPLETED
+- Enhanced project dashboard with status change buttons:
+  * "بدء المشروع" (Start Project) - changes status from PLANNED to ACTIVE
+  * "إنهاء المشروع" (Complete Project) - changes status to COMPLETED and sets end_date
+  * "إلغاء المشروع" (Cancel Project) - changes status to CANCELLED
+- Added project status change route with audit logging
+- Fixed database schema constraint issues by making end_date nullable
+- Projects now automatically calculate duration when completed
+
 ✅ **Project Dashboard & Enhanced Assignment System - August 2, 2025**
 - Created comprehensive project dashboard system with real-time statistics
 - Added centralized overview for each project showing resources, incidents, suspicions, and evaluations
