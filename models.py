@@ -325,7 +325,7 @@ class Project(db.Model):
     
     # Dates
     start_date = db.Column(db.Date, nullable=False)
-    end_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=True)  # Set automatically when project is completed
     duration_days = db.Column(db.Integer)  # computed field
     expected_completion_date = db.Column(db.Date)
     
