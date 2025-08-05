@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}تعيينات الوردية - {{ shift.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Project and Shift Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title mb-1">
+                                <i class="fas fa-users me-2"></i>
+                                تعيينات الوردية - {{ shift.name }}
+                            </h3>
+                            <p class="text-muted mb-1">المشروع: {{ project.name }} ({{ project.code }})</p>
+                            <small class="text-muted">الوقت: {{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }}</small>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('main.project_shifts', project_id=project.id) }}" class="btn btn-outline-info me-2">
+                                <i class="fas fa-clock me-2"></i>إدارة الورديات
+                            </a>
+                            <a href="{{ url_for('main.project_attendance', project_id=project.id) }}" class="btn btn-outline-success me-2">
+                                <i class="fas fa-calendar-check me-2"></i>إدارة الحضور
+                            </a>
+                            <a href="{{ url_for('main.project_dashboard', project_id=project.id) }}" class="btn btn-outline-primary">
+                                <i class="fas fa-arrow-right ms-2"></i>لوحة التحكم
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Assignment Form -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-plus me-2"></i>
+                        إضافة تعيين جديد
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label for="entity_type" class="form-label">نوع العضو</label>
+                                <select name="entity_type" id="entity_type" class="form-select" required onchange="updateEntityOptions()">
+                                    <option value="">اختر النوع...</option>
+                                    <option value="EMPLOYEE">موظف</option>
+                                    <option value="DOG">كلب</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="entity_id" class="form-label">العضو</label>
+                                <select name="entity_id" id="entity_id" class="form-select" required>
+                                    <option value="">اختر العضو...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="notes" class="form-label">ملاحظات</label>
+                                <input type="text" name="notes" id="notes" class="form-control" placeholder="ملاحظات إضافية...">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-plus me-2"></i>إضافة
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Assignments -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        التعيينات الحالية ({{ assignments|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if assignments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>النوع</th>
+                                        <th>الاسم</th>
+                                        <th>الكود/الرقم</th>
+                                        <th>التفاصيل</th>
+                                        <th>تاريخ التعيين</th>
+                                        <th>ملاحظات</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for assignment in assignments %}
+                                        <tr>
+                                            <td>
+                                                {% if assignment.entity_type.value == 'EMPLOYEE' %}
+                                                    <i class="fas fa-user text-primary me-2"></i>موظف
+                                                {% else %}
+                                                    <i class="fas fa-dog text-warning me-2"></i>كلب
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <strong>{{ assignment.get_entity_name() }}</strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ assignment.get_entity_code() }}</span>
+                                            </td>
+                                            <td>
+                                                {% if assignment.entity_type.value == 'EMPLOYEE' %}
+                                                    {% set employee = assignment.entity_type == EntityType.EMPLOYEE and assignment.employee %}
+                                                    {% if employee %}
+                                                        {{ employee.role.value }}
+                                                    {% endif %}
+                                                {% else %}
+                                                    {% set dog = assignment.entity_type == EntityType.DOG and assignment.dog %}
+                                                    {% if dog %}
+                                                        {{ dog.breed }}
+                                                    {% endif %}
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ assignment.created_at.strftime('%Y-%m-%d %H:%M') if assignment.created_at else '-' }}</td>
+                                            <td>{{ assignment.notes or '-' }}</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#editAssignmentModal{{ assignment.id }}">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <form method="POST" action="{{ url_for('main.remove_shift_assignment', project_id=project.id, shift_id=shift.id, assignment_id=assignment.id) }}" 
+                                                          style="display: inline;" 
+                                                          onsubmit="return confirm('هل أنت متأكد من إزالة هذا التعيين؟')">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        
+                                        <!-- Edit Assignment Modal -->
+                                        <div class="modal fade" id="editAssignmentModal{{ assignment.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">تعديل تعيين {{ assignment.get_entity_name() }}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <form method="POST" action="{{ url_for('main.edit_shift_assignment', project_id=project.id, shift_id=shift.id, assignment_id=assignment.id) }}">
+                                                        <div class="modal-body">
+                                                            <div class="mb-3">
+                                                                <label for="editNotes{{ assignment.id }}" class="form-label">الملاحظات</label>
+                                                                <textarea name="notes" id="editNotes{{ assignment.id }}" class="form-control" rows="3">{{ assignment.notes or '' }}</textarea>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                                            <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-user-plus fa-3x mb-3"></i>
+                            <h5>لا توجد تعيينات لهذه الوردية</h5>
+                            <p>ابدأ بإضافة موظفين أو كلاب لهذه الوردية باستخدام النموذج أعلاه</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Employee and dog data for dynamic loading
+const availableEmployees = [
+    {% for employee in available_employees %}
+    {
+        id: "{{ employee.id }}",
+        name: "{{ employee.name }}",
+        code: "{{ employee.employee_id }}",
+        role: "{{ employee.role.value }}"
+    },
+    {% endfor %}
+];
+
+const availableDogs = [
+    {% for dog in available_dogs %}
+    {
+        id: "{{ dog.id }}",
+        name: "{{ dog.name }}",
+        code: "{{ dog.code }}",
+        breed: "{{ dog.breed }}"
+    },
+    {% endfor %}
+];
+
+function updateEntityOptions() {
+    const entityType = document.getElementById('entity_type').value;
+    const entitySelect = document.getElementById('entity_id');
+    
+    // Clear existing options
+    entitySelect.innerHTML = '<option value="">اختر العضو...</option>';
+    
+    if (entityType === 'EMPLOYEE') {
+        availableEmployees.forEach(employee => {
+            const option = document.createElement('option');
+            option.value = employee.id;
+            option.textContent = `${employee.name} (${employee.code}) - ${employee.role}`;
+            entitySelect.appendChild(option);
+        });
+    } else if (entityType === 'DOG') {
+        availableDogs.forEach(dog => {
+            const option = document.createElement('option');
+            option.value = dog.id;
+            option.textContent = `${dog.name} (${dog.code}) - ${dog.breed}`;
+            entitySelect.appendChild(option);
+        });
+    }
+}
+</script>
+{% endblock %}

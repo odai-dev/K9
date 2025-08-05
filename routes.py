@@ -1233,3 +1233,323 @@ def record_attendance(project_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/projects/<project_id>/shifts/<shift_id>/assignments', methods=['GET', 'POST'])
+@login_required
+def shift_assignments(project_id, shift_id):
+    """Manage shift assignments"""
+    project = Project.query.get_or_404(project_id)
+    shift = ProjectShift.query.get_or_404(shift_id)
+    
+    # Check permissions
+    if current_user.role == UserRole.PROJECT_MANAGER:
+        if project.manager_id != current_user.id:
+            flash('ليس لديك صلاحية للوصول إلى هذا المشروع', 'error')
+            return redirect(url_for('main.projects'))
+    
+    if request.method == 'POST':
+        entity_type = request.form['entity_type']
+        entity_id = request.form['entity_id']
+        
+        try:
+            # Check if entity is assigned to project
+            if entity_type == 'EMPLOYEE':
+                employee = Employee.query.get(entity_id)
+                if employee not in project.assigned_employees:
+                    flash('هذا الموظف غير مُعيَّن لهذا المشروع', 'error')
+                    return redirect(request.url)
+            elif entity_type == 'DOG':
+                dog = Dog.query.get(entity_id)
+                if dog not in project.assigned_dogs:
+                    flash('هذا الكلب غير مُعيَّن لهذا المشروع', 'error')
+                    return redirect(request.url)
+            
+            # Create assignment
+            assignment = ProjectShiftAssignment(
+                shift_id=shift_id,
+                entity_type=EntityType(entity_type),
+                entity_id=entity_id,
+                notes=request.form.get('notes', '')
+            )
+            db.session.add(assignment)
+            db.session.commit()
+            
+            log_audit(current_user.id, AuditAction.CREATE, 'ProjectShiftAssignment', assignment.id,
+                     description=f'Assigned {assignment.get_entity_name()} to shift {shift.name}')
+            
+            flash('تم تعيين العضو للوردية بنجاح', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'خطأ في التعيين: {str(e)}', 'error')
+    
+    # Get current assignments
+    assignments = ProjectShiftAssignment.query.filter_by(shift_id=shift_id, is_active=True).all()
+    
+    # Get available employees and dogs for assignment
+    available_employees = [emp for emp in project.assigned_employees if emp.is_active]
+    available_dogs = [dog for dog in project.assigned_dogs if dog.current_status == DogStatus.ACTIVE]
+    
+    return render_template('projects/shift_assignments.html', 
+                         project=project, 
+                         shift=shift, 
+                         assignments=assignments,
+                         available_employees=available_employees,
+                         available_dogs=available_dogs,
+                         EntityType=EntityType)
+
+@main_bp.route('/projects/<project_id>/attendance/data')
+@login_required
+def get_attendance_data(project_id):
+    """Get attendance data for a specific date and shift"""
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role == UserRole.PROJECT_MANAGER:
+        if project.manager_id != current_user.id:
+            return jsonify({'error': 'ليس لديك صلاحية للوصول إلى هذا المشروع'}), 403
+    
+    shift_id = request.args.get('shift_id')
+    attendance_date = request.args.get('date')
+    search_query = request.args.get('search', '').lower()
+    
+    if not shift_id or not attendance_date:
+        return jsonify({'error': 'معاملات مطلوبة مفقودة'}), 400
+    
+    try:
+        attendance_date = datetime.strptime(attendance_date, '%Y-%m-%d').date()
+        
+        # Get all assignments for this shift
+        assignments = ProjectShiftAssignment.query.filter_by(
+            shift_id=shift_id, 
+            is_active=True
+        ).all()
+        
+        attendance_data = []
+        
+        for assignment in assignments:
+            # Get existing attendance record
+            attendance_record = ProjectAttendance.query.filter_by(
+                project_id=project_id,
+                shift_id=shift_id,
+                date=attendance_date,
+                entity_type=assignment.entity_type,
+                entity_id=assignment.entity_id
+            ).first()
+            
+            entity_name = assignment.get_entity_name()
+            entity_code = assignment.get_entity_code()
+            
+            # Apply search filter
+            if search_query and search_query not in entity_name.lower() and search_query not in entity_code.lower():
+                continue
+            
+            data = {
+                'assignment_id': str(assignment.id),
+                'entity_type': assignment.entity_type.value,
+                'entity_id': str(assignment.entity_id),
+                'entity_name': entity_name,
+                'entity_code': entity_code,
+                'status': attendance_record.status.value if attendance_record else 'PRESENT',
+                'absence_reason': attendance_record.absence_reason.value if attendance_record and attendance_record.absence_reason else '',
+                'late_reason': attendance_record.late_reason if attendance_record else '',
+                'notes': attendance_record.notes if attendance_record else ''
+            }
+            attendance_data.append(data)
+        
+        return jsonify({'data': attendance_data})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route('/projects/<project_id>/attendance/bulk', methods=['POST'])
+@login_required
+def bulk_attendance(project_id):
+    """Bulk attendance operations"""
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role == UserRole.PROJECT_MANAGER:
+        if project.manager_id != current_user.id:
+            return jsonify({'success': False, 'error': 'ليس لديك صلاحية للوصول إلى هذا المشروع'}), 403
+    
+    try:
+        action = request.json['action']
+        shift_id = request.json['shift_id']
+        attendance_date = datetime.strptime(request.json['date'], '%Y-%m-%d').date()
+        
+        # Get all assignments for this shift
+        assignments = ProjectShiftAssignment.query.filter_by(
+            shift_id=shift_id, 
+            is_active=True
+        ).all()
+        
+        updated_count = 0
+        
+        for assignment in assignments:
+            # Determine status based on action
+            if action == 'mark_all_present':
+                status = AttendanceStatus.PRESENT
+                absence_reason = None
+                late_reason = None
+            elif action == 'mark_all_absent':
+                status = AttendanceStatus.ABSENT
+                absence_reason = AbsenceReason(request.json.get('absence_reason', 'OTHER'))
+                late_reason = None
+            elif action == 'mark_all_late':
+                status = AttendanceStatus.LATE
+                absence_reason = None
+                late_reason = request.json.get('late_reason', '')
+            else:
+                continue
+            
+            # Check if record exists
+            existing_record = ProjectAttendance.query.filter_by(
+                project_id=project_id,
+                shift_id=shift_id,
+                date=attendance_date,
+                entity_type=assignment.entity_type,
+                entity_id=assignment.entity_id
+            ).first()
+            
+            if existing_record:
+                existing_record.status = status
+                existing_record.absence_reason = absence_reason
+                existing_record.late_reason = late_reason
+                existing_record.updated_at = datetime.utcnow()
+            else:
+                attendance_record = ProjectAttendance(
+                    project_id=project_id,
+                    shift_id=shift_id,
+                    date=attendance_date,
+                    entity_type=assignment.entity_type,
+                    entity_id=assignment.entity_id,
+                    status=status,
+                    absence_reason=absence_reason,
+                    late_reason=late_reason,
+                    recorded_by_user_id=current_user.id
+                )
+                db.session.add(attendance_record)
+            
+            updated_count += 1
+        
+        db.session.commit()
+        
+        log_audit(current_user.id, AuditAction.EDIT, 'ProjectAttendance', None,
+                 description=f'Bulk attendance action: {action} for {updated_count} entities')
+        
+        return jsonify({'success': True, 'message': f'تم تحديث حضور {updated_count} عضو'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/projects/<project_id>/attendance/report')
+@login_required  
+def attendance_report(project_id):
+    """Generate attendance report for a date range"""
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role == UserRole.PROJECT_MANAGER:
+        if project.manager_id != current_user.id:
+            flash('ليس لديك صلاحية للوصول إلى هذا المشروع', 'error')
+            return redirect(url_for('main.projects'))
+    
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    
+    if not start_date_str or not end_date_str:
+        flash('يرجى تحديد تاريخ البداية والنهاية', 'error')
+        return redirect(url_for('main.project_attendance', project_id=project_id))
+    
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        
+        # Get attendance records for the date range
+        attendance_records = ProjectAttendance.query.filter(
+            ProjectAttendance.project_id == project_id,
+            ProjectAttendance.date >= start_date,
+            ProjectAttendance.date <= end_date
+        ).order_by(ProjectAttendance.date, ProjectAttendance.shift_id).all()
+        
+        # Generate basic CSV report since reportlab might not be available
+        import csv
+        import io
+        
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write headers
+        writer.writerow(['التاريخ', 'الوردية', 'النوع', 'الاسم', 'الكود', 'الحالة', 'سبب الغياب', 'سبب التأخير', 'ملاحظات'])
+        
+        # Write data
+        for record in attendance_records:
+            writer.writerow([
+                record.date.strftime('%Y-%m-%d'),
+                record.shift.name if record.shift else '',
+                'موظف' if record.entity_type == EntityType.EMPLOYEE else 'كلب',
+                record.get_entity_name(),
+                record.get_entity_code(),
+                record.get_status_display(),
+                record.get_absence_reason_display(),
+                record.late_reason or '',
+                record.notes or ''
+            ])
+        
+        # Create response
+        from flask import make_response
+        response = make_response(output.getvalue())
+        response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+        response.headers['Content-Disposition'] = f'attachment; filename=attendance_report_{project.code}_{start_date}_{end_date}.csv'
+        
+        log_audit(current_user.id, AuditAction.EXPORT, 'AttendanceReport', project_id,
+                 description=f'Generated attendance report for {start_date} to {end_date}')
+        
+        return response
+        
+    except Exception as e:
+        flash(f'خطأ في توليد التقرير: {str(e)}', 'error')
+    
+    return redirect(url_for('main.project_attendance', project_id=project_id))
+
+@main_bp.route('/projects/<project_id>/shifts/<shift_id>/assignments/<assignment_id>/remove', methods=['POST'])
+@login_required
+def remove_shift_assignment(project_id, shift_id, assignment_id):
+    """Remove a shift assignment"""
+    assignment = ProjectShiftAssignment.query.get_or_404(assignment_id)
+    
+    try:
+        assignment.is_active = False
+        db.session.commit()
+        
+        log_audit(current_user.id, AuditAction.DELETE, 'ProjectShiftAssignment', assignment_id,
+                 description=f'Removed {assignment.get_entity_name()} from shift')
+        
+        flash('تم إزالة التعيين بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'خطأ في إزالة التعيين: {str(e)}', 'error')
+    
+    return redirect(url_for('main.shift_assignments', project_id=project_id, shift_id=shift_id))
+
+@main_bp.route('/projects/<project_id>/shifts/<shift_id>/assignments/<assignment_id>/edit', methods=['POST'])
+@login_required
+def edit_shift_assignment(project_id, shift_id, assignment_id):
+    """Edit a shift assignment"""
+    assignment = ProjectShiftAssignment.query.get_or_404(assignment_id)
+    
+    try:
+        assignment.notes = request.form.get('notes', '')
+        assignment.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        log_audit(current_user.id, AuditAction.EDIT, 'ProjectShiftAssignment', assignment_id,
+                 description=f'Updated notes for {assignment.get_entity_name()}')
+        
+        flash('تم تحديث التعيين بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'خطأ في تحديث التعيين: {str(e)}', 'error')
+    
+    return redirect(url_for('main.shift_assignments', project_id=project_id, shift_id=shift_id))

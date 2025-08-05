@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة الورديات - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Project Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title mb-1">
+                                <i class="fas fa-clock me-2"></i>
+                                إدارة الورديات - {{ project.name }}
+                            </h3>
+                            <small class="text-muted">كود المشروع: {{ project.code }}</small>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('main.project_attendance', project_id=project.id) }}" class="btn btn-outline-success me-2">
+                                <i class="fas fa-calendar-check me-2"></i>إدارة الحضور
+                            </a>
+                            <a href="{{ url_for('main.project_dashboard', project_id=project.id) }}" class="btn btn-outline-primary">
+                                <i class="fas fa-arrow-right ms-2"></i>العودة للوحة التحكم
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add New Shift -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-plus me-2"></i>
+                        إضافة وردية جديدة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="name" class="form-label">اسم الوردية</label>
+                                <input type="text" name="name" id="name" class="form-control" required placeholder="مثال: الوردية الصباحية">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="start_time" class="form-label">وقت البداية</label>
+                                <input type="time" name="start_time" id="start_time" class="form-control" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="end_time" class="form-label">وقت النهاية</label>
+                                <input type="time" name="end_time" id="end_time" class="form-control" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-plus me-2"></i>إضافة
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Shifts -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        الورديات الحالية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if shifts %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>اسم الوردية</th>
+                                        <th>وقت البداية</th>
+                                        <th>وقت النهاية</th>
+                                        <th>المدة</th>
+                                        <th>الحالة</th>
+                                        <th>عدد المعينين</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for shift in shifts %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ shift.name }}</strong>
+                                            </td>
+                                            <td>{{ shift.start_time.strftime('%H:%M') }}</td>
+                                            <td>{{ shift.end_time.strftime('%H:%M') }}</td>
+                                            <td>
+                                                {% set duration_minutes = ((shift.end_time.hour * 60 + shift.end_time.minute) - (shift.start_time.hour * 60 + shift.start_time.minute)) %}
+                                                {% if duration_minutes < 0 %}
+                                                    {% set duration_minutes = duration_minutes + 1440 %}
+                                                {% endif %}
+                                                {{ (duration_minutes // 60) }}:{{ (duration_minutes % 60)|string|rjust(2, '0') }}
+                                            </td>
+                                            <td>
+                                                {% if shift.is_active %}
+                                                    <span class="badge bg-success">نشطة</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">غير نشطة</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">{{ shift.assignments|length }} معين</span>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{{ url_for('main.shift_assignments', project_id=project.id, shift_id=shift.id) }}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-users"></i> التعيينات
+                                                    </a>
+                                                    <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#editShiftModal{{ shift.id }}">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    {% if shift.is_active %}
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleShiftStatus('{{ shift.id }}', false)">
+                                                            <i class="fas fa-pause"></i>
+                                                        </button>
+                                                    {% else %}
+                                                        <button type="button" class="btn btn-sm btn-outline-success" onclick="toggleShiftStatus('{{ shift.id }}', true)">
+                                                            <i class="fas fa-play"></i>
+                                                        </button>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        
+                                        <!-- Edit Shift Modal -->
+                                        <div class="modal fade" id="editShiftModal{{ shift.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">تعديل الوردية - {{ shift.name }}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <form method="POST" action="{{ url_for('main.project_shifts', project_id=project.id) }}">
+                                                        <input type="hidden" name="shift_id" value="{{ shift.id }}">
+                                                        <div class="modal-body">
+                                                            <div class="mb-3">
+                                                                <label for="editName{{ shift.id }}" class="form-label">اسم الوردية</label>
+                                                                <input type="text" name="name" id="editName{{ shift.id }}" class="form-control" value="{{ shift.name }}" required>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-md-6">
+                                                                    <label for="editStartTime{{ shift.id }}" class="form-label">وقت البداية</label>
+                                                                    <input type="time" name="start_time" id="editStartTime{{ shift.id }}" class="form-control" value="{{ shift.start_time.strftime('%H:%M') }}" required>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <label for="editEndTime{{ shift.id }}" class="form-label">وقت النهاية</label>
+                                                                    <input type="time" name="end_time" id="editEndTime{{ shift.id }}" class="form-control" value="{{ shift.end_time.strftime('%H:%M') }}" required>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                                            <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-clock fa-3x mb-3"></i>
+                            <h5>لا توجد ورديات مُعرَّفة بعد</h5>
+                            <p>ابدأ بإضافة وردية جديدة باستخدام النموذج أعلاه</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleShiftStatus(shiftId, isActive) {
+    const action = isActive ? 'تفعيل' : 'إلغاء تفعيل';
+    if (!confirm(`هل أنت متأكد من ${action} هذه الوردية؟`)) {
+        return;
+    }
+    
+    fetch(`{{ url_for('main.project_shifts', project_id=project.id) }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `shift_id=${shiftId}&action=toggle_status&is_active=${isActive}`
+    })
+    .then(response => {
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('حدث خطأ في تحديث الوردية');
+        }
+    })
+    .catch(error => {
+        alert('حدث خطأ في الاتصال');
+    });
+}
+</script>
+{% endblock %}
