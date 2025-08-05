@@ -423,3 +423,61 @@ def get_employee_profile_for_user(user):
     from models import Employee, EmployeeRole
     
     return Employee.query.filter_by(user_account_id=user.id, role=EmployeeRole.PROJECT_MANAGER).first()
+
+def get_user_active_projects(user):
+    """Get active projects for a PROJECT_MANAGER user"""
+    from models import Project, UserRole, Employee, EmployeeRole, ProjectStatus
+    
+    if user.role == UserRole.GENERAL_ADMIN:
+        return Project.query.filter_by(status=ProjectStatus.ACTIVE).all()
+    elif user.role == UserRole.PROJECT_MANAGER:
+        # Get active projects where this user is the manager
+        active_projects = Project.query.filter_by(
+            project_manager_id=user.id, 
+            status=ProjectStatus.ACTIVE
+        ).all()
+        
+        # Also check through employee profile assignment for active projects
+        employee = Employee.query.filter_by(user_account_id=user.id, role=EmployeeRole.PROJECT_MANAGER).first()
+        if employee:
+            employee_active_projects = [p for p in employee.projects if p.status == ProjectStatus.ACTIVE]
+            # Combine and deduplicate
+            all_active_projects = list(set(active_projects + employee_active_projects))
+            return all_active_projects
+        
+        return active_projects
+    
+    return []
+
+def validate_project_manager_assignment(user, project):
+    """Validate if a project manager can be assigned to a project"""
+    from models import ProjectStatus
+    
+    # Skip validation for GENERAL_ADMIN
+    if user.role.name == 'GENERAL_ADMIN':
+        return True, None
+    
+    # Check if user can manage multiple projects (for now, assume False until column is added)
+    # TODO: Add can_manage_multiple_projects column support
+    can_manage_multiple = False
+    if can_manage_multiple:
+        return True, None
+    
+    # Check if project is active
+    if project.status != ProjectStatus.ACTIVE:
+        return True, None  # Can assign to non-active projects
+    
+    # Check current active projects
+    active_projects = get_user_active_projects(user)
+    
+    # If no active projects, can assign
+    if not active_projects:
+        return True, None
+    
+    # If already managing this project, it's OK
+    if project in active_projects:
+        return True, None
+    
+    # If managing other active projects, cannot assign
+    project_names = [p.name for p in active_projects]
+    return False, f"المدير {user.full_name} يدير بالفعل المشروع النشط: {', '.join(project_names)}"
