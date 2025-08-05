@@ -105,10 +105,13 @@ class AttendanceStatus(Enum):
     LATE = "LATE"
 
 class AbsenceReason(Enum):
-    ANNUAL = "ANNUAL"
-    SICK = "SICK"
-    EMERGENCY = "EMERGENCY"
-    OTHER = "OTHER"
+    ANNUAL = "إجازة سنوية"
+    SICK = "مريض"
+    EMERGENCY = "حالة طارئة"
+    TRAINING = "تدريب"
+    MISSION = "مهمة"
+    NO_REASON = "بلا سبب"
+    OTHER = "أخرى"
 
 # Association table for many-to-many relationship between employees and dogs
 employee_dog_assignment = db.Table('employee_dog_assignment',
