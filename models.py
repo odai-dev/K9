@@ -3,8 +3,18 @@ from flask_login import UserMixin
 from datetime import datetime, date
 from enum import Enum
 import uuid
-from sqlalchemy.dialects.postgresql import UUID, JSON
-from sqlalchemy import Text
+from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy import String, Text
+import os
+
+# Use String for UUID when using SQLite, UUID when using PostgreSQL
+def get_uuid_column():
+    database_url = os.environ.get("DATABASE_URL", "")
+    if database_url.startswith("sqlite") or not database_url:
+        return String(36)
+    else:
+        from sqlalchemy.dialects.postgresql import UUID
+        return UUID(as_uuid=True)
 
 class UserRole(Enum):
     GENERAL_ADMIN = "GENERAL_ADMIN"
@@ -115,20 +125,20 @@ class AbsenceReason(Enum):
 
 # Association table for many-to-many relationship between employees and dogs
 employee_dog_assignment = db.Table('employee_dog_assignment',
-    db.Column('employee_id', UUID(as_uuid=True), db.ForeignKey('employee.id'), primary_key=True),
-    db.Column('dog_id', UUID(as_uuid=True), db.ForeignKey('dog.id'), primary_key=True)
+    db.Column('employee_id', get_uuid_column(), db.ForeignKey('employee.id'), primary_key=True),
+    db.Column('dog_id', get_uuid_column(), db.ForeignKey('dog.id'), primary_key=True)
 )
 
 # Association table for many-to-many relationship between projects and dogs
 project_dog_assignment = db.Table('project_dog_assignment',
-    db.Column('project_id', UUID(as_uuid=True), db.ForeignKey('project.id'), primary_key=True),
-    db.Column('dog_id', UUID(as_uuid=True), db.ForeignKey('dog.id'), primary_key=True)
+    db.Column('project_id', get_uuid_column(), db.ForeignKey('project.id'), primary_key=True),
+    db.Column('dog_id', get_uuid_column(), db.ForeignKey('dog.id'), primary_key=True)
 )
 
 # Association table for many-to-many relationship between projects and employees
 project_employee_assignment = db.Table('project_employee_assignment',
-    db.Column('project_id', UUID(as_uuid=True), db.ForeignKey('project.id'), primary_key=True),
-    db.Column('employee_id', UUID(as_uuid=True), db.ForeignKey('employee.id'), primary_key=True)
+    db.Column('project_id', get_uuid_column(), db.ForeignKey('project.id'), primary_key=True),
+    db.Column('employee_id', get_uuid_column(), db.ForeignKey('employee.id'), primary_key=True)
 )
 
 class User(UserMixin, db.Model):
@@ -153,7 +163,7 @@ class User(UserMixin, db.Model):
         return f'<User {self.username}>'
 
 class Dog(db.Model):
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = db.Column(db.String(100), nullable=False)
     code = db.Column(db.String(20), unique=True, nullable=False)
     breed = db.Column(db.String(100), nullable=False)
@@ -178,8 +188,8 @@ class Dog(db.Model):
     assigned_to_user = db.relationship('User', backref='assigned_dogs')
     
     # Parent relationships for breeding
-    father_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'))
-    mother_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'))
+    father_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'))
+    mother_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'))
     father = db.relationship('Dog', remote_side=[id], foreign_keys=[father_id], backref='sired_offspring')
     mother = db.relationship('Dog', remote_side=[id], foreign_keys=[mother_id], backref='birthed_offspring')
     
@@ -194,7 +204,7 @@ class Dog(db.Model):
         return f'<Dog {self.name} ({self.code})>'
 
 class Employee(db.Model):
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = db.Column(db.String(100), nullable=False)
     employee_id = db.Column(db.String(20), unique=True, nullable=False)
     role = db.Column(db.Enum(EmployeeRole), nullable=False)
@@ -225,9 +235,9 @@ class Employee(db.Model):
         return f'<Employee {self.name} ({self.employee_id})>'
 
 class TrainingSession(db.Model):
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    dog_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'), nullable=False)
-    trainer_id = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'), nullable=False)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
+    trainer_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=False)
     category = db.Column(db.Enum(TrainingCategory), nullable=False)
     subject = db.Column(db.String(200), nullable=False)
     session_date = db.Column(db.DateTime, nullable=False)
@@ -248,9 +258,9 @@ class TrainingSession(db.Model):
         return f'<TrainingSession {self.subject} - {self.dog.name}>'
 
 class VeterinaryVisit(db.Model):
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    dog_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'), nullable=False)
-    vet_id = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'), nullable=False)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
+    vet_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=False)
     visit_type = db.Column(db.Enum(VisitType), nullable=False)
     visit_date = db.Column(db.DateTime, nullable=False)
     
@@ -288,9 +298,9 @@ class VeterinaryVisit(db.Model):
         return f'<VeterinaryVisit {self.visit_type.value} - {self.dog.name}>'
 
 class BreedingCycle(db.Model):
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    female_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'), nullable=False)
-    male_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'), nullable=False)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    female_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
+    male_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     cycle_type = db.Column(db.Enum(BreedingCycleType), nullable=False)
     
     # Cycle dates
@@ -321,7 +331,7 @@ class BreedingCycle(db.Model):
         return f'<BreedingCycle {self.female.name} x {self.male.name}>'
 
 class Project(db.Model):
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = db.Column(db.String(200), nullable=False)
     code = db.Column(db.String(20), unique=True, nullable=False)
     main_task = db.Column(Text)  # المهمة الأساسية
@@ -344,7 +354,7 @@ class Project(db.Model):
     manager = db.relationship('User', foreign_keys=[manager_id], backref='managed_projects')
     
     # Project manager assignment (Employee with PROJECT_MANAGER role)
-    project_manager_id = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'))
+    project_manager_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'))
     project_manager = db.relationship('Employee', foreign_keys=[project_manager_id], backref='managed_projects')
     
     # Results and reporting
@@ -371,9 +381,9 @@ class Project(db.Model):
 
 class ProjectDog(db.Model):
     """Dog assignments to projects"""
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project.id'), nullable=False)
-    dog_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'), nullable=False)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
+    dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
     assigned_date = db.Column(db.Date, default=date.today)
     
@@ -391,12 +401,12 @@ class ProjectDog(db.Model):
 
 class ProjectAssignment(db.Model):
     """Combined assignments model for dogs and employees to projects"""
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project.id'), nullable=False)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
     
     # Either dog or employee assignment
-    dog_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'), nullable=True)
-    employee_id = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'), nullable=True)
+    dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=True)
+    employee_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=True)
     
     # Assignment details
     is_active = db.Column(db.Boolean, default=True)
@@ -425,8 +435,8 @@ class ProjectAssignment(db.Model):
 
 class Incident(db.Model):
     """Incident logging for projects"""
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project.id'), nullable=False)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
     name = db.Column(db.String(200), nullable=False)  # اسم الحادث
     incident_date = db.Column(db.Date, nullable=False)
     incident_time = db.Column(db.Time, nullable=False)
@@ -436,7 +446,7 @@ class Incident(db.Model):
     severity = db.Column(db.String(20), default='MEDIUM')  # LOW, MEDIUM, HIGH
     
     # People involved
-    reported_by = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'))
+    reported_by = db.Column(get_uuid_column(), db.ForeignKey('employee.id'))
     people_involved = db.Column(JSON, default=list)  # List of employee IDs
     dogs_involved = db.Column(JSON, default=list)  # List of dog IDs
     
@@ -461,8 +471,8 @@ class Incident(db.Model):
 
 class Suspicion(db.Model):
     """Suspicion/discovery logging for projects"""
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project.id'), nullable=False)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
     element_type = db.Column(db.Enum(ElementType), nullable=False)  # سلاح/مخدرات/متفجرات/أخرى
     subtype = db.Column(db.String(100))  # نوع السلاح/العبوة
     discovery_date = db.Column(db.Date, nullable=False)
@@ -470,8 +480,8 @@ class Suspicion(db.Model):
     location = db.Column(db.String(200), nullable=False)
     
     # Detection details
-    detected_by_dog = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'))
-    handler = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'))
+    detected_by_dog = db.Column(get_uuid_column(), db.ForeignKey('dog.id'))
+    handler = db.Column(get_uuid_column(), db.ForeignKey('employee.id'))
     detection_method = db.Column(db.String(100))  # Visual, K9 Alert, Equipment, etc.
     
     # Description and evidence
@@ -498,14 +508,14 @@ class Suspicion(db.Model):
 
 class PerformanceEvaluation(db.Model):
     """Performance evaluation for employees and dogs in projects"""
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project.id'), nullable=False)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
     evaluator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     target_type = db.Column(db.Enum(TargetType), nullable=False)  # EMPLOYEE or DOG
     
     # Target identification (generic approach)
-    target_employee_id = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'))
-    target_dog_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'))
+    target_employee_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'))
+    target_dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'))
     
     # Evaluation details
     evaluation_date = db.Column(db.Date, nullable=False, default=date.today)
@@ -549,8 +559,8 @@ class PerformanceEvaluation(db.Model):
         return f'<PerformanceEvaluation {target_name} - {self.rating.value}>'
 
 class AttendanceRecord(db.Model):
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    employee_id = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'), nullable=False)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    employee_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=False)
     date = db.Column(db.Date, nullable=False)
     shift = db.Column(db.String(20), nullable=False)  # MORNING, EVENING
     
@@ -563,7 +573,7 @@ class AttendanceRecord(db.Model):
     # Status
     status = db.Column(db.String(20), default='PRESENT')  # PRESENT, ABSENT, LATE, LEAVE
     leave_type = db.Column(db.String(50))  # ANNUAL, SICK, EMERGENCY
-    substitute_employee_id = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'))
+    substitute_employee_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'))
     
     notes = db.Column(Text)
     
@@ -585,8 +595,8 @@ class AttendanceRecord(db.Model):
 
 class DogMaturity(db.Model):
     """Section 1: General Information + Section 2: Maturity (البلوغ)"""
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    dog_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'), nullable=False)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     maturity_date = db.Column(db.Date)  # تاريخ البلوغ
     maturity_status = db.Column(db.Enum(MaturityStatus), default=MaturityStatus.JUVENILE)
     weight_at_maturity = db.Column(db.Float)
@@ -601,8 +611,8 @@ class DogMaturity(db.Model):
 
 class HeatCycle(db.Model):
     """Section 3: Heat Cycle (الدورة)"""
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    dog_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'), nullable=False)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     cycle_number = db.Column(db.Integer, nullable=False)  # رقم الدورة (1، 2، 3...)
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date)
@@ -624,15 +634,15 @@ class HeatCycle(db.Model):
 
 class MatingRecord(db.Model):
     """Section 4: Mating (التزاوج)"""
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    female_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'), nullable=False)
-    male_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'), nullable=False)
-    heat_cycle_id = db.Column(UUID(as_uuid=True), db.ForeignKey('heat_cycle.id'), nullable=False)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    female_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
+    male_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
+    heat_cycle_id = db.Column(get_uuid_column(), db.ForeignKey('heat_cycle.id'), nullable=False)
     
     mating_date = db.Column(db.Date, nullable=False)
     mating_time = db.Column(db.Time)
     location = db.Column(db.String(100))
-    supervised_by = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'))
+    supervised_by = db.Column(get_uuid_column(), db.ForeignKey('employee.id'))
     
     # Mating details
     success_rate = db.Column(db.Integer)  # 0-10
@@ -652,9 +662,9 @@ class MatingRecord(db.Model):
 
 class PregnancyRecord(db.Model):
     """Section 5: Pregnancy (الحمل)"""
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    mating_record_id = db.Column(UUID(as_uuid=True), db.ForeignKey('mating_record.id'), nullable=False)
-    dog_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'), nullable=False)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    mating_record_id = db.Column(get_uuid_column(), db.ForeignKey('mating_record.id'), nullable=False)
+    dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     
     # Pregnancy timeline
     confirmed_date = db.Column(db.Date)  # تاريخ تأكيد الحمل
@@ -690,8 +700,8 @@ class PregnancyRecord(db.Model):
 
 class DeliveryRecord(db.Model):
     """Section 6: Delivery/Birth (الولادة)"""
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    pregnancy_record_id = db.Column(UUID(as_uuid=True), db.ForeignKey('pregnancy_record.id'), nullable=False)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    pregnancy_record_id = db.Column(get_uuid_column(), db.ForeignKey('pregnancy_record.id'), nullable=False)
     
     # Delivery details
     delivery_date = db.Column(db.Date, nullable=False)
@@ -700,8 +710,8 @@ class DeliveryRecord(db.Model):
     location = db.Column(db.String(100))
     
     # Assistance
-    vet_present = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'))
-    handler_present = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'))
+    vet_present = db.Column(get_uuid_column(), db.ForeignKey('employee.id'))
+    handler_present = db.Column(get_uuid_column(), db.ForeignKey('employee.id'))
     assistance_required = db.Column(db.Boolean, default=False)
     assistance_type = db.Column(Text)  # cesarean, manual assistance, etc.
     
@@ -725,8 +735,8 @@ class DeliveryRecord(db.Model):
 
 class PuppyRecord(db.Model):
     """Section 7: Puppies (الجراء)"""
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    delivery_record_id = db.Column(UUID(as_uuid=True), db.ForeignKey('delivery_record.id'), nullable=False)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    delivery_record_id = db.Column(get_uuid_column(), db.ForeignKey('delivery_record.id'), nullable=False)
     
     # Puppy identification
     puppy_number = db.Column(db.Integer, nullable=False)  # 1, 2, 3...
@@ -764,7 +774,7 @@ class PuppyRecord(db.Model):
     placement_location = db.Column(db.String(100))
     
     # Link to adult dog record (if kept in program)
-    adult_dog_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'))
+    adult_dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'))
     
     notes = db.Column(Text)
     
@@ -777,9 +787,9 @@ class PuppyRecord(db.Model):
 
 class PuppyTraining(db.Model):
     """Section 8: Puppy Training (تدريب الجراء)"""
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    puppy_id = db.Column(UUID(as_uuid=True), db.ForeignKey('puppy_record.id'), nullable=False)
-    trainer_id = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'), nullable=False)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    puppy_id = db.Column(get_uuid_column(), db.ForeignKey('puppy_record.id'), nullable=False)
+    trainer_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=False)
     
     # Training details
     training_name = db.Column(db.String(200), nullable=False)  # اسم التدريب
@@ -824,8 +834,8 @@ class PuppyTraining(db.Model):
 
 class ProjectShift(db.Model):
     """Project shifts for attendance tracking"""
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project.id'), nullable=False)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)  # Morning, Evening, Night, or custom
     start_time = db.Column(db.Time, nullable=False)
     end_time = db.Column(db.Time, nullable=False)
@@ -842,10 +852,10 @@ class ProjectShift(db.Model):
 
 class ProjectShiftAssignment(db.Model):
     """Assignment of employees/dogs to specific shifts"""
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    shift_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project_shift.id'), nullable=False)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    shift_id = db.Column(get_uuid_column(), db.ForeignKey('project_shift.id'), nullable=False)
     entity_type = db.Column(db.Enum(EntityType), nullable=False)
-    entity_id = db.Column(UUID(as_uuid=True), nullable=False)  # Points to employee.id or dog.id
+    entity_id = db.Column(get_uuid_column(), nullable=False)  # Points to employee.id or dog.id
     is_active = db.Column(db.Boolean, default=True)
     
     assigned_date = db.Column(db.Date, default=date.today)
@@ -887,12 +897,12 @@ class ProjectShiftAssignment(db.Model):
 
 class ProjectAttendance(db.Model):
     """Attendance records for projects"""
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project.id'), nullable=False)
-    shift_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project_shift.id'), nullable=False)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
+    shift_id = db.Column(get_uuid_column(), db.ForeignKey('project_shift.id'), nullable=False)
     date = db.Column(db.Date, nullable=False)
     entity_type = db.Column(db.Enum(EntityType), nullable=False)
-    entity_id = db.Column(UUID(as_uuid=True), nullable=False)  # Points to employee.id or dog.id
+    entity_id = db.Column(get_uuid_column(), nullable=False)  # Points to employee.id or dog.id
     
     # Attendance status
     status = db.Column(db.Enum(AttendanceStatus), nullable=False)
@@ -972,13 +982,13 @@ class ProjectAttendance(db.Model):
 
 class AuditLog(db.Model):
     """Comprehensive audit logging for all user actions"""
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     action = db.Column(db.Enum(AuditAction), nullable=False)
     
     # Target information
     target_type = db.Column(db.String(50))  # Dog, Employee, Project, etc.
-    target_id = db.Column(UUID(as_uuid=True))  # ID of the target object
+    target_id = db.Column(get_uuid_column())  # ID of the target object
     target_name = db.Column(db.String(200))  # Name for easy identification
     
     # Action details
