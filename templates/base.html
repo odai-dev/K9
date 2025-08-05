@@ -95,7 +95,7 @@
                             <i class="fas fa-heart"></i> الإنتاج
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_index') }}">لوحة الإنتاج</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_list') }}">لوحة الإنتاج</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('main.maturity_list') }}">البلوغ</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('main.heat_cycles_list') }}">الدورة</a></li>
@@ -120,13 +120,7 @@
                     </li>
                     {% endif %}
                     
-                    {% if permissions.attendance %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main.attendance_list') }}">
-                            <i class="fas fa-clock"></i> الحضور والغياب
-                        </a>
-                    </li>
-                    {% endif %}
+
                     
                     {% if permissions.reports %}
                     <li class="nav-item">

@@ -425,6 +425,42 @@ def breeding_add():
     
     return render_template('breeding/add.html', dogs=dogs, cycle_types=BreedingCycleType, results=BreedingResult)
 
+# Individual breeding component routes
+@main_bp.route('/breeding/maturity')
+@login_required
+def maturity_list():
+    return render_template('breeding/maturity_list.html')
+
+@main_bp.route('/breeding/heat-cycles')
+@login_required  
+def heat_cycles_list():
+    return render_template('breeding/heat_cycles_list.html')
+
+@main_bp.route('/breeding/mating')
+@login_required
+def mating_list():
+    return render_template('breeding/mating_list.html')
+
+@main_bp.route('/breeding/pregnancy')
+@login_required
+def pregnancy_list():
+    return render_template('breeding/pregnancy_list.html')
+
+@main_bp.route('/breeding/delivery')
+@login_required
+def delivery_list():
+    return render_template('breeding/delivery_list.html')
+
+@main_bp.route('/breeding/puppies')
+@login_required
+def puppies_list():
+    return render_template('breeding/puppies_list.html')
+
+@main_bp.route('/breeding/puppy-training')
+@login_required
+def puppy_training_list():
+    return render_template('breeding/puppy_training_list.html')
+
 # Project routes (without attendance/assignment functionality)
 @main_bp.route('/projects')
 @login_required
