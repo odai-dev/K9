@@ -49,6 +49,24 @@ with app.app_context():
     import models  # noqa: F401
 
     db.create_all()
+    
+    # Ensure default admin user exists
+    from models import User, UserRole
+    from werkzeug.security import generate_password_hash
+    
+    admin_user = User.query.filter_by(username='admin').first()
+    if not admin_user:
+        admin_user = User(
+            username='admin',
+            email='admin@k9ops.com',
+            password_hash=generate_password_hash('admin123'),
+            role=UserRole.GENERAL_ADMIN,
+            full_name='System Administrator',
+            active=True
+        )
+        db.session.add(admin_user)
+        db.session.commit()
+        print("✓ Default admin user created successfully (username: admin, password: admin123)")
 
     # User loader
     @login_manager.user_loader
