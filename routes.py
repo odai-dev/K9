@@ -470,6 +470,20 @@ def projects():
     else:
         projects = Project.query.filter_by(manager_id=current_user.id).order_by(Project.created_at.desc()).all()
     
+    # Add assignment counts to each project
+    for project in projects:
+        # Count active dog assignments
+        project.assigned_dogs_count = ProjectAssignment.query.filter_by(
+            project_id=project.id, 
+            is_active=True
+        ).filter(ProjectAssignment.dog_id.isnot(None)).count()
+        
+        # Count active employee assignments  
+        project.assigned_employees_count = ProjectAssignment.query.filter_by(
+            project_id=project.id, 
+            is_active=True
+        ).filter(ProjectAssignment.employee_id.isnot(None)).count()
+    
     # Calculate stats for the modern view
     active_count = sum(1 for p in projects if p.status == ProjectStatus.ACTIVE)
     planned_count = sum(1 for p in projects if p.status == ProjectStatus.PLANNED)

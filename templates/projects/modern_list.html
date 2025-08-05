@@ -212,11 +212,11 @@
                         <div class="d-flex align-items-center gap-3">
                             <span class="badge bg-light text-dark">
                                 <i class="fas fa-dog me-1"></i>
-                                {{ project.assigned_dogs|length }} كلب
+                                {{ project.assigned_dogs_count or 0 }} كلب
                             </span>
                             <span class="badge bg-light text-dark">
                                 <i class="fas fa-users me-1"></i>
-                                {{ project.assigned_employees|length }} موظف
+                                {{ project.assigned_employees_count or 0 }} موظف
                             </span>
                         </div>
                     </div>
