@@ -109,7 +109,9 @@
                                                 {% if duration_minutes < 0 %}
                                                     {% set duration_minutes = duration_minutes + 1440 %}
                                                 {% endif %}
-                                                {{ (duration_minutes // 60) }}:{{ (duration_minutes % 60)|string|rjust(2, '0') }}
+                                                {% set hours = duration_minutes // 60 %}
+                                                {% set minutes = duration_minutes % 60 %}
+                                                {{ hours }}:{{ '%02d'|format(minutes) }}
                                             </td>
                                             <td>
                                                 {% if shift.is_active %}
