@@ -1341,15 +1341,23 @@ def shift_assignments(project_id, shift_id):
         entity_id = request.form['entity_id']
         
         try:
-            # Check if entity is assigned to project
+            # Check if entity is assigned to project using ProjectAssignment model
             if entity_type == 'EMPLOYEE':
-                employee = Employee.query.get(entity_id)
-                if employee not in project.assigned_employees:
+                employee_assignment = ProjectAssignment.query.filter_by(
+                    project_id=project_id,
+                    employee_id=entity_id,
+                    is_active=True
+                ).first()
+                if not employee_assignment:
                     flash('هذا الموظف غير مُعيَّن لهذا المشروع', 'error')
                     return redirect(request.url)
             elif entity_type == 'DOG':
-                dog = Dog.query.get(entity_id)
-                if dog not in project.assigned_dogs:
+                dog_assignment = ProjectAssignment.query.filter_by(
+                    project_id=project_id,
+                    dog_id=entity_id,
+                    is_active=True
+                ).first()
+                if not dog_assignment:
                     flash('هذا الكلب غير مُعيَّن لهذا المشروع', 'error')
                     return redirect(request.url)
             
@@ -1374,9 +1382,19 @@ def shift_assignments(project_id, shift_id):
     # Get current assignments
     assignments = ProjectShiftAssignment.query.filter_by(shift_id=shift_id, is_active=True).all()
     
-    # Get available employees and dogs for assignment
-    available_employees = [emp for emp in project.assigned_employees if emp.is_active]
-    available_dogs = [dog for dog in project.assigned_dogs if dog.current_status == DogStatus.ACTIVE]
+    # Get available employees and dogs for assignment from ProjectAssignment model
+    project_employee_assignments = ProjectAssignment.query.filter_by(
+        project_id=project_id, 
+        is_active=True
+    ).filter(ProjectAssignment.employee_id.isnot(None)).all()
+    
+    project_dog_assignments = ProjectAssignment.query.filter_by(
+        project_id=project_id, 
+        is_active=True
+    ).filter(ProjectAssignment.dog_id.isnot(None)).all()
+    
+    available_employees = [assignment.employee for assignment in project_employee_assignments if assignment.employee.is_active]
+    available_dogs = [assignment.dog for assignment in project_dog_assignments if assignment.dog.current_status == DogStatus.ACTIVE]
     
     return render_template('projects/shift_assignments.html', 
                          project=project, 
