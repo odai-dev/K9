@@ -13,7 +13,7 @@ from models import (Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCyc
                    # New attendance models
                    ProjectShift, ProjectShiftAssignment, ProjectAttendance,
                    EntityType, AttendanceStatus, AbsenceReason)
-from utils import log_audit, allowed_file, generate_pdf_report
+from utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment
 import os
 from datetime import datetime, date
 import uuid
