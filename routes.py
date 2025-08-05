@@ -1675,12 +1675,13 @@ def edit_shift_assignment(project_id, shift_id, assignment_id):
     
     return redirect(url_for('main.shift_assignments', project_id=project_id, shift_id=shift_id))
 
-# Permission Management Routes (GENERAL_ADMIN only)
-@main_bp.route('/admin/permissions')
+# Admin Management Routes (GENERAL_ADMIN only)
+@main_bp.route('/admin')
 @login_required
-def permission_management():
-    """Admin interface for managing PROJECT_MANAGER permissions"""
+def admin_panel():
+    """Unified admin interface for user and permission management"""
     from models import ProjectManagerPermission
+    from werkzeug.security import generate_password_hash
     
     # Check admin access
     if current_user.role != UserRole.GENERAL_ADMIN:
@@ -1699,10 +1700,64 @@ def permission_management():
         key = f"{permission.user_id}_{permission.project_id}"
         permissions[key] = permission
     
-    return render_template('admin/permission_management.html', 
+    return render_template('admin/admin_panel.html', 
                          pm_users=pm_users, 
                          projects=projects,
                          permissions=permissions)
+
+@main_bp.route('/admin/create_user', methods=['POST'])
+@login_required
+def create_project_manager():
+    """Create a new PROJECT_MANAGER user"""
+    # Check admin access
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('ليس لديك صلاحية لإنشاء مستخدمين جدد', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        from werkzeug.security import generate_password_hash
+        
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        full_name = request.form.get('full_name')
+        
+        if not all([username, email, password, full_name]):
+            flash('جميع الحقول مطلوبة', 'error')
+            return redirect(url_for('main.admin_panel'))
+        
+        # Check if username or email already exists
+        if User.query.filter_by(username=username).first():
+            flash('اسم المستخدم موجود مسبقاً', 'error')
+            return redirect(url_for('main.admin_panel'))
+        
+        if User.query.filter_by(email=email).first():
+            flash('البريد الإلكتروني موجود مسبقاً', 'error')
+            return redirect(url_for('main.admin_panel'))
+        
+        # Create new user
+        new_user = User()
+        new_user.username = username
+        new_user.email = email
+        new_user.password_hash = generate_password_hash(password)
+        new_user.full_name = full_name
+        new_user.role = UserRole.PROJECT_MANAGER
+        new_user.active = True
+        
+        db.session.add(new_user)
+        db.session.commit()
+        
+        # Log the creation
+        log_audit(current_user.id, AuditAction.CREATE, 'User', new_user.id,
+                 description=f'Created PROJECT_MANAGER user: {username}')
+        
+        flash(f'تم إنشاء مدير المشروع {full_name} بنجاح', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'خطأ في إنشاء المستخدم: {str(e)}', 'error')
+    
+    return redirect(url_for('main.admin_panel'))
 
 @main_bp.route('/admin/permissions/update', methods=['POST'])
 @login_required
@@ -1721,7 +1776,7 @@ def update_permissions():
         
         if not user_id or not project_id:
             flash('يجب تحديد المستخدم والمشروع', 'error')
-            return redirect(url_for('main.permission_management'))
+            return redirect(url_for('main.admin_panel'))
         
         # Get or create permission record
         permission = ProjectManagerPermission.query.filter_by(
@@ -1760,4 +1815,29 @@ def update_permissions():
         db.session.rollback()
         flash(f'خطأ في تحديث الصلاحيات: {str(e)}', 'error')
     
-    return redirect(url_for('main.permission_management'))
+    return redirect(url_for('main.admin_panel'))
+
+@main_bp.route('/admin/users/<int:user_id>/toggle_status', methods=['POST'])
+@login_required
+def toggle_user_status(user_id):
+    """Toggle user active status"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('ليس لديك صلاحية لتعديل حالة المستخدمين', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        user = User.query.get_or_404(user_id)
+        user.active = not user.active
+        db.session.commit()
+        
+        status = 'تم تفعيل' if user.active else 'تم إلغاء تفعيل'
+        log_audit(current_user.id, AuditAction.EDIT, 'User', user_id,
+                 description=f'{status} المستخدم {user.username}')
+        
+        flash(f'{status} المستخدم {user.full_name} بنجاح', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'خطأ في تعديل حالة المستخدم: {str(e)}', 'error')
+    
+    return redirect(url_for('main.admin_panel'))
