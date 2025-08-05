@@ -322,7 +322,11 @@ class Project(db.Model):
     
     # Management
     manager_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    manager = db.relationship('User', backref='managed_projects')
+    manager = db.relationship('User', foreign_keys=[manager_id], backref='managed_projects')
+    
+    # Project manager assignment (Employee with PROJECT_MANAGER role)
+    project_manager_id = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'))
+    project_manager = db.relationship('Employee', foreign_keys=[project_manager_id], backref='managed_projects')
     
     # Results and reporting
     success_rating = db.Column(db.Integer)  # 0-10
@@ -365,6 +369,40 @@ class ProjectDog(db.Model):
     
     def __repr__(self):
         return f'<ProjectDog {self.dog.name} -> {self.project.name}>'
+
+class ProjectAssignment(db.Model):
+    """Combined assignments model for dogs and employees to projects"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project.id'), nullable=False)
+    
+    # Either dog or employee assignment
+    dog_id = db.Column(UUID(as_uuid=True), db.ForeignKey('dog.id'), nullable=True)
+    employee_id = db.Column(UUID(as_uuid=True), db.ForeignKey('employee.id'), nullable=True)
+    
+    # Assignment details
+    is_active = db.Column(db.Boolean, default=True)
+    assigned_date = db.Column(db.Date, default=date.today)
+    unassigned_date = db.Column(db.Date, nullable=True)
+    notes = db.Column(Text)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    project = db.relationship('Project', backref='assignments')
+    dog = db.relationship('Dog', backref='project_assignments')
+    employee = db.relationship('Employee', backref='project_assignments')
+    
+    # Constraint to ensure either dog_id or employee_id is set, but not both
+    __table_args__ = (
+        db.CheckConstraint('(dog_id IS NOT NULL AND employee_id IS NULL) OR (dog_id IS NULL AND employee_id IS NOT NULL)', name='assignment_target_check'),
+        db.UniqueConstraint('project_id', 'dog_id', name='unique_project_dog_assignment'),
+        db.UniqueConstraint('project_id', 'employee_id', name='unique_project_employee_assignment'),
+    )
+    
+    def __repr__(self):
+        target = self.dog.name if self.dog else self.employee.name
+        return f'<ProjectAssignment {target} -> {self.project.name}>'
 
 class Incident(db.Model):
     """Incident logging for projects"""
