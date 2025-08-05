@@ -16,6 +16,14 @@ def get_uuid_column():
         from sqlalchemy.dialects.postgresql import UUID
         return UUID(as_uuid=True)
 
+# Helper function to ensure UUID values are strings for SQLite
+def ensure_uuid_string():
+    database_url = os.environ.get("DATABASE_URL", "")
+    if database_url.startswith("sqlite") or not database_url:
+        return lambda: str(uuid.uuid4())
+    else:
+        return uuid.uuid4
+
 class UserRole(Enum):
     GENERAL_ADMIN = "GENERAL_ADMIN"
     PROJECT_MANAGER = "PROJECT_MANAGER"
@@ -163,7 +171,7 @@ class User(UserMixin, db.Model):
         return f'<User {self.username}>'
 
 class Dog(db.Model):
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     name = db.Column(db.String(100), nullable=False)
     code = db.Column(db.String(20), unique=True, nullable=False)
     breed = db.Column(db.String(100), nullable=False)
@@ -204,7 +212,7 @@ class Dog(db.Model):
         return f'<Dog {self.name} ({self.code})>'
 
 class Employee(db.Model):
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     name = db.Column(db.String(100), nullable=False)
     employee_id = db.Column(db.String(20), unique=True, nullable=False)
     role = db.Column(db.Enum(EmployeeRole), nullable=False)
@@ -235,7 +243,7 @@ class Employee(db.Model):
         return f'<Employee {self.name} ({self.employee_id})>'
 
 class TrainingSession(db.Model):
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     trainer_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=False)
     category = db.Column(db.Enum(TrainingCategory), nullable=False)
@@ -258,7 +266,7 @@ class TrainingSession(db.Model):
         return f'<TrainingSession {self.subject} - {self.dog.name}>'
 
 class VeterinaryVisit(db.Model):
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     vet_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=False)
     visit_type = db.Column(db.Enum(VisitType), nullable=False)
@@ -298,7 +306,7 @@ class VeterinaryVisit(db.Model):
         return f'<VeterinaryVisit {self.visit_type.value} - {self.dog.name}>'
 
 class BreedingCycle(db.Model):
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     female_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     male_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     cycle_type = db.Column(db.Enum(BreedingCycleType), nullable=False)
@@ -331,7 +339,7 @@ class BreedingCycle(db.Model):
         return f'<BreedingCycle {self.female.name} x {self.male.name}>'
 
 class Project(db.Model):
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     name = db.Column(db.String(200), nullable=False)
     code = db.Column(db.String(20), unique=True, nullable=False)
     main_task = db.Column(Text)  # المهمة الأساسية
@@ -381,7 +389,7 @@ class Project(db.Model):
 
 class ProjectDog(db.Model):
     """Dog assignments to projects"""
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
     dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
@@ -401,7 +409,7 @@ class ProjectDog(db.Model):
 
 class ProjectAssignment(db.Model):
     """Combined assignments model for dogs and employees to projects"""
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
     
     # Either dog or employee assignment
@@ -435,7 +443,7 @@ class ProjectAssignment(db.Model):
 
 class Incident(db.Model):
     """Incident logging for projects"""
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
     name = db.Column(db.String(200), nullable=False)  # اسم الحادث
     incident_date = db.Column(db.Date, nullable=False)
@@ -471,7 +479,7 @@ class Incident(db.Model):
 
 class Suspicion(db.Model):
     """Suspicion/discovery logging for projects"""
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
     element_type = db.Column(db.Enum(ElementType), nullable=False)  # سلاح/مخدرات/متفجرات/أخرى
     subtype = db.Column(db.String(100))  # نوع السلاح/العبوة
@@ -508,7 +516,7 @@ class Suspicion(db.Model):
 
 class PerformanceEvaluation(db.Model):
     """Performance evaluation for employees and dogs in projects"""
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
     evaluator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     target_type = db.Column(db.Enum(TargetType), nullable=False)  # EMPLOYEE or DOG
@@ -559,7 +567,7 @@ class PerformanceEvaluation(db.Model):
         return f'<PerformanceEvaluation {target_name} - {self.rating.value}>'
 
 class AttendanceRecord(db.Model):
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     employee_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=False)
     date = db.Column(db.Date, nullable=False)
     shift = db.Column(db.String(20), nullable=False)  # MORNING, EVENING
@@ -595,7 +603,7 @@ class AttendanceRecord(db.Model):
 
 class DogMaturity(db.Model):
     """Section 1: General Information + Section 2: Maturity (البلوغ)"""
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     maturity_date = db.Column(db.Date)  # تاريخ البلوغ
     maturity_status = db.Column(db.Enum(MaturityStatus), default=MaturityStatus.JUVENILE)
@@ -611,7 +619,7 @@ class DogMaturity(db.Model):
 
 class HeatCycle(db.Model):
     """Section 3: Heat Cycle (الدورة)"""
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     cycle_number = db.Column(db.Integer, nullable=False)  # رقم الدورة (1، 2، 3...)
     start_date = db.Column(db.Date, nullable=False)
@@ -634,7 +642,7 @@ class HeatCycle(db.Model):
 
 class MatingRecord(db.Model):
     """Section 4: Mating (التزاوج)"""
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     female_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     male_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     heat_cycle_id = db.Column(get_uuid_column(), db.ForeignKey('heat_cycle.id'), nullable=False)
@@ -662,7 +670,7 @@ class MatingRecord(db.Model):
 
 class PregnancyRecord(db.Model):
     """Section 5: Pregnancy (الحمل)"""
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     mating_record_id = db.Column(get_uuid_column(), db.ForeignKey('mating_record.id'), nullable=False)
     dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     
@@ -700,7 +708,7 @@ class PregnancyRecord(db.Model):
 
 class DeliveryRecord(db.Model):
     """Section 6: Delivery/Birth (الولادة)"""
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     pregnancy_record_id = db.Column(get_uuid_column(), db.ForeignKey('pregnancy_record.id'), nullable=False)
     
     # Delivery details
@@ -735,7 +743,7 @@ class DeliveryRecord(db.Model):
 
 class PuppyRecord(db.Model):
     """Section 7: Puppies (الجراء)"""
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     delivery_record_id = db.Column(get_uuid_column(), db.ForeignKey('delivery_record.id'), nullable=False)
     
     # Puppy identification
@@ -787,7 +795,7 @@ class PuppyRecord(db.Model):
 
 class PuppyTraining(db.Model):
     """Section 8: Puppy Training (تدريب الجراء)"""
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     puppy_id = db.Column(get_uuid_column(), db.ForeignKey('puppy_record.id'), nullable=False)
     trainer_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=False)
     
@@ -834,7 +842,7 @@ class PuppyTraining(db.Model):
 
 class ProjectShift(db.Model):
     """Project shifts for attendance tracking"""
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)  # Morning, Evening, Night, or custom
     start_time = db.Column(db.Time, nullable=False)
@@ -852,7 +860,7 @@ class ProjectShift(db.Model):
 
 class ProjectShiftAssignment(db.Model):
     """Assignment of employees/dogs to specific shifts"""
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     shift_id = db.Column(get_uuid_column(), db.ForeignKey('project_shift.id'), nullable=False)
     entity_type = db.Column(db.Enum(EntityType), nullable=False)
     entity_id = db.Column(get_uuid_column(), nullable=False)  # Points to employee.id or dog.id
@@ -897,7 +905,7 @@ class ProjectShiftAssignment(db.Model):
 
 class ProjectAttendance(db.Model):
     """Attendance records for projects"""
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
     shift_id = db.Column(get_uuid_column(), db.ForeignKey('project_shift.id'), nullable=False)
     date = db.Column(db.Date, nullable=False)
@@ -982,7 +990,7 @@ class ProjectAttendance(db.Model):
 
 class AuditLog(db.Model):
     """Comprehensive audit logging for all user actions"""
-    id = db.Column(get_uuid_column(), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(get_uuid_column(), primary_key=True, default=ensure_uuid_string())
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     action = db.Column(db.Enum(AuditAction), nullable=False)
     
