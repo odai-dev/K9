@@ -326,13 +326,24 @@ def get_project_manager_permissions(user, project_id):
 
 def get_user_projects(user):
     """Get projects assigned to a PROJECT_MANAGER user"""
-    from models import Project, UserRole
+    from models import Project, UserRole, Employee, EmployeeRole
     
     if user.role == UserRole.GENERAL_ADMIN:
         return Project.query.all()
     elif user.role == UserRole.PROJECT_MANAGER:
         # Get projects where this user is the manager
-        return Project.query.filter_by(project_manager_id=user.id).all()
+        # First try by direct user assignment
+        direct_projects = Project.query.filter_by(project_manager_id=user.id).all()
+        
+        # Also check through employee profile assignment
+        employee = Employee.query.filter_by(user_account_id=user.id, role=EmployeeRole.PROJECT_MANAGER).first()
+        if employee:
+            employee_projects = employee.projects
+            # Combine and deduplicate
+            all_projects = list(set(direct_projects + employee_projects))
+            return all_projects
+        
+        return direct_projects
     
     return []
 
@@ -366,3 +377,49 @@ def filter_data_by_project_access(user, query, model_class):
             return query.join(model_class.projects).filter(model_class.id.in_(project_ids))
     
     return query.filter(False)  # No access by default
+
+def ensure_employee_user_linkage():
+    """Ensure all PROJECT_MANAGER employees have linked user accounts"""
+    from models import Employee, User, EmployeeRole, UserRole
+    from werkzeug.security import generate_password_hash
+    import secrets
+    
+    # Find PROJECT_MANAGER employees without user accounts
+    pm_employees = Employee.query.filter_by(role=EmployeeRole.PROJECT_MANAGER, user_account_id=None).all()
+    
+    created_users = []
+    for employee in pm_employees:
+        # Create user account for this employee
+        username = f"pm_{employee.employee_id.lower()}"
+        temp_password = secrets.token_urlsafe(12)
+        
+        new_user = User()
+        new_user.username = username
+        new_user.email = employee.email or f"{username}@k9ops.local"
+        new_user.password_hash = generate_password_hash(temp_password)
+        new_user.full_name = employee.name
+        new_user.role = UserRole.PROJECT_MANAGER
+        new_user.active = True
+        
+        db.session.add(new_user)
+        db.session.flush()
+        
+        # Link employee to user
+        employee.user_account_id = new_user.id
+        
+        created_users.append({
+            'user': new_user,
+            'employee': employee,
+            'temp_password': temp_password
+        })
+    
+    if created_users:
+        db.session.commit()
+    
+    return created_users
+
+def get_employee_profile_for_user(user):
+    """Get the employee profile for a PROJECT_MANAGER user"""
+    from models import Employee, EmployeeRole
+    
+    return Employee.query.filter_by(user_account_id=user.id, role=EmployeeRole.PROJECT_MANAGER).first()

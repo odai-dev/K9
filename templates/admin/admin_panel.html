@@ -118,9 +118,19 @@
                                     <label for="password" class="form-label">كلمة المرور</label>
                                     <input type="password" class="form-control" id="password" name="password" required>
                                 </div>
-                                <button type="submit" class="btn btn-primary w-100">
+                                <button type="submit" class="btn btn-primary w-100 mb-2">
                                     <i class="fas fa-save"></i>
-                                    إنشاء المستخدم
+                                    إنشاء مستخدم جديد مع موظف
+                                </button>
+                            </form>
+                            
+                            <hr>
+                            
+                            <form method="POST" action="{{ url_for('main.link_existing_employees') }}">
+                                <p class="text-muted small">ربط الموظفين الحاليين (دور مدير مشروع) بحسابات مستخدمين</p>
+                                <button type="submit" class="btn btn-outline-info w-100">
+                                    <i class="fas fa-link"></i>
+                                    ربط الموظفين الحاليين
                                 </button>
                             </form>
                         </div>
@@ -156,7 +166,12 @@
                                                     <td>
                                                         <div class="d-flex align-items-center">
                                                             <i class="fas fa-user text-primary me-2"></i>
-                                                            <strong>{{ user.full_name }}</strong>
+                                                            <div>
+                                                                <strong>{{ user.full_name }}</strong>
+                                                                {% if user.employee_profile %}
+                                                                    <br><small class="text-muted">{{ user.employee_profile.employee_id }}</small>
+                                                                {% endif %}
+                                                            </div>
                                                         </div>
                                                     </td>
                                                     <td>{{ user.username }}</td>
@@ -244,6 +259,9 @@
                                                             <strong>{{ pm_user.full_name }}</strong>
                                                             <br>
                                                             <small class="text-muted">{{ pm_user.username }}</small>
+                                                            {% if pm_user.employee_profile %}
+                                                                <br><small class="badge bg-info">{{ pm_user.employee_profile.employee_id }}</small>
+                                                            {% endif %}
                                                         </div>
                                                     </div>
                                                 </td>
