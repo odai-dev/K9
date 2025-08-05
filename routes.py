@@ -9,7 +9,10 @@ from models import (Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCyc
                    MaturityStatus, HeatStatus, PregnancyStatus, ProjectDog, ProjectAssignment,
                    Incident, Suspicion, PerformanceEvaluation, 
                    ElementType, PerformanceRating, TargetType,
-                   project_employee_assignment, project_dog_assignment)
+                   project_employee_assignment, project_dog_assignment,
+                   # New attendance models
+                   ProjectShift, ProjectShiftAssignment, ProjectAttendance,
+                   EntityType, AttendanceStatus, AbsenceReason)
 from utils import log_audit, allowed_file, generate_pdf_report
 import os
 from datetime import datetime, date
@@ -1085,3 +1088,148 @@ def project_evaluation_add(project_id):
 @login_required
 def reports_index():
     return render_template('reports/index.html')
+
+
+# ============================================================================
+# ATTENDANCE SYSTEM ROUTES
+# ============================================================================
+
+@main_bp.route('/projects/<project_id>/attendance')
+@login_required
+def project_attendance(project_id):
+    """Main attendance page for a project"""
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role == UserRole.PROJECT_MANAGER:
+        if project.manager_id != current_user.id:
+            flash('ليس لديك صلاحية للوصول إلى هذا المشروع', 'error')
+            return redirect(url_for('main.projects'))
+    
+    # Get project shifts
+    shifts = ProjectShift.query.filter_by(project_id=project_id, is_active=True).all()
+    
+    # Get current date for default selection
+    today = date.today()
+    
+    return render_template('projects/attendance.html', 
+                         project=project, 
+                         shifts=shifts, 
+                         today=today,
+                         EntityType=EntityType,
+                         AttendanceStatus=AttendanceStatus,
+                         AbsenceReason=AbsenceReason)
+
+@main_bp.route('/projects/<project_id>/shifts', methods=['GET', 'POST'])
+@login_required
+def project_shifts(project_id):
+    """Manage project shifts"""
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role == UserRole.PROJECT_MANAGER:
+        if project.manager_id != current_user.id:
+            flash('ليس لديك صلاحية للوصول إلى هذا المشروع', 'error')
+            return redirect(url_for('main.projects'))
+    
+    if request.method == 'POST':
+        try:
+            shift = ProjectShift(
+                project_id=project_id,
+                name=request.form['name'],
+                start_time=datetime.strptime(request.form['start_time'], '%H:%M').time(),
+                end_time=datetime.strptime(request.form['end_time'], '%H:%M').time()
+            )
+            db.session.add(shift)
+            db.session.commit()
+            
+            log_audit(current_user.id, AuditAction.CREATE, 'ProjectShift', shift.id, 
+                     description=f'Created shift {shift.name} for project {project.name}')
+            
+            flash('تم إنشاء الوردية بنجاح', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'خطأ في إنشاء الوردية: {str(e)}', 'error')
+    
+    shifts = ProjectShift.query.filter_by(project_id=project_id).all()
+    return render_template('projects/shifts.html', project=project, shifts=shifts)
+
+@main_bp.route('/projects/<project_id>/attendance/record', methods=['POST'])
+@login_required
+def record_attendance(project_id):
+    """Record attendance for a specific date and shift"""
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.role == UserRole.PROJECT_MANAGER:
+        if project.manager_id != current_user.id:
+            return jsonify({'success': False, 'error': 'ليس لديك صلاحية للوصول إلى هذا المشروع'}), 403
+    
+    try:
+        shift_id = request.json['shift_id']
+        attendance_date = datetime.strptime(request.json['date'], '%Y-%m-%d').date()
+        entity_type = request.json['entity_type']
+        entity_id = request.json['entity_id']
+        status = request.json['status']
+        absence_reason = request.json.get('absence_reason')
+        late_reason = request.json.get('late_reason')
+        notes = request.json.get('notes', '')
+        
+        # Validate that entity is assigned to this shift
+        assignment = ProjectShiftAssignment.query.filter_by(
+            shift_id=shift_id,
+            entity_type=EntityType(entity_type),
+            entity_id=entity_id,
+            is_active=True
+        ).first()
+        
+        if not assignment:
+            return jsonify({'success': False, 'error': 'هذا العضو غير مُعيَّن لهذه الوردية'}), 400
+        
+        # Validate absence reason for absent status
+        if status == 'ABSENT' and not absence_reason:
+            return jsonify({'success': False, 'error': 'يجب تحديد سبب الغياب'}), 400
+        
+        # Check if attendance record already exists
+        existing_record = ProjectAttendance.query.filter_by(
+            project_id=project_id,
+            shift_id=shift_id,
+            date=attendance_date,
+            entity_type=EntityType(entity_type),
+            entity_id=entity_id
+        ).first()
+        
+        if existing_record:
+            # Update existing record
+            existing_record.status = AttendanceStatus(status)
+            existing_record.absence_reason = AbsenceReason(absence_reason) if absence_reason else None
+            existing_record.late_reason = late_reason if status == 'LATE' else None
+            existing_record.notes = notes
+            existing_record.updated_at = datetime.utcnow()
+            attendance_record = existing_record
+        else:
+            # Create new record
+            attendance_record = ProjectAttendance(
+                project_id=project_id,
+                shift_id=shift_id,
+                date=attendance_date,
+                entity_type=EntityType(entity_type),
+                entity_id=entity_id,
+                status=AttendanceStatus(status),
+                absence_reason=AbsenceReason(absence_reason) if absence_reason else None,
+                late_reason=late_reason if status == 'LATE' else None,
+                notes=notes,
+                recorded_by_user_id=current_user.id
+            )
+            db.session.add(attendance_record)
+        
+        db.session.commit()
+        
+        log_audit(current_user.id, AuditAction.CREATE, 'ProjectAttendance', attendance_record.id,
+                 description=f'Recorded attendance for {attendance_record.get_entity_name()}: {status}')
+        
+        return jsonify({'success': True, 'message': 'تم تسجيل الحضور بنجاح'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500

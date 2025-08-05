@@ -94,6 +94,22 @@ class AuditAction(Enum):
     LOGIN = "LOGIN"
     LOGOUT = "LOGOUT"
 
+# New enums for attendance system
+class EntityType(Enum):
+    EMPLOYEE = "EMPLOYEE"
+    DOG = "DOG"
+
+class AttendanceStatus(Enum):
+    PRESENT = "PRESENT"
+    ABSENT = "ABSENT"
+    LATE = "LATE"
+
+class AbsenceReason(Enum):
+    ANNUAL = "ANNUAL"
+    SICK = "SICK"
+    EMERGENCY = "EMERGENCY"
+    OTHER = "OTHER"
+
 # Association table for many-to-many relationship between employees and dogs
 employee_dog_assignment = db.Table('employee_dog_assignment',
     db.Column('employee_id', UUID(as_uuid=True), db.ForeignKey('employee.id'), primary_key=True),
@@ -560,22 +576,7 @@ class AttendanceRecord(db.Model):
     def __repr__(self):
         return f'<AttendanceRecord {self.employee.name} - {self.date}>'
 
-class AuditLog(db.Model):
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    action_type = db.Column(db.Enum(AuditAction), nullable=False)
-    model_target = db.Column(db.String(50), nullable=False)
-    object_id = db.Column(db.String(50))
-    changes = db.Column(JSON)
-    ip_address = db.Column(db.String(45))
-    user_agent = db.Column(db.String(500))
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Relationships
-    user = db.relationship('User', backref='audit_logs')
-    
-    def __repr__(self):
-        return f'<AuditLog {self.action_type.value} - {self.model_target}>'
+# Old AuditLog removed - using enhanced version at end of file
 
 # Production System Models (8 sections as requested)
 
@@ -814,7 +815,188 @@ class PuppyTraining(db.Model):
         return f'<PuppyTraining {self.training_name} - {self.puppy.name}>'
 
 
+# ============================================================================
+# ATTENDANCE SYSTEM MODELS
+# ============================================================================
+
+class ProjectShift(db.Model):
+    """Project shifts for attendance tracking"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)  # Morning, Evening, Night, or custom
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    project = db.relationship('Project', backref='shifts')
+    
+    def __repr__(self):
+        return f'<ProjectShift {self.name} - {self.project.name}>'
+
+class ProjectShiftAssignment(db.Model):
+    """Assignment of employees/dogs to specific shifts"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    shift_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project_shift.id'), nullable=False)
+    entity_type = db.Column(db.Enum(EntityType), nullable=False)
+    entity_id = db.Column(UUID(as_uuid=True), nullable=False)  # Points to employee.id or dog.id
+    is_active = db.Column(db.Boolean, default=True)
+    
+    assigned_date = db.Column(db.Date, default=date.today)
+    notes = db.Column(Text)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    shift = db.relationship('ProjectShift', backref='assignments')
+    
+    # Constraint to prevent duplicate assignments
+    __table_args__ = (
+        db.UniqueConstraint('shift_id', 'entity_type', 'entity_id', name='unique_shift_entity_assignment'),
+    )
+    
+    def get_entity_name(self):
+        """Get the name of the assigned entity (employee or dog)"""
+        if self.entity_type == EntityType.EMPLOYEE:
+            employee = Employee.query.get(self.entity_id)
+            return employee.name if employee else "Unknown Employee"
+        elif self.entity_type == EntityType.DOG:
+            dog = Dog.query.get(self.entity_id)
+            return dog.name if dog else "Unknown Dog"
+        return "Unknown"
+    
+    def get_entity_code(self):
+        """Get the code/ID of the assigned entity"""
+        if self.entity_type == EntityType.EMPLOYEE:
+            employee = Employee.query.get(self.entity_id)
+            return employee.employee_id if employee else "N/A"
+        elif self.entity_type == EntityType.DOG:
+            dog = Dog.query.get(self.entity_id)
+            return dog.code if dog else "N/A"
+        return "N/A"
+    
+    def __repr__(self):
+        return f'<ProjectShiftAssignment {self.get_entity_name()} -> {self.shift.name}>'
+
+class ProjectAttendance(db.Model):
+    """Attendance records for projects"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project.id'), nullable=False)
+    shift_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project_shift.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    entity_type = db.Column(db.Enum(EntityType), nullable=False)
+    entity_id = db.Column(UUID(as_uuid=True), nullable=False)  # Points to employee.id or dog.id
+    
+    # Attendance status
+    status = db.Column(db.Enum(AttendanceStatus), nullable=False)
+    absence_reason = db.Column(db.Enum(AbsenceReason), nullable=True)  # Only for ABSENT status
+    late_reason = db.Column(Text, nullable=True)  # Only for LATE status
+    notes = db.Column(Text)
+    
+    # Time tracking
+    check_in_time = db.Column(db.Time, nullable=True)
+    check_out_time = db.Column(db.Time, nullable=True)
+    
+    # Recorded by
+    recorded_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    project = db.relationship('Project', backref='attendance_records')
+    shift = db.relationship('ProjectShift', backref='attendance_records')
+    recorded_by = db.relationship('User', backref='recorded_attendance')
+    
+    # Constraints
+    __table_args__ = (
+        # Only one attendance record per entity per shift per date
+        db.UniqueConstraint('project_id', 'shift_id', 'date', 'entity_type', 'entity_id', 
+                          name='unique_attendance_record'),
+        # Check constraint: absence_reason required when status is ABSENT
+        db.CheckConstraint(
+            "(status != 'ABSENT') OR (status = 'ABSENT' AND absence_reason IS NOT NULL)",
+            name='absence_reason_required_for_absent'
+        ),
+    )
+    
+    def get_entity_name(self):
+        """Get the name of the entity (employee or dog)"""
+        if self.entity_type == EntityType.EMPLOYEE:
+            employee = Employee.query.get(self.entity_id)
+            return employee.name if employee else "Unknown Employee"
+        elif self.entity_type == EntityType.DOG:
+            dog = Dog.query.get(self.entity_id)
+            return dog.name if dog else "Unknown Dog"
+        return "Unknown"
+    
+    def get_entity_code(self):
+        """Get the code/ID of the entity"""
+        if self.entity_type == EntityType.EMPLOYEE:
+            employee = Employee.query.get(self.entity_id)
+            return employee.employee_id if employee else "N/A"
+        elif self.entity_type == EntityType.DOG:
+            dog = Dog.query.get(self.entity_id)
+            return dog.code if dog else "N/A"
+        return "N/A"
+    
+    def __repr__(self):
+        return f'<ProjectAttendance {self.get_entity_name()} - {self.status.value} on {self.date}>'
+        
+    def get_status_display(self):
+        """Get Arabic display text for status"""
+        status_map = {
+            'PRESENT': 'حاضر',
+            'ABSENT': 'غائب', 
+            'LATE': 'متأخر'
+        }
+        return status_map.get(self.status.value, self.status.value)
+    
+    def get_absence_reason_display(self):
+        """Get Arabic display text for absence reason"""
+        reason_map = {
+            'ANNUAL': 'سنوية',
+            'SICK': 'مرضية',
+            'EMERGENCY': 'طارئة',
+            'OTHER': 'أخرى'
+        }
+        return reason_map.get(self.absence_reason.value, self.absence_reason.value) if self.absence_reason else ''
 
 
+class AuditLog(db.Model):
+    """Comprehensive audit logging for all user actions"""
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    action = db.Column(db.Enum(AuditAction), nullable=False)
+    
+    # Target information
+    target_type = db.Column(db.String(50))  # Dog, Employee, Project, etc.
+    target_id = db.Column(UUID(as_uuid=True))  # ID of the target object
+    target_name = db.Column(db.String(200))  # Name for easy identification
+    
+    # Action details
+    description = db.Column(Text)
+    old_values = db.Column(JSON)  # Previous state
+    new_values = db.Column(JSON)  # New state
+    
+    # Session information
+    ip_address = db.Column(db.String(45))  # Support IPv6
+    user_agent = db.Column(Text)
+    session_id = db.Column(db.String(255))
+    
+    # Metadata (using different name to avoid SQLAlchemy reserved word)
+    extra_data = db.Column(JSON, default=dict)  # Additional context
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', backref='audit_logs')
+    
+    def __repr__(self):
+        return f'<AuditLog {self.user.username} - {self.action.value} - {self.target_type}>'
 
 
