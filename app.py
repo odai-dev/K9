@@ -23,11 +23,18 @@ app.secret_key = os.environ.get("SESSION_SECRET") or "k9-operations-secret-key-f
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1) # needed for url_for to generate with https
 
 # configure the database, relative to the app instance folder
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-}
+database_url = os.environ.get("DATABASE_URL")
+if not database_url:
+    # Use SQLite as fallback for Replit environment
+    database_url = 'sqlite:///k9_operations.db'
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {}
+else:
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_recycle": 300,
+        "pool_pre_ping": True,
+    }
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["UPLOAD_FOLDER"] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max file size
@@ -40,7 +47,7 @@ db.init_app(app)
 login_manager.init_app(app)
 migrate.init_app(app, db)
 # Login manager configuration
-login_manager.login_view = 'auth.login'
+login_manager.login_view = 'auth.login'  # type: ignore
 login_manager.login_message = 'يرجى تسجيل الدخول للوصول إلى هذه الصفحة.'
 login_manager.login_message_category = 'info'
 
@@ -56,14 +63,13 @@ with app.app_context():
     
     admin_user = User.query.filter_by(username='admin').first()
     if not admin_user:
-        admin_user = User(
-            username='admin',
-            email='admin@k9ops.com',
-            password_hash=generate_password_hash('admin123'),
-            role=UserRole.GENERAL_ADMIN,
-            full_name='System Administrator',
-            active=True
-        )
+        admin_user = User()
+        admin_user.username = 'admin'
+        admin_user.email = 'admin@k9ops.com'
+        admin_user.password_hash = generate_password_hash('admin123')
+        admin_user.role = UserRole.GENERAL_ADMIN
+        admin_user.full_name = 'System Administrator'
+        admin_user.active = True
         db.session.add(admin_user)
         db.session.commit()
         print("✓ Default admin user created successfully (username: admin, password: admin123)")
