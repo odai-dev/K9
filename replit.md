@@ -44,7 +44,7 @@ Preferred communication style: Simple, everyday language.
 ### Python Packages
 - **Flask Ecosystem**: Flask, Flask-SQLAlchemy, Flask-Login, Flask-Migrate.
 - **Security**: Werkzeug (for password hashing and proxy handling).
-- **Database**: PostgreSQL adapter for SQLAlchemy.
+- **Database**: PostgreSQL adapter for SQLAlchemy (psycopg2-binary).
 - **PDF Generation**: ReportLab.
 
 ### Frontend Dependencies
@@ -53,6 +53,26 @@ Preferred communication style: Simple, everyday language.
 - **Fonts**: Google Fonts (Noto Sans Arabic).
 
 ### Database Requirements
-- **Primary Database**: PostgreSQL.
-- **Connection Pooling**: Configured for production.
+- **Primary Database**: PostgreSQL for production, SQLite for development/Replit.
+- **Auto-Detection**: System automatically detects database type from DATABASE_URL.
+- **UUID Compatibility**: Automatic string/UUID conversion for SQLite compatibility.
+- **Connection Pooling**: Configured for production PostgreSQL.
 - **Migration Support**: Alembic.
+
+## Replit Deployment Notes
+
+### Database Configuration
+- **SQLite Mode**: Activated automatically when DATABASE_URL is not set or starts with "sqlite"
+- **UUID Handling**: All UUID columns use String(36) in SQLite mode for compatibility
+- **Route Compatibility**: All route handlers use string IDs instead of UUID objects for SQLite
+
+### Setup Instructions
+1. Import project to Replit
+2. Application auto-detects Replit environment and uses SQLite
+3. Database and admin user created automatically on first run
+4. Optional: Run `python simple_seed.py` for sample data
+
+### Common Issues Prevention
+- UUID compatibility handled automatically in models and routes
+- Database file management handled by SQLite
+- No manual database configuration needed in Replit environment

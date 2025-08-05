@@ -3,12 +3,29 @@ from datetime import timedelta
 
 class Config:
     SECRET_KEY = os.environ.get('SESSION_SECRET') or 'k9-operations-secret-key'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'postgresql://postgres:postgres@localhost/k9_operations'
+    
+    # Smart database URL detection for Replit/SQLite compatibility
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url and database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    
+    SQLALCHEMY_DATABASE_URI = database_url or 'sqlite:///k9_operations.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_recycle": 300,
-        "pool_pre_ping": True,
-    }
+    
+    # Conditional engine options based on database type
+    if database_url and not database_url.startswith('sqlite'):
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "pool_recycle": 300,
+            "pool_pre_ping": True,
+        }
+    else:
+        SQLALCHEMY_ENGINE_OPTIONS = {}
+    
+    @staticmethod
+    def is_sqlite():
+        """Check if we're using SQLite (for UUID compatibility)"""
+        database_url = os.environ.get('DATABASE_URL', '')
+        return not database_url or database_url.startswith('sqlite')
     
     # File upload settings
     UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
