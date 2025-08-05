@@ -587,6 +587,10 @@ def project_dashboard(project_id):
         'total_evaluations': total_evaluations
     }
     
+    # Get assignment objects for display in resources section
+    assigned_dogs = ProjectAssignment.query.filter_by(project_id=project_uuid, is_active=True).filter(ProjectAssignment.dog_id.isnot(None)).options(db.joinedload(ProjectAssignment.dog)).all()
+    assigned_employees = ProjectAssignment.query.filter_by(project_id=project_uuid, is_active=True).filter(ProjectAssignment.employee_id.isnot(None)).options(db.joinedload(ProjectAssignment.employee)).all()
+    
     # Recent activities
     recent_incidents = Incident.query.filter_by(project_id=project_uuid).order_by(Incident.incident_date.desc()).limit(5).all()
     recent_suspicions = Suspicion.query.filter_by(project_id=project_uuid).order_by(Suspicion.discovery_date.desc()).limit(5).all()
@@ -595,6 +599,8 @@ def project_dashboard(project_id):
     return render_template('projects/modern_dashboard.html', 
                          project=project, 
                          stats=stats,
+                         assigned_dogs=assigned_dogs,
+                         assigned_employees=assigned_employees,
                          recent_incidents=recent_incidents,
                          recent_suspicions=recent_suspicions,
                          recent_evaluations=recent_evaluations)
@@ -1100,7 +1106,19 @@ def project_evaluation_add(project_id):
 @main_bp.route('/reports')
 @login_required
 def reports_index():
-    return render_template('reports/index.html')
+    # Calculate statistics for the reports dashboard
+    stats = {
+        'total_dogs': Dog.query.count(),
+        'active_dogs': Dog.query.filter_by(current_status=DogStatus.ACTIVE).count(),
+        'total_employees': Employee.query.filter_by(is_active=True).count(),
+        'total_projects': Project.query.count(),
+        'active_projects': Project.query.filter_by(status=ProjectStatus.ACTIVE).count(),
+        'completed_projects': Project.query.filter_by(status=ProjectStatus.COMPLETED).count(),
+        'total_training_sessions': TrainingSession.query.count(),
+        'total_vet_visits': VeterinaryVisit.query.count()
+    }
+    
+    return render_template('reports/index.html', stats=stats)
 
 
 # ============================================================================
