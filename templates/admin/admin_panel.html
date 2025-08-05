@@ -91,60 +91,20 @@
         <!-- Users Management Tab -->
         <div class="tab-pane fade show active" id="users" role="tabpanel" aria-labelledby="users-tab">
             <div class="row">
-                <!-- Create User Form -->
-                <div class="col-md-4">
+                <!-- Auto-sync and Users List -->
+                <div class="col-md-12">
                     <div class="card">
-                        <div class="card-header">
-                            <h5 class="card-title">
-                                <i class="fas fa-user-plus"></i>
-                                إنشاء مدير مشروع جديد
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <form method="POST" action="{{ url_for('main.create_project_manager') }}">
-                                <div class="mb-3">
-                                    <label for="username" class="form-label">اسم المستخدم</label>
-                                    <input type="text" class="form-control" id="username" name="username" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="email" class="form-label">البريد الإلكتروني</label>
-                                    <input type="email" class="form-control" id="email" name="email" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="full_name" class="form-label">الاسم الكامل</label>
-                                    <input type="text" class="form-control" id="full_name" name="full_name" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="password" class="form-label">كلمة المرور</label>
-                                    <input type="password" class="form-control" id="password" name="password" required>
-                                </div>
-                                <button type="submit" class="btn btn-primary w-100 mb-2">
-                                    <i class="fas fa-save"></i>
-                                    إنشاء مستخدم جديد مع موظف
-                                </button>
-                            </form>
-                            
-                            <hr>
-                            
-                            <form method="POST" action="{{ url_for('main.link_existing_employees') }}">
-                                <p class="text-muted small">ربط الموظفين الحاليين (دور مدير مشروع) بحسابات مستخدمين</p>
-                                <button type="submit" class="btn btn-outline-info w-100">
-                                    <i class="fas fa-link"></i>
-                                    ربط الموظفين الحاليين
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Users List -->
-                <div class="col-md-8">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="card-title">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">
                                 <i class="fas fa-list"></i>
                                 قائمة مديري المشاريع
                             </h5>
+                            <form method="POST" action="{{ url_for('main.sync_project_managers') }}" class="d-inline">
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="fas fa-sync"></i>
+                                    مزامنة الموظفين
+                                </button>
+                            </form>
                         </div>
                         <div class="card-body">
                             {% if pm_users %}
@@ -191,14 +151,27 @@
                                                         {% endif %}
                                                     </td>
                                                     <td>
-                                                        <form method="POST" action="{{ url_for('main.toggle_user_status', user_id=user.id) }}" class="d-inline">
-                                                            <button type="submit" 
-                                                                    class="btn btn-sm btn-{{ 'warning' if user.active else 'success' }}"
-                                                                    onclick="return confirm('هل أنت متأكد من تغيير حالة هذا المستخدم؟')">
-                                                                <i class="fas fa-{{ 'ban' if user.active else 'check' }}"></i>
-                                                                {{ 'تعطيل' if user.active else 'تفعيل' }}
+                                                        <div class="btn-group" role="group">
+                                                            <button type="button" 
+                                                                    class="btn btn-sm btn-outline-primary" 
+                                                                    data-bs-toggle="modal" 
+                                                                    data-bs-target="#editUserModal"
+                                                                    data-user-id="{{ user.id }}"
+                                                                    data-username="{{ user.username }}"
+                                                                    data-email="{{ user.email }}"
+                                                                    data-full-name="{{ user.full_name }}">
+                                                                <i class="fas fa-edit"></i>
+                                                                تعديل
                                                             </button>
-                                                        </form>
+                                                            <form method="POST" action="{{ url_for('main.toggle_user_status', user_id=user.id) }}" class="d-inline">
+                                                                <button type="submit" 
+                                                                        class="btn btn-sm btn-{{ 'warning' if user.active else 'success' }}"
+                                                                        onclick="return confirm('هل أنت متأكد من تغيير حالة هذا المستخدم؟')">
+                                                                    <i class="fas fa-{{ 'ban' if user.active else 'check' }}"></i>
+                                                                    {{ 'تعطيل' if user.active else 'تفعيل' }}
+                                                                </button>
+                                                            </form>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             {% endfor %}
@@ -349,6 +322,57 @@
     </div>
 </div>
 
+<!-- User Edit Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('main.update_user_credentials') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editUserModalLabel">
+                        <i class="fas fa-user-edit"></i>
+                        تعديل بيانات المستخدم
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="user_id" id="edit-user-id">
+                    
+                    <div class="mb-3">
+                        <label for="edit-username" class="form-label">اسم المستخدم</label>
+                        <input type="text" class="form-control" id="edit-username" name="username" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit-email" class="form-label">البريد الإلكتروني</label>
+                        <input type="email" class="form-control" id="edit-email" name="email" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit-full-name" class="form-label">الاسم الكامل</label>
+                        <input type="text" class="form-control" id="edit-full-name" name="full_name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit-password" class="form-label">كلمة المرور الجديدة</label>
+                        <input type="password" class="form-control" id="edit-password" name="password" placeholder="اتركها فارغة إذا لم ترد تغييرها">
+                        <small class="text-muted">اتركها فارغة إذا لم ترد تغيير كلمة المرور</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i>
+                        إلغاء
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        حفظ التغييرات
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Permission Edit Modal -->
 <div class="modal fade" id="permissionModal" tabindex="-1" aria-labelledby="permissionModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -471,6 +495,20 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // User Edit Modal
+    const editUserModal = document.getElementById('editUserModal');
+    
+    editUserModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        
+        document.getElementById('edit-user-id').value = button.getAttribute('data-user-id');
+        document.getElementById('edit-username').value = button.getAttribute('data-username');
+        document.getElementById('edit-email').value = button.getAttribute('data-email');
+        document.getElementById('edit-full-name').value = button.getAttribute('data-full-name');
+        document.getElementById('edit-password').value = ''; // Always empty for security
+    });
+    
+    // Permission Modal
     const permissionModal = document.getElementById('permissionModal');
     
     permissionModal.addEventListener('show.bs.modal', function(event) {

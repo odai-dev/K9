@@ -1707,70 +1707,103 @@ def admin_panel():
                          projects=projects,
                          permissions=permissions)
 
-@main_bp.route('/admin/create_user', methods=['POST'])
+@main_bp.route('/admin/sync_managers', methods=['POST'])
 @login_required
-def create_project_manager():
-    """Create a new PROJECT_MANAGER user"""
-    # Check admin access
+def sync_project_managers():
+    """Automatically create user accounts for all PROJECT_MANAGER employees"""
     if current_user.role != UserRole.GENERAL_ADMIN:
-        flash('ليس لديك صلاحية لإنشاء مستخدمين جدد', 'error')
+        flash('ليس لديك صلاحية لهذا الإجراء', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        from utils import ensure_employee_user_linkage
+        
+        created_users = ensure_employee_user_linkage()
+        
+        if created_users:
+            count = len(created_users)
+            flash(f'تم إنشاء {count} حساب مستخدم لمديري المشاريع', 'success')
+            
+            # Log each creation
+            for user_info in created_users:
+                log_audit(current_user.id, AuditAction.CREATE, 'User', user_info['user'].id,
+                         description=f'Auto-created user account for employee {user_info["employee"].employee_id}')
+        else:
+            flash('جميع موظفي إدارة المشاريع لديهم حسابات مستخدمين بالفعل', 'info')
+            
+    except Exception as e:
+        db.session.rollback()
+        flash(f'خطأ في مزامنة المديرين: {str(e)}', 'error')
+    
+    return redirect(url_for('main.admin_panel'))
+
+@main_bp.route('/admin/update_user', methods=['POST'])
+@login_required
+def update_user_credentials():
+    """Update user credentials (username, email, password)"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('ليس لديك صلاحية لتعديل بيانات المستخدمين', 'error')
         return redirect(url_for('main.dashboard'))
     
     try:
         from werkzeug.security import generate_password_hash
         
+        user_id = request.form.get('user_id')
         username = request.form.get('username')
         email = request.form.get('email')
-        password = request.form.get('password')
         full_name = request.form.get('full_name')
+        password = request.form.get('password')
         
-        if not all([username, email, password, full_name]):
+        if not all([user_id, username, email, full_name]):
             flash('جميع الحقول مطلوبة', 'error')
             return redirect(url_for('main.admin_panel'))
         
-        # Check if username or email already exists
-        if User.query.filter_by(username=username).first():
+        user = User.query.get_or_404(user_id)
+        
+        # Check if username or email already exists for other users
+        existing_username = User.query.filter_by(username=username).filter(User.id != user_id).first()
+        if existing_username:
             flash('اسم المستخدم موجود مسبقاً', 'error')
             return redirect(url_for('main.admin_panel'))
         
-        if User.query.filter_by(email=email).first():
+        existing_email = User.query.filter_by(email=email).filter(User.id != user_id).first()
+        if existing_email:
             flash('البريد الإلكتروني موجود مسبقاً', 'error')
             return redirect(url_for('main.admin_panel'))
         
-        # Create new user
-        new_user = User()
-        new_user.username = username
-        new_user.email = email
-        new_user.password_hash = generate_password_hash(password)
-        new_user.full_name = full_name
-        new_user.role = UserRole.PROJECT_MANAGER
-        new_user.active = True
+        # Update user data
+        old_values = {
+            'username': user.username,
+            'email': user.email,
+            'full_name': user.full_name
+        }
         
-        db.session.add(new_user)
-        db.session.flush()  # Get the user ID
+        user.username = username
+        user.email = email
+        user.full_name = full_name
         
-        # Create corresponding employee record
-        new_employee = Employee()
-        new_employee.name = full_name
-        new_employee.employee_id = f"PM{new_user.id:04d}"  # Generate employee ID
-        new_employee.role = EmployeeRole.PROJECT_MANAGER
-        new_employee.email = email
-        new_employee.hire_date = datetime.utcnow().date()
-        new_employee.is_active = True
-        new_employee.user_account_id = new_user.id  # Link to user account
+        # Update password if provided
+        if password:
+            user.password_hash = generate_password_hash(password)
+            old_values['password_changed'] = True
         
-        db.session.add(new_employee)
+        # Update corresponding employee record
+        if user.employee_profile:
+            user.employee_profile.name = full_name
+            user.employee_profile.email = email
+        
         db.session.commit()
         
-        # Log the creation
-        log_audit(current_user.id, AuditAction.CREATE, 'User', new_user.id,
-                 description=f'Created PROJECT_MANAGER user: {username} with employee profile: {new_employee.employee_id}')
+        # Log the update
+        log_audit(current_user.id, AuditAction.EDIT, 'User', user_id,
+                 description=f'Updated user credentials for {username}',
+                 old_values=old_values)
         
-        flash(f'تم إنشاء مدير المشروع {full_name} بنجاح مع رقم موظف {new_employee.employee_id}', 'success')
+        flash(f'تم تحديث بيانات المستخدم {full_name} بنجاح', 'success')
         
     except Exception as e:
         db.session.rollback()
-        flash(f'خطأ في إنشاء المستخدم: {str(e)}', 'error')
+        flash(f'خطأ في تحديث بيانات المستخدم: {str(e)}', 'error')
     
     return redirect(url_for('main.admin_panel'))
 
@@ -1857,32 +1890,3 @@ def toggle_user_status(user_id):
     
     return redirect(url_for('main.admin_panel'))
 
-@main_bp.route('/admin/link_employees', methods=['POST'])
-@login_required
-def link_existing_employees():
-    """Link existing PROJECT_MANAGER employees to user accounts"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
-        flash('ليس لديك صلاحية لهذا الإجراء', 'error')
-        return redirect(url_for('main.dashboard'))
-    
-    try:
-        from utils import ensure_employee_user_linkage
-        
-        created_users = ensure_employee_user_linkage()
-        
-        if created_users:
-            count = len(created_users)
-            flash(f'تم ربط {count} موظف بحسابات مستخدمين جديدة', 'success')
-            
-            # Log each linkage
-            for user_info in created_users:
-                log_audit(current_user.id, AuditAction.CREATE, 'User', user_info['user'].id,
-                         description=f'Linked employee {user_info["employee"].employee_id} to user account {user_info["user"].username}')
-        else:
-            flash('جميع موظفي إدارة المشاريع مربوطين بحسابات مستخدمين بالفعل', 'info')
-            
-    except Exception as e:
-        db.session.rollback()
-        flash(f'خطأ في ربط الموظفين: {str(e)}', 'error')
-    
-    return redirect(url_for('main.admin_panel'))
