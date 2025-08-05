@@ -209,6 +209,61 @@
                 </div>
             </div>
 
+            <!-- Linked Activities Row -->
+            <div class="row">
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-dumbbell fa-3x text-secondary"></i>
+                            </div>
+                            <h5 class="card-title">جلسات التدريب</h5>
+                            <h2 class="text-secondary mb-2">{{ stats.total_training }}</h2>
+                            <a href="{{ url_for('main.training_sessions') }}" class="btn btn-outline-secondary btn-sm">عرض التفاصيل</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-stethoscope fa-3x text-danger"></i>
+                            </div>
+                            <h5 class="card-title">الزيارات البيطرية</h5>
+                            <h2 class="text-danger mb-2">{{ stats.total_veterinary }}</h2>
+                            <a href="{{ url_for('main.veterinary_visits') }}" class="btn btn-outline-danger btn-sm">عرض التفاصيل</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-star fa-3x text-warning"></i>
+                            </div>
+                            <h5 class="card-title">التقييمات</h5>
+                            <h2 class="text-warning mb-2">{{ stats.total_evaluations }}</h2>
+                            <a href="{{ url_for('main.project_evaluations', project_id=project.id) }}" class="btn btn-outline-warning btn-sm">عرض التفاصيل</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-calendar-check fa-3x text-success"></i>
+                            </div>
+                            <h5 class="card-title">الأنشطة المرتبطة</h5>
+                            <h2 class="text-success mb-2">{{ stats.total_training + stats.total_veterinary }}</h2>
+                            <small class="text-muted">إجمالي الأنشطة المرتبطة تلقائياً</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Project Description -->
             {% if project.description %}
             <div class="row mb-4">
@@ -450,6 +505,89 @@
                                     <i class="fas fa-list me-2"></i>عرض التقييمات
                                 </a>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Linked Activities Section -->
+            <div class="row">
+                <div class="col-lg-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-dumbbell me-2"></i>جلسات التدريب المرتبطة
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_training %}
+                                <div class="mb-3">
+                                    <h6 class="text-secondary">آخر جلسات التدريب:</h6>
+                                    {% for training in recent_training %}
+                                    <div class="border rounded p-2 mb-2">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong>{{ training.subject }}</strong>
+                                                <br><small class="text-muted">{{ training.dog.name }} - {{ training.trainer.name }}</small>
+                                                <br><small class="text-muted">{{ training.session_date.strftime('%Y-%m-%d') }}</small>
+                                            </div>
+                                            <span class="badge bg-secondary">{{ training.success_rating }}/10</span>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <a href="{{ url_for('main.training_sessions') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-list me-2"></i>عرض جميع الجلسات
+                                    </a>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-3">
+                                    <i class="fas fa-dumbbell fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted">لا توجد جلسات تدريب مرتبطة بالمشروع</p>
+                                    <small class="text-muted">ستظهر جلسات التدريب هنا تلقائياً عند إنشائها للكلاب المعينة</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-stethoscope me-2"></i>الزيارات البيطرية المرتبطة
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_veterinary %}
+                                <div class="mb-3">
+                                    <h6 class="text-danger">آخر الزيارات البيطرية:</h6>
+                                    {% for visit in recent_veterinary %}
+                                    <div class="border rounded p-2 mb-2">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong>{{ visit.visit_type.value }}</strong>
+                                                <br><small class="text-muted">{{ visit.dog.name }} - {{ visit.vet.name }}</small>
+                                                <br><small class="text-muted">{{ visit.visit_date.strftime('%Y-%m-%d') }}</small>
+                                            </div>
+                                            <span class="badge bg-danger">{{ visit.visit_type.value }}</span>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <a href="{{ url_for('main.veterinary_visits') }}" class="btn btn-outline-danger">
+                                        <i class="fas fa-list me-2"></i>عرض جميع الزيارات
+                                    </a>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-3">
+                                    <i class="fas fa-stethoscope fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted">لا توجد زيارات بيطرية مرتبطة بالمشروع</p>
+                                    <small class="text-muted">ستظهر الزيارات البيطرية هنا تلقائياً عند إنشائها للكلاب المعينة</small>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

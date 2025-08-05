@@ -28,6 +28,7 @@
                         <th>الموضوع</th>
                         <th>المدة</th>
                         <th>التقييم</th>
+                        <th>المشروع</th>
                         <th>الموقع</th>
                         <th>الملاحظات</th>
                     </tr>
@@ -66,6 +67,13 @@
                             <span class="badge bg-{{ 'success' if session.success_rating >= 7 else 'warning' if session.success_rating >= 5 else 'danger' }}">
                                 {{ session.success_rating }}/10
                             </span>
+                        </td>
+                        <td>
+                            {% if session.project %}
+                                <span class="badge bg-info">{{ session.project.name }}</span>
+                            {% else %}
+                                <span class="text-muted">غير مرتبط</span>
+                            {% endif %}
                         </td>
                         <td>{{ session.location or '-' }}</td>
                         <td>

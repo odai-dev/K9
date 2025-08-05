@@ -25,6 +25,7 @@
                         <th>الكلب</th>
                         <th>الطبيب</th>
                         <th>نوع الزيارة</th>
+                        <th>المشروع</th>
                         <th>الوزن</th>
                         <th>درجة الحرارة</th>
                         <th>التشخيص</th>
@@ -55,6 +56,13 @@
                             <span class="badge bg-{{ visit_type_map[visit.visit_type.value]['class'] }}">
                                 {{ visit_type_map[visit.visit_type.value]['text'] }}
                             </span>
+                        </td>
+                        <td>
+                            {% if visit.project %}
+                                <span class="badge bg-info">{{ visit.project.name }}</span>
+                            {% else %}
+                                <span class="text-muted">غير مرتبط</span>
+                            {% endif %}
                         </td>
                         <td>
                             {% if visit.weight %}
