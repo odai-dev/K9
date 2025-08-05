@@ -1,0 +1,107 @@
+<!-- Project Navigation Component -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <!-- Breadcrumb -->
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb mb-0">
+                                <li class="breadcrumb-item">
+                                    <a href="{{ url_for('main.projects') }}" class="text-decoration-none">
+                                        <i class="fas fa-project-diagram me-1"></i>المشاريع
+                                    </a>
+                                </li>
+                                <li class="breadcrumb-item active">{{ project.name }}</li>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div class="col-md-4">
+                        <!-- Quick Actions -->
+                        <div class="btn-group w-100" role="group">
+                            <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fas fa-plus me-1"></i>إضافة
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('main.project_assignment_add', project_id=project.id) }}">
+                                        <i class="fas fa-user-plus me-2"></i>تعيين موظف
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('main.project_dog_assignment_add', project_id=project.id) }}">
+                                        <i class="fas fa-dog me-2"></i>تعيين كلب
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('main.project_incident_add', project_id=project.id) }}">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>تسجيل حادث
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('main.project_suspicion_add', project_id=project.id) }}">
+                                        <i class="fas fa-search me-2"></i>تسجيل اشتباه
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Project Sub-Navigation -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="nav nav-pills nav-fill bg-light rounded p-2" role="tablist">
+            <a class="nav-link {{ 'active' if active_section == 'dashboard' else '' }}" 
+               href="{{ url_for('main.project_dashboard', project_id=project.id) }}">
+                <i class="fas fa-tachometer-alt me-2"></i>لوحة التحكم
+            </a>
+            <a class="nav-link {{ 'active' if active_section == 'assignments' else '' }}" 
+               href="{{ url_for('main.project_assignments', project_id=project.id) }}">
+                <i class="fas fa-users me-2"></i>التعيينات
+            </a>
+            <a class="nav-link {{ 'active' if active_section == 'attendance' else '' }}" 
+               href="{{ url_for('main.project_attendance', project_id=project.id) }}">
+                <i class="fas fa-calendar-check me-2"></i>الحضور
+            </a>
+            <a class="nav-link {{ 'active' if active_section == 'operations' else '' }}" 
+               href="{{ url_for('main.project_incidents', project_id=project.id) }}">
+                <i class="fas fa-cogs me-2"></i>العمليات
+            </a>
+            <a class="nav-link {{ 'active' if active_section == 'reports' else '' }}" 
+               href="{{ url_for('main.project_reports', project_id=project.id) }}">
+                <i class="fas fa-chart-bar me-2"></i>التقارير
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.nav-pills .nav-link {
+    border-radius: 0.5rem;
+    margin: 0 0.25rem;
+    transition: all 0.3s ease;
+    color: #6c757d;
+}
+
+.nav-pills .nav-link:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+    color: #007bff;
+}
+
+.nav-pills .nav-link.active {
+    background-color: #007bff;
+    color: white;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "◄";
+    color: #6c757d;
+}
+</style>

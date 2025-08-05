@@ -1,0 +1,305 @@
+<!-- Projects Sections Overview Component -->
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-sitemap me-2"></i>
+                        أقسام إدارة المشاريع
+                    </h4>
+                    <small class="opacity-75">نظرة شاملة على جميع وظائف المشاريع</small>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <!-- Main Management -->
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0 text-primary">
+                                        <i class="fas fa-cogs me-2"></i>الإدارة الأساسية
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="list-group list-group-flush">
+                                        <a href="{{ url_for('main.projects') }}" class="list-group-item list-group-item-action border-0 px-0">
+                                            <i class="fas fa-list-ul me-2 text-primary"></i>
+                                            <strong>قائمة المشاريع</strong>
+                                            <br><small class="text-muted">عرض وإدارة جميع المشاريع</small>
+                                        </a>
+                                        <a href="{{ url_for('main.project_add') }}" class="list-group-item list-group-item-action border-0 px-0">
+                                            <i class="fas fa-plus-circle me-2 text-success"></i>
+                                            <strong>إنشاء مشروع جديد</strong>
+                                            <br><small class="text-muted">إضافة مشروع جديد للنظام</small>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Resource Management -->
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0 text-info">
+                                        <i class="fas fa-users-cog me-2"></i>إدارة الموارد
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="list-group list-group-flush">
+                                        <div class="list-group-item border-0 px-0">
+                                            <i class="fas fa-users me-2 text-info"></i>
+                                            <strong>تعيين الموظفين</strong>
+                                            <br><small class="text-muted">إسناد الموظفين للمشاريع</small>
+                                        </div>
+                                        <div class="list-group-item border-0 px-0">
+                                            <i class="fas fa-dog me-2 text-info"></i>
+                                            <strong>تعيين الكلاب</strong>
+                                            <br><small class="text-muted">إسناد الكلاب للعمليات</small>
+                                        </div>
+                                        <div class="list-group-item border-0 px-0">
+                                            <i class="fas fa-user-tie me-2 text-info"></i>
+                                            <strong>أدوار المشروع</strong>
+                                            <br><small class="text-muted">تحديد مسؤوليات الفريق</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Attendance System -->
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0 text-success">
+                                        <i class="fas fa-calendar-check me-2"></i>نظام الحضور
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="list-group list-group-flush">
+                                        <div class="list-group-item border-0 px-0">
+                                            <i class="fas fa-clock me-2 text-success"></i>
+                                            <strong>إدارة الورديات</strong>
+                                            <br><small class="text-muted">تنظيم مواعيد العمل</small>
+                                        </div>
+                                        <div class="list-group-item border-0 px-0">
+                                            <i class="fas fa-calendar-plus me-2 text-success"></i>
+                                            <strong>تسجيل الحضور</strong>
+                                            <br><small class="text-muted">تتبع حضور الفريق يومياً</small>
+                                        </div>
+                                        <div class="list-group-item border-0 px-0">
+                                            <i class="fas fa-chart-line me-2 text-success"></i>
+                                            <strong>تقارير الحضور</strong>
+                                            <br><small class="text-muted">إحصائيات الحضور والغياب</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Operations Management -->
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0 text-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>إدارة العمليات
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="list-group list-group-flush">
+                                        <div class="list-group-item border-0 px-0">
+                                            <i class="fas fa-clipboard-list me-2 text-warning"></i>
+                                            <strong>تسجيل الحوادث</strong>
+                                            <br><small class="text-muted">توثيق الأحداث المهمة</small>
+                                        </div>
+                                        <div class="list-group-item border-0 px-0">
+                                            <i class="fas fa-search me-2 text-warning"></i>
+                                            <strong>تسجيل الاشتباهات</strong>
+                                            <br><small class="text-muted">متابعة الحالات المشبوهة</small>
+                                        </div>
+                                        <div class="list-group-item border-0 px-0">
+                                            <i class="fas fa-shield-alt me-2 text-warning"></i>
+                                            <strong>متابعة الأمن</strong>
+                                            <br><small class="text-muted">ضمان سلامة العمليات</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Performance & Evaluation -->
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0 text-danger">
+                                        <i class="fas fa-star me-2"></i>التقييم والأداء
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="list-group list-group-flush">
+                                        <div class="list-group-item border-0 px-0">
+                                            <i class="fas fa-user-check me-2 text-danger"></i>
+                                            <strong>تقييم الموظفين</strong>
+                                            <br><small class="text-muted">قياس أداء أعضاء الفريق</small>
+                                        </div>
+                                        <div class="list-group-item border-0 px-0">
+                                            <i class="fas fa-paw me-2 text-danger"></i>
+                                            <strong>تقييم الكلاب</strong>
+                                            <br><small class="text-muted">متابعة أداء الكلاب في المهام</small>
+                                        </div>
+                                        <div class="list-group-item border-0 px-0">
+                                            <i class="fas fa-trophy me-2 text-danger"></i>
+                                            <strong>تقييم المشروع</strong>
+                                            <br><small class="text-muted">تحليل نجاح المشروع الإجمالي</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Reports & Analytics -->
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0 text-secondary">
+                                        <i class="fas fa-chart-bar me-2"></i>التقارير والتحليلات
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="list-group list-group-flush">
+                                        <div class="list-group-item border-0 px-0">
+                                            <i class="fas fa-file-pdf me-2 text-secondary"></i>
+                                            <strong>تقارير شاملة</strong>
+                                            <br><small class="text-muted">إنتاج تقارير مفصلة</small>
+                                        </div>
+                                        <div class="list-group-item border-0 px-0">
+                                            <i class="fas fa-chart-pie me-2 text-secondary"></i>
+                                            <strong>تحليل البيانات</strong>
+                                            <br><small class="text-muted">استخراج رؤى من المعلومات</small>
+                                        </div>
+                                        <div class="list-group-item border-0 px-0">
+                                            <i class="fas fa-download me-2 text-secondary"></i>
+                                            <strong>تصدير البيانات</strong>
+                                            <br><small class="text-muted">استخراج المعلومات بصيغ مختلفة</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Card -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>الإجراءات السريعة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-lg-2 col-md-4 col-6">
+                            <div class="d-grid">
+                                <a href="{{ url_for('main.project_add') }}" class="btn btn-primary">
+                                    <i class="fas fa-plus-circle mb-1"></i>
+                                    <br><small>مشروع جديد</small>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6">
+                            <div class="d-grid">
+                                <button class="btn btn-info" onclick="showActiveProjects()">
+                                    <i class="fas fa-play-circle mb-1"></i>
+                                    <br><small>المشاريع النشطة</small>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6">
+                            <div class="d-grid">
+                                <button class="btn btn-success" onclick="showAttendanceToday()">
+                                    <i class="fas fa-calendar-day mb-1"></i>
+                                    <br><small>حضور اليوم</small>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6">
+                            <div class="d-grid">
+                                <button class="btn btn-warning" onclick="showRecentIncidents()">
+                                    <i class="fas fa-exclamation-triangle mb-1"></i>
+                                    <br><small>الحوادث الحديثة</small>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6">
+                            <div class="d-grid">
+                                <button class="btn btn-danger" onclick="generateQuickReport()">
+                                    <i class="fas fa-file-pdf mb-1"></i>
+                                    <br><small>تقرير سريع</small>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6">
+                            <div class="d-grid">
+                                <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                                    <i class="fas fa-tachometer-alt mb-1"></i>
+                                    <br><small>لوحة التحكم</small>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.12) !important;
+}
+
+.list-group-item-action:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+.btn {
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+</style>
+
+<script>
+function showActiveProjects() {
+    window.location.href = "{{ url_for('main.projects') }}?status=ACTIVE";
+}
+
+function showAttendanceToday() {
+    // Redirect to today's attendance
+    alert('سيتم تطوير هذه الميزة قريباً');
+}
+
+function showRecentIncidents() {
+    // Show recent incidents modal or redirect
+    alert('سيتم تطوير هذه الميزة قريباً');
+}
+
+function generateQuickReport() {
+    // Quick report generation
+    alert('سيتم تطوير هذه الميزة قريباً');
+}
+</script>
