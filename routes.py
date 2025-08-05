@@ -125,8 +125,8 @@ def dogs_add():
 @login_required
 def dogs_view(dog_id):
     try:
-        dog_uuid = uuid.UUID(dog_id)
-        dog = Dog.query.get_or_404(dog_uuid)
+        dog_id = dog_id
+        dog = Dog.query.get_or_404(dog_id)
     except ValueError:
         flash('معرف الكلب غير صحيح', 'error')
         return redirect(url_for('main.dogs_list'))
@@ -148,8 +148,8 @@ def dogs_view(dog_id):
 @login_required
 def dogs_edit(dog_id):
     try:
-        dog_uuid = uuid.UUID(dog_id)
-        dog = Dog.query.get_or_404(dog_uuid)
+        dog_id = dog_id
+        dog = Dog.query.get_or_404(dog_id)
     except ValueError:
         flash('معرف الكلب غير صحيح', 'error')
         return redirect(url_for('main.dogs_list'))
@@ -248,8 +248,8 @@ def employees_add():
 @login_required
 def employees_edit(employee_id):
     try:
-        employee_uuid = uuid.UUID(employee_id)
-        employee = Employee.query.get_or_404(employee_uuid)
+        employee_id = employee_id
+        employee = Employee.query.get_or_404(employee_id)
     except ValueError:
         flash('معرف الموظف غير صحيح', 'error')
         return redirect(url_for('main.employees_list'))
@@ -544,8 +544,8 @@ def project_add():
 @login_required
 def project_dashboard(project_id):
     try:
-        project_uuid = uuid.UUID(project_id)
-        project = Project.query.get_or_404(project_uuid)
+        project_id = project_id
+        project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
         return redirect(url_for('main.projects'))
@@ -614,8 +614,8 @@ def project_dashboard(project_id):
 @login_required
 def project_status_change(project_id):
     try:
-        project_uuid = uuid.UUID(project_id)
-        project = Project.query.get_or_404(project_uuid)
+        project_id = project_id
+        project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
         return redirect(url_for('main.projects'))
@@ -647,8 +647,8 @@ def project_status_change(project_id):
 @login_required
 def project_dog_add(project_id):
     try:
-        project_uuid = uuid.UUID(project_id)
-        project = Project.query.get_or_404(project_uuid)
+        project_id = project_id
+        project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
         return redirect(url_for('main.projects'))
@@ -684,8 +684,8 @@ def project_dog_add(project_id):
 @login_required
 def project_manager_update(project_id):
     try:
-        project_uuid = uuid.UUID(project_id)
-        project = Project.query.get_or_404(project_uuid)
+        project_id = project_id
+        project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
         return redirect(url_for('main.projects'))
@@ -738,8 +738,8 @@ def project_manager_update(project_id):
 @login_required
 def project_assignments(project_id):
     try:
-        project_uuid = uuid.UUID(project_id)
-        project = Project.query.get_or_404(project_uuid)
+        project_id = project_id
+        project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
         return redirect(url_for('main.projects'))
@@ -788,8 +788,8 @@ def project_assignments(project_id):
 @login_required
 def project_assignment_add(project_id):
     try:
-        project_uuid = uuid.UUID(project_id)
-        project = Project.query.get_or_404(project_uuid)
+        project_id = project_id
+        project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
         return redirect(url_for('main.projects'))
@@ -894,10 +894,10 @@ def project_assignment_add(project_id):
 @login_required
 def project_assignment_remove(project_id, assignment_id):
     try:
-        project_uuid = uuid.UUID(project_id)
-        assignment_uuid = uuid.UUID(assignment_id)
-        project = Project.query.get_or_404(project_uuid)
-        assignment = ProjectAssignment.query.get_or_404(assignment_uuid)
+        project_id = project_id
+        assignment_id = assignment_id
+        project = Project.query.get_or_404(project_id)
+        assignment = ProjectAssignment.query.get_or_404(assignment_id)
     except ValueError:
         flash('معرف غير صحيح', 'error')
         return redirect(url_for('main.projects'))
@@ -925,10 +925,10 @@ def project_assignment_remove(project_id, assignment_id):
 @login_required
 def project_assignment_edit(project_id, assignment_id):
     try:
-        project_uuid = uuid.UUID(project_id)
-        assignment_uuid = uuid.UUID(assignment_id)
-        project = Project.query.get_or_404(project_uuid)
-        assignment = ProjectAssignment.query.get_or_404(assignment_uuid)
+        project_id = project_id
+        assignment_id = assignment_id
+        project = Project.query.get_or_404(project_id)
+        assignment = ProjectAssignment.query.get_or_404(assignment_id)
     except ValueError:
         flash('معرف غير صحيح', 'error')
         return redirect(url_for('main.projects'))
@@ -956,8 +956,8 @@ def project_assignment_edit(project_id, assignment_id):
 @login_required
 def project_incidents(project_id):
     try:
-        project_uuid = uuid.UUID(project_id)
-        project = Project.query.get_or_404(project_uuid)
+        project_id = project_id
+        project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
         return redirect(url_for('main.projects'))
@@ -975,8 +975,8 @@ def project_incidents(project_id):
 @login_required
 def project_incident_add(project_id):
     try:
-        project_uuid = uuid.UUID(project_id)
-        project = Project.query.get_or_404(project_uuid)
+        project_id = project_id
+        project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
         return redirect(url_for('main.projects'))
@@ -1020,8 +1020,8 @@ def project_incident_add(project_id):
 @login_required
 def project_suspicions(project_id):
     try:
-        project_uuid = uuid.UUID(project_id)
-        project = Project.query.get_or_404(project_uuid)
+        project_id = project_id
+        project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
         return redirect(url_for('main.projects'))
@@ -1039,8 +1039,8 @@ def project_suspicions(project_id):
 @login_required
 def project_suspicion_add(project_id):
     try:
-        project_uuid = uuid.UUID(project_id)
-        project = Project.query.get_or_404(project_uuid)
+        project_id = project_id
+        project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
         return redirect(url_for('main.projects'))
@@ -1085,8 +1085,8 @@ def project_suspicion_add(project_id):
 @login_required
 def project_evaluations(project_id):
     try:
-        project_uuid = uuid.UUID(project_id)
-        project = Project.query.get_or_404(project_uuid)
+        project_id = project_id
+        project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
         return redirect(url_for('main.projects'))
@@ -1104,8 +1104,8 @@ def project_evaluations(project_id):
 @login_required
 def project_evaluation_add(project_id):
     try:
-        project_uuid = uuid.UUID(project_id)
-        project = Project.query.get_or_404(project_uuid)
+        project_id = project_id
+        project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
         return redirect(url_for('main.projects'))
