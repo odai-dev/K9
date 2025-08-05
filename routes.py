@@ -493,26 +493,13 @@ def projects_add():
                 start_date=datetime.strptime(request.form['start_date'], '%Y-%m-%d').date(),
                 expected_completion_date=datetime.strptime(request.form['expected_completion_date'], '%Y-%m-%d').date() if request.form.get('expected_completion_date') else None,
                 status=ProjectStatus.PLANNED,
-                project_project_manager_id=manager_id,
+                project_manager_id=manager_id,
                 location=request.form.get('location'),
                 mission_type=request.form.get('mission_type'),
                 priority=request.form.get('priority', 'MEDIUM')
             )
             
             db.session.add(project)
-            db.session.commit()
-            
-            # Add project dogs if any selected
-            if request.form.getlist('dog_ids'):
-                for dog_id in request.form.getlist('dog_ids'):
-                    if dog_id:  # Make sure it's not empty
-                        project_dog = ProjectDog(
-                            project_id=project.id,
-                            dog_id=dog_id,
-                            is_active=True
-                        )
-                        db.session.add(project_dog)
-            
             db.session.commit()
             
             log_audit(current_user.id, 'CREATE', 'Project', str(project.id), {'name': project.name})
@@ -525,13 +512,11 @@ def projects_add():
     
     # Get available data for the form
     if current_user.role == UserRole.GENERAL_ADMIN:
-        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
         managers = User.query.filter_by(role=UserRole.PROJECT_MANAGER, active=True).all()
     else:
-        dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
         managers = []  # PROJECT_MANAGER users can only assign to themselves
     
-    return render_template('projects/add.html', dogs=dogs, managers=managers)
+    return render_template('projects/add.html', managers=managers)
 
 # Project Dashboard Route (without attendance statistics)
 @main_bp.route('/projects/<project_id>/dashboard')
@@ -684,8 +669,20 @@ def project_assignments(project_id):
     dog_assignments = ProjectAssignment.query.filter_by(project_id=project_uuid, is_active=True).filter(ProjectAssignment.dog_id.isnot(None)).all()
     employee_assignments = ProjectAssignment.query.filter_by(project_id=project_uuid, is_active=True).filter(ProjectAssignment.employee_id.isnot(None)).all()
     
-    # Get available dogs and employees for assignment
-    available_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+    # Get available dogs (not assigned to other active projects) and employees for assignment
+    # Get dogs that are either not assigned or not assigned to active projects
+    assigned_dog_ids = db.session.query(ProjectAssignment.dog_id).join(Project).filter(
+        ProjectAssignment.is_active == True,
+        ProjectAssignment.dog_id.isnot(None),
+        Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED]),
+        Project.id != project_uuid  # Exclude current project
+    ).subquery()
+    
+    available_dogs = Dog.query.filter(
+        Dog.current_status == DogStatus.ACTIVE,
+        ~Dog.id.in_(assigned_dog_ids)
+    ).all()
+    
     # Exclude project managers from regular employee assignments
     available_employees = Employee.query.filter(
         Employee.is_active == True,
@@ -726,21 +723,36 @@ def project_assignment_add(project_id):
             dog_ids = request.form.getlist('dog_ids')
             for dog_id in dog_ids:
                 if dog_id:
-                    # Check if already assigned
+                    # Check if already assigned to this project
                     existing = ProjectAssignment.query.filter_by(
                         project_id=project_uuid, 
                         dog_id=dog_id,
                         is_active=True
                     ).first()
                     
-                    if not existing:
-                        assignment = ProjectAssignment(
-                            project_id=project_uuid,
-                            dog_id=dog_id,
-                            notes=notes,
-                            is_active=True
-                        )
-                        db.session.add(assignment)
+                    if existing:
+                        flash(f'الكلب معيّن بالفعل لهذا المشروع', 'warning')
+                        continue
+                    
+                    # Check if dog is assigned to another active project
+                    active_assignment = ProjectAssignment.query.join(Project).filter(
+                        ProjectAssignment.dog_id == dog_id,
+                        ProjectAssignment.is_active == True,
+                        Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])
+                    ).first()
+                    
+                    if active_assignment:
+                        dog = Dog.query.get(dog_id)
+                        flash(f'الكلب {dog.name} معيّن بالفعل لمشروع نشط آخر: {active_assignment.project.name}', 'error')
+                        continue
+                    
+                    assignment = ProjectAssignment(
+                        project_id=project_uuid,
+                        dog_id=dog_id,
+                        notes=notes,
+                        is_active=True
+                    )
+                    db.session.add(assignment)
                         
         elif assignment_type == 'employee':
             employee_ids = request.form.getlist('employee_ids')

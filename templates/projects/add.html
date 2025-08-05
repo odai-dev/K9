@@ -140,37 +140,7 @@
                     </div>
                     {% endif %}
 
-                    <!-- Dog Assignment -->
-                    {% if dogs %}
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">تعيين الكلاب</h6>
-                        </div>
-                        
-                        <div class="col-12 mb-3">
-                            <label class="form-label">الكلاب المشاركة في المشروع</label>
-                            <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
-                                {% for dog in dogs %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" value="{{ dog.id }}" 
-                                           id="dog_{{ dog.id }}" name="dog_ids">
-                                    <label class="form-check-label" for="dog_{{ dog.id }}">
-                                        <strong>{{ dog.name }}</strong> 
-                                        {% if dog.gender.name == 'MALE' %}
-                                            <i class="fas fa-mars text-primary"></i>
-                                        {% else %}
-                                            <i class="fas fa-venus text-pink"></i>
-                                        {% endif %}
-                                        - {{ dog.breed }}
-                                        <br><small class="text-muted">{{ dog.code }} | العمر: {{ dog.age_years }} سنوات</small>
-                                    </label>
-                                </div>
-                                {% endfor %}
-                            </div>
-                            <small class="form-text text-muted">اختر الكلاب التي ستشارك في هذا المشروع</small>
-                        </div>
-                    </div>
-                    {% endif %}
+
 
                     <!-- Timeline -->
                     <div class="row mb-4">

@@ -39,6 +39,10 @@
                     <!-- Add Dog Assignment Form -->
                     <form method="POST" action="{{ url_for('main.project_assignment_add', project_id=project.id) }}" class="mb-4">
                         <input type="hidden" name="assignment_type" value="dog">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>ملاحظة:</strong> يمكن تعيين الكلب لمشروع نشط واحد فقط في نفس الوقت.
+                        </div>
                         <div class="row">
                             <div class="col-md-8">
                                 <label for="dog_ids" class="form-label">اختيار الكلاب</label>
@@ -50,7 +54,7 @@
                                         {% endif %}
                                     {% endfor %}
                                 </select>
-                                <small class="form-text text-muted">اضغط Ctrl/Cmd لتحديد متعدد</small>
+                                <small class="form-text text-muted">اضغط Ctrl/Cmd لتحديد متعدد - فقط الكلاب غير المعينة لمشاريع أخرى</small>
                             </div>
                             <div class="col-md-4">
                                 <label for="dog_notes" class="form-label">ملاحظات</label>
@@ -150,6 +154,10 @@
                     <!-- Add Employee Assignment Form -->
                     <form method="POST" action="{{ url_for('main.project_assignment_add', project_id=project.id) }}" class="mb-4">
                         <input type="hidden" name="assignment_type" value="employee">
+                        <div class="alert alert-success">
+                            <i class="fas fa-users me-2"></i>
+                            <strong>ملاحظة:</strong> يمكن تعيين الموظف لعدة مشاريع في نفس الوقت. مدراء المشاريع يُعيّنون من القسم المخصص أدناه.
+                        </div>
                         <div class="row">
                             <div class="col-md-8">
                                 <label for="employee_ids" class="form-label">اختيار الموظفين</label>
@@ -161,7 +169,7 @@
                                         {% endif %}
                                     {% endfor %}
                                 </select>
-                                <small class="form-text text-muted">اضغط Ctrl/Cmd لتحديد متعدد</small>
+                                <small class="form-text text-muted">اضغط Ctrl/Cmd لتحديد متعدد - باستثناء مدراء المشاريع</small>
                             </div>
                             <div class="col-md-4">
                                 <label for="employee_notes" class="form-label">ملاحظات</label>
