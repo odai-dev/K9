@@ -1674,3 +1674,90 @@ def edit_shift_assignment(project_id, shift_id, assignment_id):
         flash(f'خطأ في تحديث التعيين: {str(e)}', 'error')
     
     return redirect(url_for('main.shift_assignments', project_id=project_id, shift_id=shift_id))
+
+# Permission Management Routes (GENERAL_ADMIN only)
+@main_bp.route('/admin/permissions')
+@login_required
+def permission_management():
+    """Admin interface for managing PROJECT_MANAGER permissions"""
+    from models import ProjectManagerPermission
+    
+    # Check admin access
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('هذه الصفحة مخصصة للمدير العام فقط', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    # Get all PROJECT_MANAGER users
+    pm_users = User.query.filter_by(role=UserRole.PROJECT_MANAGER).all()
+    
+    # Get all projects
+    projects = Project.query.all()
+    
+    # Get existing permissions
+    permissions = {}
+    for permission in ProjectManagerPermission.query.all():
+        key = f"{permission.user_id}_{permission.project_id}"
+        permissions[key] = permission
+    
+    return render_template('admin/permission_management.html', 
+                         pm_users=pm_users, 
+                         projects=projects,
+                         permissions=permissions)
+
+@main_bp.route('/admin/permissions/update', methods=['POST'])
+@login_required
+def update_permissions():
+    """Update PROJECT_MANAGER permissions"""
+    from models import ProjectManagerPermission
+    
+    # Check admin access
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('ليس لديك صلاحية لتعديل الصلاحيات', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        user_id = request.form.get('user_id')
+        project_id = request.form.get('project_id')
+        
+        if not user_id or not project_id:
+            flash('يجب تحديد المستخدم والمشروع', 'error')
+            return redirect(url_for('main.permission_management'))
+        
+        # Get or create permission record
+        permission = ProjectManagerPermission.query.filter_by(
+            user_id=user_id,
+            project_id=project_id
+        ).first()
+        
+        if not permission:
+            permission = ProjectManagerPermission()
+            permission.user_id = user_id
+            permission.project_id = project_id
+            db.session.add(permission)
+        
+        # Update permissions based on form data
+        permission.can_manage_assignments = 'can_manage_assignments' in request.form
+        permission.can_manage_shifts = 'can_manage_shifts' in request.form
+        permission.can_manage_attendance = 'can_manage_attendance' in request.form
+        permission.can_manage_training = 'can_manage_training' in request.form
+        permission.can_manage_incidents = 'can_manage_incidents' in request.form
+        permission.can_manage_performance = 'can_manage_performance' in request.form
+        permission.can_view_veterinary = 'can_view_veterinary' in request.form
+        permission.can_view_breeding = 'can_view_breeding' in request.form
+        
+        db.session.commit()
+        
+        # Log the permission change
+        user = User.query.get(user_id)
+        project = Project.query.get(project_id)
+        log_audit(current_user.id, AuditAction.EDIT, 'ProjectManagerPermission', 
+                 f"{user_id}_{project_id}",
+                 description=f'Updated permissions for {user.username} on project {project.name}')
+        
+        flash('تم تحديث الصلاحيات بنجاح', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'خطأ في تحديث الصلاحيات: {str(e)}', 'error')
+    
+    return redirect(url_for('main.permission_management'))

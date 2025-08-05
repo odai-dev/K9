@@ -1,0 +1,71 @@
+In the K9 Operations Management System, update the role-based access control to enforce the following:
+
+1. PROJECT_MANAGER Role — Default Permissions
+
+Can only see and manage data linked to their assigned project(s):
+
+Project details (edit status, start/end dates, notes).
+
+Assign/unassign dogs and employees within their project.
+
+Create/edit/delete shifts for their project.
+
+Record attendance for assigned dogs/employees (with absence and late reasons).
+
+Manage training sessions, incidents, suspicion reports, and performance logs for assigned dogs/employees.
+
+View vet and breeding info only if the dog is assigned to their project.
+
+Upload/download documents related to their project.
+
+Cannot:
+
+View or edit unrelated projects, dogs, employees.
+
+Access global system settings or user management.
+
+Delete dogs/employees from the system.
+
+Access unrelated vet, breeding, or production records.
+
+2. GENERAL_ADMIN Overrides
+
+GENERAL_ADMIN can adjust the permissions of each PROJECT_MANAGER individually, per project, via a settings page.
+
+The settings page should list toggle switches for:
+
+Manage assignments (yes/no)
+
+Manage shifts (yes/no)
+
+Manage attendance (yes/no)
+
+Manage training (yes/no)
+
+Manage incidents/reports (yes/no)
+
+Manage performance evaluations (yes/no)
+
+View vet info (yes/no)
+
+View breeding info (yes/no)
+
+If a toggle is off, the PROJECT_MANAGER should lose access to that feature immediately in both backend routes and frontend UI.
+
+3. Backend Enforcement
+
+Apply row-level data filtering in all queries so PROJECT_MANAGER only sees records linked to their assigned project(s).
+
+Apply permission checks based on the toggles before allowing access to routes.
+
+4. Frontend Adjustments
+
+Hide UI elements for disabled permissions (e.g., if “Manage Assignments” is off, hide the assignments tab/button).
+
+5. Testing
+
+Confirm PROJECT_MANAGER cannot access unrelated data even by URL manipulation.
+
+Confirm toggles controlled by GENERAL_ADMIN take effect instantly.
+
+Confirm GENERAL_ADMIN always retains full access regardless of toggles.

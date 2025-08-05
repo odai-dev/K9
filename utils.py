@@ -22,17 +22,16 @@ def allowed_file(filename):
 def log_audit(user_id, action, target_type, target_id, description=None, old_values=None, new_values=None):
     """Log an audit trail entry"""
     try:
-        audit_log = AuditLog(
-            user_id=user_id,
-            action=action,
-            target_type=target_type,
-            target_id=target_id,
-            description=description,
-            old_values=old_values,
-            new_values=new_values,
-            ip_address=request.remote_addr if request else None,
-            user_agent=request.headers.get('User-Agent') if request else None
-        )
+        audit_log = AuditLog()
+        audit_log.user_id = user_id
+        audit_log.action = action
+        audit_log.target_type = target_type
+        audit_log.target_id = target_id
+        audit_log.description = description
+        audit_log.old_values = old_values
+        audit_log.new_values = new_values
+        audit_log.ip_address = request.remote_addr if request else None
+        audit_log.user_agent = request.headers.get('User-Agent') if request else None
         db.session.add(audit_log)
         db.session.commit()
     except Exception as e:
@@ -258,3 +257,112 @@ def get_user_permissions(user):
             if section in permissions:
                 permissions[section] = True
         return permissions
+
+def get_project_manager_permissions(user, project_id):
+    """Get granular permissions for a PROJECT_MANAGER user on a specific project"""
+    from models import ProjectManagerPermission, UserRole
+    
+    if user.role == UserRole.GENERAL_ADMIN:
+        # GENERAL_ADMIN has all permissions
+        return {
+            'can_manage_assignments': True,
+            'can_manage_shifts': True,
+            'can_manage_attendance': True,
+            'can_manage_training': True,
+            'can_manage_incidents': True,
+            'can_manage_performance': True,
+            'can_view_veterinary': True,
+            'can_view_breeding': True
+        }
+    
+    if user.role == UserRole.PROJECT_MANAGER:
+        # Check if permission record exists
+        permission = ProjectManagerPermission.query.filter_by(
+            user_id=user.id,
+            project_id=project_id
+        ).first()
+        
+        if permission:
+            return {
+                'can_manage_assignments': permission.can_manage_assignments,
+                'can_manage_shifts': permission.can_manage_shifts,
+                'can_manage_attendance': permission.can_manage_attendance,
+                'can_manage_training': permission.can_manage_training,
+                'can_manage_incidents': permission.can_manage_incidents,
+                'can_manage_performance': permission.can_manage_performance,
+                'can_view_veterinary': permission.can_view_veterinary,
+                'can_view_breeding': permission.can_view_breeding
+            }
+        else:
+            # Create default permissions for new PROJECT_MANAGER
+            permission = ProjectManagerPermission()
+            permission.user_id = user.id
+            permission.project_id = project_id
+            db.session.add(permission)
+            db.session.commit()
+            
+            return {
+                'can_manage_assignments': True,
+                'can_manage_shifts': True,
+                'can_manage_attendance': True,
+                'can_manage_training': True,
+                'can_manage_incidents': True,
+                'can_manage_performance': True,
+                'can_view_veterinary': True,
+                'can_view_breeding': True
+            }
+    
+    # Default: no permissions for other roles
+    return {
+        'can_manage_assignments': False,
+        'can_manage_shifts': False,
+        'can_manage_attendance': False,
+        'can_manage_training': False,
+        'can_manage_incidents': False,
+        'can_manage_performance': False,
+        'can_view_veterinary': False,
+        'can_view_breeding': False
+    }
+
+def get_user_projects(user):
+    """Get projects assigned to a PROJECT_MANAGER user"""
+    from models import Project, UserRole
+    
+    if user.role == UserRole.GENERAL_ADMIN:
+        return Project.query.all()
+    elif user.role == UserRole.PROJECT_MANAGER:
+        # Get projects where this user is the manager
+        return Project.query.filter_by(project_manager_id=user.id).all()
+    
+    return []
+
+def check_project_access(user, project_id):
+    """Check if user has access to a specific project"""
+    from models import Project, UserRole
+    
+    if user.role == UserRole.GENERAL_ADMIN:
+        return True
+    elif user.role == UserRole.PROJECT_MANAGER:
+        project = Project.query.get(project_id)
+        return project and project.project_manager_id == user.id
+    
+    return False
+
+def filter_data_by_project_access(user, query, model_class):
+    """Filter query results based on user's project access"""
+    from models import UserRole
+    
+    if user.role == UserRole.GENERAL_ADMIN:
+        return query
+    elif user.role == UserRole.PROJECT_MANAGER:
+        user_projects = get_user_projects(user)
+        project_ids = [p.id for p in user_projects]
+        
+        # Apply filtering based on model type
+        if hasattr(model_class, 'project_id'):
+            return query.filter(model_class.project_id.in_(project_ids))
+        elif hasattr(model_class, 'projects'):
+            # For models with many-to-many relationship with projects
+            return query.join(model_class.projects).filter(model_class.id.in_(project_ids))
+    
+    return query.filter(False)  # No access by default
