@@ -80,6 +80,28 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (August 2025)
 
+### Project Manager Constraint System Implementation
+- **Date**: August 5, 2025
+- **Changes**: Implemented project manager constraint system with admin override capability
+- **New Features**:
+  - Project managers are restricted to managing one active project at a time by default
+  - Validation functions added to check project manager assignment constraints
+  - Admin panel displays current active projects for each project manager
+  - Multi-project management toggle (ready for future implementation)
+  - Project assignment routes validate manager constraints before assignment
+- **Components Added**:
+  - `validate_project_manager_assignment()` function in `utils.py`
+  - `get_user_active_projects()` function for retrieving manager's active projects
+  - Project creation and manager assignment validation in relevant routes
+  - Admin panel UI showing active projects and constraint status
+- **Benefits**:
+  - Prevents project managers from being overloaded with multiple active projects
+  - Maintains clear accountability with single project focus
+  - General admin retains full control with ability to override constraints
+  - Clear visual indication of manager workload in admin interface
+
+## Recent Changes (August 2025)
+
 ### Enhanced Role-Based Access Control Implementation
 - **Date**: August 5, 2025
 - **Changes**: Implemented comprehensive granular permission system for PROJECT_MANAGER users

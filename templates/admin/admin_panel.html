@@ -115,8 +115,9 @@
                                                 <th>الاسم الكامل</th>
                                                 <th>اسم المستخدم</th>
                                                 <th>البريد الإلكتروني</th>
+                                                <th>المشاريع النشطة</th>
+                                                <th>إدارة متعددة</th>
                                                 <th>الحالة</th>
-                                                <th>آخر دخول</th>
                                                 <th>الإجراءات</th>
                                             </tr>
                                         </thead>
@@ -137,17 +138,29 @@
                                                     <td>{{ user.username }}</td>
                                                     <td>{{ user.email }}</td>
                                                     <td>
+                                                        {% set active_projects = get_user_active_projects(user) %}
+                                                        {% if active_projects %}
+                                                            {% for project in active_projects %}
+                                                                <span class="badge bg-primary me-1">{{ project.name }}</span>
+                                                            {% endfor %}
+                                                        {% else %}
+                                                            <span class="text-muted">لا توجد مشاريع نشطة</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        <form method="POST" action="{{ url_for('main.toggle_multiple_projects', user_id=user.id) }}" class="d-inline">
+                                                            <button type="submit" 
+                                                                    class="btn btn-sm btn-outline-secondary"
+                                                                    title="مقيد بمشروع واحد (سيتم إضافة الميزة قريباً)">
+                                                                <i class="fas fa-times"></i>
+                                                            </button>
+                                                        </form>
+                                                    </td>
+                                                    <td>
                                                         {% if user.active %}
                                                             <span class="badge bg-success">نشط</span>
                                                         {% else %}
                                                             <span class="badge bg-danger">معطل</span>
-                                                        {% endif %}
-                                                    </td>
-                                                    <td>
-                                                        {% if user.last_login %}
-                                                            {{ user.last_login.strftime('%Y-%m-%d %H:%M') }}
-                                                        {% else %}
-                                                            <span class="text-muted">لم يسجل دخول بعد</span>
                                                         {% endif %}
                                                     </td>
                                                     <td>

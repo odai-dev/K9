@@ -528,11 +528,20 @@ def project_add():
                 start_date=datetime.strptime(request.form['start_date'], '%Y-%m-%d').date(),
                 expected_completion_date=datetime.strptime(request.form['expected_completion_date'], '%Y-%m-%d').date() if request.form.get('expected_completion_date') else None,
                 status=ProjectStatus.PLANNED,
-                project_manager_id=manager_id,
                 location=request.form.get('location'),
                 mission_type=request.form.get('mission_type'),
                 priority=request.form.get('priority', 'MEDIUM')
             )
+            
+            # Validate project manager assignment if provided
+            if manager_id:
+                manager = User.query.get(manager_id)
+                if manager:
+                    can_assign, error_msg = validate_project_manager_assignment(manager, project)
+                    if not can_assign:
+                        flash(error_msg, 'error')
+                        raise Exception("Project manager assignment validation failed")
+                    project.project_manager_id = manager_id
             
             db.session.add(project)
             db.session.commit()
@@ -716,6 +725,15 @@ def project_manager_update(project_id):
             # Verify it's actually a project manager
             manager = Employee.query.get(project_manager_id)
             if manager and manager.role == EmployeeRole.PROJECT_MANAGER:
+                # Get the user account for this employee
+                user = User.query.filter_by(id=manager.user_account_id).first()
+                if user:
+                    # Validate project manager assignment constraints
+                    can_assign, error_msg = validate_project_manager_assignment(user, project)
+                    if not can_assign:
+                        flash(error_msg, 'error')
+                        return redirect(url_for('main.project_dashboard', project_id=project_id))
+                
                 old_manager = project.project_manager.name if project.project_manager else 'غير معين'
                 project.project_manager_id = project_manager_id
                 
@@ -885,6 +903,15 @@ def project_assignment_add(project_id):
                 # Verify it's actually a project manager
                 manager = Employee.query.get(project_manager_id)
                 if manager and manager.role == EmployeeRole.PROJECT_MANAGER:
+                    # Get the user account for this employee
+                    user = User.query.filter_by(id=manager.user_account_id).first()
+                    if user:
+                        # Validate project manager assignment constraints
+                        can_assign, error_msg = validate_project_manager_assignment(user, project)
+                        if not can_assign:
+                            flash(error_msg, 'error')
+                            return redirect(url_for('main.project_assignments', project_id=project_id))
+                    
                     project.project_manager_id = project_manager_id
                     flash('تم تحديث مسؤول المشروع بنجاح', 'success')
                 else:
@@ -1705,7 +1732,8 @@ def admin_panel():
     return render_template('admin/admin_panel.html', 
                          pm_users=pm_users, 
                          projects=projects,
-                         permissions=permissions)
+                         permissions=permissions,
+                         get_user_active_projects=get_user_active_projects)
 
 @main_bp.route('/admin/sync_managers', methods=['POST'])
 @login_required
@@ -1887,6 +1915,27 @@ def toggle_user_status(user_id):
     except Exception as e:
         db.session.rollback()
         flash(f'خطأ في تعديل حالة المستخدم: {str(e)}', 'error')
+    
+    return redirect(url_for('main.admin_panel'))
+
+@main_bp.route('/admin/users/<int:user_id>/toggle_multiple_projects', methods=['POST'])
+@login_required
+def toggle_multiple_projects(user_id):
+    """Toggle user's ability to manage multiple projects"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('ليس لديك صلاحية لتعديل قيود المشاريع', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        user = User.query.get_or_404(user_id)
+        # TODO: Add support for can_manage_multiple_projects column
+        # user.can_manage_multiple_projects = not user.can_manage_multiple_projects
+        flash('ميزة إدارة المشاريع المتعددة ستكون متاحة قريباً', 'info')
+        return redirect(url_for('main.admin_panel'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'خطأ في تعديل قيود المشاريع: {str(e)}', 'error')
     
     return redirect(url_for('main.admin_panel'))
 
