@@ -480,16 +480,23 @@ def projects_add():
             # Determine the manager ID
             manager_id = current_user.id if current_user.role == UserRole.PROJECT_MANAGER else request.form.get('manager_id')
             
+            # Generate unique project code
+            import random
+            import string
+            code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+            
             project = Project(
                 name=request.form['name'],
+                code=code,
                 description=request.form.get('description'),
+                main_task=request.form.get('main_task'),
                 start_date=datetime.strptime(request.form['start_date'], '%Y-%m-%d').date(),
-                expected_end_date=datetime.strptime(request.form['expected_end_date'], '%Y-%m-%d').date() if request.form.get('expected_end_date') else None,
+                expected_completion_date=datetime.strptime(request.form['expected_completion_date'], '%Y-%m-%d').date() if request.form.get('expected_completion_date') else None,
                 status=ProjectStatus.PLANNED,
                 manager_id=manager_id,
-                budget=float(request.form['budget']) if request.form.get('budget') else None,
                 location=request.form.get('location'),
-                objectives=request.form.get('objectives')
+                mission_type=request.form.get('mission_type'),
+                priority=request.form.get('priority', 'MEDIUM')
             )
             
             db.session.add(project)
