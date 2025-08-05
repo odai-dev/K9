@@ -262,28 +262,28 @@
                                                     </div>
                                                 </td>
                                                 <td class="text-center">
-                                                    <i class="fas fa-{{ 'check text-success' if (permission and permission.can_manage_assignments) else 'times text-danger' }}"></i>
+                                                    <i class="fas fa-{{ 'check text-success' if (not permission or permission.can_manage_assignments) else 'times text-danger' }}"></i>
                                                 </td>
                                                 <td class="text-center">
-                                                    <i class="fas fa-{{ 'check text-success' if (permission and permission.can_manage_shifts) else 'times text-danger' }}"></i>
+                                                    <i class="fas fa-{{ 'check text-success' if (not permission or permission.can_manage_shifts) else 'times text-danger' }}"></i>
                                                 </td>
                                                 <td class="text-center">
-                                                    <i class="fas fa-{{ 'check text-success' if (permission and permission.can_manage_attendance) else 'times text-danger' }}"></i>
+                                                    <i class="fas fa-{{ 'check text-success' if (not permission or permission.can_manage_attendance) else 'times text-danger' }}"></i>
                                                 </td>
                                                 <td class="text-center">
-                                                    <i class="fas fa-{{ 'check text-success' if (permission and permission.can_manage_training) else 'times text-danger' }}"></i>
+                                                    <i class="fas fa-{{ 'check text-success' if (not permission or permission.can_manage_training) else 'times text-danger' }}"></i>
                                                 </td>
                                                 <td class="text-center">
-                                                    <i class="fas fa-{{ 'check text-success' if (permission and permission.can_manage_incidents) else 'times text-danger' }}"></i>
+                                                    <i class="fas fa-{{ 'check text-success' if (not permission or permission.can_manage_incidents) else 'times text-danger' }}"></i>
                                                 </td>
                                                 <td class="text-center">
-                                                    <i class="fas fa-{{ 'check text-success' if (permission and permission.can_manage_performance) else 'times text-danger' }}"></i>
+                                                    <i class="fas fa-{{ 'check text-success' if (not permission or permission.can_manage_performance) else 'times text-danger' }}"></i>
                                                 </td>
                                                 <td class="text-center">
-                                                    <i class="fas fa-{{ 'check text-success' if (permission and permission.can_view_veterinary) else 'times text-danger' }}"></i>
+                                                    <i class="fas fa-{{ 'check text-success' if (not permission or permission.can_view_veterinary) else 'times text-danger' }}"></i>
                                                 </td>
                                                 <td class="text-center">
-                                                    <i class="fas fa-{{ 'check text-success' if (permission and permission.can_view_breeding) else 'times text-danger' }}"></i>
+                                                    <i class="fas fa-{{ 'check text-success' if (not permission or permission.can_view_breeding) else 'times text-danger' }}"></i>
                                                 </td>
                                                 <td>
                                                     <button type="button" 

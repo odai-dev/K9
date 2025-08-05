@@ -294,10 +294,19 @@ def get_project_manager_permissions(user, project_id):
                 'can_view_breeding': permission.can_view_breeding
             }
         else:
-            # Create default permissions for new PROJECT_MANAGER
+            # Create default permissions for new PROJECT_MANAGER with all permissions enabled
             permission = ProjectManagerPermission()
             permission.user_id = user.id
             permission.project_id = project_id
+            # Explicitly set all permissions to True (override any defaults)
+            permission.can_manage_assignments = True
+            permission.can_manage_shifts = True
+            permission.can_manage_attendance = True
+            permission.can_manage_training = True
+            permission.can_manage_incidents = True
+            permission.can_manage_performance = True
+            permission.can_view_veterinary = True
+            permission.can_view_breeding = True
             db.session.add(permission)
             db.session.commit()
             
