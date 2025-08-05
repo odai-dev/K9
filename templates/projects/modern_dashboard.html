@@ -99,8 +99,15 @@
                                     <i class="fas fa-user-tie text-secondary fa-lg"></i>
                                 </div>
                                 <div class="flex-grow-1 ms-2">
-                                    <small class="text-muted d-block">المدير</small>
-                                    <strong>{{ project.manager.full_name if project.manager else '-' }}</strong>
+                                    <small class="text-muted d-block">مدير المشروع</small>
+                                    <div class="d-flex align-items-center">
+                                        <strong class="me-2">{{ project.project_manager.name if project.project_manager else 'غير معين' }}</strong>
+                                        {% if current_user.role.value == 'GENERAL_ADMIN' or project.project_manager_id == current_user.id %}
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#updateManagerModal">
+                                            <i class="fas fa-edit fa-xs"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -532,4 +539,36 @@ function generateReport(type) {
     alert(`تم طلب تقرير ${type}. سيتم تطوير هذه الميزة قريباً.`);
 }
 </script>
+
+<!-- Update Project Manager Modal -->
+<div class="modal fade" id="updateManagerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تحديث مدير المشروع</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('main.project_manager_update', project_id=project.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="project_manager_id" class="form-label">مدير المشروع</label>
+                        <select class="form-select" name="project_manager_id" id="project_manager_id">
+                            <option value="">غير معين</option>
+                            {% for manager in project_managers %}
+                            <option value="{{ manager.id }}" 
+                                    {% if project.project_manager_id and project.project_manager_id == manager.id %}selected{% endif %}>
+                                {{ manager.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">تحديث</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
