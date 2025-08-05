@@ -106,8 +106,9 @@ Preferred communication style: Simple, everyday language.
 - **Employee-User Linkage**: 
   - PROJECT_MANAGER users are automatically linked to Employee records with matching role
   - Admin panel queries only users with linked PROJECT_MANAGER employee profiles
-  - New users created through admin panel automatically get corresponding employee records
-  - Utility functions provided to link existing PROJECT_MANAGER employees to user accounts
+  - Automatic synchronization creates user accounts for existing PROJECT_MANAGER employees
+  - General admin can edit usernames, passwords, and email addresses for project managers
+  - System prevents duplicate usernames and emails across user accounts
 - **Benefits**: 
   - GENERAL_ADMIN can fine-tune each PROJECT_MANAGER's access per project
   - Immediate permission toggle effects without system restart
