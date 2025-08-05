@@ -591,6 +591,9 @@ def project_dashboard(project_id):
     assigned_dogs = ProjectAssignment.query.filter_by(project_id=project_uuid, is_active=True).filter(ProjectAssignment.dog_id.isnot(None)).options(db.joinedload(ProjectAssignment.dog)).all()
     assigned_employees = ProjectAssignment.query.filter_by(project_id=project_uuid, is_active=True).filter(ProjectAssignment.employee_id.isnot(None)).options(db.joinedload(ProjectAssignment.employee)).all()
     
+    # Get project managers for the quick update modal
+    project_managers = Employee.query.filter_by(role=EmployeeRole.PROJECT_MANAGER, is_active=True).all()
+    
     # Recent activities
     recent_incidents = Incident.query.filter_by(project_id=project_uuid).order_by(Incident.incident_date.desc()).limit(5).all()
     recent_suspicions = Suspicion.query.filter_by(project_id=project_uuid).order_by(Suspicion.discovery_date.desc()).limit(5).all()
@@ -601,6 +604,7 @@ def project_dashboard(project_id):
                          stats=stats,
                          assigned_dogs=assigned_dogs,
                          assigned_employees=assigned_employees,
+                         project_managers=project_managers,
                          recent_incidents=recent_incidents,
                          recent_suspicions=recent_suspicions,
                          recent_evaluations=recent_evaluations)
@@ -672,6 +676,60 @@ def project_dog_add(project_id):
             dog = Dog.query.get(dog_id)
             log_audit(current_user.id, AuditAction.CREATE, 'ProjectDog', project_dog.id, f'تعيين كلب {dog.name} للمشروع {project.name}', None, {'project': project.name, 'dog': dog.name})
             flash('تم تعيين الكلب للمشروع بنجاح', 'success')
+    
+    return redirect(url_for('main.project_dashboard', project_id=project_id))
+
+# Project Manager Update Route
+@main_bp.route('/projects/<project_id>/manager/update', methods=['POST'])
+@login_required
+def project_manager_update(project_id):
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects'))
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('غير مسموح لك بتعديل مدير المشروع', 'error')
+        return redirect(url_for('main.project_dashboard', project_id=project_id))
+    
+    project_manager_id = request.form.get('project_manager_id')
+    
+    try:
+        if project_manager_id:
+            # Verify it's actually a project manager
+            manager = Employee.query.get(project_manager_id)
+            if manager and manager.role == EmployeeRole.PROJECT_MANAGER:
+                old_manager = project.project_manager.name if project.project_manager else 'غير معين'
+                project.project_manager_id = project_manager_id
+                
+                # Log the change
+                log_audit(current_user.id, AuditAction.UPDATE, 'Project', str(project.id), 
+                         f'تغيير مدير المشروع من {old_manager} إلى {manager.name}', 
+                         None, {'old_manager': old_manager, 'new_manager': manager.name})
+                
+                flash('تم تحديث مدير المشروع بنجاح', 'success')
+            else:
+                flash('الموظف المحدد ليس مدير مشروع', 'error')
+        else:
+            # Remove project manager
+            old_manager = project.project_manager.name if project.project_manager else 'غير معين'
+            project.project_manager_id = None
+            
+            # Log the change
+            log_audit(current_user.id, AuditAction.UPDATE, 'Project', str(project.id), 
+                     f'إزالة مدير المشروع {old_manager}', 
+                     None, {'old_manager': old_manager, 'new_manager': 'غير معين'})
+            
+            flash('تم إزالة مدير المشروع', 'success')
+        
+        db.session.commit()
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء تحديث مدير المشروع: {str(e)}', 'error')
     
     return redirect(url_for('main.project_dashboard', project_id=project_id))
 
