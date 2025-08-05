@@ -269,7 +269,9 @@
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">
-                                <i class="fas fa-dog me-2"></i>الكلاب المعينة
+                                <a href="{{ url_for('main.project_assignments', project_id=project.id) }}" class="text-decoration-none">
+                                    <i class="fas fa-dog me-2"></i>الكلاب المعينة
+                                </a>
                             </h5>
                             <a href="{{ url_for('main.project_assignments', project_id=project.id) }}" class="btn btn-sm btn-primary">
                                 <i class="fas fa-plus"></i>
@@ -277,19 +279,23 @@
                         </div>
                         <div class="card-body">
                             {% if project.assigned_dogs %}
-                                {% for assignment in project.assigned_dogs %}
-                                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                                    <div>
-                                        <strong>{{ assignment.dog.name }}</strong>
-                                        <br><small class="text-muted">{{ assignment.dog.breed or 'غير محدد' }}</small>
+                                <a href="{{ url_for('main.project_assignments', project_id=project.id) }}" class="text-decoration-none text-dark">
+                                    {% for assignment in project.assigned_dogs %}
+                                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                        <div>
+                                            <strong>{{ assignment.dog.name }}</strong>
+                                            <br><small class="text-muted">{{ assignment.dog.breed or 'غير محدد' }}</small>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-light text-dark">{{ assignment.dog.status.value }}</span>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <span class="badge bg-light text-dark">{{ assignment.dog.status.value }}</span>
-                                    </div>
-                                </div>
-                                {% endfor %}
+                                    {% endfor %}
+                                </a>
                             {% else %}
-                                <p class="text-muted text-center">لا توجد كلاب معينة</p>
+                                <a href="{{ url_for('main.project_assignments', project_id=project.id) }}" class="text-decoration-none">
+                                    <p class="text-muted text-center">لا توجد كلاب معينة</p>
+                                </a>
                             {% endif %}
                         </div>
                     </div>
@@ -300,27 +306,33 @@
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">
-                                <i class="fas fa-users me-2"></i>الموظفون المعينون
+                                <a href="{{ url_for('main.project_assignments', project_id=project.id) }}" class="text-decoration-none">
+                                    <i class="fas fa-users me-2"></i>الموظفون المعينون
+                                </a>
                             </h5>
-                            <a href="{{ url_for('main.project_assignment_add', project_id=project.id) }}" class="btn btn-sm btn-success">
+                            <a href="{{ url_for('main.project_assignments', project_id=project.id) }}" class="btn btn-sm btn-success">
                                 <i class="fas fa-plus"></i>
                             </a>
                         </div>
                         <div class="card-body">
                             {% if project.assigned_employees %}
-                                {% for assignment in project.assigned_employees %}
-                                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                                    <div>
-                                        <strong>{{ assignment.employee.full_name }}</strong>
-                                        <br><small class="text-muted">{{ assignment.employee.role.value }}</small>
+                                <a href="{{ url_for('main.project_assignments', project_id=project.id) }}" class="text-decoration-none text-dark">
+                                    {% for assignment in project.assigned_employees %}
+                                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                        <div>
+                                            <strong>{{ assignment.employee.full_name }}</strong>
+                                            <br><small class="text-muted">{{ assignment.employee.role.value }}</small>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-light text-dark">{{ assignment.role or 'عام' }}</span>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <span class="badge bg-light text-dark">{{ assignment.role or 'عام' }}</span>
-                                    </div>
-                                </div>
-                                {% endfor %}
+                                    {% endfor %}
+                                </a>
                             {% else %}
-                                <p class="text-muted text-center">لا توجد موظفون معينون</p>
+                                <a href="{{ url_for('main.project_assignments', project_id=project.id) }}" class="text-decoration-none">
+                                    <p class="text-muted text-center">لا توجد موظفون معينون</p>
+                                </a>
                             {% endif %}
                         </div>
                     </div>
