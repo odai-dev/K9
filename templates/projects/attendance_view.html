@@ -15,7 +15,7 @@
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb mb-0">
                             <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">الرئيسية</a></li>
-                            <li class="breadcrumb-item"><a href="{{ url_for('main.projects_list') }}">المشاريع</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('main.projects') }}">المشاريع</a></li>
                             <li class="breadcrumb-item"><a href="{{ url_for('main.project_dashboard', project_id=project.id) }}">{{ project.name }}</a></li>
                             <li class="breadcrumb-item"><a href="{{ url_for('main.project_reports_index', project_id=project.id) }}">الحضور</a></li>
                             <li class="breadcrumb-item active">{{ attendance_record.attendance_date.strftime('%Y-%m-%d') }}</li>
