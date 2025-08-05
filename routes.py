@@ -111,7 +111,7 @@ def dogs_add():
             db.session.add(dog)
             db.session.commit()
             
-            log_audit(current_user.id, 'CREATE', 'Dog', str(dog.id), {'name': dog.name, 'breed': dog.breed})
+            log_audit(current_user.id, AuditAction.CREATE, 'Dog', dog.id, f'أضيف كلب جديد: {dog.name}', None, {'name': dog.name, 'breed': dog.breed})
             flash('تم إضافة الكلب بنجاح', 'success')
             return redirect(url_for('main.dogs_list'))
             
@@ -310,8 +310,7 @@ def training_add():
             db.session.add(session)
             db.session.commit()
             
-            log_audit(current_user.id, 'CREATE', 'TrainingSession', str(session.id), 
-                     {'dog_id': str(session.dog_id), 'category': session.category.value})
+            log_audit(current_user.id, AuditAction.CREATE, 'TrainingSession', session.id, f'جلسة تدريب جديدة للكلب {session.dog.name}', None, {'category': session.category.value})
             flash('تم تسجيل جلسة التدريب بنجاح', 'success')
             return redirect(url_for('main.training_list'))
             
@@ -362,8 +361,7 @@ def veterinary_add():
             db.session.add(visit)
             db.session.commit()
             
-            log_audit(current_user.id, 'CREATE', 'VeterinaryVisit', str(visit.id), 
-                     {'dog_id': str(visit.dog_id), 'visit_type': visit.visit_type.value})
+            log_audit(current_user.id, AuditAction.CREATE, 'VeterinaryVisit', visit.id, f'زيارة بيطرية جديدة للكلب {visit.dog.name}', None, {'visit_type': visit.visit_type.value})
             flash('تم تسجيل الزيارة البيطرية بنجاح', 'success')
             return redirect(url_for('main.veterinary_list'))
             
@@ -411,8 +409,7 @@ def breeding_add():
             db.session.add(cycle)
             db.session.commit()
             
-            log_audit(current_user.id, 'CREATE', 'BreedingCycle', str(cycle.id), 
-                     {'dog_id': str(cycle.dog_id), 'cycle_type': cycle.cycle_type.value})
+            log_audit(current_user.id, AuditAction.CREATE, 'BreedingCycle', cycle.id, f'دورة تربية جديدة للكلب {cycle.dog.name}', None, {'cycle_type': cycle.cycle_type.value})
             flash('تم تسجيل دورة التربية بنجاح', 'success')
             return redirect(url_for('main.breeding_list'))
             
@@ -467,13 +464,34 @@ def puppy_training_list():
 # Project routes (without attendance/assignment functionality)
 @main_bp.route('/projects')
 @login_required
-def projects_list():
+def projects():
     if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.order_by(Project.created_at.desc()).all()
     else:
-        projects = Project.query.filter_by(project_manager_id=current_user.id).order_by(Project.created_at.desc()).all()
+        projects = Project.query.filter_by(manager_id=current_user.id).order_by(Project.created_at.desc()).all()
     
-    return render_template('projects/list.html', projects=projects)
+    # Calculate stats for the modern view
+    active_count = sum(1 for p in projects if p.status == ProjectStatus.ACTIVE)
+    planned_count = sum(1 for p in projects if p.status == ProjectStatus.PLANNED)
+    completed_count = sum(1 for p in projects if p.status == ProjectStatus.COMPLETED)
+    cancelled_count = sum(1 for p in projects if p.status == ProjectStatus.CANCELLED)
+    total_count = len(projects)
+    
+    # Priority counts
+    high_priority_count = sum(1 for p in projects if p.priority == 'HIGH')
+    medium_priority_count = sum(1 for p in projects if p.priority == 'MEDIUM')
+    low_priority_count = sum(1 for p in projects if p.priority == 'LOW')
+    
+    return render_template('projects/modern_list.html', 
+                         projects=projects,
+                         active_count=active_count,
+                         planned_count=planned_count,
+                         completed_count=completed_count,
+                         cancelled_count=cancelled_count,
+                         total_count=total_count,
+                         high_priority_count=high_priority_count,
+                         medium_priority_count=medium_priority_count,
+                         low_priority_count=low_priority_count)
 
 @main_bp.route('/projects/add', methods=['GET', 'POST'])
 @login_required
@@ -505,7 +523,7 @@ def projects_add():
             db.session.add(project)
             db.session.commit()
             
-            log_audit(current_user.id, 'CREATE', 'Project', str(project.id), {'name': project.name})
+            log_audit(current_user.id, AuditAction.CREATE, 'Project', project.id, f'مشروع جديد: {project.name}', None, {'name': project.name})
             flash('تم إنشاء المشروع بنجاح', 'success')
             return redirect(url_for('main.projects_list'))
             
@@ -574,7 +592,7 @@ def project_dashboard(project_id):
     recent_suspicions = Suspicion.query.filter_by(project_id=project_uuid).order_by(Suspicion.discovery_date.desc()).limit(5).all()
     recent_evaluations = PerformanceEvaluation.query.filter_by(project_id=project_uuid).order_by(PerformanceEvaluation.evaluation_date.desc()).limit(5).all()
     
-    return render_template('projects/dashboard.html', 
+    return render_template('projects/modern_dashboard.html', 
                          project=project, 
                          stats=stats,
                          recent_incidents=recent_incidents,
@@ -646,8 +664,7 @@ def project_dog_add(project_id):
             db.session.commit()
             
             dog = Dog.query.get(dog_id)
-            log_audit(current_user.id, 'CREATE', 'ProjectDog', str(project_dog.id), 
-                     {'project': project.name, 'dog': dog.name})
+            log_audit(current_user.id, AuditAction.CREATE, 'ProjectDog', project_dog.id, f'تعيين كلب {dog.name} للمشروع {project.name}', None, {'project': project.name, 'dog': dog.name})
             flash('تم تعيين الكلب للمشروع بنجاح', 'success')
     
     return redirect(url_for('main.project_dashboard', project_id=project_id))
@@ -800,8 +817,7 @@ def project_assignment_add(project_id):
                 flash('تم إزالة مسؤول المشروع', 'success')
         
         db.session.commit()
-        log_audit(current_user.id, 'CREATE', 'ProjectAssignment', str(project.id), 
-                 {'assignment_type': assignment_type})
+        log_audit(current_user.id, AuditAction.CREATE, 'ProjectAssignment', project.id, f'تعيين جديد للمشروع {project.name}', None, {'assignment_type': assignment_type})
         flash('تم تعيين المهام بنجاح', 'success')
         
     except Exception as e:
@@ -832,8 +848,7 @@ def project_assignment_remove(project_id, assignment_id):
         assignment.unassigned_date = date.today()
         db.session.commit()
         
-        log_audit(current_user.id, 'DELETE', 'ProjectAssignment', str(assignment.id), 
-                 {'project': project.name})
+        log_audit(current_user.id, AuditAction.DELETE, 'ProjectAssignment', assignment.id, f'حذف تعيين من المشروع {project.name}', None, {'project': project.name})
         flash('تم إزالة التعيين بنجاح', 'success')
         
     except Exception as e:
@@ -863,8 +878,7 @@ def project_assignment_edit(project_id, assignment_id):
         assignment.notes = request.form.get('notes', assignment.notes)
         db.session.commit()
         
-        log_audit(current_user.id, 'EDIT', 'ProjectAssignment', str(assignment.id), 
-                 {'notes_updated': True})
+        log_audit(current_user.id, AuditAction.UPDATE, 'ProjectAssignment', assignment.id, f'تحديث ملاحظات التعيين', None, {'notes_updated': True})
         flash('تم تحديث التعيين بنجاح', 'success')
         
     except Exception as e:
@@ -927,8 +941,7 @@ def project_incident_add(project_id):
             db.session.add(incident)
             db.session.commit()
             
-            log_audit(current_user.id, 'CREATE', 'Incident', str(incident.id), 
-                     {'project': project.name, 'type': incident.incident_type, 'severity': incident.severity})
+            log_audit(current_user.id, AuditAction.CREATE, 'Incident', incident.id, f'حادث جديد في المشروع {project.name}', None, {'type': incident.incident_type, 'severity': incident.severity})
             flash('تم تسجيل الحادث بنجاح', 'success')
             return redirect(url_for('main.project_incidents', project_id=project_id))
             
