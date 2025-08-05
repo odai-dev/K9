@@ -30,6 +30,7 @@ Preferred communication style: Simple, everyday language.
 - **Breeding Management**: A comprehensive system covering general information, maturity tracking, heat cycles, mating records, pregnancy monitoring, delivery records, puppy management, and puppy training.
 - **Project Operations**: Manages project lifecycle (Planned, Active, Completed, Cancelled), resource allocation (dogs), incident logging, suspicion reporting, and performance evaluations for both employees and dogs. Project finish dates are automatically set upon completion.
 - **Attendance System**: Comprehensive attendance tracking system with shift management, employee and dog scheduling, and project-specific attendance recording. Features include shift assignments, bulk attendance operations, status tracking (Present, Absent, Late), absence reason tracking, and attendance reporting.
+- **Enhanced Permission System**: Granular role-based access control for PROJECT_MANAGER users with toggleable permissions per project. GENERAL_ADMIN can control: manage assignments, shifts, attendance, training, incidents, performance evaluations, and view veterinary/breeding info. Permissions are enforced at both backend and frontend levels with immediate effect.
 
 ### System Design Choices
 - **Client/Server Separation**: Clear distinction between frontend and backend.
@@ -76,3 +77,25 @@ Preferred communication style: Simple, everyday language.
 - UUID compatibility handled automatically in models and routes
 - Database file management handled by SQLite
 - No manual database configuration needed in Replit environment
+
+## Recent Changes (August 2025)
+
+### Enhanced Role-Based Access Control Implementation
+- **Date**: August 5, 2025
+- **Changes**: Implemented comprehensive granular permission system for PROJECT_MANAGER users
+- **New Features**:
+  - ProjectManagerPermission model for per-project permission control
+  - Admin interface for managing PROJECT_MANAGER permissions
+  - Permission decorators for route-level access control
+  - Real-time permission enforcement in both backend and frontend
+  - Project-scoped data filtering for enhanced security
+- **Components Added**:
+  - `permission_decorators.py`: Decorators for route protection
+  - `templates/admin/permission_management.html`: Admin interface
+  - Enhanced utility functions in `utils.py` for permission checking
+  - New routes in `routes.py` for permission management
+- **Benefits**: 
+  - GENERAL_ADMIN can fine-tune each PROJECT_MANAGER's access per project
+  - Immediate permission toggle effects without system restart
+  - Enhanced security with row-level data filtering
+  - Clear UI indication of user permissions

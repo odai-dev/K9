@@ -167,6 +167,9 @@ class User(UserMixin, db.Model):
     # For project managers - which sections they can access
     allowed_sections = db.Column(JSON, default=list)
     
+    # Relationship to project manager permissions
+    pm_permissions = db.relationship('ProjectManagerPermission', backref='user', lazy='dynamic', cascade='all, delete-orphan')
+    
     def __repr__(self):
         return f'<User {self.username}>'
 
@@ -987,6 +990,36 @@ class ProjectAttendance(db.Model):
         }
         return reason_map.get(self.absence_reason.value, self.absence_reason.value) if self.absence_reason else ''
 
+
+class ProjectManagerPermission(db.Model):
+    """Granular permissions for PROJECT_MANAGER users per project"""
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
+    
+    # Permission toggles - all default to True for PROJECT_MANAGER
+    can_manage_assignments = db.Column(db.Boolean, default=True)
+    can_manage_shifts = db.Column(db.Boolean, default=True)
+    can_manage_attendance = db.Column(db.Boolean, default=True)
+    can_manage_training = db.Column(db.Boolean, default=True)
+    can_manage_incidents = db.Column(db.Boolean, default=True)
+    can_manage_performance = db.Column(db.Boolean, default=True)
+    can_view_veterinary = db.Column(db.Boolean, default=True)
+    can_view_breeding = db.Column(db.Boolean, default=True)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    project = db.relationship('Project', backref='manager_permissions')
+    
+    # Ensure unique permission record per user-project combination
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'project_id', name='unique_user_project_permission'),
+    )
+    
+    def __repr__(self):
+        return f'<ProjectManagerPermission User{self.user_id} -> Project{self.project_id}>'
 
 class AuditLog(db.Model):
     """Comprehensive audit logging for all user actions"""
