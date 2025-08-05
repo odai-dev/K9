@@ -144,8 +144,7 @@
                         </a>
                         <ul class="dropdown-menu">
                             {% if permissions.admin %}
-                            <li><a class="dropdown-item" href="{{ url_for('auth.create_manager') }}">إنشاء مدير مشروع</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('main.permission_management') }}">إدارة صلاحيات المديرين</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_panel') }}">لوحة تحكم المدير</a></li>
                             <li><hr class="dropdown-divider"></li>
                             {% endif %}
                             <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">تسجيل الخروج</a></li>

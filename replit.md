@@ -85,17 +85,27 @@ Preferred communication style: Simple, everyday language.
 - **Changes**: Implemented comprehensive granular permission system for PROJECT_MANAGER users
 - **New Features**:
   - ProjectManagerPermission model for per-project permission control
-  - Admin interface for managing PROJECT_MANAGER permissions
+  - Unified admin panel combining user management and permission control
   - Permission decorators for route-level access control
   - Real-time permission enforcement in both backend and frontend
   - Project-scoped data filtering for enhanced security
 - **Components Added**:
   - `permission_decorators.py`: Decorators for route protection
-  - `templates/admin/permission_management.html`: Admin interface
+  - `templates/admin/admin_panel.html`: Unified admin interface
   - Enhanced utility functions in `utils.py` for permission checking
-  - New routes in `routes.py` for permission management
+  - New routes in `routes.py` for user and permission management
+- **Permission Types**:
+  - Manage assignments (assign/unassign dogs and employees)
+  - Manage shifts (create/edit work shifts)
+  - Manage attendance (record attendance for dogs/employees)
+  - Manage training (create/manage training sessions)
+  - Manage incidents (log incidents and suspicion reports)
+  - Manage performance (create performance evaluations)
+  - View veterinary (access veterinary records for assigned dogs)
+  - View breeding (access breeding records for assigned dogs)
 - **Benefits**: 
   - GENERAL_ADMIN can fine-tune each PROJECT_MANAGER's access per project
   - Immediate permission toggle effects without system restart
   - Enhanced security with row-level data filtering
   - Clear UI indication of user permissions
+  - Unified admin interface for easier management
