@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة موظف جديد{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-plus me-2"></i>
+                إضافة موظف جديد
+            </h1>
+            <a href="{{ url_for('main.employees_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right me-2"></i>
+                العودة إلى القائمة
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2"></i>
+                    معلومات الموظف
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <!-- Basic Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">المعلومات الأساسية</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">الاسم الكامل <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="employee_id" class="form-label">رقم الموظف <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="employee_id" name="employee_id" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="role" class="form-label">المنصب <span class="text-danger">*</span></label>
+                            <select class="form-select" id="role" name="role" required onchange="toggleProjectManagerFields()">
+                                <option value="">اختر المنصب</option>
+                                <option value="HANDLER">سائس</option>
+                                <option value="VET">طبيب</option>
+                                <option value="PROJECT_MANAGER">مسؤول مشروع</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="hire_date" class="form-label">تاريخ التوظيف <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="hire_date" name="hire_date" required>
+                        </div>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">معلومات الاتصال</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label">رقم الهاتف</label>
+                            <input type="tel" class="form-control" id="phone" name="phone">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">البريد الإلكتروني</label>
+                            <input type="email" class="form-control" id="email" name="email">
+                        </div>
+                    </div>
+
+
+
+                    <!-- Project Manager Account Creation (only visible for General Admin) -->
+                    {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                    <div id="projectManagerFields" class="row mb-4" style="display: none;">
+                        <div class="col-12">
+                            <h6 class="text-warning border-bottom pb-2 mb-3">إعداد حساب مسؤول المشروع</h6>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="create_user_account" name="create_user_account">
+                                <label class="form-check-label" for="create_user_account">
+                                    إنشاء حساب مستخدم لمسؤول المشروع
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div id="userAccountFields" style="display: none;">
+                            <div class="col-md-6 mb-3">
+                                <label for="username" class="form-label">اسم المستخدم <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="username" name="username">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="password" class="form-label">كلمة المرور <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="password" name="password">
+                            </div>
+                            
+                            <div class="col-12 mb-3">
+                                <label class="form-label">الأقسام المسموح بالوصول إليها:</label>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="section_dogs" name="section_dogs" value="dogs">
+                                            <label class="form-check-label" for="section_dogs">الكلاب</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="section_employees" name="section_employees" value="employees">
+                                            <label class="form-check-label" for="section_employees">الموظفين</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="section_training" name="section_training" value="training">
+                                            <label class="form-check-label" for="section_training">التدريب</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="section_veterinary" name="section_veterinary" value="veterinary">
+                                            <label class="form-check-label" for="section_veterinary">الطبابة</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="section_breeding" name="section_breeding" value="breeding">
+                                            <label class="form-check-label" for="section_breeding">التربية</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="section_projects" name="section_projects" value="projects">
+                                            <label class="form-check-label" for="section_projects">المشاريع</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="section_attendance" name="section_attendance" value="attendance">
+                                            <label class="form-check-label" for="section_attendance">الحضور</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="section_reports" name="section_reports" value="reports">
+                                            <label class="form-check-label" for="section_reports">التقارير</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Submit Buttons -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>
+                                    حفظ
+                                </button>
+                                <a href="{{ url_for('main.employees_list') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>
+                                    إلغاء
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set today as max date for hire date
+    const hireDateInput = document.getElementById('hire_date');
+    const today = new Date().toISOString().split('T')[0];
+    hireDateInput.max = today;
+});
+
+function toggleProjectManagerFields() {
+    const roleSelect = document.getElementById('role');
+    const projectManagerFields = document.getElementById('projectManagerFields');
+    const userAccountFields = document.getElementById('userAccountFields');
+    const createAccountCheckbox = document.getElementById('create_user_account');
+    
+    if (roleSelect.value === 'مسؤول مشروع') {
+        projectManagerFields.style.display = 'block';
+    } else {
+        projectManagerFields.style.display = 'none';
+        userAccountFields.style.display = 'none';
+        createAccountCheckbox.checked = false;
+    }
+}
+
+// Show/hide user account fields when checkbox is toggled
+document.addEventListener('change', function(e) {
+    if (e.target.id === 'create_user_account') {
+        const userAccountFields = document.getElementById('userAccountFields');
+        const usernameField = document.getElementById('username');
+        const passwordField = document.getElementById('password');
+        
+        if (e.target.checked) {
+            userAccountFields.style.display = 'block';
+            usernameField.required = true;
+            passwordField.required = true;
+        } else {
+            userAccountFields.style.display = 'none';
+            usernameField.required = false;
+            passwordField.required = false;
+        }
+    }
+});
+</script>
+{% endblock %}

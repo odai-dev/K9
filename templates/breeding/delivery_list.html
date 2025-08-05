@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}سجلات الولادة{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-hospital me-2"></i>
+                سجلات الولادة
+            </h1>
+            <div class="btn-group">
+                <a href="{{ url_for('main.breeding_index') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة للإنتاج
+                </a>
+                <a href="{{ url_for('main.delivery_add') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    تسجيل ولادة جديدة
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if deliveries %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>الأم</th>
+                                <th>تاريخ الولادة</th>
+                                <th>إجمالي الجراء</th>
+                                <th>المواليد الأحياء</th>
+                                <th>المواليد الميتة</th>
+                                <th>الطبيب البيطري</th>
+                                <th>حالة الأم</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for delivery in deliveries %}
+                            <tr>
+                                <td>
+                                    <strong>{{ delivery.pregnancy_record.dog.name }}</strong><br>
+                                    <small class="text-muted">{{ delivery.pregnancy_record.dog.code }}</small>
+                                </td>
+                                <td>{{ delivery.delivery_date.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ delivery.total_puppies }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">{{ delivery.live_births }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-danger">{{ delivery.stillbirths }}</span>
+                                </td>
+                                <td>{{ delivery.vet_present_employee.name if delivery.vet_present_employee else 'غير موجود' }}</td>
+                                <td>
+                                    {% if delivery.mother_condition %}
+                                        {% if 'جيد' in delivery.mother_condition %}
+                                            <span class="badge bg-success">{{ delivery.mother_condition }}</span>
+                                        {% elif 'ضعيف' in delivery.mother_condition %}
+                                            <span class="badge bg-warning">{{ delivery.mother_condition }}</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">{{ delivery.mother_condition }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary">غير محدد</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="#" class="btn btn-sm btn-outline-primary">عرض</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-hospital fa-5x text-muted mb-3"></i>
+    <h3 class="text-muted">لا توجد سجلات ولادة</h3>
+    <p class="text-muted">ابدأ بتسجيل الولادات عند حدوثها</p>
+    <a href="{{ url_for('main.delivery_add') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>
+        تسجيل ولادة جديدة
+    </a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}تسجيل ولادة{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-plus me-2"></i>
+                تسجيل ولادة جديدة
+            </h1>
+            <a href="{{ url_for('main.delivery_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right me-2"></i>
+                العودة إلى القائمة
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-hospital me-2"></i>
+                    معلومات الولادة
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label for="pregnancy_record_id" class="form-label">سجل الحمل <span class="text-danger">*</span></label>
+                            <select class="form-select" id="pregnancy_record_id" name="pregnancy_record_id" required>
+                                <option value="">اختر سجل الحمل</option>
+                                {% for pregnancy in pregnancies %}
+                                    <option value="{{ pregnancy.id }}">
+                                        {{ pregnancy.dog.name }} - متوقع {{ pregnancy.expected_delivery_date.strftime('%Y-%m-%d') if pregnancy.expected_delivery_date }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="delivery_date" class="form-label">تاريخ الولادة <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="delivery_date" name="delivery_date" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="delivery_start_time" class="form-label">وقت بداية الولادة</label>
+                            <input type="time" class="form-control" id="delivery_start_time" name="delivery_start_time">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="delivery_end_time" class="form-label">وقت انتهاء الولادة</label>
+                            <input type="time" class="form-control" id="delivery_end_time" name="delivery_end_time">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="location" class="form-label">مكان الولادة</label>
+                            <input type="text" class="form-control" id="location" name="location">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="vet_present" class="form-label">الطبيب البيطري الحاضر</label>
+                            <select class="form-select" id="vet_present" name="vet_present">
+                                <option value="">لا يوجد</option>
+                                {% for employee in employees %}
+                                    {% if employee.role.value == 'طبيب' %}
+                                        <option value="{{ employee.id }}">{{ employee.name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="handler_present" class="form-label">المدرب الحاضر</label>
+                            <select class="form-select" id="handler_present" name="handler_present">
+                                <option value="">لا يوجد</option>
+                                {% for employee in employees %}
+                                    {% if employee.role.value in ['سائس', 'مدرب'] %}
+                                        <option value="{{ employee.id }}">{{ employee.name }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="assistance_required" name="assistance_required">
+                                <label class="form-check-label" for="assistance_required">
+                                    احتاجت مساعدة طبية
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="assistance_type" class="form-label">نوع المساعدة المطلوبة</label>
+                            <input type="text" class="form-control" id="assistance_type" name="assistance_type">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="total_puppies" class="form-label">إجمالي الجراء <span class="text-danger">*</span></label>
+                            <input type="number" min="0" class="form-control" id="total_puppies" name="total_puppies" required onchange="updatePuppyCounts()">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="live_births" class="form-label">المواليد الأحياء <span class="text-danger">*</span></label>
+                            <input type="number" min="0" class="form-control" id="live_births" name="live_births" required onchange="updateStillbirths()">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="stillbirths" class="form-label">المواليد الميتة</label>
+                            <input type="number" min="0" class="form-control" id="stillbirths" name="stillbirths" readonly>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="delivery_complications" class="form-label">مضاعفات الولادة</label>
+                            <textarea class="form-control" id="delivery_complications" name="delivery_complications" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="mother_condition" class="form-label">حالة الأم</label>
+                            <select class="form-select" id="mother_condition" name="mother_condition">
+                                <option value="ممتازة">ممتازة</option>
+                                <option value="جيدة" selected>جيدة</option>
+                                <option value="ضعيفة">ضعيفة</option>
+                                <option value="تحتاج رعاية">تحتاج رعاية</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">ملاحظات</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>
+                            حفظ
+                        </button>
+                        <a href="{{ url_for('main.delivery_list') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>
+                            إلغاء
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updatePuppyCounts() {
+    updateStillbirths();
+}
+
+function updateStillbirths() {
+    const total = parseInt(document.getElementById('total_puppies').value) || 0;
+    const live = parseInt(document.getElementById('live_births').value) || 0;
+    const stillbirths = Math.max(0, total - live);
+    document.getElementById('stillbirths').value = stillbirths;
+}
+
+// Set today as default delivery date
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('delivery_date').value = today;
+});
+</script>
+{% endblock %}

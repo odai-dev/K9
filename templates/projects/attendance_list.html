@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}حضور المشروع - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
+                <div>
+                    <h2 class="mb-1 text-primary">
+                        <i class="fas fa-calendar-check me-2"></i>حضور المشروع
+                    </h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">الرئيسية</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('main.projects_list') }}">المشاريع</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('main.project_dashboard', project_id=project.id) }}">{{ project.name }}</a></li>
+                            <li class="breadcrumb-item active">الحضور</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('main.project_dashboard', project_id=project.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-chart-line me-2"></i>لوحة التحكم
+                    </a>
+                    <a href="{{ url_for('main.project_assignments', project_id=project.id) }}" class="btn btn-outline-info">
+                        <i class="fas fa-users me-2"></i>التعيينات
+                    </a>
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addAttendanceModal">
+                        <i class="fas fa-plus me-2"></i>تسجيل حضور جديد
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Info Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h5 class="mb-1">{{ project.name }}</h5>
+                            <p class="text-muted mb-0">{{ project.code }} | {{ project.main_task }}</p>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <span class="badge bg-{{ 'success' if project.status.value == 'ACTIVE' else 'secondary' }} fs-6 px-3 py-2">
+                                {% if project.status.value == 'ACTIVE' %}نشط{% elif project.status.value == 'PLANNED' %}مخطط{% elif project.status.value == 'COMPLETED' %}مكتمل{% else %}ملغي{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Records -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 py-3">
+                    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
+                        <h5 class="mb-0 text-primary">
+                            <i class="fas fa-calendar-check me-2"></i>سجلات الحضور ({{ attendance_records|length }})
+                        </h5>
+                        <div class="d-flex flex-wrap gap-2">
+                            <div class="input-group" style="width: 250px;">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="fas fa-search text-muted"></i>
+                                </span>
+                                <input type="text" class="form-control border-start-0" placeholder="البحث في السجلات..." id="attendanceSearch">
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-filter me-2"></i>تصفية
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="filterAttendance('all')">جميع السجلات</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="filterAttendance('group1')">المجموعة الأولى</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="filterAttendance('group2')">المجموعة الثانية</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="filterAttendance('group3')">المجموعة الثالثة</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if attendance_records %}
+                    <div id="attendanceContainer">
+                        {% for record in attendance_records %}
+                        {% set group_number = 1 if record.period.value == 'MORNING' else (2 if record.period.value == 'EVENING' else 3) %}
+                        {% set group_name = 'الأولى (صباحي)' if record.period.value == 'MORNING' else ('الثانية (مسائي)' if record.period.value == 'EVENING' else 'الثالثة (ليلي)') %}
+                        {% set group_class = 'warning' if record.period.value == 'MORNING' else ('info' if record.period.value == 'EVENING' else 'dark') %}
+                        <div class="attendance-record border-bottom p-3" data-group="group{{ group_number }}">
+                            <div class="row align-items-center">
+                                <div class="col-md-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-lg bg-{{ group_class }} text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                            <i class="fas fa-calendar-day"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-1 fw-bold">{{ record.attendance_date.strftime('%Y-%m-%d') }}</h6>
+                                            <p class="text-muted mb-0 small">{{ record.attendance_date.strftime('%A') }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="badge bg-{{ group_class }} fs-7">المجموعة {{ group_name }}</span>
+                                </div>
+                                <div class="col-md-2">
+                                    {% if record.shift_manager %}
+                                    <div class="small">
+                                        <strong>المسؤول:</strong><br>
+                                        {{ record.shift_manager.name }}
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted small">غير محدد</span>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="text-center">
+                                        <div class="avatar-md bg-success text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1">
+                                            <strong>{{ record.entries|length }}</strong>
+                                        </div>
+                                        <small class="text-muted">موظف</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    {% if record.weather_conditions %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-cloud me-1"></i>{{ record.weather_conditions }}
+                                    </small>
+                                    {% else %}
+                                    <small class="text-muted">-</small>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-1 text-end">
+                                    <div class="dropdown">
+                                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            إجراءات
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('main.project_attendance_view', project_id=project.id, attendance_id=record.id) }}">
+                                                    <i class="fas fa-eye me-2"></i>عرض التفاصيل
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-edit me-2"></i>تعديل السجل
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item text-danger" href="#">
+                                                    <i class="fas fa-trash me-2"></i>حذف السجل
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="avatar-xl bg-light text-muted rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3">
+                            <i class="fas fa-calendar-check fa-2x"></i>
+                        </div>
+                        <h5 class="text-muted">لا توجد سجلات حضور</h5>
+                        <p class="text-muted mb-3">لم يتم تسجيل أي حضور لهذا المشروع بعد</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAttendanceModal">
+                            <i class="fas fa-plus me-2"></i>تسجيل أول حضور
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Attendance Modal -->
+<div class="modal fade" id="addAttendanceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تسجيل حضور جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('main.project_attendance_add', project_id=project.id) }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">التاريخ *</label>
+                            <input type="date" class="form-control" name="attendance_date" required value="{{ date.today() }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">المجموعة *</label>
+                            <select class="form-select" name="period" required>
+                                <option value="">اختر المجموعة</option>
+                                <option value="MORNING">المجموعة الأولى (صباحي)</option>
+                                <option value="EVENING">المجموعة الثانية (مسائي)</option>
+                                <option value="NIGHT">المجموعة الثالثة (ليلي)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">مسؤول المجموعة</label>
+                            <select class="form-select" name="shift_manager_id">
+                                <option value="">اختر المسؤول</option>
+                                {% for assignment in project.employee_assignments %}
+                                {% if assignment.employee.is_active %}
+                                <option value="{{ assignment.employee.id }}">{{ assignment.employee.name }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">حالة الطقس</label>
+                            <input type="text" class="form-control" name="weather_conditions" placeholder="مثل: مشمس، غائم، ممطر">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ملاحظات</label>
+                        <textarea class="form-control" name="notes" rows="3" placeholder="أي ملاحظات إضافية..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ السجل</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterAttendance(type) {
+    const records = document.querySelectorAll('.attendance-record');
+    records.forEach(record => {
+        if (type === 'all' || record.dataset.group === type) {
+            record.style.display = 'block';
+        } else {
+            record.style.display = 'none';
+        }
+    });
+}
+
+document.getElementById('attendanceSearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const records = document.querySelectorAll('.attendance-record');
+    
+    records.forEach(record => {
+        const text = record.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            record.style.display = 'block';
+        } else {
+            record.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

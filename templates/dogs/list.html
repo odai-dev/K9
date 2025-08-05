@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}قائمة الكلاب{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-dog me-2"></i>
+        قائمة الكلاب
+    </h1>
+    <a href="{{ url_for('main.dogs_add') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>
+        إضافة كلب جديد
+    </a>
+</div>
+
+{% if dogs %}
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>الصورة</th>
+                        <th>الاسم</th>
+                        <th>الكود</th>
+                        <th>السلالة</th>
+                        <th>الجنس</th>
+                        <th>العمر</th>
+                        <th>الحالة</th>
+                        <th>الموقع</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dog in dogs %}
+                    <tr>
+                        <td>
+                            {% if dog.photo %}
+                                <img src="{{ url_for('main.uploaded_file', filename=dog.photo) }}" 
+                                     alt="{{ dog.name }}" class="dog-photo">
+                            {% else %}
+                                <div class="dog-photo-placeholder">
+                                    <i class="fas fa-dog"></i>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ dog.name }}</strong>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">{{ dog.code }}</span>
+                        </td>
+                        <td>{{ dog.breed }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'primary' if dog.gender.value == 'MALE' else 'danger' }}">
+                                {{ 'ذكر' if dog.gender.value == 'MALE' else 'أنثى' }}
+                            </span>
+                        </td>
+                        <td>
+                            {% set age = (today - dog.birth_date).days // 365 %}
+                            {{ age }} سنة
+                        </td>
+                        <td>
+                            {% set status_map = {
+                                'ACTIVE': {'class': 'success', 'text': 'نشط'},
+                                'RETIRED': {'class': 'warning', 'text': 'متقاعد'},
+                                'DECEASED': {'class': 'dark', 'text': 'متوفى'},
+                                'TRAINING': {'class': 'info', 'text': 'تدريب'}
+                            } %}
+                            <span class="badge bg-{{ status_map[dog.current_status.value]['class'] }}">
+                                {{ status_map[dog.current_status.value]['text'] }}
+                            </span>
+                        </td>
+                        <td>{{ dog.location or '-' }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('main.dogs_view', dog_id=dog.id) }}" 
+                                   class="btn btn-sm btn-outline-primary" title="عرض">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('main.dogs_edit', dog_id=dog.id) }}" 
+                                   class="btn btn-sm btn-outline-warning" title="تعديل">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-dog fa-5x text-muted mb-3"></i>
+    <h3 class="text-muted">لا توجد كلاب مسجلة</h3>
+    <p class="text-muted">ابدأ بإضافة كلب جديد للنظام</p>
+    <a href="{{ url_for('main.dogs_add') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>
+        إضافة كلب جديد
+    </a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<style>
+.dog-photo {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.dog-photo-placeholder {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    font-size: 1.5rem;
+}
+
+.btn-group .btn {
+    margin: 0 2px;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+</style>
+{% endblock %}

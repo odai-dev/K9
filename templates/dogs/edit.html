@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل {{ dog.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-edit me-2"></i>
+                تعديل {{ dog.name }}
+            </h1>
+            <div class="btn-group">
+                <a href="{{ url_for('main.dogs_view', dog_id=dog.id) }}" class="btn btn-outline-primary">
+                    <i class="fas fa-eye me-2"></i>
+                    عرض
+                </a>
+                <a href="{{ url_for('main.dogs_list') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة إلى القائمة
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-dog me-2"></i>
+                    تعديل معلومات الكلب
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <!-- Basic Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">المعلومات الأساسية</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">اسم الكلب <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ dog.name }}" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="code" class="form-label">كود الكلب <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="code" name="code" value="{{ dog.code }}" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="breed" class="form-label">السلالة <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="breed" name="breed" value="{{ dog.breed }}" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="family_line" class="form-label">سلسلة النسب</label>
+                            <input type="text" class="form-control" id="family_line" name="family_line" value="{{ dog.family_line or '' }}">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="gender" class="form-label">الجنس <span class="text-danger">*</span></label>
+                            <select class="form-select" id="gender" name="gender" required>
+                                <option value="MALE" {{ 'selected' if dog.gender.value == 'MALE' else '' }}>ذكر</option>
+                                <option value="FEMALE" {{ 'selected' if dog.gender.value == 'FEMALE' else '' }}>أنثى</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="birth_date" class="form-label">تاريخ الميلاد <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="birth_date" name="birth_date" value="{{ dog.birth_date.isoformat() }}" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="microchip_id" class="form-label">رقم الرقاقة الإلكترونية</label>
+                            <input type="text" class="form-control" id="microchip_id" name="microchip_id" value="{{ dog.microchip_id or '' }}">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="current_status" class="form-label">الحالة الحالية <span class="text-danger">*</span></label>
+                            <select class="form-select" id="current_status" name="current_status" required>
+                                <option value="ACTIVE" {{ 'selected' if dog.current_status.value == 'ACTIVE' else '' }}>نشط</option>
+                                <option value="TRAINING" {{ 'selected' if dog.current_status.value == 'TRAINING' else '' }}>تدريب</option>
+                                <option value="RETIRED" {{ 'selected' if dog.current_status.value == 'RETIRED' else '' }}>متقاعد</option>
+                                <option value="DECEASED" {{ 'selected' if dog.current_status.value == 'DECEASED' else '' }}>متوفى</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="color" class="form-label">اللون</label>
+                            <input type="text" class="form-control" id="color" name="color" value="{{ dog.color or '' }}">
+                        </div>
+                    </div>
+
+                    <!-- Physical Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">المعلومات الجسدية</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="weight" class="form-label">الوزن (كيلو)</label>
+                            <input type="number" step="0.1" class="form-control" id="weight" name="weight" value="{{ dog.weight or '' }}">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="height" class="form-label">الطول (سم)</label>
+                            <input type="number" step="0.1" class="form-control" id="height" name="height" value="{{ dog.height or '' }}">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="location" class="form-label">الموقع</label>
+                            <input type="text" class="form-control" id="location" name="location" value="{{ dog.location or '' }}">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="specialization" class="form-label">التخصص</label>
+                            <select class="form-select" id="specialization" name="specialization">
+                                <option value="">اختر التخصص</option>
+                                <option value="كشف المتفجرات" {{ 'selected' if dog.specialization == 'كشف المتفجرات' else '' }}>كشف المتفجرات</option>
+                                <option value="كشف المخدرات" {{ 'selected' if dog.specialization == 'كشف المخدرات' else '' }}>كشف المخدرات</option>
+                                <option value="الحراسة" {{ 'selected' if dog.specialization == 'الحراسة' else '' }}>الحراسة</option>
+                                <option value="التتبع" {{ 'selected' if dog.specialization == 'التتبع' else '' }}>التتبع</option>
+                                <option value="الإنقاذ" {{ 'selected' if dog.specialization == 'الإنقاذ' else '' }}>الإنقاذ</option>
+                                <option value="عام" {{ 'selected' if dog.specialization == 'عام' else '' }}>عام</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Current Files -->
+                    {% if dog.birth_certificate or dog.photo %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">المستندات الحالية</h6>
+                        </div>
+                        
+                        {% if dog.birth_certificate %}
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">شهادة الميلاد الحالية</label>
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-file-pdf fa-2x text-danger mb-2"></i>
+                                    <p class="mb-2">شهادة الميلاد</p>
+                                    <a href="{{ url_for('main.uploaded_file', filename=dog.birth_certificate) }}" 
+                                       target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye me-1"></i>عرض
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if dog.photo %}
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الصورة الحالية</label>
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <img src="{{ url_for('main.uploaded_file', filename=dog.photo) }}" 
+                                         alt="{{ dog.name }}" class="img-fluid" style="max-height: 150px;">
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- File Uploads -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">تحديث المستندات والصور</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="birth_certificate" class="form-label">شهادة الميلاد الجديدة</label>
+                            <input type="file" class="form-control" id="birth_certificate" name="birth_certificate" accept=".pdf,.jpg,.jpeg,.png">
+                            <div class="form-text">ملفات PDF أو صور (أقصى حجم: 16 ميجابايت) - اترك فارغاً للاحتفاظ بالملف الحالي</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="photo" class="form-label">صورة الكلب الجديدة</label>
+                            <input type="file" class="form-control" id="photo" name="photo" accept=".jpg,.jpeg,.png">
+                            <div class="form-text">صور فقط (أقصى حجم: 16 ميجابايت) - اترك فارغاً للاحتفاظ بالصورة الحالية</div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>
+                                    حفظ التغييرات
+                                </button>
+                                <a href="{{ url_for('main.dogs_view', dog_id=dog.id) }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>
+                                    إلغاء
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

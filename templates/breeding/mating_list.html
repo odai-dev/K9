@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}سجلات التزاوج{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-heart me-2"></i>
+                سجلات التزاوج
+            </h1>
+            <div class="btn-group">
+                <a href="{{ url_for('main.breeding_index') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة للإنتاج
+                </a>
+                <a href="{{ url_for('main.mating_add') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    تسجيل تزاوج جديد
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if matings %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>الأنثى</th>
+                                <th>الذكر</th>
+                                <th>تاريخ التزاوج</th>
+                                <th>الوقت</th>
+                                <th>نسبة النجاح</th>
+                                <th>المدة</th>
+                                <th>المشرف</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for mating in matings %}
+                            <tr>
+                                <td>
+                                    <strong>{{ mating.female.name }}</strong><br>
+                                    <small class="text-muted">{{ mating.female.code }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ mating.male.name }}</strong><br>
+                                    <small class="text-muted">{{ mating.male.code }}</small>
+                                </td>
+                                <td>{{ mating.mating_date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ mating.mating_time.strftime('%H:%M') if mating.mating_time else '-' }}</td>
+                                <td>
+                                    {% if mating.success_rate %}
+                                        {% if mating.success_rate >= 80 %}
+                                            <span class="badge bg-success">{{ mating.success_rate }}%</span>
+                                        {% elif mating.success_rate >= 50 %}
+                                            <span class="badge bg-warning">{{ mating.success_rate }}%</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">{{ mating.success_rate }}%</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ mating.duration_minutes if mating.duration_minutes else '-' }} دقيقة</td>
+                                <td>{{ mating.supervised_by_employee.name if mating.supervised_by_employee else 'غير محدد' }}</td>
+                                <td>
+                                    <a href="#" class="btn btn-sm btn-outline-primary">عرض</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-heart fa-5x text-muted mb-3"></i>
+    <h3 class="text-muted">لا توجد سجلات تزاوج</h3>
+    <p class="text-muted">ابدأ بتسجيل عمليات التزاوج للكلاب الجاهزة</p>
+    <a href="{{ url_for('main.mating_add') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>
+        تسجيل تزاوج جديد
+    </a>
+</div>
+{% endif %}
+{% endblock %}

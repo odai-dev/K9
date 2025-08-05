@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}حوادث المشروع - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Project Header -->
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h4 class="mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                حوادث المشروع: {{ project.name }}
+                            </h4>
+                            <small>{{ project.main_task or 'لا توجد مهمة محددة' }}</small>
+                        </div>
+                        <div class="col-auto">
+                            <span class="badge bg-light text-dark">{{ project.code }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Navigation -->
+            <div class="mb-3">
+                <div class="btn-group w-100" role="group">
+                    <a href="{{ url_for('main.project_dashboard', project_id=project.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-tachometer-alt me-2"></i>لوحة التحكم
+                    </a>
+                    <a href="{{ url_for('main.project_assignments', project_id=project.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-users me-2"></i>التعيينات
+                    </a>
+                    <a href="{{ url_for('main.project_incidents', project_id=project.id) }}" class="btn btn-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>الحوادث
+                    </a>
+                    <a href="{{ url_for('main.project_suspicions', project_id=project.id) }}" class="btn btn-outline-info">
+                        <i class="fas fa-search me-2"></i>الاشتباهات
+                    </a>
+                    <a href="{{ url_for('main.project_evaluations', project_id=project.id) }}" class="btn btn-outline-success">
+                        <i class="fas fa-star me-2"></i>التقييمات
+                    </a>
+                </div>
+            </div>
+
+            <!-- Incidents List -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>سجل الحوادث
+                    </h5>
+                    <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#addIncidentModal">
+                        <i class="fas fa-plus me-2"></i>تسجيل حادث جديد
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if incidents %}
+                    <div class="row">
+                        {% for incident in incidents %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 border-danger">
+                                <div class="card-header bg-danger bg-opacity-10">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <h6 class="mb-0 text-danger">{{ incident.name }}</h6>
+                                        {% set severity_class = {
+                                            'LOW': 'secondary',
+                                            'MEDIUM': 'warning',
+                                            'HIGH': 'danger'
+                                        } %}
+                                        <span class="badge bg-{{ severity_class.get(incident.severity, 'warning') }}">
+                                            {{ incident.severity }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar me-1"></i>
+                                            {{ incident.incident_date.strftime('%Y-%m-%d') }}
+                                            <i class="fas fa-clock me-1 ms-2"></i>
+                                            {{ incident.incident_time.strftime('%H:%M') }}
+                                        </small>
+                                    </div>
+                                    
+                                    <div class="mb-2">
+                                        <strong>نوع الحادث:</strong> {{ incident.incident_type }}
+                                    </div>
+                                    
+                                    {% if incident.location %}
+                                    <div class="mb-2">
+                                        <strong>الموقع:</strong> {{ incident.location }}
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if incident.description %}
+                                    <div class="mb-2">
+                                        <strong>الوصف:</strong>
+                                        <p class="small">{{ incident.description[:100] }}{% if incident.description|length > 100 %}...{% endif %}</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if incident.reporter %}
+                                    <div class="mb-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-user me-1"></i>
+                                            بواسطة: {{ incident.reporter.full_name }}
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="mb-2">
+                                        {% if incident.resolved %}
+                                            <span class="badge bg-success">تم حل الحادث</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">قيد المعالجة</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if incident.attachments and incident.attachments|length > 0 %}
+                                    <div class="mb-2">
+                                        <small class="text-info">
+                                            <i class="fas fa-paperclip me-1"></i>
+                                            {{ incident.attachments|length }} مرفق(ات)
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <div class="btn-group w-100" role="group">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="viewIncident('{{ incident.id }}')" title="عرض التفاصيل">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-success" onclick="editIncident('{{ incident.id }}')" title="تعديل">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        {% if not incident.resolved %}
+                                        <button class="btn btn-sm btn-outline-warning" onclick="resolveIncident('{{ incident.id }}')" title="تم الحل">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-exclamation-triangle fa-3x mb-3 text-success"></i>
+                        <h5>لا توجد حوادث مسجلة</h5>
+                        <p>هذا المشروع لا يحتوي على أي حوادث مسجلة حتى الآن</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Incident Modal -->
+<div class="modal fade" id="addIncidentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('main.project_incident_add', project_id=project.id) }}" enctype="multipart/form-data">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        تسجيل حادث جديد
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">اسم الحادث *</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="incident_type" class="form-label">نوع الحادث *</label>
+                                <select class="form-select" id="incident_type" name="incident_type" required>
+                                    <option value="">اختر نوع الحادث...</option>
+                                    <option value="إصابة موظف">إصابة موظف</option>
+                                    <option value="إصابة كلب">إصابة كلب</option>
+                                    <option value="حادث أمني">حادث أمني</option>
+                                    <option value="عطل معدات">عطل معدات</option>
+                                    <option value="حريق">حريق</option>
+                                    <option value="كسر">كسر</option>
+                                    <option value="اختفاء">اختفاء</option>
+                                    <option value="أخرى">أخرى</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="incident_date" class="form-label">تاريخ الحادث *</label>
+                                <input type="date" class="form-control" id="incident_date" name="incident_date" value="{{ today }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="incident_time" class="form-label">وقت الحادث *</label>
+                                <input type="time" class="form-control" id="incident_time" name="incident_time" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="severity" class="form-label">درجة الخطورة</label>
+                                <select class="form-select" id="severity" name="severity">
+                                    <option value="LOW">منخفضة</option>
+                                    <option value="MEDIUM" selected>متوسطة</option>
+                                    <option value="HIGH">عالية</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="location" class="form-label">موقع الحادث</label>
+                        <input type="text" class="form-control" id="location" name="location" placeholder="وصف تفصيلي لموقع الحادث">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">وصف الحادث</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" placeholder="وصف تفصيلي للحادث وظروفه"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="people_involved" class="form-label">الموظفون المتورطون</label>
+                                <select class="form-select" id="people_involved" name="people_involved" multiple>
+                                    {% for employee in project_employees %}
+                                    <option value="{{ employee.id }}">{{ employee.full_name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">يمكن اختيار أكثر من موظف باستخدام Ctrl</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dogs_involved" class="form-label">الكلاب المتورطة</label>
+                                <select class="form-select" id="dogs_involved" name="dogs_involved" multiple>
+                                    {% for dog in project_dogs %}
+                                    <option value="{{ dog.id }}">{{ dog.name }} - {{ dog.code }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">يمكن اختيار أكثر من كلب باستخدام Ctrl</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="witness_statements" class="form-label">شهادات الشهود</label>
+                        <textarea class="form-control" id="witness_statements" name="witness_statements" rows="3" placeholder="شهادات الشهود الحاضرين للحادث"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="attachments" class="form-label">المرفقات</label>
+                        <input type="file" class="form-control" id="attachments" name="attachments" multiple accept="image/*,application/pdf">
+                        <small class="form-text text-muted">يمكن إرفاق صور أو مستندات PDF</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-danger">تسجيل الحادث</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewIncident(incidentId) {
+    // Implementation for viewing incident details
+    alert('عرض تفاصيل الحادث: ' + incidentId);
+}
+
+function editIncident(incidentId) {
+    // Implementation for editing incident
+    alert('تعديل الحادث: ' + incidentId);
+}
+
+function resolveIncident(incidentId) {
+    if (confirm('هل تريد تمييز هذا الحادث كمحلول؟')) {
+        // Implementation for resolving incident
+        window.location.href = "{{ url_for('main.project_resolve_incident', project_id=project.id) }}?incident_id=" + incidentId;
+    }
+}
+
+// Set current time when modal opens
+document.getElementById('addIncidentModal').addEventListener('show.bs.modal', function() {
+    const now = new Date();
+    const timeString = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    document.getElementById('incident_time').value = timeString;
+});
+</script>
+{% endblock %}

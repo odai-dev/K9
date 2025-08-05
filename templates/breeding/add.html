@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة دورة تكاثر{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-plus me-2"></i>
+                إضافة دورة تكاثر
+            </h1>
+            <a href="{{ url_for('main.breeding_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right me-2"></i>
+                العودة إلى القائمة
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-heart me-2"></i>
+                    معلومات دورة التكاثر
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <!-- Basic Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">المعلومات الأساسية</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="female_id" class="form-label">الأنثى <span class="text-danger">*</span></label>
+                            <select class="form-select" id="female_id" name="female_id" required>
+                                <option value="">اختر الأنثى</option>
+                                {% for female in females %}
+                                    <option value="{{ female.id }}">
+                                        {{ female.name }} ({{ female.code }}) - {{ female.breed }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="male_id" class="form-label">الذكر <span class="text-danger">*</span></label>
+                            <select class="form-select" id="male_id" name="male_id" required>
+                                <option value="">اختر الذكر</option>
+                                {% for male in males %}
+                                    <option value="{{ male.id }}">
+                                        {{ male.name }} ({{ male.code }}) - {{ male.breed }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="cycle_type" class="form-label">نوع التزاوج <span class="text-danger">*</span></label>
+                            <select class="form-select" id="cycle_type" name="cycle_type" required>
+                                <option value="">اختر نوع التزاوج</option>
+                                <option value="NATURAL">طبيعي</option>
+                                <option value="ARTIFICIAL">اصطناعي</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="mating_date" class="form-label">تاريخ التزاوج <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="mating_date" name="mating_date" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="heat_start_date" class="form-label">تاريخ بداية الشبق</label>
+                            <input type="date" class="form-control" id="heat_start_date" name="heat_start_date">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="expected_delivery_date" class="form-label">تاريخ الولادة المتوقع</label>
+                            <input type="date" class="form-control" id="expected_delivery_date" name="expected_delivery_date" readonly>
+                            <div class="form-text">سيتم حسابه تلقائياً (63 يوماً من تاريخ التزاوج)</div>
+                        </div>
+                    </div>
+
+                    <!-- Prenatal Care -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">الرعاية قبل الولادة</h6>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="prenatal_care" class="form-label">تفاصيل الرعاية قبل الولادة</label>
+                            <textarea class="form-control" id="prenatal_care" name="prenatal_care" rows="4" 
+                                      placeholder="اكتب تفاصيل الرعاية المقدمة للأنثى أثناء فترة الحمل، مثل التغذية الخاصة، الفحوصات الطبية، التطعيمات، إلخ..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>
+                                    حفظ
+                                </button>
+                                <a href="{{ url_for('main.breeding_list') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>
+                                    إلغاء
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const matingDateInput = document.getElementById('mating_date');
+    const expectedDeliveryInput = document.getElementById('expected_delivery_date');
+    const heatStartInput = document.getElementById('heat_start_date');
+    
+    // Calculate expected delivery date when mating date changes
+    matingDateInput.addEventListener('change', function() {
+        if (this.value) {
+            const matingDate = new Date(this.value);
+            const expectedDelivery = new Date(matingDate);
+            expectedDelivery.setDate(expectedDelivery.getDate() + 63);
+            
+            expectedDeliveryInput.value = expectedDelivery.toISOString().split('T')[0];
+        }
+    });
+    
+    // Set max date for mating to today
+    const today = new Date().toISOString().split('T')[0];
+    matingDateInput.max = today;
+    heatStartInput.max = today;
+    
+    // Ensure heat start date is before mating date
+    heatStartInput.addEventListener('change', function() {
+        if (this.value && matingDateInput.value) {
+            if (new Date(this.value) > new Date(matingDateInput.value)) {
+                alert('تاريخ بداية الشبق يجب أن يكون قبل تاريخ التزاوج');
+                this.value = '';
+            }
+        }
+    });
+    
+    matingDateInput.addEventListener('change', function() {
+        if (this.value && heatStartInput.value) {
+            if (new Date(heatStartInput.value) > new Date(this.value)) {
+                alert('تاريخ بداية الشبق يجب أن يكون قبل تاريخ التزاوج');
+                heatStartInput.value = '';
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
