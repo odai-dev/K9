@@ -1,0 +1,549 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة الحضور - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Project Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title mb-1">
+                                <i class="fas fa-calendar-check me-2"></i>
+                                إدارة الحضور - {{ project.name }}
+                            </h3>
+                            <small class="text-muted">كود المشروع: {{ project.code }}</small>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('main.project_dashboard', project_id=project.id) }}" class="btn btn-outline-primary">
+                                <i class="fas fa-arrow-right ms-2"></i>العودة للوحة التحكم
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Controls -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter me-2"></i>
+                        عوامل التصفية والتحكم
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="attendanceDate" class="form-label">التاريخ</label>
+                            <input type="date" id="attendanceDate" class="form-control" value="{{ today }}" onchange="loadAttendanceData()">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="shiftSelect" class="form-label">الوردية</label>
+                            <select id="shiftSelect" class="form-select" onchange="loadAttendanceData()">
+                                <option value="">اختر الوردية...</option>
+                                {% for shift in shifts %}
+                                    <option value="{{ shift.id }}">{{ shift.name }} ({{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="searchInput" class="form-label">البحث</label>
+                            <input type="text" id="searchInput" class="form-control" placeholder="ابحث بالاسم أو الكود..." onkeyup="filterAttendance()">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="button" class="btn btn-success" onclick="loadAttendanceData()">
+                                    <i class="fas fa-sync me-2"></i>تحديث البيانات
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>
+                        الإجراءات السريعة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-success w-100" onclick="bulkAttendance('mark_all_present')">
+                                <i class="fas fa-check me-2"></i>تسجيل الكل حاضر
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-danger w-100" onclick="showBulkAbsentModal()">
+                                <i class="fas fa-times me-2"></i>تسجيل الكل غائب
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-warning w-100" onclick="showBulkLateModal()">
+                                <i class="fas fa-clock me-2"></i>تسجيل الكل متأخر
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <a href="{{ url_for('main.project_shifts', project_id=project.id) }}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-cog me-2"></i>إدارة الورديات
+                            </a>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-outline-secondary w-100" onclick="generateReport()">
+                                <i class="fas fa-file-pdf me-2"></i>تقرير الحضور
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        قائمة الحضور
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="attendanceTableContainer">
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                            <h5>اختر التاريخ والوردية لعرض بيانات الحضور</h5>
+                            <p>يرجى تحديد التاريخ والوردية من القائمة أعلاه</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Absent Modal -->
+<div class="modal fade" id="bulkAbsentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تسجيل الكل غائب</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="bulkAbsenceReason" class="form-label">سبب الغياب</label>
+                    <select id="bulkAbsenceReason" class="form-select" required>
+                        <option value="">اختر السبب...</option>
+                        <option value="ANNUAL">إجازة سنوية</option>
+                        <option value="SICK">إجازة مرضية</option>
+                        <option value="EMERGENCY">طارئة</option>
+                        <option value="OTHER">أخرى</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-danger" onclick="bulkAttendance('mark_all_absent')">تأكيد الغياب</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Late Modal -->
+<div class="modal fade" id="bulkLateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تسجيل الكل متأخر</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="bulkLateReason" class="form-label">سبب التأخير</label>
+                    <input type="text" id="bulkLateReason" class="form-control" placeholder="اختياري - سبب التأخير">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-warning" onclick="bulkAttendance('mark_all_late')">تأكيد التأخير</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Individual Attendance Modal -->
+<div class="modal fade" id="attendanceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="attendanceModalTitle">تسجيل الحضور</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="attendanceForm">
+                    <input type="hidden" id="entityType">
+                    <input type="hidden" id="entityId">
+                    
+                    <div class="mb-3">
+                        <label for="attendanceStatus" class="form-label">حالة الحضور</label>
+                        <select id="attendanceStatus" class="form-select" required onchange="toggleReasonFields()">
+                            <option value="PRESENT">حاضر</option>
+                            <option value="ABSENT">غائب</option>
+                            <option value="LATE">متأخر</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3" id="absenceReasonField" style="display: none;">
+                        <label for="absenceReason" class="form-label">سبب الغياب</label>
+                        <select id="absenceReason" class="form-select">
+                            <option value="">اختر السبب...</option>
+                            <option value="ANNUAL">إجازة سنوية</option>
+                            <option value="SICK">إجازة مرضية</option>
+                            <option value="EMERGENCY">طارئة</option>
+                            <option value="OTHER">أخرى</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3" id="lateReasonField" style="display: none;">
+                        <label for="lateReason" class="form-label">سبب التأخير</label>
+                        <input type="text" id="lateReason" class="form-control" placeholder="اختياري - سبب التأخير">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="attendanceNotes" class="form-label">ملاحظات</label>
+                        <textarea id="attendanceNotes" class="form-control" rows="3" placeholder="ملاحظات إضافية..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" onclick="saveAttendance()">حفظ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentAttendanceData = [];
+
+function loadAttendanceData() {
+    const date = document.getElementById('attendanceDate').value;
+    const shiftId = document.getElementById('shiftSelect').value;
+    
+    if (!date || !shiftId) {
+        document.getElementById('attendanceTableContainer').innerHTML = `
+            <div class="text-center text-muted py-5">
+                <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                <h5>اختر التاريخ والوردية لعرض بيانات الحضور</h5>
+                <p>يرجى تحديد التاريخ والوردية من القائمة أعلاه</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Show loading
+    document.getElementById('attendanceTableContainer').innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">جاري التحميل...</span>
+            </div>
+            <p class="mt-2">جاري تحميل بيانات الحضور...</p>
+        </div>
+    `;
+    
+    fetch(`{{ url_for('main.get_attendance_data', project_id=project.id) }}?shift_id=${shiftId}&date=${date}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            currentAttendanceData = data.data;
+            renderAttendanceTable(data.data);
+        })
+        .catch(error => {
+            document.getElementById('attendanceTableContainer').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    حدث خطأ في تحميل البيانات: ${error.message}
+                </div>
+            `;
+        });
+}
+
+function renderAttendanceTable(data) {
+    if (data.length === 0) {
+        document.getElementById('attendanceTableContainer').innerHTML = `
+            <div class="text-center text-muted py-5">
+                <i class="fas fa-user-slash fa-3x mb-3"></i>
+                <h5>لا توجد تعيينات للوردية المحددة</h5>
+                <p>تأكد من وجود موظفين أو كلاب معينين لهذه الوردية</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let tableHtml = `
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>النوع</th>
+                        <th>الاسم</th>
+                        <th>الكود</th>
+                        <th>الحالة</th>
+                        <th>السبب</th>
+                        <th>الملاحظات</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    data.forEach(item => {
+        const statusBadge = getStatusBadge(item.status);
+        const entityIcon = item.entity_type === 'EMPLOYEE' ? 'fas fa-user' : 'fas fa-dog';
+        
+        tableHtml += `
+            <tr>
+                <td><i class="${entityIcon} me-2"></i>${item.entity_type === 'EMPLOYEE' ? 'موظف' : 'كلب'}</td>
+                <td>${item.entity_name}</td>
+                <td>${item.entity_code}</td>
+                <td>${statusBadge}</td>
+                <td>${getReasonDisplay(item.absence_reason, item.late_reason)}</td>
+                <td>${item.notes || '-'}</td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                            onclick="editAttendance('${item.entity_type}', '${item.entity_id}', '${item.entity_name}', '${item.status}', '${item.absence_reason}', '${item.late_reason}', '${item.notes}')">
+                        <i class="fas fa-edit"></i> تعديل
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableHtml += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    document.getElementById('attendanceTableContainer').innerHTML = tableHtml;
+}
+
+function getStatusBadge(status) {
+    switch(status) {
+        case 'PRESENT':
+            return '<span class="badge bg-success">حاضر</span>';
+        case 'ABSENT':
+            return '<span class="badge bg-danger">غائب</span>';
+        case 'LATE':
+            return '<span class="badge bg-warning">متأخر</span>';
+        default:
+            return '<span class="badge bg-secondary">غير محدد</span>';
+    }
+}
+
+function getReasonDisplay(absenceReason, lateReason) {
+    if (absenceReason) {
+        const reasons = {
+            'ANNUAL': 'إجازة سنوية',
+            'SICK': 'إجازة مرضية', 
+            'EMERGENCY': 'طارئة',
+            'OTHER': 'أخرى'
+        };
+        return reasons[absenceReason] || absenceReason;
+    }
+    if (lateReason) {
+        return lateReason;
+    }
+    return '-';
+}
+
+function filterAttendance() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const filteredData = currentAttendanceData.filter(item => 
+        item.entity_name.toLowerCase().includes(searchTerm) ||
+        item.entity_code.toLowerCase().includes(searchTerm)
+    );
+    renderAttendanceTable(filteredData);
+}
+
+function editAttendance(entityType, entityId, entityName, status, absenceReason, lateReason, notes) {
+    document.getElementById('attendanceModalTitle').textContent = `تعديل حضور ${entityName}`;
+    document.getElementById('entityType').value = entityType;
+    document.getElementById('entityId').value = entityId;
+    document.getElementById('attendanceStatus').value = status;
+    document.getElementById('absenceReason').value = absenceReason || '';
+    document.getElementById('lateReason').value = lateReason || '';
+    document.getElementById('attendanceNotes').value = notes || '';
+    
+    toggleReasonFields();
+    new bootstrap.Modal(document.getElementById('attendanceModal')).show();
+}
+
+function toggleReasonFields() {
+    const status = document.getElementById('attendanceStatus').value;
+    const absenceField = document.getElementById('absenceReasonField');
+    const lateField = document.getElementById('lateReasonField');
+    
+    absenceField.style.display = status === 'ABSENT' ? 'block' : 'none';
+    lateField.style.display = status === 'LATE' ? 'block' : 'none';
+    
+    if (status === 'ABSENT') {
+        document.getElementById('absenceReason').required = true;
+    } else {
+        document.getElementById('absenceReason').required = false;
+    }
+}
+
+function saveAttendance() {
+    const formData = {
+        shift_id: document.getElementById('shiftSelect').value,
+        date: document.getElementById('attendanceDate').value,
+        entity_type: document.getElementById('entityType').value,
+        entity_id: document.getElementById('entityId').value,
+        status: document.getElementById('attendanceStatus').value,
+        absence_reason: document.getElementById('absenceReason').value,
+        late_reason: document.getElementById('lateReason').value,
+        notes: document.getElementById('attendanceNotes').value
+    };
+    
+    if (formData.status === 'ABSENT' && !formData.absence_reason) {
+        alert('يجب تحديد سبب الغياب');
+        return;
+    }
+    
+    fetch(`{{ url_for('main.record_attendance', project_id=project.id) }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('attendanceModal')).hide();
+            loadAttendanceData();
+            showAlert('success', data.message);
+        } else {
+            showAlert('error', data.error);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'حدث خطأ في حفظ البيانات');
+    });
+}
+
+function bulkAttendance(action) {
+    const shiftId = document.getElementById('shiftSelect').value;
+    const date = document.getElementById('attendanceDate').value;
+    
+    if (!shiftId || !date) {
+        alert('يرجى تحديد التاريخ والوردية أولاً');
+        return;
+    }
+    
+    let requestData = {
+        action: action,
+        shift_id: shiftId,
+        date: date
+    };
+    
+    if (action === 'mark_all_absent') {
+        const absenceReason = document.getElementById('bulkAbsenceReason').value;
+        if (!absenceReason) {
+            alert('يجب تحديد سبب الغياب');
+            return;
+        }
+        requestData.absence_reason = absenceReason;
+        bootstrap.Modal.getInstance(document.getElementById('bulkAbsentModal')).hide();
+    } else if (action === 'mark_all_late') {
+        requestData.late_reason = document.getElementById('bulkLateReason').value;
+        bootstrap.Modal.getInstance(document.getElementById('bulkLateModal')).hide();
+    }
+    
+    fetch(`{{ url_for('main.bulk_attendance', project_id=project.id) }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadAttendanceData();
+            showAlert('success', data.message);
+        } else {
+            showAlert('error', data.error);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'حدث خطأ في تنفيذ العملية');
+    });
+}
+
+function showBulkAbsentModal() {
+    if (!document.getElementById('shiftSelect').value || !document.getElementById('attendanceDate').value) {
+        alert('يرجى تحديد التاريخ والوردية أولاً');
+        return;
+    }
+    document.getElementById('bulkAbsenceReason').value = '';
+    new bootstrap.Modal(document.getElementById('bulkAbsentModal')).show();
+}
+
+function showBulkLateModal() {
+    if (!document.getElementById('shiftSelect').value || !document.getElementById('attendanceDate').value) {
+        alert('يرجى تحديد التاريخ والوردية أولاً');
+        return;
+    }
+    document.getElementById('bulkLateReason').value = '';
+    new bootstrap.Modal(document.getElementById('bulkLateModal')).show();
+}
+
+function generateReport() {
+    const startDate = prompt('تاريخ البداية (YYYY-MM-DD):');
+    const endDate = prompt('تاريخ النهاية (YYYY-MM-DD):');
+    
+    if (startDate && endDate) {
+        window.open(`{{ url_for('main.attendance_report', project_id=project.id) }}?start_date=${startDate}&end_date=${endDate}`, '_blank');
+    }
+}
+
+function showAlert(type, message) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    const container = document.querySelector('.container-fluid');
+    container.insertAdjacentHTML('afterbegin', alertHtml);
+    
+    setTimeout(() => {
+        const alert = container.querySelector('.alert');
+        if (alert) alert.remove();
+    }, 5000);
+}
+</script>
+{% endblock %}
