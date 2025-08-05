@@ -261,11 +261,12 @@
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('main.project_assignment_add', project_id=project.id) }}">
+                        <input type="hidden" name="assignment_type" value="project_manager">
                         <div class="row align-items-end">
                             <div class="col-md-8">
                                 <label for="project_manager_id" class="form-label">اختيار مسؤول المشروع</label>
                                 <select name="project_manager_id" id="project_manager_id" class="form-select">
-                                    <option value="">اختيار مسؤول المشروع...</option>
+                                    <option value="">إزالة مسؤول المشروع...</option>
                                     {% for manager in project_managers %}
                                         <option value="{{ manager.id }}" 
                                                 {% if project.project_manager_id == manager.id %}selected{% endif %}>
