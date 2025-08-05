@@ -570,23 +570,23 @@ def project_dashboard(project_id):
         return redirect(url_for('main.projects'))
     
     # Get dashboard statistics with new assignment system
-    dog_assignments = ProjectAssignment.query.filter_by(project_id=project_uuid, is_active=True).filter(ProjectAssignment.dog_id.isnot(None)).count()
+    dog_assignments = ProjectAssignment.query.filter_by(project_id=project.id, is_active=True).filter(ProjectAssignment.dog_id.isnot(None)).count()
     active_dog_assignments = dog_assignments  # All are active since we filter by is_active=True
     
-    employee_assignments = ProjectAssignment.query.filter_by(project_id=project_uuid, is_active=True).filter(ProjectAssignment.employee_id.isnot(None)).count()
+    employee_assignments = ProjectAssignment.query.filter_by(project_id=project.id, is_active=True).filter(ProjectAssignment.employee_id.isnot(None)).count()
     active_employee_assignments = employee_assignments  # All are active since we filter by is_active=True
     
     # Incident statistics
-    total_incidents = Incident.query.filter_by(project_id=project_uuid).count()
-    resolved_incidents = Incident.query.filter_by(project_id=project_uuid, resolved=True).count()
+    total_incidents = Incident.query.filter_by(project_id=project.id).count()
+    resolved_incidents = Incident.query.filter_by(project_id=project.id, resolved=True).count()
     pending_incidents = total_incidents - resolved_incidents
     
     # Suspicion statistics
-    total_suspicions = Suspicion.query.filter_by(project_id=project_uuid).count()
-    confirmed_suspicions = Suspicion.query.filter_by(project_id=project_uuid, evidence_collected=True).count()
+    total_suspicions = Suspicion.query.filter_by(project_id=project.id).count()
+    confirmed_suspicions = Suspicion.query.filter_by(project_id=project.id, evidence_collected=True).count()
     
     # Evaluation statistics
-    total_evaluations = PerformanceEvaluation.query.filter_by(project_id=project_uuid).count()
+    total_evaluations = PerformanceEvaluation.query.filter_by(project_id=project.id).count()
     
     stats = {
         'dog_assignments': dog_assignments,
@@ -602,16 +602,16 @@ def project_dashboard(project_id):
     }
     
     # Get assignment objects for display in resources section
-    assigned_dogs = ProjectAssignment.query.filter_by(project_id=project_uuid, is_active=True).filter(ProjectAssignment.dog_id.isnot(None)).options(db.joinedload(ProjectAssignment.dog)).all()
-    assigned_employees = ProjectAssignment.query.filter_by(project_id=project_uuid, is_active=True).filter(ProjectAssignment.employee_id.isnot(None)).options(db.joinedload(ProjectAssignment.employee)).all()
+    assigned_dogs = ProjectAssignment.query.filter_by(project_id=project.id, is_active=True).filter(ProjectAssignment.dog_id.isnot(None)).options(db.joinedload(ProjectAssignment.dog)).all()
+    assigned_employees = ProjectAssignment.query.filter_by(project_id=project.id, is_active=True).filter(ProjectAssignment.employee_id.isnot(None)).options(db.joinedload(ProjectAssignment.employee)).all()
     
     # Get project managers for the quick update modal
     project_managers = Employee.query.filter_by(role=EmployeeRole.PROJECT_MANAGER, is_active=True).all()
     
     # Recent activities
-    recent_incidents = Incident.query.filter_by(project_id=project_uuid).order_by(Incident.incident_date.desc()).limit(5).all()
-    recent_suspicions = Suspicion.query.filter_by(project_id=project_uuid).order_by(Suspicion.discovery_date.desc()).limit(5).all()
-    recent_evaluations = PerformanceEvaluation.query.filter_by(project_id=project_uuid).order_by(PerformanceEvaluation.evaluation_date.desc()).limit(5).all()
+    recent_incidents = Incident.query.filter_by(project_id=project.id).order_by(Incident.incident_date.desc()).limit(5).all()
+    recent_suspicions = Suspicion.query.filter_by(project_id=project.id).order_by(Suspicion.discovery_date.desc()).limit(5).all()
+    recent_evaluations = PerformanceEvaluation.query.filter_by(project_id=project.id).order_by(PerformanceEvaluation.evaluation_date.desc()).limit(5).all()
     
     return render_template('projects/modern_dashboard.html', 
                          project=project, 
