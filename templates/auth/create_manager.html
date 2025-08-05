@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}إنشاء مدير مشروع{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-user-plus me-2"></i>
+                إنشاء مدير مشروع جديد
+            </h1>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right me-2"></i>
+                العودة إلى لوحة التحكم
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-tie me-2"></i>
+                    معلومات مدير المشروع
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>ملاحظة:</strong> سيتم إنشاء حساب مدير مشروع بصلاحيات محدودة حسب الأقسام المختارة أدناه.
+                </div>
+                
+                <form method="POST">
+                    <!-- Basic Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">المعلومات الأساسية</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="employee_id" class="form-label">اختر الموظف <span class="text-danger">*</span></label>
+                            <select class="form-select" id="employee_id" name="employee_id" required onchange="fillEmployeeData()">
+                                <option value="">اختر الموظف المراد إنشاء حساب مدير مشروع له</option>
+                                {% for employee in employees %}
+                                    <option value="{{ employee.id }}" 
+                                            data-name="{{ employee.name }}" 
+                                            data-email="{{ employee.email or '' }}">
+                                        {{ employee.name }} - {{ employee.employee_id }}
+                                        {% if employee.department %} ({{ employee.department }}){% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">يظهر فقط الموظفين بمنصب "مسؤول مشروع" الذين ليس لديهم حسابات مستخدمين</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="full_name" class="form-label">الاسم الكامل <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="full_name" name="full_name" required readonly>
+                            <small class="form-text text-muted">سيتم ملء هذا الحقل تلقائياً عند اختيار الموظف</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="username" class="form-label">اسم المستخدم <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                            <div class="form-text">سيتم استخدام هذا الاسم لتسجيل الدخول</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">البريد الإلكتروني <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                            <small class="form-text text-muted">سيتم ملء هذا الحقل تلقائياً إذا كان للموظف بريد إلكتروني</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="password" class="form-label">كلمة المرور <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                            <div class="form-text">يجب أن تكون كلمة المرور قوية ومعقدة</div>
+                        </div>
+                    </div>
+
+                    <!-- Permissions -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">الصلاحيات والأقسام المسموحة</h6>
+                            <p class="text-muted mb-3">اختر الأقسام التي يمكن لمدير المشروع الوصول إليها:</p>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="row">
+                                {% for section in available_sections %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="permission-card">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" 
+                                                   id="section_{{ section.key }}" 
+                                                   name="allowed_sections" 
+                                                   value="{{ section.key }}">
+                                            <label class="form-check-label w-100" for="section_{{ section.key }}">
+                                                <div class="permission-content">
+                                                    <div class="permission-icon">
+                                                        {% if section.key == 'dogs' %}
+                                                            <i class="fas fa-dog"></i>
+                                                        {% elif section.key == 'employees' %}
+                                                            <i class="fas fa-users"></i>
+                                                        {% elif section.key == 'training' %}
+                                                            <i class="fas fa-dumbbell"></i>
+                                                        {% elif section.key == 'veterinary' %}
+                                                            <i class="fas fa-stethoscope"></i>
+                                                        {% elif section.key == 'breeding' %}
+                                                            <i class="fas fa-heart"></i>
+                                                        {% elif section.key == 'projects' %}
+                                                            <i class="fas fa-project-diagram"></i>
+                                                        {% elif section.key == 'attendance' %}
+                                                            <i class="fas fa-clock"></i>
+                                                        {% elif section.key == 'reports' %}
+                                                            <i class="fas fa-chart-bar"></i>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="permission-title">{{ section.name }}</div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 mt-3">
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectAllSections()">
+                                    <i class="fas fa-check-double me-1"></i>
+                                    تحديد الكل
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearAllSections()">
+                                    <i class="fas fa-times me-1"></i>
+                                    إلغاء التحديد
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-user-plus me-2"></i>
+                                    إنشاء مدير المشروع
+                                </button>
+                                <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>
+                                    إلغاء
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function fillEmployeeData() {
+    const employeeSelect = document.getElementById('employee_id');
+    const selectedOption = employeeSelect.options[employeeSelect.selectedIndex];
+    
+    if (selectedOption.value) {
+        // Fill the full name field
+        const fullNameField = document.getElementById('full_name');
+        fullNameField.value = selectedOption.getAttribute('data-name');
+        
+        // Fill the email field if available
+        const emailField = document.getElementById('email');
+        const employeeEmail = selectedOption.getAttribute('data-email');
+        if (employeeEmail) {
+            emailField.value = employeeEmail;
+        } else {
+            emailField.value = '';
+        }
+    } else {
+        // Clear fields if no employee selected
+        document.getElementById('full_name').value = '';
+        document.getElementById('email').value = '';
+    }
+}
+
+function selectAllSections() {
+    const checkboxes = document.querySelectorAll('input[name="allowed_sections"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+        checkbox.closest('.permission-card').classList.add('selected');
+    });
+}
+
+function clearAllSections() {
+    const checkboxes = document.querySelectorAll('input[name="allowed_sections"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+        checkbox.closest('.permission-card').classList.remove('selected');
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle permission card selection
+    const checkboxes = document.querySelectorAll('input[name="allowed_sections"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                this.closest('.permission-card').classList.add('selected');
+            } else {
+                this.closest('.permission-card').classList.remove('selected');
+            }
+        });
+    });
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const checkedBoxes = document.querySelectorAll('input[name="allowed_sections"]:checked');
+        if (checkedBoxes.length === 0) {
+            e.preventDefault();
+            alert('يجب اختيار قسم واحد على الأقل');
+            return false;
+        }
+    });
+});
+</script>
+
+<style>
+.permission-card {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 1rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    height: 100%;
+}
+
+.permission-card:hover {
+    border-color: #667eea;
+    background-color: #f8f9ff;
+}
+
+.permission-card.selected {
+    border-color: #667eea;
+    background-color: #f0f2ff;
+}
+
+.permission-content {
+    text-align: center;
+}
+
+.permission-icon {
+    font-size: 2rem;
+    color: #667eea;
+    margin-bottom: 0.5rem;
+}
+
+.permission-title {
+    font-weight: 600;
+    color: #495057;
+}
+
+.form-check-input {
+    display: none;
+}
+
+.form-check-label {
+    cursor: pointer;
+    margin: 0;
+}
+
+.btn-group .btn {
+    white-space: nowrap;
+}
+</style>
+{% endblock %}

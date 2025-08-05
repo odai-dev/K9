@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+
+{% block title %}{{ dog.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-dog me-2"></i>
+                {{ dog.name }}
+                <span class="badge bg-secondary ms-2">{{ dog.code }}</span>
+            </h1>
+            <div class="btn-group">
+                <a href="{{ url_for('main.dogs_edit', dog_id=dog.id) }}" class="btn btn-warning">
+                    <i class="fas fa-edit me-2"></i>
+                    تعديل
+                </a>
+                <a href="{{ url_for('main.dogs_list') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة إلى القائمة
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Basic Information -->
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    المعلومات الأساسية
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td class="fw-bold">الاسم:</td>
+                                <td>{{ dog.name }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">الكود:</td>
+                                <td><span class="badge bg-secondary">{{ dog.code }}</span></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">السلالة:</td>
+                                <td>{{ dog.breed }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">سلسلة النسب:</td>
+                                <td>{{ dog.family_line or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">الجنس:</td>
+                                <td>
+                                    <span class="badge bg-{{ 'primary' if dog.gender.value == 'MALE' else 'danger' }}">
+                                        {{ 'ذكر' if dog.gender.value == 'MALE' else 'أنثى' }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">تاريخ الميلاد:</td>
+                                <td>{{ dog.birth_date.strftime('%Y-%m-%d') }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td class="fw-bold">العمر:</td>
+                                <td>
+                                    {% set age = (today - dog.birth_date).days // 365 %}
+                                    {{ age }} سنة
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">الحالة:</td>
+                                <td>
+                                    {% set status_map = {
+                                        'ACTIVE': {'class': 'success', 'text': 'نشط'},
+                                        'RETIRED': {'class': 'warning', 'text': 'متقاعد'},
+                                        'DECEASED': {'class': 'dark', 'text': 'متوفى'},
+                                        'TRAINING': {'class': 'info', 'text': 'تدريب'}
+                                    } %}
+                                    <span class="badge bg-{{ status_map[dog.current_status.value]['class'] }}">
+                                        {{ status_map[dog.current_status.value]['text'] }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">الموقع:</td>
+                                <td>{{ dog.location or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">التخصص:</td>
+                                <td>{{ dog.specialization or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">اللون:</td>
+                                <td>{{ dog.color or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">الرقاقة الإلكترونية:</td>
+                                <td>{{ dog.microchip_id or '-' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                {% if dog.weight or dog.height %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">المعلومات الجسدية</h6>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>الوزن:</strong> {{ dog.weight or '-' }} {% if dog.weight %}كيلو{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>الطول:</strong> {{ dog.height or '-' }} {% if dog.height %}سم{% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Family Information -->
+        {% if dog.father or dog.mother %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-sitemap me-2"></i>
+                    معلومات العائلة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if dog.father %}
+                    <div class="col-md-6">
+                        <h6 class="text-primary">الأب</h6>
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <strong>{{ dog.father.name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ dog.father.code }} - {{ dog.father.breed }}</small>
+                            </div>
+                            <a href="{{ url_for('main.dogs_view', dog_id=dog.father.id) }}" 
+                               class="btn btn-sm btn-outline-primary ms-auto">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if dog.mother %}
+                    <div class="col-md-6">
+                        <h6 class="text-primary">الأم</h6>
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <strong>{{ dog.mother.name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ dog.mother.code }} - {{ dog.mother.breed }}</small>
+                            </div>
+                            <a href="{{ url_for('main.dogs_view', dog_id=dog.mother.id) }}" 
+                               class="btn btn-sm btn-outline-primary ms-auto">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Training History -->
+        {% if training_sessions %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-dumbbell me-2"></i>
+                    آخر جلسات التدريب
+                </h5>
+                <a href="{{ url_for('main.training_add') }}?dog_id={{ dog.id }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus me-1"></i>
+                    إضافة جلسة
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>النوع</th>
+                                <th>الموضوع</th>
+                                <th>المدرب</th>
+                                <th>المدة</th>
+                                <th>التقييم</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for session in training_sessions %}
+                            <tr>
+                                <td>{{ session.session_date.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    {% set category_map = {
+                                        'OBEDIENCE': 'طاعة',
+                                        'DETECTION': 'كشف',
+                                        'AGILITY': 'رشاقة',
+                                        'ATTACK': 'هجوم',
+                                        'FITNESS': 'لياقة'
+                                    } %}
+                                    <span class="badge bg-info">{{ category_map.get(session.category.value, session.category.value) }}</span>
+                                </td>
+                                <td>{{ session.subject }}</td>
+                                <td>{{ session.trainer.name }}</td>
+                                <td>{{ session.duration }} دقيقة</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if session.success_rating >= 7 else 'warning' if session.success_rating >= 5 else 'danger' }}">
+                                        {{ session.success_rating }}/10
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Veterinary History -->
+        {% if vet_visits %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-stethoscope me-2"></i>
+                    آخر الزيارات البيطرية
+                </h5>
+                <a href="{{ url_for('main.veterinary_add') }}?dog_id={{ dog.id }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus me-1"></i>
+                    إضافة زيارة
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>النوع</th>
+                                <th>الطبيب</th>
+                                <th>التشخيص</th>
+                                <th>العلاج</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for visit in vet_visits %}
+                            <tr>
+                                <td>{{ visit.visit_date.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    {% set visit_type_map = {
+                                        'ROUTINE': {'class': 'primary', 'text': 'روتينية'},
+                                        'EMERGENCY': {'class': 'danger', 'text': 'طارئة'},
+                                        'VACCINATION': {'class': 'info', 'text': 'تطعيم'}
+                                    } %}
+                                    <span class="badge bg-{{ visit_type_map[visit.visit_type.value]['class'] }}">
+                                        {{ visit_type_map[visit.visit_type.value]['text'] }}
+                                    </span>
+                                </td>
+                                <td>{{ visit.vet.name }}</td>
+                                <td>{{ visit.diagnosis or '-' }}</td>
+                                <td>{{ visit.treatment or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Photo -->
+        {% if dog.photo %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-camera me-2"></i>
+                    صورة الكلب
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <img src="{{ url_for('main.uploaded_file', filename=dog.photo) }}" 
+                     alt="{{ dog.name }}" class="img-fluid rounded">
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Documents -->
+        {% if dog.birth_certificate %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-pdf me-2"></i>
+                    المستندات
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-file-pdf text-danger me-2"></i>
+                        شهادة الميلاد
+                    </div>
+                    <a href="{{ url_for('main.uploaded_file', filename=dog.birth_certificate) }}" 
+                       target="_blank" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Quick Stats -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    إحصائيات سريعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 border-left">
+                        <h4 class="text-primary">{{ training_sessions|length }}</h4>
+                        <small class="text-muted">جلسات التدريب</small>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-success">{{ vet_visits|length }}</h4>
+                        <small class="text-muted">الزيارات البيطرية</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Breeding Cycles -->
+        {% if breeding_cycles %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-heart me-2"></i>
+                    دورات التكاثر
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for cycle in breeding_cycles %}
+                <div class="border-bottom pb-2 mb-2">
+                    <small class="text-muted">{{ cycle.mating_date.strftime('%Y-%m-%d') }}</small>
+                    <br>
+                    {% if cycle.female_id == dog.id %}
+                        <strong>أم</strong> مع {{ cycle.male.name }}
+                    {% else %}
+                        <strong>أب</strong> مع {{ cycle.female.name }}
+                    {% endif %}
+                    <br>
+                    <span class="badge bg-{{ 'success' if cycle.result.value == 'SUCCESSFUL' else 'warning' if cycle.result.value == 'UNKNOWN' else 'danger' }}">
+                        {% if cycle.result.value == 'SUCCESSFUL' %}نجح{% endif %}
+                        {% if cycle.result.value == 'FAILED' %}فشل{% endif %}
+                        {% if cycle.result.value == 'UNKNOWN' %}غير معروف{% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

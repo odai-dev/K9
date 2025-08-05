@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة تدريب جرو{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-plus me-2"></i>
+                إضافة جلسة تدريب جرو
+            </h1>
+            <a href="{{ url_for('main.puppy_training_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right me-2"></i>
+                العودة إلى القائمة
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-graduation-cap me-2"></i>
+                    معلومات جلسة تدريب الجرو
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="puppy_id" class="form-label">الجرو <span class="text-danger">*</span></label>
+                            <select class="form-select" id="puppy_id" name="puppy_id" required>
+                                <option value="">اختر الجرو</option>
+                                {% for puppy in puppies %}
+                                    <option value="{{ puppy.id }}">
+                                        {{ puppy.name or 'بدون اسم' }} (#{{ puppy.puppy_number }}) - 
+                                        {{ puppy.delivery_record.pregnancy_record.dog.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="trainer_id" class="form-label">المدرب <span class="text-danger">*</span></label>
+                            <select class="form-select" id="trainer_id" name="trainer_id" required>
+                                <option value="">اختر المدرب</option>
+                                {% for trainer in trainers %}
+                                    <option value="{{ trainer.id }}">{{ trainer.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="training_name" class="form-label">اسم التدريب <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="training_name" name="training_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="training_type" class="form-label">نوع التدريب <span class="text-danger">*</span></label>
+                            <select class="form-select" id="training_type" name="training_type" required>
+                                <option value="">اختر نوع التدريب</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.name }}">{{ category.value }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="session_date" class="form-label">تاريخ ووقت الجلسة <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" id="session_date" name="session_date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="duration" class="form-label">المدة (دقائق) <span class="text-danger">*</span></label>
+                            <input type="number" min="1" class="form-control" id="duration" name="duration" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="puppy_age_weeks" class="form-label">عمر الجرو (أسابيع)</label>
+                            <input type="number" min="1" class="form-control" id="puppy_age_weeks" name="puppy_age_weeks">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="developmental_stage" class="form-label">المرحلة التطويرية</label>
+                            <select class="form-select" id="developmental_stage" name="developmental_stage">
+                                <option value="">اختر المرحلة</option>
+                                <option value="مولود حديث (0-2 أسبوع)">مولود حديث (0-2 أسبوع)</option>
+                                <option value="فتح العينين (2-4 أسبوع)">فتح العينين (2-4 أسبوع)</option>
+                                <option value="بداية التنشئة (4-12 أسبوع)">بداية التنشئة (4-12 أسبوع)</option>
+                                <option value="تنشئة اجتماعية (3-6 شهر)">تنشئة اجتماعية (3-6 شهر)</option>
+                                <option value="مراهق (6-18 شهر)">مراهق (6-18 شهر)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="success_rating" class="form-label">تقييم النجاح (1-10) <span class="text-danger">*</span></label>
+                            <input type="number" min="1" max="10" class="form-control" id="success_rating" name="success_rating" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="location" class="form-label">الموقع</label>
+                            <input type="text" class="form-control" id="location" name="location">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="weather_conditions" class="form-label">الظروف الجوية</label>
+                            <input type="text" class="form-control" id="weather_conditions" name="weather_conditions">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="behavior_observations" class="form-label">ملاحظات السلوك</label>
+                            <textarea class="form-control" id="behavior_observations" name="behavior_observations" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="areas_for_improvement" class="form-label">مجالات التحسين</label>
+                            <textarea class="form-control" id="areas_for_improvement" name="areas_for_improvement" rows="3"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">ملاحظات إضافية</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>
+                            حفظ
+                        </button>
+                        <a href="{{ url_for('main.puppy_training_list') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>
+                            إلغاء
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set current datetime as default
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.getElementById('session_date').value = localDateTime;
+});
+</script>
+{% endblock %}

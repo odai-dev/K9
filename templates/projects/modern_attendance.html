@@ -1,0 +1,838 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة الحضور والتعيينات - {{ project.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.attendance-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid #e9ecef;
+}
+
+.attendance-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.attendance-card.present {
+    border-left-color: #28a745;
+    background: linear-gradient(135deg, #f8fff9 0%, #f1f9f2 100%);
+}
+
+.attendance-card.absent {
+    border-left-color: #dc3545;
+    background: linear-gradient(135deg, #fff8f8 0%, #fdf2f2 100%);
+}
+
+.attendance-card.leave {
+    border-left-color: #ffc107;
+    background: linear-gradient(135deg, #fffdf8 0%, #fefaf1 100%);
+}
+
+.quick-action-btn {
+    border-radius: 50px;
+    transition: all 0.2s ease;
+    border: none;
+    padding: 8px 16px;
+    font-weight: 500;
+}
+
+.quick-action-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 8px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.floating-actions {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    z-index: 1000;
+}
+
+.floating-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.floating-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 25px rgba(0,0,0,0.25);
+}
+
+.assignment-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.employee-card {
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.employee-card:hover {
+    border-color: #007bff;
+    transform: translateY(-3px);
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #28a745;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+.search-filter {
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 30px;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.period-selector {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.period-btn {
+    border-radius: 25px;
+    border: 2px solid rgba(255,255,255,0.3);
+    color: white;
+    background: transparent;
+    transition: all 0.3s ease;
+}
+
+.period-btn.active {
+    background: white;
+    color: #667eea;
+    border-color: white;
+}
+
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    border: none;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255,255,255,0.9);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
+                <div>
+                    <h2 class="mb-1 text-primary">
+                        <i class="fas fa-clipboard-user me-2"></i>إدارة الحضور والتعيينات
+                    </h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">الرئيسية</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('main.projects_list') }}">المشاريع</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('main.project_dashboard', project_id=project.id) }}">{{ project.name }}</a></li>
+                            <li class="breadcrumb-item active">الحضور والتعيينات</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('main.project_dashboard', project_id=project.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-chart-line me-2"></i>لوحة التحكم
+                    </a>
+                    <button class="btn btn-success" onclick="showBulkActions()">
+                        <i class="fas fa-tasks me-2"></i>إجراءات جماعية
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Info & Period Selector -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="period-selector">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                    <div>
+                        <h5 class="mb-1">{{ project.name }}</h5>
+                        <p class="mb-0 opacity-75">{{ project.code }} | {{ project.main_task }}</p>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn period-btn active" data-period="MORNING" title="6:00 ص - 2:00 م">
+                            <i class="fas fa-sun me-2"></i>صباحي
+                            <small class="d-block">6ص-2م</small>
+                        </button>
+                        <button class="btn period-btn" data-period="EVENING" title="2:00 م - 10:00 م">
+                            <i class="fas fa-moon me-2"></i>مسائي
+                            <small class="d-block">2م-10م</small>
+                        </button>
+                        <button class="btn period-btn" data-period="NIGHT" title="10:00 م - 6:00 ص">
+                            <i class="fas fa-star me-2"></i>ليلي
+                            <small class="d-block">10م-6ص</small>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stats-card h-100">
+                <div class="card-body text-center">
+                    <h6 class="mb-2">{{ date.today().strftime('%Y-%m-%d') }}</h6>
+                    <div class="row">
+                        <div class="col-4">
+                            <div class="h4 mb-0" id="presentCount">{{ assignments|selectattr('is_present')|list|length }}</div>
+                            <small>حاضر</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h4 mb-0" id="absentCount">{{ assignments|rejectattr('is_present')|list|length }}</div>
+                            <small>غائب</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h4 mb-0" id="totalCount">{{ assignments|length }}</div>
+                            <small>الإجمالي</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="search-filter">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" class="form-control border-start-0" placeholder="البحث في الموظفين..." id="employeeSearch">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex gap-2 justify-content-md-end mt-3 mt-md-0">
+                    <button class="btn btn-outline-primary" onclick="filterByStatus('all')">
+                        <i class="fas fa-users me-2"></i>الكل
+                    </button>
+                    <button class="btn btn-outline-success" onclick="filterByStatus('present')">
+                        <i class="fas fa-user-check me-2"></i>حاضر
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="filterByStatus('absent')">
+                        <i class="fas fa-user-times me-2"></i>غائب
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employee Assignments Grid -->
+    <div class="assignment-grid" id="assignmentGrid">
+        {% for assignment in assignments %}
+        <div class="card employee-card attendance-card {{ 'present' if assignment.is_present else 'absent' }}" 
+             data-employee-id="{{ assignment.employee.id }}" 
+             data-assignment-id="{{ assignment.id }}"
+             data-status="{{ 'present' if assignment.is_present else 'absent' }}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1 text-dark">{{ assignment.employee.name }}</h6>
+                        <small class="text-muted">{{ assignment.employee.employee_id }}</small>
+                        <div class="mt-1 d-flex gap-2 flex-wrap">
+                            <span class="badge bg-{{ 'primary' if assignment.role.value == 'HANDLER' else 'info' if assignment.role.value == 'VET' else 'warning' }}">
+                                {% if assignment.role.value == 'HANDLER' %}سائس{% elif assignment.role.value == 'VET' %}طبيب{% else %}مسؤول مشروع{% endif %}
+                            </span>
+                            <span class="badge bg-secondary">
+                                {% if assignment.period.value == 'MORNING' %}صباحي{% elif assignment.period.value == 'EVENING' %}مسائي{% else %}ليلي{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="status-indicator bg-{{ 'success' if assignment.is_present else 'danger' }}"></div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="toggle-switch">
+                        <input type="checkbox" {{ 'checked' if assignment.is_present else '' }} 
+                               onchange="toggleAttendance('{{ assignment.id }}', this.checked)">
+                        <span class="slider"></span>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="setLeave('{{ assignment.id }}', 'SICK')">
+                                <i class="fas fa-medical me-2"></i>إجازة مرضية
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="setLeave('{{ assignment.id }}', 'PERSONAL')">
+                                <i class="fas fa-user me-2"></i>إجازة شخصية
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="setLeave('{{ assignment.id }}', 'VACATION')">
+                                <i class="fas fa-plane me-2"></i>إجازة اعتيادية
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" onclick="removeAssignment('{{ assignment.id }}')">
+                                <i class="fas fa-trash me-2"></i>إزالة التعيين
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                {% if assignment.leave_type %}
+                <div class="mt-2">
+                    <span class="badge bg-warning text-dark">
+                        <i class="fas fa-calendar-times me-1"></i>
+                        {% if assignment.leave_type.value == 'SICK' %}مرضية
+                        {% elif assignment.leave_type.value == 'PERSONAL' %}شخصية
+                        {% else %}اعتيادية
+                        {% endif %}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Empty State -->
+    {% if not assignments %}
+    <div class="text-center py-5">
+        <div class="avatar-xl bg-light text-muted rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3">
+            <i class="fas fa-users fa-2x"></i>
+        </div>
+        <h5 class="text-muted">لا توجد تعيينات</h5>
+        <p class="text-muted mb-3">لم يتم تعيين أي موظف لهذا المشروع بعد</p>
+        <div class="alert alert-info">
+            <h6><i class="fas fa-lightbulb me-2"></i>كيفية تعيين الموظفين:</h6>
+            <ol class="mb-0">
+                <li>انقر على "إضافة موظف" أدناه</li>
+                <li>اختر الموظف المطلوب من القائمة</li>
+                <li>حدد فترة الحضور (صباحي/مسائي/ليلي)</li>
+                <li>احفظ التعيين</li>
+            </ol>
+        </div>
+        <button class="btn btn-primary" onclick="showAddAssignment()">
+            <i class="fas fa-plus me-2"></i>إضافة موظف
+        </button>
+    </div>
+    {% endif %}
+
+    <!-- Floating Actions -->
+    <div class="floating-actions">
+        <button class="floating-btn btn-primary" onclick="showAddAssignment()" title="إضافة موظف">
+            <i class="fas fa-plus"></i>
+        </button>
+        <button class="floating-btn btn-success" onclick="markAllPresent()" title="تحديد الكل حاضر">
+            <i class="fas fa-check"></i>
+        </button>
+        <button class="floating-btn btn-warning" onclick="generateReport()" title="تقرير الحضور">
+            <i class="fas fa-file-pdf"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Add Assignment Modal -->
+<div class="modal fade" id="addAssignmentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">إضافة موظف جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form onsubmit="addAssignment(event)">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">اختر الموظف *</label>
+                            <select class="form-select" name="employee_id" required>
+                                <option value="">اختر موظف</option>
+                                {% for employee in available_employees %}
+                                <option value="{{ employee.id }}">{{ employee.name }} - {{ employee.employee_id }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">فترة الحضور *</label>
+                            <select class="form-select" name="period" required>
+                                <option value="">اختر فترة الحضور</option>
+                                <option value="MORNING">المجموعة الصباحية (6:00 ص - 2:00 م)</option>
+                                <option value="EVENING">المجموعة المسائية (2:00 م - 10:00 م)</option>
+                                <option value="NIGHT">المجموعة الليلية (10:00 م - 6:00 ص)</option>
+                            </select>
+                            <div class="form-text">يحدد هذا الاختيار فترة عمل الموظف في المشروع</div>
+                        </div>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="is_present" checked>
+                        <label class="form-check-label">حاضر بشكل افتراضي</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">إضافة الموظف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Actions Modal -->
+<div class="modal fade" id="bulkActionsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">إجراءات جماعية</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-success" onclick="bulkMarkPresent()">
+                        <i class="fas fa-check me-2"></i>تحديد جميع الموظفين حاضر
+                    </button>
+                    <button class="btn btn-danger" onclick="bulkMarkAbsent()">
+                        <i class="fas fa-times me-2"></i>تحديد جميع الموظفين غائب
+                    </button>
+                    <button class="btn btn-warning" onclick="bulkSetLeave()">
+                        <i class="fas fa-calendar-times me-2"></i>تطبيق إجازة جماعية
+                    </button>
+                    <hr>
+                    <button class="btn btn-info" onclick="exportToExcel()">
+                        <i class="fas fa-file-excel me-2"></i>تصدير إلى Excel
+                    </button>
+                    <button class="btn btn-primary" onclick="generateDailyReport()">
+                        <i class="fas fa-file-pdf me-2"></i>تقرير يومي
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentPeriod = 'MORNING';
+let currentFilter = 'all';
+
+// Initialize the page
+document.addEventListener('DOMContentLoaded', function() {
+    updateStats();
+    setupSearchFilter();
+    setupPeriodSelector();
+});
+
+// Period selector functionality
+function setupPeriodSelector() {
+    document.querySelectorAll('.period-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentPeriod = this.dataset.period;
+            loadPeriodData();
+        });
+    });
+}
+
+// Load data for selected period
+function loadPeriodData() {
+    showLoading();
+    fetch(`/projects/{{ project.id }}/attendance/period/${currentPeriod}`)
+        .then(response => response.json())
+        .then(data => {
+            updateAssignmentGrid(data.assignments);
+            updateStats();
+        })
+        .catch(error => {
+            console.error('Error loading period data:', error);
+            showNotification('حدث خطأ أثناء تحميل البيانات', 'error');
+        })
+        .finally(() => hideLoading());
+}
+
+// Toggle attendance status
+function toggleAttendance(assignmentId, isPresent) {
+    showLoading();
+    
+    fetch(`/projects/{{ project.id }}/assignments/toggle-attendance`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            assignment_id: assignmentId,
+            is_present: isPresent
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateEmployeeCard(assignmentId, isPresent);
+            updateStats();
+            showNotification(data.message, 'success');
+        } else {
+            throw new Error(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error toggling attendance:', error);
+        showNotification('حدث خطأ أثناء تحديث الحضور', 'error');
+        // Revert the toggle
+        document.querySelector(`[data-assignment-id="${assignmentId}"] input[type="checkbox"]`).checked = !isPresent;
+    })
+    .finally(() => hideLoading());
+}
+
+// Update employee card visual state
+function updateEmployeeCard(assignmentId, isPresent) {
+    const card = document.querySelector(`[data-assignment-id="${assignmentId}"]`);
+    if (card) {
+        card.classList.remove('present', 'absent');
+        card.classList.add(isPresent ? 'present' : 'absent');
+        card.dataset.status = isPresent ? 'present' : 'absent';
+        
+        const statusIndicator = card.querySelector('.status-indicator');
+        statusIndicator.classList.remove('bg-success', 'bg-danger');
+        statusIndicator.classList.add(isPresent ? 'bg-success' : 'bg-danger');
+    }
+}
+
+// Set leave for employee
+function setLeave(assignmentId, leaveType) {
+    showLoading();
+    
+    fetch(`/projects/{{ project.id }}/assignments/set-leave`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            assignment_id: assignmentId,
+            leave_type: leaveType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // Refresh to show leave badge
+            showNotification(data.message, 'success');
+        } else {
+            throw new Error(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error setting leave:', error);
+        showNotification('حدث خطأ أثناء تسجيل الإجازة', 'error');
+    })
+    .finally(() => hideLoading());
+}
+
+// Search functionality
+function setupSearchFilter() {
+    const searchInput = document.getElementById('employeeSearch');
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        filterEmployees(searchTerm);
+    });
+}
+
+function filterEmployees(searchTerm) {
+    const cards = document.querySelectorAll('.employee-card');
+    cards.forEach(card => {
+        const employeeName = card.querySelector('h6').textContent.toLowerCase();
+        const employeeId = card.querySelector('small').textContent.toLowerCase();
+        
+        if (employeeName.includes(searchTerm) || employeeId.includes(searchTerm)) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+// Filter by status
+function filterByStatus(status) {
+    currentFilter = status;
+    const cards = document.querySelectorAll('.employee-card');
+    
+    cards.forEach(card => {
+        if (status === 'all') {
+            card.style.display = 'block';
+        } else {
+            if (card.dataset.status === status) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        }
+    });
+}
+
+// Update statistics
+function updateStats() {
+    const visibleCards = document.querySelectorAll('.employee-card[style*="display: block"], .employee-card:not([style*="display: none"])');
+    const presentCount = document.querySelectorAll('.employee-card.present').length;
+    const absentCount = document.querySelectorAll('.employee-card.absent').length;
+    const totalCount = document.querySelectorAll('.employee-card').length;
+    
+    document.getElementById('presentCount').textContent = presentCount;
+    document.getElementById('absentCount').textContent = absentCount;
+    document.getElementById('totalCount').textContent = totalCount;
+}
+
+// Show/hide loading
+function showLoading() {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+// Show notifications
+function showNotification(message, type = 'info') {
+    // Create a toast notification
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'error' ? 'danger' : type} position-fixed`;
+    toast.style.cssText = 'top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : 'info'}-circle me-2"></i>
+            ${message}
+            <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.remove();
+        }
+    }, 5000);
+}
+
+// Modal functions
+function showAddAssignment() {
+    new bootstrap.Modal(document.getElementById('addAssignmentModal')).show();
+}
+
+function showBulkActions() {
+    new bootstrap.Modal(document.getElementById('bulkActionsModal')).show();
+}
+
+// Add assignment form
+function addAssignment(event) {
+    event.preventDefault();
+    showLoading();
+    
+    const formData = new FormData(event.target);
+    
+    fetch(`/projects/{{ project.id }}/assignments/add`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+            showNotification(data.message, 'success');
+        } else {
+            throw new Error(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error adding assignment:', error);
+        showNotification('حدث خطأ أثناء إضافة الموظف', 'error');
+    })
+    .finally(() => hideLoading());
+}
+
+// Bulk operations
+function markAllPresent() {
+    if (confirm('هل تريد تحديد جميع الموظفين كحاضرين؟')) {
+        bulkUpdateAttendance(true);
+    }
+}
+
+function bulkMarkPresent() {
+    bulkUpdateAttendance(true);
+}
+
+function bulkMarkAbsent() {
+    bulkUpdateAttendance(false);
+}
+
+function bulkUpdateAttendance(isPresent) {
+    showLoading();
+    
+    fetch(`/projects/{{ project.id }}/assignments/bulk-attendance`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            is_present: isPresent,
+            period: currentPeriod
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+            showNotification(data.message, 'success');
+        } else {
+            throw new Error(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error bulk updating attendance:', error);
+        showNotification('حدث خطأ أثناء التحديث الجماعي', 'error');
+    })
+    .finally(() => hideLoading());
+}
+
+// Report generation
+function generateReport() {
+    window.open(`/projects/{{ project.id }}/attendance/report?period=${currentPeriod}&date={{ date.today() }}`, '_blank');
+}
+
+function generateDailyReport() {
+    window.open(`/projects/{{ project.id }}/attendance/daily-report?date={{ date.today() }}`, '_blank');
+}
+
+function exportToExcel() {
+    window.open(`/projects/{{ project.id }}/attendance/export?period=${currentPeriod}&date={{ date.today() }}`, '_blank');
+}
+
+// Remove assignment
+function removeAssignment(assignmentId) {
+    if (confirm('هل تريد إزالة هذا التعيين؟')) {
+        showLoading();
+        
+        fetch(`/projects/{{ project.id }}/assignments/remove`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                assignment_id: assignmentId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.querySelector(`[data-assignment-id="${assignmentId}"]`).remove();
+                updateStats();
+                showNotification(data.message, 'success');
+            } else {
+                throw new Error(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error removing assignment:', error);
+            showNotification('حدث خطأ أثناء إزالة التعيين', 'error');
+        })
+        .finally(() => hideLoading());
+    }
+}
+</script>
+{% endblock %}

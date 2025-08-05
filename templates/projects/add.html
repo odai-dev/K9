@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة مشروع جديد{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-plus me-2"></i>
+                إضافة مشروع جديد
+            </h1>
+            <a href="{{ url_for('main.projects_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right me-2"></i>
+                العودة إلى القائمة
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-project-diagram me-2"></i>
+                    معلومات المشروع
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <!-- Basic Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">المعلومات الأساسية</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">اسم المشروع <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="code" class="form-label">كود المشروع <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="code" name="code" required>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="main_task" class="form-label">المهمة الأساسية</label>
+                            <input type="text" class="form-control" id="main_task" name="main_task" 
+                                   placeholder="اكتب المهمة الأساسية للمشروع...">
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="description" class="form-label">وصف المشروع</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" 
+                                      placeholder="اكتب وصفاً مفصلاً للمشروع وأهدافه..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Mission Details -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">تفاصيل المهمة</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="location" class="form-label">الموقع</label>
+                            <input type="text" class="form-control" id="location" name="location">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="mission_type" class="form-label">نوع المهمة</label>
+                            <select class="form-select" id="mission_type" name="mission_type">
+                                <option value="">اختر نوع المهمة</option>
+                                <option value="كشف المتفجرات">كشف المتفجرات</option>
+                                <option value="كشف المخدرات">كشف المخدرات</option>
+                                <option value="الحراسة الأمنية">الحراسة الأمنية</option>
+                                <option value="التتبع والبحث">التتبع والبحث</option>
+                                <option value="الإنقاذ">الإنقاذ</option>
+                                <option value="التدريب">التدريب</option>
+                                <option value="العمليات الخاصة">العمليات الخاصة</option>
+                                <option value="الدوريات">الدوريات</option>
+                                <option value="أخرى">أخرى</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="priority" class="form-label">الأولوية</label>
+                            <select class="form-select" id="priority" name="priority">
+                                <option value="LOW">منخفضة</option>
+                                <option value="MEDIUM" selected>متوسطة</option>
+                                <option value="HIGH">عالية</option>
+                                <option value="CRITICAL">حرجة</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Project Manager Assignment -->
+                    {% if managers %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">مدير المشروع</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="manager_id" class="form-label">مدير المشروع المسؤول</label>
+                            <select class="form-select" id="manager_id" name="manager_id">
+                                <option value="">اختر مدير المشروع</option>
+                                {% for manager in managers %}
+                                    <option value="{{ manager.id }}">
+                                        {{ manager.full_name }} ({{ manager.username }})
+                                        {% if manager.email %} - {{ manager.email }}{% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Employee Assignment -->
+                    {% if employees %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">تعيين الموظفين</h6>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label class="form-label">الموظفين المكلفين بالمشروع</label>
+                            <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                {% for employee in employees %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="{{ employee.id }}" 
+                                           id="employee_{{ employee.id }}" name="employee_ids">
+                                    <label class="form-check-label" for="employee_{{ employee.id }}">
+                                        <strong>{{ employee.name }}</strong> - {{ employee.role.value }}
+                                        <br><small class="text-muted">{{ employee.employee_id }}</small>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <small class="form-text text-muted">اختر الموظفين الذين سيعملون في هذا المشروع</small>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Dog Assignment -->
+                    {% if dogs %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">تعيين الكلاب</h6>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label class="form-label">الكلاب المشاركة في المشروع</label>
+                            <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                {% for dog in dogs %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="{{ dog.id }}" 
+                                           id="dog_{{ dog.id }}" name="dog_ids">
+                                    <label class="form-check-label" for="dog_{{ dog.id }}">
+                                        <strong>{{ dog.name }}</strong> 
+                                        {% if dog.gender.name == 'MALE' %}
+                                            <i class="fas fa-mars text-primary"></i>
+                                        {% else %}
+                                            <i class="fas fa-venus text-pink"></i>
+                                        {% endif %}
+                                        - {{ dog.breed }}
+                                        <br><small class="text-muted">{{ dog.code }} | العمر: {{ dog.age_years }} سنوات</small>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <small class="form-text text-muted">اختر الكلاب التي ستشارك في هذا المشروع</small>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Timeline -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">الجدولة الزمنية</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="start_date" class="form-label">تاريخ البداية</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="expected_completion_date" class="form-label">تاريخ الانتهاء المتوقع</label>
+                            <input type="date" class="form-control" id="expected_completion_date" name="expected_completion_date">
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>
+                                    حفظ
+                                </button>
+                                <a href="{{ url_for('main.projects_list') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>
+                                    إلغاء
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const startDateInput = document.getElementById('start_date');
+    const expectedCompletionInput = document.getElementById('expected_completion_date');
+    
+    // Set today as default start date
+    const today = new Date().toISOString().split('T')[0];
+    startDateInput.value = today;
+    startDateInput.min = today;
+    
+    // Ensure completion date is after start date
+    startDateInput.addEventListener('change', function() {
+        if (this.value) {
+            expectedCompletionInput.min = this.value;
+            if (expectedCompletionInput.value && expectedCompletionInput.value < this.value) {
+                expectedCompletionInput.value = '';
+            }
+        }
+    });
+    
+    expectedCompletionInput.addEventListener('change', function() {
+        if (this.value && startDateInput.value) {
+            if (new Date(this.value) < new Date(startDateInput.value)) {
+                alert('تاريخ الانتهاء يجب أن يكون بعد تاريخ البداية');
+                this.value = '';
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

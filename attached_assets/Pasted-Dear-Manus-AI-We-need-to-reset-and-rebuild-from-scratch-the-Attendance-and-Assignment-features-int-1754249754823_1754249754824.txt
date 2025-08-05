@@ -1,0 +1,150 @@
+Dear Manus AI,
+
+We need to reset and rebuild from scratch the Attendance and Assignment features into one unified, modern Attendance Module. The current two-page approach is confusing and buggy. Follow these instructions precisely:
+
+1. Data Model Reset
+Remove all existing ProjectAssignment and standalone Attendance models.
+
+Create a single AssignmentAttendance model:
+
+python
+Copy
+Edit
+class AssignmentAttendance(models.Model):
+    project       = models.ForeignKey(Project, on_delete=models.CASCADE)
+    employee      = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    dog           = models.ForeignKey(Dog, on_delete=models.CASCADE, null=True, blank=True)
+    date          = models.DateField()
+    period        = models.CharField(max_length=10,
+                       choices=[('MORNING','صباحي'),
+                                ('EVENING','مسائي'),
+                                ('NIGHT','ليلي')])
+    status        = models.CharField(max_length=10,
+                       choices=[('PRESENT','حاضر'),
+                                ('ABSENT','غائب'),
+                                ('LEAVE','إجازة')])
+    leave_type    = models.CharField(max_length=10, blank=True,
+                       choices=[('ANNUAL','سنوي'),
+                                ('OFFICIAL','رسمي'),
+                                ('EMERGENCY','طارئ')])
+    timestamp     = models.DateTimeField(auto_now_add=True)
+Notes:
+
+dog field optional for cases where attendance applies to a dog being “on duty.”
+
+status='LEAVE' must require a non-empty leave_type.
+
+2. API Endpoints
+Implement RESTful endpoints under /api/attendance/:
+
+Method	Endpoint	Description	Permissions
+GET	/api/attendance/?project={id}	List assignments & attendance for a project	Admin, Project Mgr
+POST	/api/attendance/	Create or update a single record	Admin, Project Mgr
+PUT	/api/attendance/{id}/	Modify existing attendance record	Admin, Project Mgr
+DELETE	/api/attendance/{id}/	Remove an erroneous record	Admin only
+POST	/api/attendance/bulk/	Bulk import attendance for a date & period	Admin, Project Mgr
+
+Validation:
+
+On bulk, reject if any record has missing status or inconsistent leave_type.
+
+Ensure no duplicate (project, employee, date, period) combos.
+
+3. Frontend UI
+3.1 Unified Attendance Page
+jsx
+Copy
+Edit
+// AttendancePage.jsx
+function AttendancePage({ projectId }) {
+  const [records, setRecords] = useState([]);
+  const [date, setDate]       = useState(today());
+  const [period, setPeriod]   = useState('MORNING');
+
+  // Fetch existing records:
+  useEffect(() => {
+    fetch(`/api/attendance/?project=${projectId}&date=${date}&period=${period}`)
+      .then(res => res.json())
+      .then(setRecords);
+  }, [date, period]);
+
+  return (
+    <Page>
+      <PageHeader title="الحضور والغياب" />
+      <FormRow>
+        <DateField label="التاريخ" value={date} onChange={setDate}/>
+        <SelectField
+          label="الفترة"
+          options={[{value:'MORNING',label:'صباحي'},{value:'EVENING',label:'مسائي'},{value:'NIGHT',label:'ليلي'}]}
+          value={period}
+          onChange={setPeriod}
+        />
+      </FormRow>
+      <AttendanceTable
+        records={records}
+        onChange={record => updateAttendance(record)}
+      />
+      <Button onClick={() => bulkImport(records)}>تحميل جماعي</Button>
+    </Page>
+  );
+}
+3.2 AttendanceTable Component
+jsx
+Copy
+Edit
+function AttendanceTable({ records, onChange }) {
+  return (
+    <Table>
+      <Table.Header columns={['الموظف/الكلب','حالة','نوع الإجازة']} />
+      {records.map(r => (
+        <Table.Row key={r.id}>
+          <Table.Cell>{r.employee?.name || r.dog?.name}</Table.Cell>
+          <Table.Cell>
+            <SelectField
+              value={r.status}
+              options={[{value:'PRESENT',label:'حاضر'},{value:'ABSENT',label:'غائب'},{value:'LEAVE',label:'إجازة'}]}
+              onChange={status => onChange({...r, status})}
+            />
+          </Table.Cell>
+          <Table.Cell>
+            {r.status==='LEAVE' && (
+              <SelectField
+                value={r.leave_type}
+                options={[{value:'ANNUAL',label:'إجازة سنوية'},{value:'OFFICIAL',label:'إجازة رسمية'},{value:'EMERGENCY',label:'إجازة طارئة'}]}
+                onChange={leave_type => onChange({...r, leave_type})}
+              />
+            )}
+          </Table.Cell>
+        </Table.Row>
+      ))}
+    </Table>
+  );
+}
+4. Workflows & Behavior
+Load Records
+‣ On date/period change, fetch existing records.
+
+Edit Single Row
+‣ Changing “status” immediately triggers a PATCH to /api/attendance/{id}/.
+‣ If status=LEAVE, require selecting leave_type.
+
+Bulk Import
+‣ User can download a CSV template, fill in morning/evening/night attendance, then upload via /bulk/.
+
+Validation
+‣ Frontend validates required fields before sending.
+‣ Backend enforces no duplicates and valid leave_type.
+
+5. Expected Outcomes
+A single page where Project Managers can:
+
+Choose project, date, and period.
+
+See all assigned staff and dogs in one table.
+
+Mark Present, Absent, or Leave, selecting leave type when needed.
+
+Real-time updates with immediate feedback (optimistic UI).
+
+Clear error messages if any record fails validation.
+

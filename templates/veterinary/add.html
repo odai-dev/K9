@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}إضافة زيارة بيطرية{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-plus me-2"></i>
+                إضافة زيارة بيطرية
+            </h1>
+            <a href="{{ url_for('main.veterinary_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right me-2"></i>
+                العودة إلى القائمة
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-stethoscope me-2"></i>
+                    معلومات الزيارة البيطرية
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <!-- Basic Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">المعلومات الأساسية</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="dog_id" class="form-label">الكلب <span class="text-danger">*</span></label>
+                            <select class="form-select" id="dog_id" name="dog_id" required>
+                                <option value="">اختر الكلب</option>
+                                {% for dog in dogs %}
+                                    <option value="{{ dog.id }}">{{ dog.name }} ({{ dog.code }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="vet_id" class="form-label">الطبيب البيطري <span class="text-danger">*</span></label>
+                            <select class="form-select" id="vet_id" name="vet_id" required>
+                                <option value="">اختر الطبيب</option>
+                                {% for vet in vets %}
+                                    <option value="{{ vet.id }}">{{ vet.name }} ({{ vet.employee_id }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="visit_type" class="form-label">نوع الزيارة <span class="text-danger">*</span></label>
+                            <select class="form-select" id="visit_type" name="visit_type" required>
+                                <option value="">اختر نوع الزيارة</option>
+                                {% for visit_type in visit_types %}
+                                    <option value="{{ visit_type.value }}">
+                                        {% if visit_type.value == 'ROUTINE' %}فحص روتيني
+                                        {% elif visit_type.value == 'EMERGENCY' %}حالة طارئة
+                                        {% elif visit_type.value == 'VACCINATION' %}تطعيم
+                                        {% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="visit_date" class="form-label">تاريخ ووقت الزيارة <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" id="visit_date" name="visit_date" required>
+                        </div>
+                    </div>
+
+                    <!-- Physical Examination -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">الفحص الجسدي</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="weight" class="form-label">الوزن (كيلو)</label>
+                            <input type="number" step="0.1" class="form-control" id="weight" name="weight">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="temperature" class="form-label">درجة الحرارة (مئوية)</label>
+                            <input type="number" step="0.1" class="form-control" id="temperature" name="temperature">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="heart_rate" class="form-label">نبضات القلب (نبضة/دقيقة)</label>
+                            <input type="number" class="form-control" id="heart_rate" name="heart_rate">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="blood_pressure" class="form-label">ضغط الدم</label>
+                            <input type="text" class="form-control" id="blood_pressure" name="blood_pressure" placeholder="مثال: 120/80">
+                        </div>
+                    </div>
+
+                    <!-- Health Assessment -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">التقييم الصحي</h6>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="symptoms" class="form-label">الأعراض</label>
+                            <textarea class="form-control" id="symptoms" name="symptoms" rows="3" 
+                                      placeholder="اكتب الأعراض التي يعاني منها الكلب..."></textarea>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="diagnosis" class="form-label">التشخيص</label>
+                            <textarea class="form-control" id="diagnosis" name="diagnosis" rows="3" 
+                                      placeholder="اكتب التشخيص الطبي..."></textarea>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="treatment" class="form-label">العلاج</label>
+                            <textarea class="form-control" id="treatment" name="treatment" rows="3" 
+                                      placeholder="اكتب خطة العلاج والإجراءات المتخذة..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Stool and Urine Analysis -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">تحليل البراز والبول</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="stool_color" class="form-label">لون البراز</label>
+                            <select class="form-select" id="stool_color" name="stool_color">
+                                <option value="">اختر اللون</option>
+                                <option value="بني">بني</option>
+                                <option value="أسود">أسود</option>
+                                <option value="أخضر">أخضر</option>
+                                <option value="أصفر">أصفر</option>
+                                <option value="أبيض">أبيض</option>
+                                <option value="أحمر">أحمر</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="stool_consistency" class="form-label">قوام البراز</label>
+                            <select class="form-select" id="stool_consistency" name="stool_consistency">
+                                <option value="">اختر القوام</option>
+                                <option value="طبيعي">طبيعي</option>
+                                <option value="صلب">صلب</option>
+                                <option value="رخو">رخو</option>
+                                <option value="مائي">مائي</option>
+                                <option value="دموي">دموي</option>
+                                <option value="مخاطي">مخاطي</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="urine_color" class="form-label">لون البول</label>
+                            <select class="form-select" id="urine_color" name="urine_color">
+                                <option value="">اختر اللون</option>
+                                <option value="أصفر فاتح">أصفر فاتح</option>
+                                <option value="أصفر">أصفر</option>
+                                <option value="أصفر داكن">أصفر داكن</option>
+                                <option value="برتقالي">برتقالي</option>
+                                <option value="أحمر">أحمر</option>
+                                <option value="بني">بني</option>
+                                <option value="عكر">عكر</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Additional Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">معلومات إضافية</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="next_visit_date" class="form-label">تاريخ الزيارة القادمة</label>
+                            <input type="date" class="form-control" id="next_visit_date" name="next_visit_date">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="cost" class="form-label">تكلفة الزيارة (ريال)</label>
+                            <input type="number" step="0.01" class="form-control" id="cost" name="cost">
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="notes" class="form-label">ملاحظات إضافية</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                      placeholder="أي ملاحظات إضافية حول الزيارة..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>
+                                    حفظ
+                                </button>
+                                <a href="{{ url_for('main.veterinary_list') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>
+                                    إلغاء
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set current datetime as default
+    const visitDateInput = document.getElementById('visit_date');
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    visitDateInput.value = now.toISOString().slice(0, 16);
+    
+    // Set max datetime to now
+    visitDateInput.max = now.toISOString().slice(0, 16);
+    
+    // Set min date for next visit to today
+    const nextVisitDateInput = document.getElementById('next_visit_date');
+    const today = new Date().toISOString().split('T')[0];
+    nextVisitDateInput.min = today;
+    
+    // Pre-select dog if provided in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const dogId = urlParams.get('dog_id');
+    if (dogId) {
+        document.getElementById('dog_id').value = dogId;
+    }
+});
+</script>
+{% endblock %}

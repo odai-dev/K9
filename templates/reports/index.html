@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+
+{% block title %}التقارير{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-chart-bar me-2"></i>
+            التقارير والإحصائيات
+        </h1>
+    </div>
+</div>
+
+<!-- Report Generation Cards -->
+<div class="row">
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="report-card">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="report-icon mb-3">
+                        <i class="fas fa-dog fa-3x text-primary"></i>
+                    </div>
+                    <h5 class="card-title">تقرير الكلاب</h5>
+                    <p class="card-text">تقرير شامل بجميع معلومات الكلاب المسجلة في النظام</p>
+                    <button class="btn btn-primary" onclick="generateReport('dogs')">
+                        <i class="fas fa-download me-2"></i>
+                        إنشاء تقرير
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="report-card">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="report-icon mb-3">
+                        <i class="fas fa-users fa-3x text-success"></i>
+                    </div>
+                    <h5 class="card-title">تقرير الموظفين</h5>
+                    <p class="card-text">قائمة شاملة بجميع الموظفين ومعلوماتهم الوظيفية</p>
+                    <button class="btn btn-success" onclick="generateReport('employees')">
+                        <i class="fas fa-download me-2"></i>
+                        إنشاء تقرير
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="report-card">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="report-icon mb-3">
+                        <i class="fas fa-dumbbell fa-3x text-warning"></i>
+                    </div>
+                    <h5 class="card-title">تقرير التدريب</h5>
+                    <p class="card-text">إحصائيات جلسات التدريب وتقييم الأداء</p>
+                    <button class="btn btn-warning" onclick="showDateRangeModal('training')">
+                        <i class="fas fa-download me-2"></i>
+                        إنشاء تقرير
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="report-card">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="report-icon mb-3">
+                        <i class="fas fa-stethoscope fa-3x text-info"></i>
+                    </div>
+                    <h5 class="card-title">تقرير الطبابة</h5>
+                    <p class="card-text">سجل الزيارات البيطرية والفحوصات الطبية</p>
+                    <button class="btn btn-info" onclick="showDateRangeModal('veterinary')">
+                        <i class="fas fa-download me-2"></i>
+                        إنشاء تقرير
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="report-card">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="report-icon mb-3">
+                        <i class="fas fa-heart fa-3x text-danger"></i>
+                    </div>
+                    <h5 class="card-title">تقرير التكاثر</h5>
+                    <p class="card-text">إحصائيات دورات التكاثر والجراء المولودة</p>
+                    <button class="btn btn-danger" onclick="showDateRangeModal('breeding')">
+                        <i class="fas fa-download me-2"></i>
+                        إنشاء تقرير
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="report-card">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="report-icon mb-3">
+                        <i class="fas fa-clock fa-3x text-secondary"></i>
+                    </div>
+                    <h5 class="card-title">تقرير الحضور والغياب</h5>
+                    <p class="card-text">إحصائيات حضور وغياب الموظفين</p>
+                    <button class="btn btn-secondary" onclick="showDateRangeModal('attendance')">
+                        <i class="fas fa-download me-2"></i>
+                        إنشاء تقرير
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Statistics -->
+<div class="row mt-5">
+    <div class="col-12">
+        <h3 class="mb-4">
+            <i class="fas fa-chart-pie me-2"></i>
+            إحصائيات سريعة
+        </h3>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card bg-primary">
+            <div class="card-body text-white text-center">
+                <i class="fas fa-dog fa-2x mb-2"></i>
+                <h4>{{ stats.total_dogs or 0 }}</h4>
+                <p class="mb-0">إجمالي الكلاب</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stat-card bg-success">
+            <div class="card-body text-white text-center">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <h4>{{ stats.total_employees or 0 }}</h4>
+                <p class="mb-0">إجمالي الموظفين</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stat-card bg-warning">
+            <div class="card-body text-white text-center">
+                <i class="fas fa-dumbbell fa-2x mb-2"></i>
+                <h4>{{ stats.total_training_sessions or 0 }}</h4>
+                <p class="mb-0">جلسات التدريب</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stat-card bg-info">
+            <div class="card-body text-white text-center">
+                <i class="fas fa-stethoscope fa-2x mb-2"></i>
+                <h4>{{ stats.total_vet_visits or 0 }}</h4>
+                <p class="mb-0">الزيارات البيطرية</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Date Range Modal -->
+<div class="modal fade" id="dateRangeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">اختر الفترة الزمنية</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="reportForm" method="POST" action="{{ url_for('main.reports_generate') }}">
+                <div class="modal-body">
+                    <input type="hidden" id="reportType" name="report_type">
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="startDate" class="form-label">من تاريخ</label>
+                            <input type="date" class="form-control" id="startDate" name="start_date">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="endDate" class="form-label">إلى تاريخ</label>
+                            <input type="date" class="form-control" id="endDate" name="end_date">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="btn-group w-100" role="group">
+                                <button type="button" class="btn btn-outline-primary" onclick="setDateRange('today')">اليوم</button>
+                                <button type="button" class="btn btn-outline-primary" onclick="setDateRange('week')">هذا الأسبوع</button>
+                                <button type="button" class="btn btn-outline-primary" onclick="setDateRange('month')">هذا الشهر</button>
+                                <button type="button" class="btn btn-outline-primary" onclick="setDateRange('year')">هذا العام</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-download me-2"></i>
+                        إنشاء التقرير
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">جاري التحميل...</span>
+                </div>
+                <p class="mb-0">جاري إنشاء التقرير...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentReportType = '';
+
+function generateReport(reportType) {
+    if (reportType === 'dogs' || reportType === 'employees') {
+        // Generate immediate report
+        showLoadingModal();
+        
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("main.reports_generate") }}';
+        
+        const reportTypeInput = document.createElement('input');
+        reportTypeInput.type = 'hidden';
+        reportTypeInput.name = 'report_type';
+        reportTypeInput.value = reportType;
+        
+        form.appendChild(reportTypeInput);
+        document.body.appendChild(form);
+        form.submit();
+        
+        setTimeout(() => {
+            hideLoadingModal();
+            document.body.removeChild(form);
+        }, 2000);
+    } else {
+        showDateRangeModal(reportType);
+    }
+}
+
+function showDateRangeModal(reportType) {
+    currentReportType = reportType;
+    document.getElementById('reportType').value = reportType;
+    
+    // Set default dates (last 30 days)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
+    
+    document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+    document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+    
+    const modal = new bootstrap.Modal(document.getElementById('dateRangeModal'));
+    modal.show();
+}
+
+function setDateRange(period) {
+    const today = new Date();
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    
+    endDateInput.value = today.toISOString().split('T')[0];
+    
+    switch(period) {
+        case 'today':
+            startDateInput.value = today.toISOString().split('T')[0];
+            break;
+        case 'week':
+            const weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - 7);
+            startDateInput.value = weekStart.toISOString().split('T')[0];
+            break;
+        case 'month':
+            const monthStart = new Date(today);
+            monthStart.setDate(today.getDate() - 30);
+            startDateInput.value = monthStart.toISOString().split('T')[0];
+            break;
+        case 'year':
+            const yearStart = new Date(today);
+            yearStart.setFullYear(today.getFullYear() - 1);
+            startDateInput.value = yearStart.toISOString().split('T')[0];
+            break;
+    }
+}
+
+function showLoadingModal() {
+    const modal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    modal.show();
+}
+
+function hideLoadingModal() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('loadingModal'));
+    if (modal) {
+        modal.hide();
+    }
+}
+
+// Handle form submission
+document.getElementById('reportForm').addEventListener('submit', function(e) {
+    showLoadingModal();
+    
+    setTimeout(() => {
+        hideLoadingModal();
+        const modal = bootstrap.Modal.getInstance(document.getElementById('dateRangeModal'));
+        if (modal) {
+            modal.hide();
+        }
+    }, 2000);
+});
+
+// Validate date range
+document.getElementById('startDate').addEventListener('change', function() {
+    const endDateInput = document.getElementById('endDate');
+    if (this.value) {
+        endDateInput.min = this.value;
+        if (endDateInput.value && endDateInput.value < this.value) {
+            endDateInput.value = this.value;
+        }
+    }
+});
+
+document.getElementById('endDate').addEventListener('change', function() {
+    const startDateInput = document.getElementById('startDate');
+    if (this.value && startDateInput.value) {
+        if (new Date(this.value) < new Date(startDateInput.value)) {
+            alert('تاريخ النهاية يجب أن يكون بعد تاريخ البداية');
+            this.value = '';
+        }
+    }
+});
+</script>
+
+<style>
+.report-card .card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.report-card .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.report-icon {
+    opacity: 0.8;
+}
+
+.stat-card {
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+}
+
+.stat-card .card-body h4 {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+.btn-group .btn {
+    flex: 1;
+}
+
+.modal-body .btn-group {
+    margin-top: 1rem;
+}
+</style>
+{% endblock %}

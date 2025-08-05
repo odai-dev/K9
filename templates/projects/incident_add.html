@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}تسجيل حادث جديد - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h4>تسجيل حادث جديد للمشروع: {{ project.name }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">اسم الحادث *</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="incident_type" class="form-label">نوع الحادث *</label>
+                                    <input type="text" class="form-control" id="incident_type" name="incident_type" required 
+                                           placeholder="حادث سير، إصابة، فقدان، إلخ">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="incident_date" class="form-label">التاريخ *</label>
+                                    <input type="date" class="form-control" id="incident_date" name="incident_date" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="incident_time" class="form-label">الوقت *</label>
+                                    <input type="time" class="form-control" id="incident_time" name="incident_time" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="severity" class="form-label">مستوى الخطورة</label>
+                                    <select class="form-select" id="severity" name="severity">
+                                        <option value="LOW">منخفضة</option>
+                                        <option value="MEDIUM" selected>متوسطة</option>
+                                        <option value="HIGH">عالية</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="location" class="form-label">الموقع</label>
+                                    <input type="text" class="form-control" id="location" name="location">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="reported_by" class="form-label">المُبلغ</label>
+                                    <select class="form-select" id="reported_by" name="reported_by">
+                                        <option value="">اختر الموظف المُبلغ</option>
+                                        {% for employee in employees %}
+                                        <option value="{{ employee.id }}">{{ employee.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="people_involved" class="form-label">الأشخاص المتورطون</label>
+                                    <select class="form-select" id="people_involved" name="people_involved" multiple>
+                                        {% for employee in employees %}
+                                        <option value="{{ employee.id }}">{{ employee.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">يمكن اختيار أكثر من شخص</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="dogs_involved" class="form-label">الكلاب المتورطة</label>
+                                    <select class="form-select" id="dogs_involved" name="dogs_involved" multiple>
+                                        {% for dog in dogs %}
+                                        <option value="{{ dog.id }}">{{ dog.name }} ({{ dog.code }})</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">يمكن اختيار أكثر من كلب</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">وصف الحادث</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" 
+                                      placeholder="اكتب وصفاً مفصلاً للحادث"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="witness_statements" class="form-label">شهادات الشهود</label>
+                            <textarea class="form-control" id="witness_statements" name="witness_statements" rows="3" 
+                                      placeholder="اكتب شهادات الشهود إن وجدت"></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="resolved" name="resolved">
+                                        <label class="form-check-label" for="resolved">
+                                            تم حل الحادث
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="resolution_date" class="form-label">تاريخ الحل</label>
+                                    <input type="date" class="form-control" id="resolution_date" name="resolution_date">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="resolution_notes" class="form-label">ملاحظات الحل</label>
+                            <textarea class="form-control" id="resolution_notes" name="resolution_notes" rows="3" 
+                                      placeholder="اكتب كيف تم حل الحادث"></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('main.project_incidents', project_id=project.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-right"></i> إلغاء
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-save"></i> تسجيل الحادث
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

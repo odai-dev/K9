@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}دورات الحرارة{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-thermometer-half me-2"></i>
+                دورات الحرارة
+            </h1>
+            <div class="btn-group">
+                <a href="{{ url_for('main.breeding_index') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة للإنتاج
+                </a>
+                <a href="{{ url_for('main.heat_cycles_add') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    تسجيل دورة جديدة
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if cycles %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>الكلب</th>
+                                <th>رقم الدورة</th>
+                                <th>تاريخ البداية</th>
+                                <th>تاريخ النهاية</th>
+                                <th>المدة</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cycle in cycles %}
+                            <tr>
+                                <td>
+                                    <strong>{{ cycle.dog.name }}</strong><br>
+                                    <small class="text-muted">{{ cycle.dog.code }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">الدورة #{{ cycle.cycle_number }}</span>
+                                </td>
+                                <td>{{ cycle.start_date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ cycle.end_date.strftime('%Y-%m-%d') if cycle.end_date else '-' }}</td>
+                                <td>{{ cycle.duration_days if cycle.duration_days else '-' }} يوم</td>
+                                <td>
+                                    {% if cycle.status %}
+                                        {% if cycle.status.name == 'PRE_HEAT' %}
+                                            <span class="badge bg-warning">ما قبل الحرارة</span>
+                                        {% elif cycle.status.name == 'IN_HEAT' %}
+                                            <span class="badge bg-danger">في الحرارة</span>
+                                        {% else %}
+                                            <span class="badge bg-success">بعد الحرارة</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary">غير محدد</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="#" class="btn btn-sm btn-outline-primary">عرض</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-thermometer-half fa-5x text-muted mb-3"></i>
+    <h3 class="text-muted">لا توجد دورات حرارة مسجلة</h3>
+    <p class="text-muted">ابدأ بتسجيل دورات الحرارة للإناث</p>
+    <a href="{{ url_for('main.heat_cycles_add') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>
+        تسجيل دورة جديدة
+    </a>
+</div>
+{% endif %}
+{% endblock %}

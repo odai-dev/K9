@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}سجلات الحمل{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-baby me-2"></i>
+                سجلات الحمل
+            </h1>
+            <div class="btn-group">
+                <a href="{{ url_for('main.breeding_index') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة للإنتاج
+                </a>
+                <a href="{{ url_for('main.pregnancy_add') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    تسجيل حمل جديد
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if pregnancies %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>الكلب</th>
+                                <th>تاريخ تأكيد الحمل</th>
+                                <th>تاريخ الولادة المتوقع</th>
+                                <th>الحالة</th>
+                                <th>الأب</th>
+                                <th>الأسبوع</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pregnancy in pregnancies %}
+                            <tr>
+                                <td>
+                                    <strong>{{ pregnancy.dog.name }}</strong><br>
+                                    <small class="text-muted">{{ pregnancy.dog.code }}</small>
+                                </td>
+                                <td>{{ pregnancy.confirmed_date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ pregnancy.expected_delivery_date.strftime('%Y-%m-%d') if pregnancy.expected_delivery_date else '-' }}</td>
+                                <td>
+                                    {% if pregnancy.status.name == 'PREGNANT' %}
+                                        <span class="badge bg-warning">حامل</span>
+                                    {% elif pregnancy.status.name == 'DELIVERED' %}
+                                        <span class="badge bg-success">تمت الولادة</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">فقدان الحمل</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ pregnancy.mating_record.male.name if pregnancy.mating_record else '-' }}</td>
+                                <td>
+                                    {% if pregnancy.status.name == 'PREGNANT' and pregnancy.confirmed_date %}
+                                        {% set weeks = ((pregnancy.confirmed_date - pregnancy.confirmed_date).days // 7) + 1 %}
+                                        الأسبوع {{ weeks }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="#" class="btn btn-sm btn-outline-primary">عرض</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-baby fa-5x text-muted mb-3"></i>
+    <h3 class="text-muted">لا توجد سجلات حمل</h3>
+    <p class="text-muted">ابدأ بتسجيل حالات الحمل بعد التزاوج</p>
+    <a href="{{ url_for('main.pregnancy_add') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>
+        تسجيل حمل جديد
+    </a>
+</div>
+{% endif %}
+{% endblock %}

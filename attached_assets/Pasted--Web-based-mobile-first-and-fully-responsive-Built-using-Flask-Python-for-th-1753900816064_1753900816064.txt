@@ -1,0 +1,239 @@
+
+
+* **Web-based**, **mobile-first**, and fully responsive
+* Built using **Flask (Python)** for the backend
+* Features an **Arabic RTL-compatible UI**
+* Includes **multi-role access control**, **object-level permissions**, **real-time auditing**, and **emergency workflows**
+* Designed for **military/police canine units**
+* Modular, scalable, and secure
+
+---
+
+### 📌 **OBJECTIVE**
+
+Build an advanced K9 operations platform to:
+
+* Manage all aspects of **dog life cycles** (preparation → training → production → veterinary → retirement/death)
+* Supervise **employees and handlers**
+* Track **projects, operations, emergencies, breeding**, and **missions**
+* Generate real-time **reports, logs, and alerts**
+* Operate under **military-grade security** and auditing rules
+
+---
+
+### 🧱 **TECH STACK**
+
+| Layer               | Technology                                 |
+| ------------------- | ------------------------------------------ |
+| Backend             | Flask + Flask-RESTful + Flask-JWT-Extended |
+| Database            | PostgreSQL + Alembic (migrations)          |
+| Frontend (optional) | React / HTMX + Tailwind (RTL support)      |
+| ORM                 | SQLAlchemy                                 |
+| Authentication      | JWT                                        |
+| Caching             | Redis                                      |
+| Storage             | Local FS / S3                              |
+| Deployment          | Gunicorn + Nginx + Docker (optional)       |
+| Arabic Support      | RTL layout, locale = ar\_EG.UTF-8          |
+
+---
+
+### 👥 **ROLES & ACCESS LEVELS**
+
+1. **General Admin (المشرف العام)**
+
+   * Full control over the system
+   * Assign managers, configure modules, export logs
+   * Can view/edit all data across modules
+
+2. **Project Manager (مدير المشروع)**
+
+   * Only sees dogs, employees, projects assigned to them
+   * Can edit training logs, vet records, attendance of their unit
+   * Cannot create system users or change global settings
+
+3. **Employee (موظف)**
+
+   * No login access; exists only as a data object
+   * Roles: **Handler**, **Trainer**, **Vet**, **Operations Officer**
+
+---
+
+### 🧬 **DATABASE SCHEMA OUTLINE**
+
+#### 🐶 `Dog`
+
+```python
+Dog:
+  id: UUID
+  name: str
+  breed: str
+  family_line: str  # Example: "Belgian Malinois - Bravo Line"
+  gender: enum(MALE, FEMALE)
+  birth_date: date
+  microchip_id: str
+  current_status: enum(ACTIVE, RETIRED, DECEASED)
+  location: str
+  proof_docs: List[str]
+  assigned_to: FK -> ProjectManager
+	and add the ability to upload the birth cirtficate as a pdf file
+	and mybe other needed docs like an image of the dog 		
+```
+
+#### 👤 `Employee`
+
+```python
+Employee:
+  id: UUID
+  name: str
+  id_number: str
+  role: enum(HANDLER, TRAINER, VET, OPERATIONS, project mannager)
+  hire_date: date
+  assigned_dogs: M2M -> Dog
+```
+
+#### 🛠️ `TrainingSession`
+
+```python
+TrainingSession:
+  id: UUID
+  dog: FK -> Dog
+  trainer: FK -> Employee
+  category: enum(OBEDIENCE, DETECTION, AGILITY, ATTACK)
+  subject: str
+  date: datetime
+  duration: int  # minutes
+  success_rating: int (0-10)
+  notes: Text
+```
+
+#### 🧬 `BreedingCycle`
+
+```python
+BreedingCycle:
+  id: UUID
+  female: FK -> Dog
+  male: FK -> Dog
+  start_date: date
+  end_date: date
+  cycle_type: enum(NATURAL, ARTIFICIAL)
+  result: enum(SUCCESSFUL, FAILED, UNKNOWN)
+  puppies: JSON[] # [{name, gender, chip_id}]
+```
+
+#### 🩺 `VeterinaryVisit`
+
+```python
+VeterinaryVisit:
+  id: UUID
+  dog: FK -> Dog
+  vet: FK -> Employee
+  visit_type: enum(ROUTINE, EMERGENCY, VACCINATION)
+  diagnosis: str
+  treatment: str
+  medications: JSON[]  # [{name, dose, duration}]
+  poop_type: enum(NORMAL, SOFT, BLOODY, LIQUID, NONE)
+  stool_color: enum(BROWN, BLACK, GREEN, YELLOW, WHITE)
+  notes: Text
+```
+
+#### 🧾 `AuditLog`
+
+```python
+AuditLog:
+  id: UUID
+  actor: FK -> User
+  action_type: enum(CREATE, EDIT, DELETE, EXPORT, LOGIN)
+  model_target: str
+  object_id: UUID
+  timestamp: datetime
+  changes: JSON
+  ip_address: str
+```
+
+#### 📣 `Notification`
+
+```python
+Notification:
+  id: UUID
+  recipient: FK -> User
+  title: str
+  message: Text
+  seen: bool
+  triggered_by: enum(VET_VISIT, TRAINING_UPDATE, PROJECT_DEADLINE)
+  timestamp: datetime
+```
+
+---
+
+### 🧠 **REPLIT AGENT TASKS**
+
+* Monitor **training success rates** → alert if dog underperforms
+* Track **breeding success/failure** over time
+* Notify vets when same symptoms occur frequently
+* Auto-suggest pairing based on family line & health
+* Generate **PDF vet cards** from structured data
+* Monitor data anomalies (e.g., sudden deaths, missing logs)
+* Predict dog fatigue based on recent tasks + stool data
+* Support multi-language interactions (Arabic/English)
+
+---
+
+### 🗂️ **MODULES & FEATURES**
+
+#### ✅ **Preparation (التهيئة)** This section will appear once the admin logs in for the first time to prepare the system and papulate it with data 
+
+* Add dogs, employees:
+for employess there will three options (سائس, طبيب, مسؤول مشروع) and if project manager was choosen there should be given the ability for the general admin to assign a username and a password for the project manager and assign which sections and subsections he cann accesss and the oprations in the app the he can do
+* Assign roles
+* Attach initial medical records
+
+#### 🐾 **Training (التدريب)**
+
+* Training types: Obedience, Attack, Detection, Tracking
+* Daily logs with trainer/employee reference
+* Upload videos/images
+
+#### 🧬 **Breeding/Production (الإنتاج)**
+
+* Manage cycles, maturity, mating, pregnancy, and birth
+* Puppy registry linked to mother and father
+
+#### 🩺 **Veterinary**
+
+* Medical records, visit logs
+* Vaccination schedule
+* AI flagging based on poop type, stool color, symptoms
+
+#### 📈 **Audit & Reporting**
+
+* Real-time dashboards
+* Export logs (PDF, CSV)
+* AI agent summary generator
+
+#### 🕵️‍♂️ **Projects/Missions**
+
+* Assign dogs/employees and choose a project manager
+* Schedule phases
+* Attach reports and outcomes
+
+#### 🕒 **Attendance**
+
+* Track daily entries/exits
+* Flag absences and substitutes
+
+#### 🔍 **Global Search**
+
+* Instant dog/employee lookup
+* Typeahead support in Arabic/English
+
+---
+
+### 🔒 **SECURITY & DEVOPS**
+
+* JWT auth + role-based decorators
+* CSRF, SQLi, XSS protection
+* Audit trail + IP logging
+* Redis caching
+
+---
+

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}سجلات الجراء{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-paw me-2"></i>
+                سجلات الجراء
+            </h1>
+            <div class="btn-group">
+                <a href="{{ url_for('main.breeding_index') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة للإنتاج
+                </a>
+                <a href="{{ url_for('main.puppies_add') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    تسجيل جرو جديد
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if puppies %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>اسم الجرو</th>
+                                <th>رقم الجرو</th>
+                                <th>الجنس</th>
+                                <th>وزن الولادة</th>
+                                <th>الحالة الحالية</th>
+                                <th>الأم</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for puppy in puppies %}
+                            <tr>
+                                <td>
+                                    <strong>{{ puppy.name or 'بدون اسم' }}</strong><br>
+                                    <small class="text-muted">{{ puppy.temporary_id or 'بدون رقم مؤقت' }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">#{{ puppy.puppy_number }}</span>
+                                </td>
+                                <td>
+                                    {% if puppy.gender.name == 'MALE' %}
+                                        <i class="fas fa-mars text-primary"></i> ذكر
+                                    {% else %}
+                                        <i class="fas fa-venus text-pink"></i> أنثى
+                                    {% endif %}
+                                </td>
+                                <td>{{ puppy.birth_weight if puppy.birth_weight else '-' }} كغ</td>
+                                <td>
+                                    {% if puppy.current_status == 'جيد' %}
+                                        <span class="badge bg-success">{{ puppy.current_status }}</span>
+                                    {% elif puppy.current_status == 'ضعيف' %}
+                                        <span class="badge bg-warning">{{ puppy.current_status }}</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">{{ puppy.current_status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ puppy.delivery_record.pregnancy_record.dog.name }}</td>
+                                <td>
+                                    <a href="#" class="btn btn-sm btn-outline-primary">عرض</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-paw fa-5x text-muted mb-3"></i>
+    <h3 class="text-muted">لا توجد سجلات جراء</h3>
+    <p class="text-muted">ابدأ بتسجيل الجراء بعد الولادة</p>
+    <a href="{{ url_for('main.puppies_add') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>
+        تسجيل جرو جديد
+    </a>
+</div>
+{% endif %}
+{% endblock %}

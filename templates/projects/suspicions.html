@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}اشتباهات المشروع - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>اشتباهات المشروع: {{ project.name }}</h2>
+                <div>
+                    <a href="{{ url_for('main.project_suspicion_add', project_id=project.id) }}" class="btn btn-warning">
+                        <i class="fas fa-plus"></i> تسجيل اشتباه جديد
+                    </a>
+                    <a href="{{ url_for('main.projects_list') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-right"></i> العودة للمشاريع
+                    </a>
+                </div>
+            </div>
+
+            <!-- Project Navigation -->
+            <div class="mb-3">
+                <div class="btn-group w-100" role="group">
+                    <a href="{{ url_for('main.project_dashboard', project_id=project.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-tachometer-alt me-2"></i>لوحة التحكم
+                    </a>
+                    <a href="{{ url_for('main.project_assignments', project_id=project.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-users me-2"></i>التعيينات
+                    </a>
+                    <a href="{{ url_for('main.project_incidents', project_id=project.id) }}" class="btn btn-outline-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>الحوادث
+                    </a>
+                    <a href="{{ url_for('main.project_suspicions', project_id=project.id) }}" class="btn btn-info">
+                        <i class="fas fa-search me-2"></i>الاشتباهات
+                    </a>
+                    <a href="{{ url_for('main.project_evaluations', project_id=project.id) }}" class="btn btn-outline-success">
+                        <i class="fas fa-star me-2"></i>التقييمات
+                    </a>
+                </div>
+            </div>
+
+            <!-- Suspicions List -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">سجل الاشتباهات والاكتشافات</h5>
+                </div>
+                <div class="card-body">
+                    {% if suspicions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>نوع العنصر</th>
+                                        <th>النوع الفرعي</th>
+                                        <th>تاريخ الاكتشاف</th>
+                                        <th>الوقت</th>
+                                        <th>الموقع</th>
+                                        <th>الكلب المكتشف</th>
+                                        <th>السائس</th>
+                                        <th>طريقة الاكتشاف</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for suspicion in suspicions %}
+                                    <tr>
+                                        <td>
+                                            {% if suspicion.element_type.value == 'WEAPON' %}
+                                                <span class="badge bg-danger">سلاح</span>
+                                            {% elif suspicion.element_type.value == 'DRUG' %}
+                                                <span class="badge bg-purple">مخدرات</span>
+                                            {% elif suspicion.element_type.value == 'EXPLOSIVE' %}
+                                                <span class="badge bg-dark">متفجرات</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">أخرى</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ suspicion.subtype or '-' }}</td>
+                                        <td>{{ suspicion.discovery_date.strftime('%Y-%m-%d') }}</td>
+                                        <td>{{ suspicion.discovery_time.strftime('%H:%M') }}</td>
+                                        <td>{{ suspicion.location }}</td>
+                                        <td>{{ suspicion.detecting_dog.name if suspicion.detecting_dog else '-' }}</td>
+                                        <td>{{ suspicion.handling_employee.name if suspicion.handling_employee else '-' }}</td>
+                                        <td>{{ suspicion.detection_method or '-' }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#suspicionModal{{ suspicion.id }}">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-search fa-3x mb-3"></i>
+                            <p>لا توجد اشتباهات مسجلة لهذا المشروع</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Suspicion Detail Modals -->
+{% for suspicion in suspicions %}
+<div class="modal fade" id="suspicionModal{{ suspicion.id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تفاصيل الاشتباه</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>نوع العنصر:</strong> 
+                            {% if suspicion.element_type.value == 'WEAPON' %}
+                                سلاح
+                            {% elif suspicion.element_type.value == 'DRUG' %}
+                                مخدرات
+                            {% elif suspicion.element_type.value == 'EXPLOSIVE' %}
+                                متفجرات
+                            {% else %}
+                                أخرى
+                            {% endif %}
+                        </p>
+                        <p><strong>النوع الفرعي:</strong> {{ suspicion.subtype or 'غير محدد' }}</p>
+                        <p><strong>التاريخ:</strong> {{ suspicion.discovery_date.strftime('%Y-%m-%d') }}</p>
+                        <p><strong>الوقت:</strong> {{ suspicion.discovery_time.strftime('%H:%M') }}</p>
+                        <p><strong>الموقع:</strong> {{ suspicion.location }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>الكلب المكتشف:</strong> {{ suspicion.detecting_dog.name if suspicion.detecting_dog else 'غير محدد' }}</p>
+                        <p><strong>السائس:</strong> {{ suspicion.handling_employee.name if suspicion.handling_employee else 'غير محدد' }}</p>
+                        <p><strong>طريقة الاكتشاف:</strong> {{ suspicion.detection_method or 'غير محدد' }}</p>
+                        <p><strong>تقدير الكمية:</strong> {{ suspicion.quantity_estimate or 'غير محدد' }}</p>
+                    </div>
+                </div>
+                {% if suspicion.description %}
+                <div class="mt-3">
+                    <strong>الوصف:</strong>
+                    <p class="mt-2">{{ suspicion.description }}</p>
+                </div>
+                {% endif %}
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <p><strong>تم إبلاغ السلطات:</strong> 
+                            {% if suspicion.authorities_notified %}
+                                <span class="badge bg-success">نعم</span>
+                            {% else %}
+                                <span class="badge bg-danger">لا</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>تم جمع الأدلة:</strong> 
+                            {% if suspicion.evidence_collected %}
+                                <span class="badge bg-success">نعم</span>
+                            {% else %}
+                                <span class="badge bg-danger">لا</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>يتطلب متابعة:</strong> 
+                            {% if suspicion.follow_up_required %}
+                                <span class="badge bg-warning">نعم</span>
+                            {% else %}
+                                <span class="badge bg-success">لا</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% if suspicion.follow_up_notes %}
+                <div class="mt-3">
+                    <strong>ملاحظات المتابعة:</strong>
+                    <p class="mt-2">{{ suspicion.follow_up_notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

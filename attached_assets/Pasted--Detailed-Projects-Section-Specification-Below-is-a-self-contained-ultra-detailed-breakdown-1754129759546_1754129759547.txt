@@ -1,0 +1,194 @@
+### Detailed “Projects” Section Specification
+
+Below is a self-contained, ultra-detailed breakdown of the **Projects Module (المشاريع)**, including all requested features: project setup, employee & dog assignment, attendance & leave management, incident logging, suspicion reporting, and performance evaluation for both staff and dogs.
+
+---
+
+## 1. Data Models (Django)
+
+```python
+from django.db import models
+
+class Project(models.Model):
+    name          = models.CharField(max_length=150)          # اسم المشروع
+    main_task     = models.TextField()                        # المهمة الأساسية
+    start_date    = models.DateField()                        # تاريخ البدء
+    end_date      = models.DateField()                        # تاريخ الانتهاء
+    duration_days = models.IntegerField()                     # عدد أيام المشروع (computed)
+    STATUS_CHOICES = [
+        ('PLANNED','مخطط'),
+        ('ACTIVE','نشط'),
+        ('COMPLETED','مكتمل'),
+        ('CANCELLED','مُلغي'),
+    ]
+    status        = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PLANNED')
+
+class ProjectAssignment(models.Model):
+    project    = models.ForeignKey(Project, on_delete=models.CASCADE)
+    employee   = models.ForeignKey('Employee', on_delete=models.CASCADE)
+    role       = models.CharField(max_length=20,
+                    choices=[('PM','مدير المشروع'),('HANDLER','سائس'),
+                             ('TRAINER','مدرب'),('VET','طبيب بيطري')])
+    period     = models.CharField(max_length=20)              # الفترة (صباحي/مسائي/ثالثة)
+    is_present = models.BooleanField(default=False)           # حضور/غياب
+    leave_type = models.CharField(max_length=10,
+                    choices=[('ANNUAL','سنوي'),('OFFICIAL','رسمي'),
+                             ('EMERGENCY','طارئ')], blank=True)
+
+class ProjectDog(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    dog     = models.ForeignKey('Dog', on_delete=models.CASCADE)
+    is_active = models.BooleanField(default=True)
+
+class Incident(models.Model):
+    project     = models.ForeignKey(Project, on_delete=models.CASCADE)
+    name        = models.CharField(max_length=100)  # اسم الحادث
+    date        = models.DateField()
+    time        = models.TimeField()
+    incident_type = models.CharField(max_length=50)  # نوع الحادث
+    attachments  = models.JSONField(blank=True)      # روابط/مسارات الصور وPDF
+
+class Suspicion(models.Model):
+    project        = models.ForeignKey(Project, on_delete=models.CASCADE)
+    element_type   = models.CharField(max_length=50,
+                        choices=[('WEAPON','سلاح'),('DRUG','مخدرات'),
+                                 ('EXPLOSIVE','متفجرات'),('OTHER','أخرى')])
+    subtype        = models.CharField(max_length=50, blank=True)  # نوع السلاح/العبوة
+    date           = models.DateField()
+    time           = models.TimeField()
+    location       = models.CharField(max_length=150)
+
+class PerformanceEvaluation(models.Model):
+    project        = models.ForeignKey(Project, on_delete=models.CASCADE)
+    evaluator      = models.ForeignKey('User', on_delete=models.CASCADE)
+    target_type    = models.CharField(max_length=10,
+                        choices=[('EMPLOYEE','موظف'),('DOG','كلب')])
+    target_id      = models.IntegerField()   # FK to Employee or Dog
+    rating         = models.CharField(max_length=10,
+                        choices=[('EXCELLENT','ممتاز'),('GOOD','جيد'),
+                                 ('WEAK','ضعيف')])
+    uniform_ok     = models.BooleanField()    # زي الموظف
+    id_card_ok     = models.BooleanField()    # البطاقة
+    appearance_ok  = models.BooleanField()    # المظهر
+    cleanliness_ok = models.BooleanField()    # النظافة
+    comments       = models.TextField(blank=True)
+```
+
+---
+
+## 2. API Endpoints
+
+| Method | Endpoint                              | Description                                 | Permissions         |
+| ------ | ------------------------------------- | ------------------------------------------- | ------------------- |
+| GET    | `/api/projects/`                      | List all projects                           | Admin & PM          |
+| POST   | `/api/projects/`                      | Create new project                          | Admin only          |
+| GET    | `/api/projects/{id}/`                 | Project details (including assignments)     | Admin & PM          |
+| PUT    | `/api/projects/{id}/`                 | Update project info                         | Admin & assigned PM |
+| DELETE | `/api/projects/{id}/`                 | Soft-delete project                         | Admin only          |
+| POST   | `/api/projects/{id}/assign-employee/` | Assign employee with period & leave options | Admin & PM          |
+| POST   | `/api/projects/{id}/assign-dog/`      | Assign dog to project                       | Admin & PM          |
+| POST   | `/api/projects/{id}/incident/`        | Log an incident                             | Admin & PM          |
+| POST   | `/api/projects/{id}/suspicion/`       | Log a suspicion/discovery                   | Admin & PM          |
+| POST   | `/api/projects/{id}/evaluate/`        | Submit performance evaluation               | Admin & PM          |
+
+---
+
+## 3. UI Components (React)
+
+### 3.1 Project Form
+
+```jsx
+function ProjectForm({ project, onSave }) {
+  return (
+    <Form>
+      <TextField name="name" label="اسم المشروع" value={project.name} required />
+      <TextArea name="main_task" label="المهمة الأساسية" value={project.main_task} />
+      <DateField name="start_date" label="تاريخ البدء" value={project.start_date} required />
+      <DateField name="end_date" label="تاريخ الانتهاء" value={project.end_date} required />
+      <Button onClick={onSave}>حفظ المشروع</Button>
+    </Form>
+  );
+}
+```
+
+### 3.2 Assignment & Attendance
+
+```jsx
+function AssignmentTable({ projectId }) {
+  const assignments = useSelector(...);
+  return (
+    <Table>
+      <Table.Header columns={['الموظف/الكلب','الدور','الفترة','حضور','إجازة']} />
+      {assignments.map(a => (
+        <Table.Row key={a.id}>
+          <Table.Cell>{a.employee?.name || a.dog?.name}</Table.Cell>
+          <Table.Cell>{a.role}</Table.Cell>
+          <Table.Cell>
+            <Select options={['صباحي','مسائي','ثالثة']} value={a.period} />
+          </Table.Cell>
+          <Table.Cell>
+            <Checkbox checked={a.is_present} />
+          </Table.Cell>
+          <Table.Cell>
+            <Select options={['','سنوي','رسمي','طارئ']} value={a.leave_type} />
+          </Table.Cell>
+        </Table.Row>
+      ))}
+    </Table>
+  );
+}
+```
+
+### 3.3 Incident & Suspicion Forms
+
+```jsx
+// IncidentForm.jsx
+<Form onSubmit={submitIncident}>
+  <TextField name="name" label="اسم الحادث" required />
+  <DateField name="date" label="التاريخ" required />
+  <TimeField name="time" label="الوقت" required />
+  <TextField name="incident_type" label="نوع الحادث" required />
+  <FileUpload name="attachments" label="إرفاق ملفات" multiple />
+  <Button type="submit">تسجيل الحادث</Button>
+</Form>
+
+// SuspicionForm.jsx
+<Form onSubmit={submitSuspicion}>
+  <Select name="element_type" label="العنصر" options={['سلاح','مخدرات','متفجرات','أخرى']} required />
+  <TextField name="subtype" label="النوع الفرعي" />
+  <DateField name="date" label="التاريخ" />
+  <TimeField name="time" label="الوقت" />
+  <TextField name="location" label="الموقع" />
+  <Button type="submit">تسجيل الاشتباه</Button>
+</Form>
+```
+
+### 3.4 Performance Evaluation
+
+```jsx
+// EvaluationForm.jsx
+<Form onSubmit={submitEvaluation}>
+  <Select name="target_type" label="تقييم" options={['موظف','كلب']} required />
+  <Select name="rating" label="التقييم" options={['ممتاز','جيد','ضعيف']} required />
+  <CheckboxGroup name="criteria" options={[
+    {key:'uniform_ok', label:'زي الموظف'},
+    {key:'id_card_ok', label:'البطاقة'},
+    {key:'appearance_ok', label:'المظهر'},
+    {key:'cleanliness_ok', label:'النظافة'},
+  ]}/>
+  <TextArea name="comments" label="ملاحظات إضافية" />
+  <Button type="submit">حفظ التقييم</Button>
+</Form>
+```
+
+---
+
+## 4. Workflows & Behaviors
+
+1. **Create Project:** Admin fills project form → clicks “حفظ المشروع” → backend computes `duration_days = end_date – start_date + 1`.
+2. **Assign Staff & Dogs:** PM navigates to Assignment tab → selects period and toggles حضور/إجازة → changes saved immediately.
+3. **Incident Logging:** PM/Admin opens Incident tab → fills form → attachments uploaded to secure storage.
+4. **Suspicion Reporting:** Similar to incidents, with dynamic subtype fields based on element\_type.
+5. **Performance Rating:** PM selects target (موظف or كلب) → rates and checks criteria → saved and logged audit.
+
+---

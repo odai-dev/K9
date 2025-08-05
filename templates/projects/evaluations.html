@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}تقييمات الأداء - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>تقييمات الأداء للمشروع: {{ project.name }}</h2>
+                <div>
+                    <a href="{{ url_for('main.project_evaluation_add', project_id=project.id) }}" class="btn btn-info">
+                        <i class="fas fa-plus"></i> إضافة تقييم جديد
+                    </a>
+                    <a href="{{ url_for('main.projects_list') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-right"></i> العودة للمشاريع
+                    </a>
+                </div>
+            </div>
+
+            <!-- Project Navigation -->
+            <div class="mb-3">
+                <div class="btn-group w-100" role="group">
+                    <a href="{{ url_for('main.project_dashboard', project_id=project.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-tachometer-alt me-2"></i>لوحة التحكم
+                    </a>
+                    <a href="{{ url_for('main.project_assignments', project_id=project.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-users me-2"></i>التعيينات
+                    </a>
+                    <a href="{{ url_for('main.project_incidents', project_id=project.id) }}" class="btn btn-outline-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>الحوادث
+                    </a>
+                    <a href="{{ url_for('main.project_suspicions', project_id=project.id) }}" class="btn btn-outline-info">
+                        <i class="fas fa-search me-2"></i>الاشتباهات
+                    </a>
+                    <a href="{{ url_for('main.project_evaluations', project_id=project.id) }}" class="btn btn-success">
+                        <i class="fas fa-star me-2"></i>التقييمات
+                    </a>
+                </div>
+            </div>
+
+            <!-- Evaluations List -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">سجل تقييمات الأداء</h5>
+                </div>
+                <div class="card-body">
+                    {% if evaluations %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>المُقيَّم</th>
+                                        <th>النوع</th>
+                                        <th>التقييم العام</th>
+                                        <th>تاريخ التقييم</th>
+                                        <th>المُقيِّم</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for evaluation in evaluations %}
+                                    <tr>
+                                        <td>
+                                            <strong>
+                                                {% if evaluation.target_employee %}
+                                                    {{ evaluation.target_employee.name }}
+                                                {% else %}
+                                                    {{ evaluation.target_dog.name }}
+                                                {% endif %}
+                                            </strong>
+                                        </td>
+                                        <td>
+                                            {% if evaluation.target_type.value == 'EMPLOYEE' %}
+                                                <span class="badge bg-primary">موظف</span>
+                                            {% else %}
+                                                <span class="badge bg-success">كلب</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if evaluation.rating.value == 'EXCELLENT' %}
+                                                <span class="badge bg-success">ممتاز</span>
+                                            {% elif evaluation.rating.value == 'GOOD' %}
+                                                <span class="badge bg-info">جيد</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">ضعيف</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ evaluation.evaluation_date.strftime('%Y-%m-%d') }}</td>
+                                        <td>{{ evaluation.evaluator.full_name }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#evaluationModal{{ evaluation.id }}">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-star fa-3x mb-3"></i>
+                            <p>لا توجد تقييمات أداء لهذا المشروع بعد</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Evaluation Detail Modals -->
+{% for evaluation in evaluations %}
+<div class="modal fade" id="evaluationModal{{ evaluation.id }}" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    تفاصيل التقييم - 
+                    {% if evaluation.target_employee %}
+                        {{ evaluation.target_employee.name }}
+                    {% else %}
+                        {{ evaluation.target_dog.name }}
+                    {% endif %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>معلومات عامة</h6>
+                        <p><strong>تاريخ التقييم:</strong> {{ evaluation.evaluation_date.strftime('%Y-%m-%d') }}</p>
+                        <p><strong>المُقيِّم:</strong> {{ evaluation.evaluator.full_name }}</p>
+                        <p><strong>التقييم العام:</strong> 
+                            {% if evaluation.rating.value == 'EXCELLENT' %}
+                                ممتاز
+                            {% elif evaluation.rating.value == 'GOOD' %}
+                                جيد
+                            {% else %}
+                                ضعيف
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        {% if evaluation.target_type.value == 'EMPLOYEE' %}
+                        <h6>معايير المظهر</h6>
+                        <p><strong>الزي:</strong> 
+                            {% if evaluation.uniform_ok %}
+                                <span class="badge bg-success">مناسب</span>
+                            {% else %}
+                                <span class="badge bg-danger">غير مناسب</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>البطاقة:</strong> 
+                            {% if evaluation.id_card_ok %}
+                                <span class="badge bg-success">موجودة</span>
+                            {% else %}
+                                <span class="badge bg-danger">غير موجودة</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>المظهر:</strong> 
+                            {% if evaluation.appearance_ok %}
+                                <span class="badge bg-success">مناسب</span>
+                            {% else %}
+                                <span class="badge bg-danger">غير مناسب</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>النظافة:</strong> 
+                            {% if evaluation.cleanliness_ok %}
+                                <span class="badge bg-success">جيدة</span>
+                            {% else %}
+                                <span class="badge bg-danger">ضعيفة</span>
+                            {% endif %}
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    {% if evaluation.target_type.value == 'EMPLOYEE' %}
+                    <div class="col-md-6">
+                        <h6>تقييمات الأداء (1-10)</h6>
+                        {% if evaluation.punctuality %}
+                        <p><strong>الالتزام بالمواعيد:</strong> 
+                            <span class="badge bg-primary">{{ evaluation.punctuality }}/10</span>
+                        </p>
+                        {% endif %}
+                        {% if evaluation.job_knowledge %}
+                        <p><strong>المعرفة المهنية:</strong> 
+                            <span class="badge bg-primary">{{ evaluation.job_knowledge }}/10</span>
+                        </p>
+                        {% endif %}
+                        {% if evaluation.teamwork %}
+                        <p><strong>العمل الجماعي:</strong> 
+                            <span class="badge bg-primary">{{ evaluation.teamwork }}/10</span>
+                        </p>
+                        {% endif %}
+                        {% if evaluation.communication %}
+                        <p><strong>التواصل:</strong> 
+                            <span class="badge bg-primary">{{ evaluation.communication }}/10</span>
+                        </p>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="col-md-6">
+                        <h6>تقييمات الكلب (1-10)</h6>
+                        {% if evaluation.obedience_level %}
+                        <p><strong>مستوى الطاعة:</strong> 
+                            <span class="badge bg-success">{{ evaluation.obedience_level }}/10</span>
+                        </p>
+                        {% endif %}
+                        {% if evaluation.detection_accuracy %}
+                        <p><strong>دقة الاكتشاف:</strong> 
+                            <span class="badge bg-success">{{ evaluation.detection_accuracy }}/10</span>
+                        </p>
+                        {% endif %}
+                        {% if evaluation.physical_condition %}
+                        <p><strong>الحالة الجسدية:</strong> 
+                            <span class="badge bg-success">{{ evaluation.physical_condition }}/10</span>
+                        </p>
+                        {% endif %}
+                        {% if evaluation.handler_relationship %}
+                        <p><strong>العلاقة مع السائس:</strong> 
+                            <span class="badge bg-success">{{ evaluation.handler_relationship }}/10</span>
+                        </p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if evaluation.strengths %}
+                <div class="mt-3">
+                    <h6>نقاط القوة</h6>
+                    <p>{{ evaluation.strengths }}</p>
+                </div>
+                {% endif %}
+
+                {% if evaluation.areas_for_improvement %}
+                <div class="mt-3">
+                    <h6>مجالات التحسين</h6>
+                    <p>{{ evaluation.areas_for_improvement }}</p>
+                </div>
+                {% endif %}
+
+                {% if evaluation.comments %}
+                <div class="mt-3">
+                    <h6>تعليقات إضافية</h6>
+                    <p>{{ evaluation.comments }}</p>
+                </div>
+                {% endif %}
+
+                {% if evaluation.recommendations %}
+                <div class="mt-3">
+                    <h6>التوصيات</h6>
+                    <p>{{ evaluation.recommendations }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

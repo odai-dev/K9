@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}مرحباً بك في نظام إدارة عمليات الكلاب البوليسية{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <div class="hero-section">
+            <div class="mb-5">
+                <i class="fas fa-shield-alt display-1 text-primary mb-4"></i>
+                <h1 class="display-4 fw-bold text-primary mb-4">نظام إدارة عمليات الكلاب البوليسية</h1>
+                <p class="lead text-muted mb-5">
+                    نظام شامل ومتقدم لإدارة جميع جوانب عمليات الكلاب البوليسية والعسكرية
+                    <br>
+                    من التدريب والطبابة إلى التكاثر والمهام الميدانية
+                </p>
+            </div>
+            
+            <div class="row mb-5">
+                <div class="col-md-4 mb-4">
+                    <div class="feature-card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-dog fa-3x text-success mb-3"></i>
+                            <h5 class="card-title">إدارة الكلاب</h5>
+                            <p class="card-text">متابعة شاملة لدورة حياة الكلاب من الولادة حتى التقاعد</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 mb-4">
+                    <div class="feature-card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-dumbbell fa-3x text-warning mb-3"></i>
+                            <h5 class="card-title">برامج التدريب</h5>
+                            <p class="card-text">تسجيل ومتابعة جلسات التدريب المختلفة وتقييم الأداء</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 mb-4">
+                    <div class="feature-card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-stethoscope fa-3x text-info mb-3"></i>
+                            <h5 class="card-title">الرعاية الطبية</h5>
+                            <p class="card-text">سجلات طبية مفصلة وجدولة الفحوصات والتطعيمات</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-5">
+                <div class="col-md-4 mb-4">
+                    <div class="feature-card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-heart fa-3x text-danger mb-3"></i>
+                            <h5 class="card-title">برامج التكاثر</h5>
+                            <p class="card-text">إدارة دورات التكاثر وتسجيل الجراء الجديدة</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 mb-4">
+                    <div class="feature-card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-users fa-3x text-secondary mb-3"></i>
+                            <h5 class="card-title">إدارة الموظفين</h5>
+                            <p class="card-text">متابعة السائسين والمدربين والأطباء البيطريين</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 mb-4">
+                    <div class="feature-card h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-chart-bar fa-3x text-primary mb-3"></i>
+                            <h5 class="card-title">التقارير والإحصائيات</h5>
+                            <p class="card-text">تقارير مفصلة وإحصائيات شاملة لجميع العمليات</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg px-5 py-3">
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                    تسجيل الدخول
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.hero-section {
+    padding: 60px 0;
+}
+
+.feature-card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.feature-card .card-body {
+    padding: 2rem;
+}
+
+.btn-lg {
+    font-size: 1.2rem;
+    border-radius: 10px;
+}
+</style>
+{% endblock %}

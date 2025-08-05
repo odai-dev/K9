@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}تسجيل اشتباه جديد - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h4>تسجيل اشتباه جديد للمشروع: {{ project.name }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="element_type" class="form-label">نوع العنصر *</label>
+                                    <select class="form-select" id="element_type" name="element_type" required>
+                                        <option value="">اختر نوع العنصر</option>
+                                        {% for element in element_types %}
+                                        <option value="{{ element.value }}">
+                                            {% if element.value == 'WEAPON' %}
+                                                سلاح
+                                            {% elif element.value == 'DRUG' %}
+                                                مخدرات
+                                            {% elif element.value == 'EXPLOSIVE' %}
+                                                متفجرات
+                                            {% else %}
+                                                أخرى
+                                            {% endif %}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="subtype" class="form-label">النوع الفرعي</label>
+                                    <input type="text" class="form-control" id="subtype" name="subtype" 
+                                           placeholder="مسدس، كوكايين، عبوة ناسفة، إلخ">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="discovery_date" class="form-label">تاريخ الاكتشاف *</label>
+                                    <input type="date" class="form-control" id="discovery_date" name="discovery_date" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="discovery_time" class="form-label">وقت الاكتشاف *</label>
+                                    <input type="time" class="form-control" id="discovery_time" name="discovery_time" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="location" class="form-label">الموقع *</label>
+                                    <input type="text" class="form-control" id="location" name="location" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="detected_by_dog" class="form-label">الكلب المكتشف</label>
+                                    <select class="form-select" id="detected_by_dog" name="detected_by_dog">
+                                        <option value="">اختر الكلب</option>
+                                        {% for dog in dogs %}
+                                        <option value="{{ dog.id }}">{{ dog.name }} ({{ dog.code }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="handler" class="form-label">السائس</label>
+                                    <select class="form-select" id="handler" name="handler">
+                                        <option value="">اختر السائس</option>
+                                        {% for employee in employees %}
+                                        <option value="{{ employee.id }}">{{ employee.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="detection_method" class="form-label">طريقة الاكتشاف</label>
+                                    <input type="text" class="form-control" id="detection_method" name="detection_method" 
+                                           placeholder="تنبيه الكلب، مشاهدة بصرية، معدات، إلخ">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="quantity_estimate" class="form-label">تقدير الكمية</label>
+                                    <input type="text" class="form-control" id="quantity_estimate" name="quantity_estimate" 
+                                           placeholder="صغيره، متوسطة، كبيرة، أو تقدير بالأرقام">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">وصف تفصيلي</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" 
+                                      placeholder="اكتب وصفاً مفصلاً للعنصر المكتشف وظروف الاكتشاف"></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="authorities_notified" name="authorities_notified">
+                                        <label class="form-check-label" for="authorities_notified">
+                                            تم إبلاغ السلطات
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="evidence_collected" name="evidence_collected">
+                                        <label class="form-check-label" for="evidence_collected">
+                                            تم جمع الأدلة
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="follow_up_required" name="follow_up_required" checked>
+                                        <label class="form-check-label" for="follow_up_required">
+                                            يتطلب متابعة
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="follow_up_notes" class="form-label">ملاحظات المتابعة</label>
+                            <textarea class="form-control" id="follow_up_notes" name="follow_up_notes" rows="3" 
+                                      placeholder="اكتب الإجراءات المطلوب اتخاذها أو ملاحظات المتابعة"></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('main.project_suspicions', project_id=project.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-right"></i> إلغاء
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save"></i> تسجيل الاشتباه
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
