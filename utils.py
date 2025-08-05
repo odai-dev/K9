@@ -490,3 +490,99 @@ def validate_project_manager_assignment(user, project):
     # If managing other active projects, cannot assign
     project_names = [p.name for p in active_projects]
     return False, f"المدير {user.full_name} يدير بالفعل المشروع النشط: {', '.join(project_names)}"
+
+def get_dog_active_project(dog_id, activity_date=None):
+    """Get the active project for a dog at a specific date"""
+    from models import ProjectAssignment
+    from datetime import datetime
+    
+    if activity_date is None:
+        activity_date = datetime.utcnow()
+    
+    # Convert date to datetime if needed
+    if hasattr(activity_date, 'date'):
+        activity_datetime = activity_date
+    else:
+        activity_datetime = datetime.combine(activity_date, datetime.min.time())
+    
+    # Find active assignment for the dog at the given date
+    active_assignment = ProjectAssignment.query.filter(
+        ProjectAssignment.dog_id == str(dog_id),
+        ProjectAssignment.assigned_from <= activity_datetime,
+        db.or_(
+            ProjectAssignment.assigned_to.is_(None),  # Still active
+            ProjectAssignment.assigned_to >= activity_datetime  # Not yet ended
+        )
+    ).first()
+    
+    return active_assignment.project_id if active_assignment else None
+
+def auto_link_dog_activity_to_project(dog_id, activity_date=None):
+    """Automatically determine and return the project_id for a dog activity"""
+    return get_dog_active_project(dog_id, activity_date)
+
+def get_project_linked_activities(project_id, start_date=None, end_date=None):
+    """Get all activities linked to a project within a date range"""
+    from models import TrainingSession, VeterinaryVisit, Incident, Suspicion, ProjectAssignment
+    from datetime import datetime
+    
+    activities = {
+        'training_sessions': [],
+        'veterinary_visits': [],
+        'incidents': [],
+        'suspicions': []
+    }
+    
+    # Get project assignments to filter activities by assignment period
+    assignments = ProjectAssignment.query.filter_by(project_id=str(project_id)).all()
+    dog_assignments = {a.dog_id: a for a in assignments if a.dog_id}
+    
+    # Training sessions
+    training_query = TrainingSession.query.filter_by(project_id=str(project_id))
+    if start_date:
+        training_query = training_query.filter(TrainingSession.session_date >= start_date)
+    if end_date:
+        training_query = training_query.filter(TrainingSession.session_date <= end_date)
+    
+    for session in training_query.all():
+        # Check if session is within dog's assignment period
+        assignment = dog_assignments.get(session.dog_id)
+        if assignment:
+            session_date = session.session_date
+            if assignment.assigned_from <= session_date:
+                if not assignment.assigned_to or assignment.assigned_to >= session_date:
+                    activities['training_sessions'].append(session)
+    
+    # Veterinary visits
+    vet_query = VeterinaryVisit.query.filter_by(project_id=str(project_id))
+    if start_date:
+        vet_query = vet_query.filter(VeterinaryVisit.visit_date >= start_date)
+    if end_date:
+        vet_query = vet_query.filter(VeterinaryVisit.visit_date <= end_date)
+    
+    for visit in vet_query.all():
+        # Check if visit is within dog's assignment period
+        assignment = dog_assignments.get(visit.dog_id)
+        if assignment:
+            visit_date = visit.visit_date
+            if assignment.assigned_from <= visit_date:
+                if not assignment.assigned_to or assignment.assigned_to >= visit_date:
+                    activities['veterinary_visits'].append(visit)
+    
+    # Incidents (already have project_id)
+    incident_query = Incident.query.filter_by(project_id=str(project_id))
+    if start_date:
+        incident_query = incident_query.filter(Incident.incident_date >= start_date)
+    if end_date:
+        incident_query = incident_query.filter(Incident.incident_date <= end_date)
+    activities['incidents'] = incident_query.all()
+    
+    # Suspicions (already have project_id)
+    suspicion_query = Suspicion.query.filter_by(project_id=str(project_id))
+    if start_date:
+        suspicion_query = suspicion_query.filter(Suspicion.discovery_date >= start_date)
+    if end_date:
+        suspicion_query = suspicion_query.filter(Suspicion.discovery_date <= end_date)
+    activities['suspicions'] = suspicion_query.all()
+    
+    return activities

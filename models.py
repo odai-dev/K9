@@ -249,6 +249,7 @@ class TrainingSession(db.Model):
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     trainer_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=False)
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=True)  # Auto-linked project
     category = db.Column(db.Enum(TrainingCategory), nullable=False)
     subject = db.Column(db.String(200), nullable=False)
     session_date = db.Column(db.DateTime, nullable=False)
@@ -262,6 +263,7 @@ class TrainingSession(db.Model):
     # Relationships
     dog = db.relationship('Dog', backref='training_sessions')
     trainer = db.relationship('Employee', backref='training_sessions')
+    project = db.relationship('Project', backref='training_sessions')
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -272,6 +274,7 @@ class VeterinaryVisit(db.Model):
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     vet_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=False)
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=True)  # Auto-linked project
     visit_type = db.Column(db.Enum(VisitType), nullable=False)
     visit_date = db.Column(db.DateTime, nullable=False)
     
@@ -302,6 +305,7 @@ class VeterinaryVisit(db.Model):
     # Relationships
     dog = db.relationship('Dog', backref='veterinary_visits')
     vet = db.relationship('Employee', backref='veterinary_visits')
+    project = db.relationship('Project', backref='veterinary_visits')
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -421,8 +425,10 @@ class ProjectAssignment(db.Model):
     
     # Assignment details
     is_active = db.Column(db.Boolean, default=True)
-    assigned_date = db.Column(db.Date, default=date.today)
-    unassigned_date = db.Column(db.Date, nullable=True)
+    assigned_from = db.Column(db.DateTime, default=datetime.utcnow)  # when the assignment started
+    assigned_to = db.Column(db.DateTime, nullable=True)  # when the assignment ended (null means still active)
+    assigned_date = db.Column(db.Date, default=date.today)  # Keep for backward compatibility
+    unassigned_date = db.Column(db.Date, nullable=True)  # Keep for backward compatibility
     notes = db.Column(Text)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

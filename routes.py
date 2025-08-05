@@ -297,20 +297,30 @@ def training_list():
 def training_add():
     if request.method == 'POST':
         try:
-            session = TrainingSession(
-                dog_id=request.form['dog_id'],
-                trainer_id=request.form['trainer_id'],
-                category=TrainingCategory(request.form['category']),
-                duration_minutes=int(request.form['duration_minutes']),
-                description=request.form['description'],
-                progress_notes=request.form.get('progress_notes'),
-                rating=int(request.form['rating']) if request.form.get('rating') else None
-            )
+            from utils import auto_link_dog_activity_to_project
+            from datetime import datetime
+            
+            # Create training session with proper model construction
+            session = TrainingSession()
+            session.dog_id = request.form['dog_id']
+            session.trainer_id = request.form['trainer_id']
+            session.category = TrainingCategory(request.form['category'])
+            session.subject = request.form.get('subject', 'جلسة تدريب')
+            session.session_date = datetime.strptime(request.form['session_date'], '%Y-%m-%dT%H:%M') if request.form.get('session_date') else datetime.utcnow()
+            session.duration = int(request.form['duration']) if request.form.get('duration') else 60
+            session.success_rating = int(request.form['rating']) if request.form.get('rating') else 5
+            session.location = request.form.get('location')
+            session.notes = request.form.get('notes')
+            session.weather_conditions = request.form.get('weather_conditions')
+            
+            # Automatically link to project based on dog assignment
+            session.project_id = auto_link_dog_activity_to_project(session.dog_id, session.session_date)
             
             db.session.add(session)
             db.session.commit()
             
-            log_audit(current_user.id, AuditAction.CREATE, 'TrainingSession', session.id, f'جلسة تدريب جديدة للكلب {session.dog.name}', None, {'category': session.category.value})
+            project_info = f" (مرتبط بالمشروع: {session.project.name})" if session.project else " (غير مرتبط بمشروع)"
+            log_audit(current_user.id, AuditAction.CREATE, 'TrainingSession', session.id, f'جلسة تدريب جديدة للكلب {session.dog.name}{project_info}', None, {'category': session.category.value})
             flash('تم تسجيل جلسة التدريب بنجاح', 'success')
             return redirect(url_for('main.training_list'))
             
@@ -345,23 +355,37 @@ def veterinary_list():
 def veterinary_add():
     if request.method == 'POST':
         try:
-            visit = VeterinaryVisit(
-                dog_id=request.form['dog_id'],
-                veterinarian_id=request.form['veterinarian_id'],
-                visit_type=VisitType(request.form['visit_type']),
-                diagnosis=request.form.get('diagnosis'),
-                treatment=request.form.get('treatment'),
-                medications=request.form.get('medications'),
-                cost=float(request.form['cost']) if request.form.get('cost') else None,
-                notes=request.form.get('notes'),
-                follow_up_required='follow_up_required' in request.form,
-                follow_up_date=datetime.strptime(request.form['follow_up_date'], '%Y-%m-%d').date() if request.form.get('follow_up_date') else None
-            )
+            from utils import auto_link_dog_activity_to_project
+            from datetime import datetime
+            
+            # Create veterinary visit with proper model construction
+            visit = VeterinaryVisit()
+            visit.dog_id = request.form['dog_id']
+            visit.vet_id = request.form['vet_id']
+            visit.visit_type = VisitType(request.form['visit_type'])
+            visit.visit_date = datetime.strptime(request.form['visit_date'], '%Y-%m-%dT%H:%M') if request.form.get('visit_date') else datetime.utcnow()
+            visit.weight = float(request.form['weight']) if request.form.get('weight') else None
+            visit.temperature = float(request.form['temperature']) if request.form.get('temperature') else None
+            visit.heart_rate = int(request.form['heart_rate']) if request.form.get('heart_rate') else None
+            visit.blood_pressure = request.form.get('blood_pressure')
+            visit.symptoms = request.form.get('symptoms')
+            visit.diagnosis = request.form.get('diagnosis')
+            visit.treatment = request.form.get('treatment')
+            visit.stool_color = request.form.get('stool_color')
+            visit.stool_consistency = request.form.get('stool_consistency')
+            visit.urine_color = request.form.get('urine_color')
+            visit.next_visit_date = datetime.strptime(request.form['next_visit_date'], '%Y-%m-%d').date() if request.form.get('next_visit_date') else None
+            visit.notes = request.form.get('notes')
+            visit.cost = float(request.form['cost']) if request.form.get('cost') else None
+            
+            # Automatically link to project based on dog assignment
+            visit.project_id = auto_link_dog_activity_to_project(visit.dog_id, visit.visit_date)
             
             db.session.add(visit)
             db.session.commit()
             
-            log_audit(current_user.id, AuditAction.CREATE, 'VeterinaryVisit', visit.id, f'زيارة بيطرية جديدة للكلب {visit.dog.name}', None, {'visit_type': visit.visit_type.value})
+            project_info = f" (مرتبط بالمشروع: {visit.project.name})" if visit.project else " (غير مرتبط بمشروع)"
+            log_audit(current_user.id, AuditAction.CREATE, 'VeterinaryVisit', visit.id, f'زيارة بيطرية جديدة للكلب {visit.dog.name}{project_info}', None, {'visit_type': visit.visit_type.value})
             flash('تم تسجيل الزيارة البيطرية بنجاح', 'success')
             return redirect(url_for('main.veterinary_list'))
             
@@ -617,10 +641,21 @@ def project_dashboard(project_id):
     # Get project managers for the quick update modal
     project_managers = Employee.query.filter_by(role=EmployeeRole.PROJECT_MANAGER, is_active=True).all()
     
-    # Recent activities
+    # Recent activities - include linked training and veterinary visits
     recent_incidents = Incident.query.filter_by(project_id=project.id).order_by(Incident.incident_date.desc()).limit(5).all()
     recent_suspicions = Suspicion.query.filter_by(project_id=project.id).order_by(Suspicion.discovery_date.desc()).limit(5).all()
     recent_evaluations = PerformanceEvaluation.query.filter_by(project_id=project.id).order_by(PerformanceEvaluation.evaluation_date.desc()).limit(5).all()
+    recent_training = TrainingSession.query.filter_by(project_id=project.id).order_by(TrainingSession.session_date.desc()).limit(5).all()
+    recent_veterinary = VeterinaryVisit.query.filter_by(project_id=project.id).order_by(VeterinaryVisit.visit_date.desc()).limit(5).all()
+    
+    # Get statistics for linked activities
+    total_training = TrainingSession.query.filter_by(project_id=project.id).count()
+    total_veterinary = VeterinaryVisit.query.filter_by(project_id=project.id).count()
+    
+    stats.update({
+        'total_training': total_training,
+        'total_veterinary': total_veterinary
+    })
     
     return render_template('projects/modern_dashboard.html', 
                          project=project, 
@@ -630,7 +665,9 @@ def project_dashboard(project_id):
                          project_managers=project_managers,
                          recent_incidents=recent_incidents,
                          recent_suspicions=recent_suspicions,
-                         recent_evaluations=recent_evaluations)
+                         recent_evaluations=recent_evaluations,
+                         recent_training=recent_training,
+                         recent_veterinary=recent_veterinary)
 
 # Project Status Management
 @main_bp.route('/projects/<project_id>/status', methods=['POST'])
