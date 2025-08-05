@@ -103,9 +103,15 @@ Preferred communication style: Simple, everyday language.
   - Manage performance (create performance evaluations)
   - View veterinary (access veterinary records for assigned dogs)
   - View breeding (access breeding records for assigned dogs)
+- **Employee-User Linkage**: 
+  - PROJECT_MANAGER users are automatically linked to Employee records with matching role
+  - Admin panel queries only users with linked PROJECT_MANAGER employee profiles
+  - New users created through admin panel automatically get corresponding employee records
+  - Utility functions provided to link existing PROJECT_MANAGER employees to user accounts
 - **Benefits**: 
   - GENERAL_ADMIN can fine-tune each PROJECT_MANAGER's access per project
   - Immediate permission toggle effects without system restart
   - Enhanced security with row-level data filtering
-  - Clear UI indication of user permissions
+  - Clear UI indication of user permissions and linked employee information
   - Unified admin interface for easier management
+  - Ensures users are tied to actual employee records with PROJECT_MANAGER role

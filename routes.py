@@ -1688,8 +1688,10 @@ def admin_panel():
         flash('هذه الصفحة مخصصة للمدير العام فقط', 'error')
         return redirect(url_for('main.dashboard'))
     
-    # Get all PROJECT_MANAGER users
-    pm_users = User.query.filter_by(role=UserRole.PROJECT_MANAGER).all()
+    # Get all PROJECT_MANAGER users who have linked employee profiles
+    pm_users = User.query.filter_by(role=UserRole.PROJECT_MANAGER).join(
+        Employee, Employee.user_account_id == User.id
+    ).filter(Employee.role == EmployeeRole.PROJECT_MANAGER).all()
     
     # Get all projects
     projects = Project.query.all()
@@ -1745,13 +1747,26 @@ def create_project_manager():
         new_user.active = True
         
         db.session.add(new_user)
+        db.session.flush()  # Get the user ID
+        
+        # Create corresponding employee record
+        new_employee = Employee()
+        new_employee.name = full_name
+        new_employee.employee_id = f"PM{new_user.id:04d}"  # Generate employee ID
+        new_employee.role = EmployeeRole.PROJECT_MANAGER
+        new_employee.email = email
+        new_employee.hire_date = datetime.utcnow().date()
+        new_employee.is_active = True
+        new_employee.user_account_id = new_user.id  # Link to user account
+        
+        db.session.add(new_employee)
         db.session.commit()
         
         # Log the creation
         log_audit(current_user.id, AuditAction.CREATE, 'User', new_user.id,
-                 description=f'Created PROJECT_MANAGER user: {username}')
+                 description=f'Created PROJECT_MANAGER user: {username} with employee profile: {new_employee.employee_id}')
         
-        flash(f'تم إنشاء مدير المشروع {full_name} بنجاح', 'success')
+        flash(f'تم إنشاء مدير المشروع {full_name} بنجاح مع رقم موظف {new_employee.employee_id}', 'success')
         
     except Exception as e:
         db.session.rollback()
@@ -1839,5 +1854,35 @@ def toggle_user_status(user_id):
     except Exception as e:
         db.session.rollback()
         flash(f'خطأ في تعديل حالة المستخدم: {str(e)}', 'error')
+    
+    return redirect(url_for('main.admin_panel'))
+
+@main_bp.route('/admin/link_employees', methods=['POST'])
+@login_required
+def link_existing_employees():
+    """Link existing PROJECT_MANAGER employees to user accounts"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('ليس لديك صلاحية لهذا الإجراء', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        from utils import ensure_employee_user_linkage
+        
+        created_users = ensure_employee_user_linkage()
+        
+        if created_users:
+            count = len(created_users)
+            flash(f'تم ربط {count} موظف بحسابات مستخدمين جديدة', 'success')
+            
+            # Log each linkage
+            for user_info in created_users:
+                log_audit(current_user.id, AuditAction.CREATE, 'User', user_info['user'].id,
+                         description=f'Linked employee {user_info["employee"].employee_id} to user account {user_info["user"].username}')
+        else:
+            flash('جميع موظفي إدارة المشاريع مربوطين بحسابات مستخدمين بالفعل', 'info')
+            
+    except Exception as e:
+        db.session.rollback()
+        flash(f'خطأ في ربط الموظفين: {str(e)}', 'error')
     
     return redirect(url_for('main.admin_panel'))
