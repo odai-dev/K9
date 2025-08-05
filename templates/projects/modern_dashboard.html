@@ -1,0 +1,523 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة تحكم المشروع - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Project Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-gradient-primary text-white">
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <h3 class="mb-1">
+                                <i class="fas fa-tachometer-alt me-2"></i>
+                                {{ project.name }}
+                            </h3>
+                            <p class="mb-0 opacity-75">{{ project.main_task or 'لا توجد مهمة محددة' }}</p>
+                        </div>
+                        <div class="col-lg-4 text-lg-end">
+                            <span class="badge bg-light text-dark fs-6 me-2">{{ project.code }}</span>
+                            {% if project.status.value == 'PLANNED' %}
+                                <span class="badge bg-info fs-6">مخطط</span>
+                            {% elif project.status.value == 'ACTIVE' %}
+                                <span class="badge bg-success fs-6">نشط</span>
+                            {% elif project.status.value == 'COMPLETED' %}
+                                <span class="badge bg-primary fs-6">مكتمل</span>
+                            {% elif project.status.value == 'CANCELLED' %}
+                                <span class="badge bg-danger fs-6">ملغي</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-lg-2 col-md-4 col-6">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-calendar-alt text-primary fa-lg"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-2">
+                                    <small class="text-muted d-block">تاريخ البداية</small>
+                                    <strong>{{ project.start_date.strftime('%Y-%m-%d') if project.start_date else '-' }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-calendar-check text-success fa-lg"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-2">
+                                    <small class="text-muted d-block">تاريخ الانتهاء</small>
+                                    <strong>{{ project.end_date.strftime('%Y-%m-%d') if project.end_date else '-' }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-clock text-warning fa-lg"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-2">
+                                    <small class="text-muted d-block">المدة</small>
+                                    <strong>{{ project.duration_days or 0 }} يوم</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-flag text-danger fa-lg"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-2">
+                                    <small class="text-muted d-block">الأولوية</small>
+                                    <strong>
+                                        {% if project.priority == 'HIGH' %}عالية
+                                        {% elif project.priority == 'MEDIUM' %}متوسطة
+                                        {% elif project.priority == 'LOW' %}منخفضة
+                                        {% else %}غير محددة{% endif %}
+                                    </strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-map-marker-alt text-info fa-lg"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-2">
+                                    <small class="text-muted d-block">الموقع</small>
+                                    <strong>{{ project.location[:15] + '...' if project.location and project.location|length > 15 else (project.location or '-') }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-user-tie text-secondary fa-lg"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-2">
+                                    <small class="text-muted d-block">المدير</small>
+                                    <strong>{{ project.manager.full_name if project.manager else '-' }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <ul class="nav nav-pills nav-fill bg-light rounded p-2" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="overview-tab" data-bs-toggle="pill" data-bs-target="#overview" type="button" role="tab">
+                        <i class="fas fa-chart-line me-2"></i>نظرة عامة
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="resources-tab" data-bs-toggle="pill" data-bs-target="#resources" type="button" role="tab">
+                        <i class="fas fa-users me-2"></i>الموارد
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="attendance-tab" data-bs-toggle="pill" data-bs-target="#attendance" type="button" role="tab">
+                        <i class="fas fa-calendar-check me-2"></i>الحضور
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="operations-tab" data-bs-toggle="pill" data-bs-target="#operations" type="button" role="tab">
+                        <i class="fas fa-cogs me-2"></i>العمليات
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="reports-tab" data-bs-toggle="pill" data-bs-target="#reports" type="button" role="tab">
+                        <i class="fas fa-chart-bar me-2"></i>التقارير
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+        <!-- Overview Tab -->
+        <div class="tab-pane fade show active" id="overview" role="tabpanel">
+            <div class="row">
+                <!-- Resource Statistics -->
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-dog fa-3x text-primary"></i>
+                            </div>
+                            <h5 class="card-title">الكلاب المعينة</h5>
+                            <h2 class="text-primary mb-2">{{ project.assigned_dogs|length }}</h2>
+                            <a href="#resources-tab" onclick="switchTab('resources-tab')" class="btn btn-outline-primary btn-sm">عرض التفاصيل</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-users fa-3x text-success"></i>
+                            </div>
+                            <h5 class="card-title">الموظفون المعينون</h5>
+                            <h2 class="text-success mb-2">{{ project.assigned_employees|length }}</h2>
+                            <a href="#resources-tab" onclick="switchTab('resources-tab')" class="btn btn-outline-success btn-sm">عرض التفاصيل</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-exclamation-triangle fa-3x text-warning"></i>
+                            </div>
+                            <h5 class="card-title">الحوادث</h5>
+                            <h2 class="text-warning mb-2">{{ project.incidents|length }}</h2>
+                            <a href="{{ url_for('main.project_incidents', project_id=project.id) }}" class="btn btn-outline-warning btn-sm">عرض التفاصيل</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-search fa-3x text-info"></i>
+                            </div>
+                            <h5 class="card-title">الاشتباهات</h5>
+                            <h2 class="text-info mb-2">{{ project.suspicions|length }}</h2>
+                            <a href="{{ url_for('main.project_suspicions', project_id=project.id) }}" class="btn btn-outline-info btn-sm">عرض التفاصيل</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Description -->
+            {% if project.description %}
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-info-circle me-2"></i>وصف المشروع
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-0">{{ project.description }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Status Actions -->
+            {% if project.status.value != 'COMPLETED' and project.status.value != 'CANCELLED' %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-cog me-2"></i>إجراءات المشروع
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex gap-2 justify-content-center">
+                                {% if project.status.value == 'PLANNED' %}
+                                    <form method="POST" action="{{ url_for('main.project_status_change', project_id=project.id) }}" class="d-inline">
+                                        <input type="hidden" name="status" value="ACTIVE">
+                                        <button type="submit" class="btn btn-success" onclick="return confirm('هل أنت متأكد من بدء المشروع؟')">
+                                            <i class="fas fa-play me-2"></i>بدء المشروع
+                                        </button>
+                                    </form>
+                                {% elif project.status.value == 'ACTIVE' %}
+                                    <form method="POST" action="{{ url_for('main.project_status_change', project_id=project.id) }}" class="d-inline">
+                                        <input type="hidden" name="status" value="COMPLETED">
+                                        <button type="submit" class="btn btn-primary" onclick="return confirm('هل أنت متأكد من إكمال المشروع؟')">
+                                            <i class="fas fa-check me-2"></i>إكمال المشروع
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('main.project_status_change', project_id=project.id) }}" class="d-inline">
+                                        <input type="hidden" name="status" value="CANCELLED">
+                                        <button type="submit" class="btn btn-danger" onclick="return confirm('هل أنت متأكد من إلغاء المشروع؟')">
+                                            <i class="fas fa-times me-2"></i>إلغاء المشروع
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Resources Tab -->
+        <div class="tab-pane fade" id="resources" role="tabpanel">
+            <div class="row">
+                <!-- Assigned Dogs -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-dog me-2"></i>الكلاب المعينة
+                            </h5>
+                            <a href="{{ url_for('main.project_dog_assignment_add', project_id=project.id) }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-plus"></i>
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            {% if project.assigned_dogs %}
+                                {% for assignment in project.assigned_dogs %}
+                                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                    <div>
+                                        <strong>{{ assignment.dog.name }}</strong>
+                                        <br><small class="text-muted">{{ assignment.dog.breed or 'غير محدد' }}</small>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-light text-dark">{{ assignment.dog.status.value }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted text-center">لا توجد كلاب معينة</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assigned Employees -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-users me-2"></i>الموظفون المعينون
+                            </h5>
+                            <a href="{{ url_for('main.project_assignment_add', project_id=project.id) }}" class="btn btn-sm btn-success">
+                                <i class="fas fa-plus"></i>
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            {% if project.assigned_employees %}
+                                {% for assignment in project.assigned_employees %}
+                                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                    <div>
+                                        <strong>{{ assignment.employee.full_name }}</strong>
+                                        <br><small class="text-muted">{{ assignment.employee.role.value }}</small>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-light text-dark">{{ assignment.role or 'عام' }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted text-center">لا توجد موظفون معينون</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Tab -->
+        <div class="tab-pane fade" id="attendance" role="tabpanel">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-calendar-check me-2"></i>إدارة الحضور
+                            </h5>
+                            <div class="btn-group">
+                                <a href="{{ url_for('main.project_attendance', project_id=project.id) }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-calendar-alt me-1"></i>عرض الحضور
+                                </a>
+                                <a href="{{ url_for('main.project_shifts', project_id=project.id) }}" class="btn btn-outline-info">
+                                    <i class="fas fa-clock me-1"></i>إدارة الورديات
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center">
+                                <i class="fas fa-calendar-check fa-3x text-muted mb-3"></i>
+                                <h5>نظام إدارة الحضور</h5>
+                                <p class="text-muted">قم بإدارة حضور الموظفين والكلاب للمشروع من خلال النظام المتطور</p>
+                                <div class="d-flex gap-2 justify-content-center">
+                                    <a href="{{ url_for('main.project_attendance_add', project_id=project.id) }}" class="btn btn-primary">
+                                        <i class="fas fa-plus me-2"></i>تسجيل حضور
+                                    </a>
+                                    <a href="{{ url_for('main.project_attendance_list', project_id=project.id) }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-list me-2"></i>سجل الحضور
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Operations Tab -->
+        <div class="tab-pane fade" id="operations" role="tabpanel">
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-warning text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i>الحوادث
+                            </h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <h3 class="text-warning">{{ project.incidents|length }}</h3>
+                            <p class="mb-3">إجمالي الحوادث المسجلة</p>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('main.project_incident_add', project_id=project.id) }}" class="btn btn-warning">
+                                    <i class="fas fa-plus me-2"></i>تسجيل حادث
+                                </a>
+                                <a href="{{ url_for('main.project_incidents', project_id=project.id) }}" class="btn btn-outline-warning">
+                                    <i class="fas fa-list me-2"></i>عرض الحوادث
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-search me-2"></i>الاشتباهات
+                            </h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <h3 class="text-info">{{ project.suspicions|length }}</h3>
+                            <p class="mb-3">إجمالي الاشتباهات المسجلة</p>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('main.project_suspicion_add', project_id=project.id) }}" class="btn btn-info">
+                                    <i class="fas fa-plus me-2"></i>تسجيل اشتباه
+                                </a>
+                                <a href="{{ url_for('main.project_suspicions', project_id=project.id) }}" class="btn btn-outline-info">
+                                    <i class="fas fa-list me-2"></i>عرض الاشتباهات
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-star me-2"></i>التقييمات
+                            </h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <h3 class="text-success">{{ project.evaluations|length }}</h3>
+                            <p class="mb-3">إجمالي التقييمات المسجلة</p>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('main.project_evaluation_add', project_id=project.id) }}" class="btn btn-success">
+                                    <i class="fas fa-plus me-2"></i>إضافة تقييم
+                                </a>
+                                <a href="{{ url_for('main.project_evaluations', project_id=project.id) }}" class="btn btn-outline-success">
+                                    <i class="fas fa-list me-2"></i>عرض التقييمات
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Tab -->
+        <div class="tab-pane fade" id="reports" role="tabpanel">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-chart-bar me-2"></i>تقارير المشروع
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <div class="d-grid">
+                                        <button class="btn btn-outline-primary" onclick="generateReport('attendance')">
+                                            <i class="fas fa-calendar-check me-2"></i>تقرير الحضور
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="d-grid">
+                                        <button class="btn btn-outline-warning" onclick="generateReport('incidents')">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>تقرير الحوادث
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="d-grid">
+                                        <button class="btn btn-outline-info" onclick="generateReport('performance')">
+                                            <i class="fas fa-chart-line me-2"></i>تقرير الأداء
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+}
+
+.nav-pills .nav-link {
+    border-radius: 0.5rem;
+    margin: 0 0.25rem;
+    transition: all 0.3s ease;
+}
+
+.nav-pills .nav-link:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.nav-pills .nav-link.active {
+    background-color: #007bff;
+}
+
+.card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
+
+<script>
+function switchTab(tabId) {
+    const tab = document.getElementById(tabId);
+    const tabTrigger = new bootstrap.Tab(tab);
+    tabTrigger.show();
+}
+
+function generateReport(type) {
+    // Placeholder for report generation
+    alert(`تم طلب تقرير ${type}. سيتم تطوير هذه الميزة قريباً.`);
+}
+</script>
+{% endblock %}

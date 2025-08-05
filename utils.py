@@ -19,15 +19,17 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def log_audit(user_id, action_type, model_target, object_id, changes=None):
+def log_audit(user_id, action, target_type, target_id, description=None, old_values=None, new_values=None):
     """Log an audit trail entry"""
     try:
         audit_log = AuditLog(
             user_id=user_id,
-            action_type=action_type,
-            model_target=model_target,
-            object_id=object_id,
-            changes=changes,
+            action=action,
+            target_type=target_type,
+            target_id=target_id,
+            description=description,
+            old_values=old_values,
+            new_values=new_values,
             ip_address=request.remote_addr if request else None,
             user_agent=request.headers.get('User-Agent') if request else None
         )
