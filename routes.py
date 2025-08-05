@@ -468,7 +468,7 @@ def projects_list():
     if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.order_by(Project.created_at.desc()).all()
     else:
-        projects = Project.query.filter_by(manager_id=current_user.id).order_by(Project.created_at.desc()).all()
+        projects = Project.query.filter_by(project_manager_id=current_user.id).order_by(Project.created_at.desc()).all()
     
     return render_template('projects/list.html', projects=projects)
 
@@ -493,7 +493,7 @@ def projects_add():
                 start_date=datetime.strptime(request.form['start_date'], '%Y-%m-%d').date(),
                 expected_completion_date=datetime.strptime(request.form['expected_completion_date'], '%Y-%m-%d').date() if request.form.get('expected_completion_date') else None,
                 status=ProjectStatus.PLANNED,
-                manager_id=manager_id,
+                project_project_manager_id=manager_id,
                 location=request.form.get('location'),
                 mission_type=request.form.get('mission_type'),
                 priority=request.form.get('priority', 'MEDIUM')
@@ -545,7 +545,7 @@ def project_dashboard(project_id):
         return redirect(url_for('main.projects_list'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects_list'))
     
@@ -605,7 +605,7 @@ def project_status_change(project_id):
         return redirect(url_for('main.projects_list'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
         flash('غير مسموح لك بتعديل حالة هذا المشروع', 'error')
         return redirect(url_for('main.projects_list'))
     
@@ -638,7 +638,7 @@ def project_dog_add(project_id):
         return redirect(url_for('main.projects_list'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
         flash('غير مسموح لك بإضافة كلاب لهذا المشروع', 'error')
         return redirect(url_for('main.projects_list'))
     
@@ -676,7 +676,7 @@ def project_assignments(project_id):
         return redirect(url_for('main.projects_list'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects_list'))
     
@@ -686,7 +686,11 @@ def project_assignments(project_id):
     
     # Get available dogs and employees for assignment
     available_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
-    available_employees = Employee.query.filter_by(is_active=True).all()
+    # Exclude project managers from regular employee assignments
+    available_employees = Employee.query.filter(
+        Employee.is_active == True,
+        Employee.role != EmployeeRole.PROJECT_MANAGER
+    ).all()
     
     # Get project managers (employees with PROJECT_MANAGER role)
     project_managers = Employee.query.filter_by(role=EmployeeRole.PROJECT_MANAGER, is_active=True).all()
@@ -710,7 +714,7 @@ def project_assignment_add(project_id):
         return redirect(url_for('main.projects_list'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
         flash('غير مسموح لك بإضافة تعيينات لهذا المشروع', 'error')
         return redirect(url_for('main.projects_list'))
     
@@ -742,6 +746,12 @@ def project_assignment_add(project_id):
             employee_ids = request.form.getlist('employee_ids')
             for employee_id in employee_ids:
                 if employee_id:
+                    # Verify employee is not a project manager
+                    employee = Employee.query.get(employee_id)
+                    if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
+                        flash('لا يمكن تعيين مدراء المشاريع كموظفين عاديين. استخدم قسم مدير المشروع.', 'error')
+                        continue
+                        
                     # Check if already assigned
                     existing = ProjectAssignment.query.filter_by(
                         project_id=project_uuid, 
@@ -758,10 +768,21 @@ def project_assignment_add(project_id):
                         )
                         db.session.add(assignment)
         
-        # Handle project manager assignment
-        project_manager_id = request.form.get('project_manager_id')
-        if project_manager_id:
-            project.project_manager_id = project_manager_id
+        # Handle project manager assignment separately 
+        elif assignment_type == 'project_manager':
+            project_manager_id = request.form.get('project_manager_id')
+            if project_manager_id:
+                # Verify it's actually a project manager
+                manager = Employee.query.get(project_manager_id)
+                if manager and manager.role == EmployeeRole.PROJECT_MANAGER:
+                    project.project_manager_id = project_manager_id
+                    flash('تم تحديث مسؤول المشروع بنجاح', 'success')
+                else:
+                    flash('الموظف المحدد ليس مسؤول مشروع', 'error')
+            else:
+                # Remove project manager
+                project.project_manager_id = None
+                flash('تم إزالة مسؤول المشروع', 'success')
         
         db.session.commit()
         log_audit(current_user.id, 'CREATE', 'ProjectAssignment', str(project.id), 
@@ -787,7 +808,7 @@ def project_assignment_remove(project_id, assignment_id):
         return redirect(url_for('main.projects_list'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
         flash('غير مسموح لك بإزالة التعيينات من هذا المشروع', 'error')
         return redirect(url_for('main.projects_list'))
     
@@ -819,7 +840,7 @@ def project_assignment_edit(project_id, assignment_id):
         return redirect(url_for('main.projects_list'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
         flash('غير مسموح لك بتعديل التعيينات في هذا المشروع', 'error')
         return redirect(url_for('main.projects_list'))
     
@@ -849,7 +870,7 @@ def project_incidents(project_id):
         return redirect(url_for('main.projects_list'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects_list'))
     
@@ -868,7 +889,7 @@ def project_incident_add(project_id):
         return redirect(url_for('main.projects_list'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects_list'))
     
@@ -914,7 +935,7 @@ def project_suspicions(project_id):
         return redirect(url_for('main.projects_list'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects_list'))
     
@@ -933,7 +954,7 @@ def project_suspicion_add(project_id):
         return redirect(url_for('main.projects_list'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects_list'))
     
@@ -979,7 +1000,7 @@ def project_evaluations(project_id):
         return redirect(url_for('main.projects_list'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects_list'))
     
@@ -998,7 +1019,7 @@ def project_evaluation_add(project_id):
         return redirect(url_for('main.projects_list'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects_list'))
     
