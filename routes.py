@@ -6,7 +6,7 @@ from models import (Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCyc
                    Project, AuditLog, UserRole, DogStatus, 
                    EmployeeRole, TrainingCategory, VisitType, BreedingCycleType, 
                    BreedingResult, ProjectStatus, AuditAction, DogGender, User,
-                   MaturityStatus, HeatStatus, PregnancyStatus, ProjectDog, 
+                   MaturityStatus, HeatStatus, PregnancyStatus, ProjectDog, ProjectAssignment,
                    Incident, Suspicion, PerformanceEvaluation, 
                    ElementType, PerformanceRating, TargetType,
                    project_employee_assignment, project_dog_assignment)
@@ -549,8 +549,12 @@ def project_dashboard(project_id):
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects_list'))
     
-    # Get dashboard statistics (without assignment/attendance stats)
-    dog_assignments = ProjectDog.query.filter_by(project_id=project_uuid).count()
+    # Get dashboard statistics with new assignment system
+    dog_assignments = ProjectAssignment.query.filter_by(project_id=project_uuid, is_active=True).filter(ProjectAssignment.dog_id.isnot(None)).count()
+    active_dog_assignments = dog_assignments  # All are active since we filter by is_active=True
+    
+    employee_assignments = ProjectAssignment.query.filter_by(project_id=project_uuid, is_active=True).filter(ProjectAssignment.employee_id.isnot(None)).count()
+    active_employee_assignments = employee_assignments  # All are active since we filter by is_active=True
     
     # Incident statistics
     total_incidents = Incident.query.filter_by(project_id=project_uuid).count()
@@ -566,6 +570,9 @@ def project_dashboard(project_id):
     
     stats = {
         'dog_assignments': dog_assignments,
+        'active_dog_assignments': active_dog_assignments,
+        'employee_assignments': employee_assignments,
+        'active_employee_assignments': active_employee_assignments,
         'total_incidents': total_incidents,
         'resolved_incidents': resolved_incidents,
         'pending_incidents': pending_incidents,
@@ -656,6 +663,179 @@ def project_dog_add(project_id):
             flash('تم تعيين الكلب للمشروع بنجاح', 'success')
     
     return redirect(url_for('main.project_dashboard', project_id=project_id))
+
+# Project Assignments Management
+@main_bp.route('/projects/<project_id>/assignments')
+@login_required
+def project_assignments(project_id):
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    # Get current assignments
+    dog_assignments = ProjectAssignment.query.filter_by(project_id=project_uuid, is_active=True).filter(ProjectAssignment.dog_id.isnot(None)).all()
+    employee_assignments = ProjectAssignment.query.filter_by(project_id=project_uuid, is_active=True).filter(ProjectAssignment.employee_id.isnot(None)).all()
+    
+    # Get available dogs and employees for assignment
+    available_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+    available_employees = Employee.query.filter_by(is_active=True).all()
+    
+    # Get project managers (employees with PROJECT_MANAGER role)
+    project_managers = Employee.query.filter_by(role=EmployeeRole.PROJECT_MANAGER, is_active=True).all()
+    
+    return render_template('projects/assignments.html', 
+                         project=project,
+                         dog_assignments=dog_assignments,
+                         employee_assignments=employee_assignments,
+                         available_dogs=available_dogs,
+                         available_employees=available_employees,
+                         project_managers=project_managers)
+
+@main_bp.route('/projects/<project_id>/assignments/add', methods=['POST'])
+@login_required
+def project_assignment_add(project_id):
+    try:
+        project_uuid = uuid.UUID(project_id)
+        project = Project.query.get_or_404(project_uuid)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بإضافة تعيينات لهذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    assignment_type = request.form.get('assignment_type')
+    notes = request.form.get('notes', '')
+    
+    try:
+        if assignment_type == 'dog':
+            dog_ids = request.form.getlist('dog_ids')
+            for dog_id in dog_ids:
+                if dog_id:
+                    # Check if already assigned
+                    existing = ProjectAssignment.query.filter_by(
+                        project_id=project_uuid, 
+                        dog_id=dog_id,
+                        is_active=True
+                    ).first()
+                    
+                    if not existing:
+                        assignment = ProjectAssignment(
+                            project_id=project_uuid,
+                            dog_id=dog_id,
+                            notes=notes,
+                            is_active=True
+                        )
+                        db.session.add(assignment)
+                        
+        elif assignment_type == 'employee':
+            employee_ids = request.form.getlist('employee_ids')
+            for employee_id in employee_ids:
+                if employee_id:
+                    # Check if already assigned
+                    existing = ProjectAssignment.query.filter_by(
+                        project_id=project_uuid, 
+                        employee_id=employee_id,
+                        is_active=True
+                    ).first()
+                    
+                    if not existing:
+                        assignment = ProjectAssignment(
+                            project_id=project_uuid,
+                            employee_id=employee_id,
+                            notes=notes,
+                            is_active=True
+                        )
+                        db.session.add(assignment)
+        
+        # Handle project manager assignment
+        project_manager_id = request.form.get('project_manager_id')
+        if project_manager_id:
+            project.project_manager_id = project_manager_id
+        
+        db.session.commit()
+        log_audit(current_user.id, 'CREATE', 'ProjectAssignment', str(project.id), 
+                 {'assignment_type': assignment_type})
+        flash('تم تعيين المهام بنجاح', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء التعيين: {str(e)}', 'error')
+    
+    return redirect(url_for('main.project_assignments', project_id=project_id))
+
+@main_bp.route('/projects/<project_id>/assignments/<assignment_id>/remove', methods=['POST'])
+@login_required
+def project_assignment_remove(project_id, assignment_id):
+    try:
+        project_uuid = uuid.UUID(project_id)
+        assignment_uuid = uuid.UUID(assignment_id)
+        project = Project.query.get_or_404(project_uuid)
+        assignment = ProjectAssignment.query.get_or_404(assignment_uuid)
+    except ValueError:
+        flash('معرف غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بإزالة التعيينات من هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    try:
+        assignment.is_active = False
+        assignment.unassigned_date = date.today()
+        db.session.commit()
+        
+        log_audit(current_user.id, 'DELETE', 'ProjectAssignment', str(assignment.id), 
+                 {'project': project.name})
+        flash('تم إزالة التعيين بنجاح', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء إزالة التعيين: {str(e)}', 'error')
+    
+    return redirect(url_for('main.project_assignments', project_id=project_id))
+
+@main_bp.route('/projects/<project_id>/assignments/<assignment_id>/edit', methods=['POST'])
+@login_required
+def project_assignment_edit(project_id, assignment_id):
+    try:
+        project_uuid = uuid.UUID(project_id)
+        assignment_uuid = uuid.UUID(assignment_id)
+        project = Project.query.get_or_404(project_uuid)
+        assignment = ProjectAssignment.query.get_or_404(assignment_uuid)
+    except ValueError:
+        flash('معرف غير صحيح', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and project.manager_id != current_user.id:
+        flash('غير مسموح لك بتعديل التعيينات في هذا المشروع', 'error')
+        return redirect(url_for('main.projects_list'))
+    
+    try:
+        assignment.notes = request.form.get('notes', assignment.notes)
+        db.session.commit()
+        
+        log_audit(current_user.id, 'EDIT', 'ProjectAssignment', str(assignment.id), 
+                 {'notes_updated': True})
+        flash('تم تحديث التعيين بنجاح', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء تحديث التعيين: {str(e)}', 'error')
+    
+    return redirect(url_for('main.project_assignments', project_id=project_id))
 
 # Enhanced Projects Section - Incidents
 @main_bp.route('/projects/<project_id>/incidents')

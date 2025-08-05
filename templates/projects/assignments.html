@@ -4,55 +4,20 @@
 
 {% block content %}
 <div class="container-fluid">
-    <!-- Header Section -->
+    <!-- Project Header -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
-                <div>
-                    <h2 class="mb-1 text-primary">
-                        <i class="fas fa-users me-2"></i>تعيينات المشروع
-                    </h2>
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb mb-0">
-                            <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">الرئيسية</a></li>
-                            <li class="breadcrumb-item"><a href="{{ url_for('main.projects_list') }}">المشاريع</a></li>
-                            <li class="breadcrumb-item"><a href="{{ url_for('main.project_dashboard', project_id=project.id) }}">{{ project.name }}</a></li>
-                            <li class="breadcrumb-item active">التعيينات</li>
-                        </ol>
-                    </nav>
-                </div>
-                <div class="d-flex flex-wrap gap-2">
-                    <a href="{{ url_for('main.project_dashboard', project_id=project.id) }}" class="btn btn-outline-primary">
-                        <i class="fas fa-chart-line me-2"></i>لوحة التحكم
-                    </a>
-                    <a href="{{ url_for('main.project_incidents', project_id=project.id) }}" class="btn btn-outline-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>الحوادث
-                    </a>
-                    <a href="{{ url_for('main.project_suspicions', project_id=project.id) }}" class="btn btn-outline-danger">
-                        <i class="fas fa-search me-2"></i>الاشتباهات
-                    </a>
-                    <a href="{{ url_for('main.project_evaluations', project_id=project.id) }}" class="btn btn-outline-success">
-                        <i class="fas fa-star me-2"></i>التقييمات
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Project Info Card -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
+            <div class="card">
                 <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h5 class="mb-1">{{ project.name }}</h5>
-                            <p class="text-muted mb-0">{{ project.code }} | {{ project.main_task }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title mb-1">{{ project.name }}</h3>
+                            <small class="text-muted">كود المشروع: {{ project.code }}</small>
                         </div>
-                        <div class="col-md-4 text-md-end">
-                            <span class="badge bg-{{ 'success' if project.status.value == 'ACTIVE' else 'secondary' }} fs-6 px-3 py-2">
-                                {% if project.status.value == 'ACTIVE' %}نشط{% elif project.status.value == 'PLANNED' %}مخطط{% elif project.status.value == 'COMPLETED' %}مكتمل{% else %}ملغي{% endif %}
-                            </span>
+                        <div>
+                            <a href="{{ url_for('main.project_dashboard', project_id=project.id) }}" class="btn btn-outline-primary">
+                                <i class="fas fa-arrow-right ms-2"></i>العودة للوحة التحكم
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -60,817 +25,294 @@
         </div>
     </div>
 
-    <!-- Quick Stats -->
-    <div class="row mb-4">
-        <div class="col-md-3 col-sm-6 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body text-center">
-                    <div class="d-flex align-items-center justify-content-center mb-2">
-                        <div class="avatar-lg bg-primary text-white rounded-circle d-flex align-items-center justify-content-center">
-                            <i class="fas fa-users fa-lg"></i>
-                        </div>
-                    </div>
-                    <h4 class="mb-1 text-primary">{{ assignments|length }}</h4>
-                    <p class="text-muted mb-0">إجمالي الموظفين</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 col-sm-6 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body text-center">
-                    <div class="d-flex align-items-center justify-content-center mb-2">
-                        <div class="avatar-lg bg-success text-white rounded-circle d-flex align-items-center justify-content-center">
-                            <i class="fas fa-user-check fa-lg"></i>
-                        </div>
-                    </div>
-                    <h4 class="mb-1 text-success">{{ assignments|selectattr('is_present')|list|length }}</h4>
-                    <p class="text-muted mb-0">حاضرين</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 col-sm-6 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body text-center">
-                    <div class="d-flex align-items-center justify-content-center mb-2">
-                        <div class="avatar-lg bg-info text-white rounded-circle d-flex align-items-center justify-content-center">
-                            <i class="fas fa-dog fa-lg"></i>
-                        </div>
-                    </div>
-                    <h4 class="mb-1 text-info">{{ dog_assignments|length }}</h4>
-                    <p class="text-muted mb-0">إجمالي الكلاب</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 col-sm-6 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body text-center">
-                    <div class="d-flex align-items-center justify-content-center mb-2">
-                        <div class="avatar-lg bg-warning text-white rounded-circle d-flex align-items-center justify-content-center">
-                            <i class="fas fa-paw fa-lg"></i>
-                        </div>
-                    </div>
-                    <h4 class="mb-1 text-warning">{{ dog_assignments|selectattr('is_active')|list|length }}</h4>
-                    <p class="text-muted mb-0">كلاب نشطة</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content -->
+    <!-- Assignments Management -->
     <div class="row">
-        <!-- Employee Assignments Section -->
-        <div class="col-12 mb-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom-0 py-3">
-                    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
-                        <h5 class="mb-0 text-primary">
-                            <i class="fas fa-users me-2"></i>الموظفون المكلفون ({{ assignments|length }})
-                        </h5>
-                        <div class="d-flex flex-wrap gap-2">
-                            <div class="input-group" style="width: 250px;">
-                                <span class="input-group-text bg-light border-end-0">
-                                    <i class="fas fa-search text-muted"></i>
-                                </span>
-                                <input type="text" class="form-control border-start-0" placeholder="البحث في الموظفين..." id="employeeSearch">
+        <!-- Dog Assignments -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-dog ms-2"></i>تعيينات الكلاب
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Add Dog Assignment Form -->
+                    <form method="POST" action="{{ url_for('main.project_assignment_add', project_id=project.id) }}" class="mb-4">
+                        <input type="hidden" name="assignment_type" value="dog">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <label for="dog_ids" class="form-label">اختيار الكلاب</label>
+                                <select name="dog_ids" id="dog_ids" class="form-select" multiple size="4">
+                                    {% for dog in available_dogs %}
+                                        {% set already_assigned = dog_assignments|selectattr('dog_id', 'equalto', dog.id)|list|length > 0 %}
+                                        {% if not already_assigned %}
+                                            <option value="{{ dog.id }}">{{ dog.name }} ({{ dog.code }}) - {{ dog.breed }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">اضغط Ctrl/Cmd لتحديد متعدد</small>
                             </div>
-                            <div class="dropdown">
-                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                    <i class="fas fa-filter me-2"></i>تصفية
+                            <div class="col-md-4">
+                                <label for="dog_notes" class="form-label">ملاحظات</label>
+                                <textarea name="notes" id="dog_notes" class="form-control" rows="3" placeholder="ملاحظات حول التعيين..."></textarea>
+                                <button type="submit" class="btn btn-success mt-2 w-100">
+                                    <i class="fas fa-plus ms-1"></i>إضافة
                                 </button>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#" onclick="filterEmployees('all')">جميع الموظفين</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="filterEmployees('present')">الحاضرين</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="filterEmployees('absent')">الغائبين</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="#" onclick="filterEmployees('HANDLER')">السائسين</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="filterEmployees('TRAINER')">المدربين</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="filterEmployees('VET')">الأطباء</a></li>
-                                </ul>
-                            </div>
-                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assignEmployeeModal">
-                                <i class="fas fa-plus me-2"></i>إضافة موظف
-                            </button>
-                            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#bulkAssignModal">
-                                <i class="fas fa-users me-2"></i>إضافة متعددة
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body p-0">
-                    {% if assignments %}
-                    <div id="employeeCardsContainer">
-                        {% for assignment in assignments %}
-                        <div class="employee-card border-bottom p-3" data-role="{{ assignment.role.value }}" data-present="{{ assignment.is_present|string|lower }}">
-                            <div class="row align-items-center">
-                                <div class="col-md-4">
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar-md me-3">
-                                            {% if assignment.employee.photo %}
-                                            <img src="{{ url_for('main.uploaded_file', filename=assignment.employee.photo) }}" class="rounded-circle" width="48" height="48" alt="صورة الموظف">
-                                            {% else %}
-                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                                {{ assignment.employee.name[0] if assignment.employee.name else 'M' }}
-                                            </div>
-                                            {% endif %}
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-1 fw-bold">{{ assignment.employee.name }}</h6>
-                                            <p class="text-muted mb-0 small">{{ assignment.employee.employee_id }}</p>
-                                            {% if assignment.employee.phone %}
-                                            <p class="text-muted mb-0 small">
-                                                <i class="fas fa-phone me-1"></i>{{ assignment.employee.phone }}
-                                            </p>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    {% set role_map = {
-                                        'PROJECT_MANAGER': {'name': 'مدير المشروع', 'class': 'danger'},
-                                        'HANDLER': {'name': 'سائس', 'class': 'primary'},
-                                        'TRAINER': {'name': 'مدرب', 'class': 'info'},
-                                        'VET': {'name': 'طبيب بيطري', 'class': 'success'}
-                                    } %}
-                                    {% set role_info = role_map.get(assignment.role.value, {'name': assignment.role.value, 'class': 'secondary'}) %}
-                                    <span class="badge bg-{{ role_info.class }} fs-7">{{ role_info.name }}</span>
-                                </div>
-                                <div class="col-md-2">
-                                    {% set period_map = {
-                                        'MORNING': {'name': 'صباحي', 'class': 'warning'},
-                                        'EVENING': {'name': 'مسائي', 'class': 'info'},
-                                        'NIGHT': {'name': 'ليلي', 'class': 'dark'}
-                                    } %}
-                                    {% set period_info = period_map.get(assignment.period.value, {'name': assignment.period.value, 'class': 'secondary'}) %}
-                                    <span class="badge bg-{{ period_info.class }} fs-7">{{ period_info.name }}</span>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="d-flex align-items-center">
-                                        {% if assignment.is_present %}
-                                        <span class="badge bg-success fs-7">
-                                            <i class="fas fa-check me-1"></i>حاضر
-                                        </span>
-                                        {% else %}
-                                        <span class="badge bg-danger fs-7">
-                                            <i class="fas fa-times me-1"></i>غائب
-                                        </span>
-                                        {% if assignment.leave_type %}
-                                        <span class="badge bg-warning fs-7 ms-1">
-                                            {% set leave_map = {'ANNUAL': 'سنوي', 'OFFICIAL': 'رسمي', 'EMERGENCY': 'طارئ'} %}
-                                            {{ leave_map.get(assignment.leave_type.value, assignment.leave_type.value) }}
-                                        </span>
-                                        {% endif %}
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="col-md-2 text-end">
-                                    <div class="dropdown">
-                                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                            إجراءات
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li>
-                                                <a class="dropdown-item" href="#" onclick="toggleAttendance('{{ assignment.id }}', '{{ 'false' if assignment.is_present else 'true' }}')">
-                                                    <i class="fas fa-{{ 'user-times' if assignment.is_present else 'user-check' }} me-2"></i>
-                                                    {{ 'تسجيل غياب' if assignment.is_present else 'تسجيل حضور' }}
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="#" onclick="editAssignment('{{ assignment.id }}')">
-                                                    <i class="fas fa-edit me-2"></i>تعديل التعيين
-                                                </a>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <a class="dropdown-item text-danger" href="#" onclick="removeAssignment('{{ assignment.id }}')">
-                                                    <i class="fas fa-trash me-2"></i>إزالة من المشروع
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
                             </div>
                         </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="text-center py-5">
-                        <div class="avatar-xl bg-light text-muted rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3">
-                            <i class="fas fa-users fa-2x"></i>
-                        </div>
-                        <h5 class="text-muted">لا يوجد موظفون مكلفون</h5>
-                        <p class="text-muted mb-3">لم يتم تعيين أي موظف لهذا المشروع بعد</p>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assignEmployeeModal">
-                            <i class="fas fa-plus me-2"></i>إضافة أول موظف
-                        </button>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+                    </form>
 
-        <!-- Dog Assignments Section -->
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom-0 py-3">
-                    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
-                        <h5 class="mb-0 text-primary">
-                            <i class="fas fa-dog me-2"></i>الكلاب المكلفة ({{ dog_assignments|length }})
-                        </h5>
-                        <div class="d-flex flex-wrap gap-2">
-                            <div class="input-group" style="width: 250px;">
-                                <span class="input-group-text bg-light border-end-0">
-                                    <i class="fas fa-search text-muted"></i>
-                                </span>
-                                <input type="text" class="form-control border-start-0" placeholder="البحث في الكلاب..." id="dogSearch">
-                            </div>
-                            <div class="dropdown">
-                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                    <i class="fas fa-filter me-2"></i>تصفية
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#" onclick="filterDogs('all')">جميع الكلاب</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="filterDogs('active')">النشطة</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="filterDogs('inactive')">غير النشطة</a></li>
-                                </ul>
-                            </div>
-                            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#assignDogModal">
-                                <i class="fas fa-plus me-2"></i>إضافة كلب
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body p-0">
+                    <!-- Current Dog Assignments -->
+                    <h6 class="border-bottom pb-2">الكلاب المعينة حالياً</h6>
                     {% if dog_assignments %}
-                    <div id="dogCardsContainer">
-                        {% for assignment in dog_assignments %}
-                        <div class="dog-card border-bottom p-3" data-active="{{ assignment.is_active|string|lower }}">
-                            <div class="row align-items-center">
-                                <div class="col-md-4">
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar-md me-3">
-                                            {% if assignment.dog.photo %}
-                                            <img src="{{ url_for('main.uploaded_file', filename=assignment.dog.photo) }}" class="rounded-circle" width="48" height="48" alt="صورة الكلب">
-                                            {% else %}
-                                            <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                                <i class="fas fa-dog"></i>
-                                            </div>
-                                            {% endif %}
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-1 fw-bold">{{ assignment.dog.name }}</h6>
-                                            <p class="text-muted mb-0 small">{{ assignment.dog.code }}</p>
-                                            <p class="text-muted mb-0 small">{{ assignment.dog.breed }}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="d-flex flex-column">
-                                        <span class="small text-muted">التخصص:</span>
-                                        <span class="fw-semibold">{{ assignment.dog.specialization or 'غير محدد' }}</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    {% if assignment.is_active %}
-                                    <span class="badge bg-success fs-7">
-                                        <i class="fas fa-check-circle me-1"></i>نشط
-                                    </span>
-                                    {% else %}
-                                    <span class="badge bg-secondary fs-7">
-                                        <i class="fas fa-pause-circle me-1"></i>غير نشط
-                                    </span>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="d-flex flex-column">
-                                        <span class="small text-muted">تاريخ التعيين:</span>
-                                        <span class="small">{{ assignment.assigned_date.strftime('%Y-%m-%d') if assignment.assigned_date else assignment.created_at.strftime('%Y-%m-%d') }}</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-1 text-end">
-                                    <div class="dropdown">
-                                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                            إجراءات
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li>
-                                                <a class="dropdown-item" href="#" onclick="toggleDogStatus('{{ assignment.id }}')">
-                                                    <i class="fas fa-toggle-{{ 'off' if assignment.is_active else 'on' }} me-2"></i>
-                                                    {{ 'إلغاء التنشيط' if assignment.is_active else 'تنشيط' }}
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="{{ url_for('main.dogs_view', dog_id=assignment.dog.id) }}">
-                                                    <i class="fas fa-eye me-2"></i>عرض تفاصيل الكلب
-                                                </a>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <a class="dropdown-item text-danger" href="#" onclick="removeDogAssignment('{{ assignment.id }}')">
-                                                    <i class="fas fa-trash me-2"></i>إزالة من المشروع
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="text-center py-5">
-                        <div class="avatar-xl bg-light text-muted rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3">
-                            <i class="fas fa-dog fa-2x"></i>
-                        </div>
-                        <h5 class="text-muted">لا توجد كلاب مكلفة</h5>
-                        <p class="text-muted mb-3">لم يتم تعيين أي كلب لهذا المشروع بعد</p>
-                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#assignDogModal">
-                            <i class="fas fa-plus me-2"></i>إضافة أول كلب
-                        </button>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Employee Assignment Modal -->
-<div class="modal fade" id="assignEmployeeModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('main.project_assignment_add', project_id=project.id) }}">
-                <div class="modal-header border-bottom-0">
-                    <h5 class="modal-title">
-                        <i class="fas fa-user-plus me-2"></i>تعيين موظف للمشروع
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="employee_id" class="form-label">الموظف *</label>
-                            <select class="form-select" id="employee_id" name="employee_id" required onchange="showEmployeeInfo()">
-                                <option value="">اختر موظف...</option>
-                                {% for employee in available_employees %}
-                                <option value="{{ employee.id }}" 
-                                    data-role="{{ employee.role.value }}"
-                                    data-phone="{{ employee.phone or '' }}"
-                                    data-email="{{ employee.email or '' }}">
-                                    {{ employee.name }} - {{ employee.employee_id }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="period" class="form-label">الفترة *</label>
-                            <select class="form-select" id="period" name="period" required>
-                                <option value="">اختر فترة...</option>
-                                <option value="MORNING">صباحي</option>
-                                <option value="EVENING">مسائي</option>
-                                <option value="NIGHT">ليلي</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="is_present" name="is_present" checked>
-                                <label class="form-check-label" for="is_present">
-                                    حاضر في المشروع
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3" id="leaveTypeDiv" style="display: none;">
-                            <label for="leave_type" class="form-label">نوع الإجازة</label>
-                            <select class="form-select" id="leave_type" name="leave_type">
-                                <option value="">لا توجد إجازة</option>
-                                <option value="ANNUAL">إجازة سنوية</option>
-                                <option value="OFFICIAL">إجازة رسمية</option>
-                                <option value="EMERGENCY">إجازة طارئة</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div id="selectedEmployeeInfo" class="alert alert-info" style="display: none;">
-                        <h6>معلومات الموظف المحدد:</h6>
-                        <div id="employeeInfoContent"></div>
-                    </div>
-                </div>
-                <div class="modal-footer border-top-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-user-plus me-2"></i>تعيين الموظف
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Bulk Employee Assignment Modal -->
-<div class="modal fade" id="bulkAssignModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('main.project_bulk_assignment_add', project_id=project.id) }}">
-                <div class="modal-header border-bottom-0">
-                    <h5 class="modal-title">
-                        <i class="fas fa-users me-2"></i>إضافة عدة موظفين للمشروع
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <label class="form-label">اختر الموظفين:</label>
-                                <div>
-                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllEmployees()">
-                                        <i class="fas fa-check-double me-1"></i>تحديد الكل
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-1" onclick="deselectAllEmployees()">
-                                        <i class="fas fa-times me-1"></i>إلغاء التحديد
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="border rounded p-3" style="max-height: 400px; overflow-y: auto;">
-                                <div class="row">
-                                    {% for employee in available_employees %}
-                                    <div class="col-md-6 mb-3">
-                                        <div class="card h-100">
-                                            <div class="card-body p-3">
-                                                <div class="form-check">
-                                                    <input class="form-check-input employee-checkbox" type="checkbox" 
-                                                           name="employee_ids" value="{{ employee.id }}" 
-                                                           id="emp_{{ employee.id }}">
-                                                    <label class="form-check-label w-100" for="emp_{{ employee.id }}">
-                                                        <div class="d-flex align-items-center">
-                                                            <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2 flex-shrink-0">
-                                                                {{ employee.name[0] if employee.name else 'M' }}
-                                                            </div>
-                                                            <div class="flex-grow-1">
-                                                                <h6 class="mb-1">{{ employee.name }}</h6>
-                                                                <p class="text-muted mb-1 small">{{ employee.employee_id }}</p>
-                                                                <span class="badge bg-{% if employee.role.value == 'HANDLER' %}primary{% elif employee.role.value == 'TRAINER' %}info{% elif employee.role.value == 'VET' %}success{% else %}secondary{% endif %} small">
-                                                                    {% if employee.role.value == 'HANDLER' %}سائس{% elif employee.role.value == 'TRAINER' %}مدرب{% elif employee.role.value == 'VET' %}طبيب{% else %}{{ employee.role.value }}{% endif %}
-                                                                </span>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>الاسم</th>
+                                        <th>الكود</th>
+                                        <th>النوع</th>
+                                        <th>تاريخ التعيين</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for assignment in dog_assignments %}
+                                        <tr>
+                                            <td>{{ assignment.dog.name }}</td>
+                                            <td>{{ assignment.dog.code }}</td>
+                                            <td>{{ assignment.dog.breed }}</td>
+                                            <td>{{ assignment.assigned_date.strftime('%Y-%m-%d') }}</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#editAssignmentModal{{ assignment.id }}">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <form method="POST" action="{{ url_for('main.project_assignment_remove', project_id=project.id, assignment_id=assignment.id) }}" 
+                                                          style="display: inline;" 
+                                                          onsubmit="return confirm('هل أنت متأكد من إزالة هذا التعيين؟')">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        
+                                        <!-- Edit Assignment Modal -->
+                                        <div class="modal fade" id="editAssignmentModal{{ assignment.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">تعديل تعيين {{ assignment.dog.name }}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <form method="POST" action="{{ url_for('main.project_assignment_edit', project_id=project.id, assignment_id=assignment.id) }}">
+                                                        <div class="modal-body">
+                                                            <div class="mb-3">
+                                                                <label for="editNotes{{ assignment.id }}" class="form-label">الملاحظات</label>
+                                                                <textarea name="notes" id="editNotes{{ assignment.id }}" class="form-control" rows="3">{{ assignment.notes or '' }}</textarea>
                                                             </div>
                                                         </div>
-                                                    </label>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                                            <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
+                                                        </div>
+                                                    </form>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
                                     {% endfor %}
-                                </div>
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-paw fa-2x mb-2"></i>
+                            <p>لا توجد كلاب معينة لهذا المشروع بعد</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Employee Assignments -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users ms-2"></i>تعيينات الموظفين
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Add Employee Assignment Form -->
+                    <form method="POST" action="{{ url_for('main.project_assignment_add', project_id=project.id) }}" class="mb-4">
+                        <input type="hidden" name="assignment_type" value="employee">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <label for="employee_ids" class="form-label">اختيار الموظفين</label>
+                                <select name="employee_ids" id="employee_ids" class="form-select" multiple size="4">
+                                    {% for employee in available_employees %}
+                                        {% set already_assigned = employee_assignments|selectattr('employee_id', 'equalto', employee.id)|list|length > 0 %}
+                                        {% if not already_assigned %}
+                                            <option value="{{ employee.id }}">{{ employee.name }} ({{ employee.employee_id }}) - {{ employee.role.value }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">اضغط Ctrl/Cmd لتحديد متعدد</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="employee_notes" class="form-label">ملاحظات</label>
+                                <textarea name="notes" id="employee_notes" class="form-control" rows="3" placeholder="ملاحظات حول التعيين..."></textarea>
+                                <button type="submit" class="btn btn-success mt-2 w-100">
+                                    <i class="fas fa-plus ms-1"></i>إضافة
+                                </button>
                             </div>
                         </div>
-                    </div>
-                    <div id="selectedEmployeesCount" class="alert alert-info mt-3" style="display: none;">
-                        <strong>تم تحديد <span id="selectedCount">0</span> موظف</strong>
-                    </div>
+                    </form>
+
+                    <!-- Current Employee Assignments -->
+                    <h6 class="border-bottom pb-2">الموظفون المعينون حالياً</h6>
+                    {% if employee_assignments %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>الاسم</th>
+                                        <th>رقم الموظف</th>
+                                        <th>الدور</th>
+                                        <th>تاريخ التعيين</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for assignment in employee_assignments %}
+                                        <tr>
+                                            <td>{{ assignment.employee.name }}</td>
+                                            <td>{{ assignment.employee.employee_id }}</td>
+                                            <td>{{ assignment.employee.role.value }}</td>
+                                            <td>{{ assignment.assigned_date.strftime('%Y-%m-%d') }}</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#editEmployeeAssignmentModal{{ assignment.id }}">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <form method="POST" action="{{ url_for('main.project_assignment_remove', project_id=project.id, assignment_id=assignment.id) }}" 
+                                                          style="display: inline;" 
+                                                          onsubmit="return confirm('هل أنت متأكد من إزالة هذا التعيين؟')">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        
+                                        <!-- Edit Employee Assignment Modal -->
+                                        <div class="modal fade" id="editEmployeeAssignmentModal{{ assignment.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">تعديل تعيين {{ assignment.employee.name }}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <form method="POST" action="{{ url_for('main.project_assignment_edit', project_id=project.id, assignment_id=assignment.id) }}">
+                                                        <div class="modal-body">
+                                                            <div class="mb-3">
+                                                                <label for="editEmployeeNotes{{ assignment.id }}" class="form-label">الملاحظات</label>
+                                                                <textarea name="notes" id="editEmployeeNotes{{ assignment.id }}" class="form-control" rows="3">{{ assignment.notes or '' }}</textarea>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                                            <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-user-tie fa-2x mb-2"></i>
+                            <p>لا يوجد موظفون معينون لهذا المشروع بعد</p>
+                        </div>
+                    {% endif %}
                 </div>
-                <div class="modal-footer border-top-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-success" id="bulkAssignBtn" disabled>
-                        <i class="fas fa-users me-2"></i>تعيين الموظفين المحددين
-                    </button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Dog Assignment Modal -->
-<div class="modal fade" id="assignDogModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('main.project_dog_add', project_id=project.id) }}">
-                <div class="modal-header border-bottom-0">
-                    <h5 class="modal-title">
-                        <i class="fas fa-dog me-2"></i>تعيين كلب للمشروع
+    <!-- Project Manager Assignment -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-cog ms-2"></i>مسؤول المشروع
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-8 mb-3">
-                            <label for="dog_id" class="form-label">الكلب *</label>
-                            <select class="form-select" id="dog_id" name="dog_id" required onchange="showDogInfo()">
-                                <option value="">اختر كلب...</option>
-                                {% for dog in available_dogs %}
-                                <option value="{{ dog.id }}"
-                                    data-breed="{{ dog.breed }}"
-                                    data-specialization="{{ dog.specialization or '' }}"
-                                    data-age="{{ ((today - dog.birth_date).days / 365.25)|round|int if dog.birth_date else 0 }}"
-                                    data-gender="{{ dog.gender.value }}">
-                                    {{ dog.name }} - {{ dog.code }} ({{ dog.breed }})
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <div class="form-check mt-4">
-                                <input class="form-check-input" type="checkbox" id="is_active_dog" name="is_active" checked>
-                                <label class="form-check-label" for="is_active_dog">
-                                    نشط في المشروع
-                                </label>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('main.project_assignment_add', project_id=project.id) }}">
+                        <div class="row align-items-end">
+                            <div class="col-md-8">
+                                <label for="project_manager_id" class="form-label">اختيار مسؤول المشروع</label>
+                                <select name="project_manager_id" id="project_manager_id" class="form-select">
+                                    <option value="">اختيار مسؤول المشروع...</option>
+                                    {% for manager in project_managers %}
+                                        <option value="{{ manager.id }}" 
+                                                {% if project.project_manager_id == manager.id %}selected{% endif %}>
+                                            {{ manager.name }} ({{ manager.employee_id }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-warning w-100">
+                                    <i class="fas fa-save ms-1"></i>تحديث مسؤول المشروع
+                                </button>
                             </div>
                         </div>
-                    </div>
-                    <div id="selectedDogInfo" class="alert alert-info" style="display: none;">
-                        <h6>معلومات الكلب المحدد:</h6>
-                        <div id="dogInfoContent"></div>
-                    </div>
+                        {% if project.project_manager %}
+                            <div class="mt-3 p-3 bg-light rounded">
+                                <strong>مسؤول المشروع الحالي:</strong> {{ project.project_manager.name }} ({{ project.project_manager.employee_id }})
+                                <br>
+                                <small class="text-muted">البريد الإلكتروني: {{ project.project_manager.email or 'غير محدد' }}</small>
+                            </div>
+                        {% endif %}
+                    </form>
                 </div>
-                <div class="modal-footer border-top-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-dog me-2"></i>تعيين الكلب
-                    </button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
 
 <style>
-.avatar-sm { width: 32px; height: 32px; }
-.avatar-md { width: 48px; height: 48px; }
-.avatar-lg { width: 64px; height: 64px; }
-.avatar-xl { width: 80px; height: 80px; }
-
-.employee-card:hover, .dog-card:hover {
-    background-color: #f8f9fa;
-    transition: background-color 0.2s ease;
+.table th, .table td {
+    vertical-align: middle;
 }
 
-.fs-7 { font-size: 0.875rem; }
-
-.card {
-    border-radius: 12px;
+.btn-group .btn {
+    margin-left: 2px;
 }
 
-.badge {
-    border-radius: 8px;
+.card-header h5 {
+    margin: 0;
 }
 
-.btn {
-    border-radius: 8px;
+.form-select[multiple] {
+    height: auto;
 }
 
-.form-control, .form-select {
-    border-radius: 8px;
-}
-
-.input-group .form-control {
-    border-radius: 0 8px 8px 0;
-}
-
-.input-group-text {
-    border-radius: 8px 0 0 8px;
-}
-
-.modal-content {
-    border-radius: 16px;
-    border: none;
-}
-
-.dropdown-menu {
-    border-radius: 12px;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+.bg-light {
+    background-color: #f8f9fa !important;
 }
 </style>
-
-<script>
-// Search functionality for employees
-document.getElementById('employeeSearch').addEventListener('input', function() {
-    const searchTerm = this.value.toLowerCase();
-    const employeeCards = document.querySelectorAll('.employee-card');
-    
-    employeeCards.forEach(card => {
-        const employeeName = card.querySelector('h6').textContent.toLowerCase();
-        const employeeId = card.querySelector('.text-muted').textContent.toLowerCase();
-        
-        if (employeeName.includes(searchTerm) || employeeId.includes(searchTerm)) {
-            card.style.display = '';
-        } else {
-            card.style.display = 'none';
-        }
-    });
-});
-
-// Search functionality for dogs
-document.getElementById('dogSearch').addEventListener('input', function() {
-    const searchTerm = this.value.toLowerCase();
-    const dogCards = document.querySelectorAll('.dog-card');
-    
-    dogCards.forEach(card => {
-        const dogName = card.querySelector('h6').textContent.toLowerCase();
-        const dogCode = card.querySelectorAll('.text-muted')[0].textContent.toLowerCase();
-        
-        if (dogName.includes(searchTerm) || dogCode.includes(searchTerm)) {
-            card.style.display = '';
-        } else {
-            card.style.display = 'none';
-        }
-    });
-});
-
-// Filter employees
-function filterEmployees(filter) {
-    const employeeCards = document.querySelectorAll('.employee-card');
-    
-    employeeCards.forEach(card => {
-        let show = true;
-        
-        switch(filter) {
-            case 'all':
-                show = true;
-                break;
-            case 'present':
-                show = card.dataset.present === 'true';
-                break;
-            case 'absent':
-                show = card.dataset.present === 'false';
-                break;
-            case 'HANDLER':
-            case 'TRAINER':
-            case 'VET':
-            case 'PROJECT_MANAGER':
-                show = card.dataset.role === filter;
-                break;
-        }
-        
-        card.style.display = show ? '' : 'none';
-    });
-}
-
-// Filter dogs
-function filterDogs(filter) {
-    const dogCards = document.querySelectorAll('.dog-card');
-    
-    dogCards.forEach(card => {
-        let show = true;
-        
-        switch(filter) {
-            case 'all':
-                show = true;
-                break;
-            case 'active':
-                show = card.dataset.active === 'true';
-                break;
-            case 'inactive':
-                show = card.dataset.active === 'false';
-                break;
-        }
-        
-        card.style.display = show ? '' : 'none';
-    });
-}
-
-// Show employee info in modal
-function showEmployeeInfo() {
-    const select = document.getElementById('employee_id');
-    const selectedOption = select.options[select.selectedIndex];
-    const infoDiv = document.getElementById('selectedEmployeeInfo');
-    const contentDiv = document.getElementById('employeeInfoContent');
-    
-    if (selectedOption.value) {
-        const role = selectedOption.dataset.role;
-        const phone = selectedOption.dataset.phone;
-        const email = selectedOption.dataset.email;
-        
-        let roleText = '';
-        switch(role) {
-            case 'HANDLER': roleText = 'سائس'; break;
-            case 'TRAINER': roleText = 'مدرب'; break;
-            case 'VET': roleText = 'طبيب بيطري'; break;
-            case 'PROJECT_MANAGER': roleText = 'مدير مشروع'; break;
-            default: roleText = role;
-        }
-        
-        contentDiv.innerHTML = `
-            <p class="mb-1"><strong>الدور:</strong> ${roleText}</p>
-            ${phone ? `<p class="mb-1"><strong>الهاتف:</strong> ${phone}</p>` : ''}
-            ${email ? `<p class="mb-0"><strong>البريد الإلكتروني:</strong> ${email}</p>` : ''}
-        `;
-        
-        infoDiv.style.display = 'block';
-    } else {
-        infoDiv.style.display = 'none';
-    }
-}
-
-// Show dog info in modal
-function showDogInfo() {
-    const select = document.getElementById('dog_id');
-    const selectedOption = select.options[select.selectedIndex];
-    const infoDiv = document.getElementById('selectedDogInfo');
-    const contentDiv = document.getElementById('dogInfoContent');
-    
-    if (selectedOption.value) {
-        const breed = selectedOption.dataset.breed;
-        const specialization = selectedOption.dataset.specialization;
-        const age = selectedOption.dataset.age;
-        const gender = selectedOption.dataset.gender;
-        
-        const genderText = gender === 'MALE' ? 'ذكر' : 'أنثى';
-        
-        contentDiv.innerHTML = `
-            <p class="mb-1"><strong>السلالة:</strong> ${breed}</p>
-            <p class="mb-1"><strong>الجنس:</strong> ${genderText}</p>
-            <p class="mb-1"><strong>العمر:</strong> ${age} سنة</p>
-            ${specialization ? `<p class="mb-0"><strong>التخصص:</strong> ${specialization}</p>` : ''}
-        `;
-        
-        infoDiv.style.display = 'block';
-    } else {
-        infoDiv.style.display = 'none';
-    }
-}
-
-// Toggle attendance present/absent field
-document.getElementById('is_present').addEventListener('change', function() {
-    const leaveTypeDiv = document.getElementById('leaveTypeDiv');
-    if (this.checked) {
-        leaveTypeDiv.style.display = 'none';
-        document.getElementById('leave_type').value = '';
-    } else {
-        leaveTypeDiv.style.display = 'block';
-    }
-});
-
-// Bulk assignment functions
-function selectAllEmployees() {
-    const checkboxes = document.querySelectorAll('.employee-checkbox');
-    checkboxes.forEach(cb => cb.checked = true);
-    updateSelectedCount();
-}
-
-function deselectAllEmployees() {
-    const checkboxes = document.querySelectorAll('.employee-checkbox');
-    checkboxes.forEach(cb => cb.checked = false);
-    updateSelectedCount();
-}
-
-function updateSelectedCount() {
-    const checkedBoxes = document.querySelectorAll('.employee-checkbox:checked');
-    const count = checkedBoxes.length;
-    const countDiv = document.getElementById('selectedEmployeesCount');
-    const countSpan = document.getElementById('selectedCount');
-    const submitBtn = document.getElementById('bulkAssignBtn');
-    
-    countSpan.textContent = count;
-    
-    if (count > 0) {
-        countDiv.style.display = 'block';
-        submitBtn.disabled = false;
-    } else {
-        countDiv.style.display = 'none';
-        submitBtn.disabled = true;
-    }
-}
-
-// Add event listeners to checkboxes
-document.addEventListener('DOMContentLoaded', function() {
-    const checkboxes = document.querySelectorAll('.employee-checkbox');
-    checkboxes.forEach(cb => {
-        cb.addEventListener('change', updateSelectedCount);
-    });
-});
-
-// Action functions (to be implemented in backend)
-function toggleAttendance(assignmentId, newStatus) {
-    if (confirm('هل أنت متأكد من تغيير حالة الحضور؟')) {
-        // Implementation would send AJAX request to backend
-        window.location.href = `{{ url_for('main.project_assignment_toggle_attendance', project_id=project.id) }}?assignment_id=${assignmentId}&status=${newStatus}`;
-    }
-}
-
-function editAssignment(assignmentId) {
-    // Open edit modal or redirect to edit page
-    alert('سيتم إضافة وظيفة التعديل قريباً');
-}
-
-function removeAssignment(assignmentId) {
-    if (confirm('هل أنت متأكد من إزالة هذا الموظف من المشروع؟')) {
-        window.location.href = `{{ url_for('main.project_assignment_remove', project_id=project.id) }}?assignment_id=${assignmentId}`;
-    }
-}
-
-function toggleDogStatus(assignmentId) {
-    if (confirm('هل أنت متأكد من تغيير حالة نشاط الكلب؟')) {
-        window.location.href = `{{ url_for('main.project_dog_toggle', project_id=project.id) }}?assignment_id=${assignmentId}`;
-    }
-}
-
-function removeDogAssignment(assignmentId) {
-    if (confirm('هل أنت متأكد من إزالة هذا الكلب من المشروع؟')) {
-        window.location.href = `{{ url_for('main.project_dog_remove', project_id=project.id) }}?assignment_id=${assignmentId}`;
-    }
-}
-</script>
 {% endblock %}
