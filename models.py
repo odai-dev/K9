@@ -997,8 +997,81 @@ class ProjectAttendance(db.Model):
         return reason_map.get(self.absence_reason.value, self.absence_reason.value) if self.absence_reason else ''
 
 
+# Enhanced permission system - granular subsection permissions
+class PermissionType(Enum):
+    VIEW = "VIEW"
+    CREATE = "CREATE"
+    EDIT = "EDIT"
+    DELETE = "DELETE"
+    EXPORT = "EXPORT"
+    ASSIGN = "ASSIGN"
+    APPROVE = "APPROVE"
+
+class SubPermission(db.Model):
+    """Ultra-granular permissions for PROJECT_MANAGER users"""
+    __tablename__ = 'sub_permissions'
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    section = db.Column(db.String(50), nullable=False)       # e.g., "Dogs", "Employees", "Projects"
+    subsection = db.Column(db.String(100), nullable=False)   # e.g., "View Dog List", "Upload Medical Records"
+    permission_type = db.Column(db.Enum(PermissionType), nullable=False)  # VIEW/CREATE/EDIT/DELETE/EXPORT/ASSIGN/APPROVE
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=True)  # Null for global permissions
+    is_granted = db.Column(db.Boolean, default=False)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', backref='sub_permissions')
+    project = db.relationship('Project', backref='sub_permissions')
+    
+    # Ensure unique permission record per user-section-subsection-type-project combination
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'section', 'subsection', 'permission_type', 'project_id', 
+                          name='unique_sub_permission'),
+    )
+    
+    def __repr__(self):
+        project_info = f" (Project: {self.project_id})" if self.project_id else " (Global)"
+        return f'<SubPermission {self.user.username}: {self.section}->{self.subsection} ({self.permission_type.value}){project_info}>'
+
+class PermissionAuditLog(db.Model):
+    """Audit trail for permission changes"""
+    __tablename__ = 'permission_audit_logs'
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+    
+    # Who made the change
+    changed_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    # Target user whose permissions were changed
+    target_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    # Permission details
+    section = db.Column(db.String(50), nullable=False)
+    subsection = db.Column(db.String(100), nullable=False)
+    permission_type = db.Column(db.Enum(PermissionType), nullable=False)
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=True)
+    
+    # Change details
+    old_value = db.Column(db.Boolean, nullable=False)
+    new_value = db.Column(db.Boolean, nullable=False)
+    
+    # Metadata
+    ip_address = db.Column(db.String(45))  # IPv6 compatible
+    user_agent = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    changed_by = db.relationship('User', foreign_keys=[changed_by_user_id], backref='permission_changes_made')
+    target_user = db.relationship('User', foreign_keys=[target_user_id], backref='permission_changes_received')
+    project = db.relationship('Project', backref='permission_audit_logs')
+    
+    def __repr__(self):
+        return f'<PermissionAuditLog {self.changed_by.username} -> {self.target_user.username}: {self.section}->{self.subsection}>'
+
+# Legacy permission model - keeping for backward compatibility during transition
 class ProjectManagerPermission(db.Model):
-    """Granular permissions for PROJECT_MANAGER users per project"""
+    """Legacy granular permissions for PROJECT_MANAGER users per project"""
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
