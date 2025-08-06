@@ -143,13 +143,21 @@
                                                     <td>{{ user.username }}</td>
                                                     <td>{{ user.email }}</td>
                                                     <td>
-                                                        {% set active_projects = get_user_active_projects(user) %}
-                                                        {% if active_projects %}
-                                                            {% for project in active_projects %}
-                                                                <span class="badge bg-primary me-1">{{ project.name }}</span>
+                                                        {% set user_projects = project_assignments.get(user.id, []) %}
+                                                        {% if user_projects %}
+                                                            {% for project in user_projects %}
+                                                                {% if project.status.name in ['PLANNED', 'ACTIVE'] %}
+                                                                    <span class="badge bg-{{ 'success' if project.status.name == 'ACTIVE' else 'primary' }} me-1 mb-1" 
+                                                                          title="{{ project.code }} - {{ project.status.value }}">
+                                                                        {{ project.name }}
+                                                                    </span>
+                                                                {% endif %}
                                                             {% endfor %}
+                                                            {% if user_projects|selectattr('status.name', 'in', ['PLANNED', 'ACTIVE'])|list|length == 0 %}
+                                                                <span class="text-muted">لا توجد مشاريع نشطة</span>
+                                                            {% endif %}
                                                         {% else %}
-                                                            <span class="text-muted">لا توجد مشاريع نشطة</span>
+                                                            <span class="text-muted">لا توجد مشاريع مُعينة</span>
                                                         {% endif %}
                                                     </td>
                                                     <td>
@@ -171,6 +179,15 @@
                                                                     data-full-name="{{ user.full_name }}">
                                                                 <i class="fas fa-edit"></i>
                                                                 تعديل
+                                                            </button>
+                                                            <button type="button" 
+                                                                    class="btn btn-sm btn-outline-info" 
+                                                                    data-bs-toggle="modal" 
+                                                                    data-bs-target="#projectDetailsModal"
+                                                                    data-user-id="{{ user.id }}"
+                                                                    data-user-name="{{ user.full_name }}">
+                                                                <i class="fas fa-project-diagram"></i>
+                                                                المشاريع
                                                             </button>
                                                             <form method="POST" action="{{ url_for('main.toggle_user_status', user_id=user.id) }}" class="d-inline">
                                                                 <button type="submit" 
@@ -549,6 +566,37 @@
     </div>
 </div>
 
+<!-- Project Details Modal -->
+<div class="modal fade" id="projectDetailsModal" tabindex="-1" aria-labelledby="projectDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="projectDetailsModalLabel">
+                    <i class="fas fa-project-diagram"></i>
+                    تفاصيل المشاريع المُعينة
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <strong>مدير المشروع:</strong>
+                    <span id="modal-manager-name" class="text-primary"></span>
+                </div>
+                
+                <div id="modal-projects-list">
+                    <!-- Projects will be populated by JavaScript -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i>
+                    إغلاق
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- User Edit Modal -->
 <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -756,6 +804,48 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('can_manage_performance').checked = button.getAttribute('data-performance') === 'true';
         document.getElementById('can_view_veterinary').checked = button.getAttribute('data-veterinary') === 'true';
         document.getElementById('can_view_breeding').checked = button.getAttribute('data-breeding') === 'true';
+    });
+
+    // Project Details Modal
+    const projectDetailsModal = document.getElementById('projectDetailsModal');
+    
+    projectDetailsModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const userId = button.getAttribute('data-user-id');
+        const userName = button.getAttribute('data-user-name');
+        
+        document.getElementById('modal-manager-name').textContent = userName;
+        
+        // Get projects for this user from the template data
+        const projectAssignments = {{ project_assignments|tojson|safe }};
+        const userProjects = projectAssignments[userId] || [];
+        
+        let projectsHtml = '';
+        if (userProjects.length > 0) {
+            projectsHtml = '<div class="table-responsive"><table class="table table-striped"><thead><tr><th>اسم المشروع</th><th>الكود</th><th>الحالة</th><th>تاريخ البداية</th><th>تاريخ النهاية</th></tr></thead><tbody>';
+            
+            userProjects.forEach(project => {
+                const statusBadge = project.status === 'ACTIVE' ? 'bg-success' : 
+                                  project.status === 'PLANNED' ? 'bg-primary' : 
+                                  project.status === 'COMPLETED' ? 'bg-info' : 'bg-secondary';
+                
+                projectsHtml += `
+                    <tr>
+                        <td><strong>${project.name}</strong></td>
+                        <td><code>${project.code}</code></td>
+                        <td><span class="badge ${statusBadge}">${project.status}</span></td>
+                        <td>${project.start_date || '-'}</td>
+                        <td>${project.end_date || '-'}</td>
+                    </tr>
+                `;
+            });
+            
+            projectsHtml += '</tbody></table></div>';
+        } else {
+            projectsHtml = '<div class="alert alert-info"><i class="fas fa-info-circle me-2"></i>لا توجد مشاريع مُعينة لهذا المدير.</div>';
+        }
+        
+        document.getElementById('modal-projects-list').innerHTML = projectsHtml;
     });
 
     // Enhanced Permission System JavaScript
