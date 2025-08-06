@@ -1439,7 +1439,7 @@ def record_attendance(project_id):
             return jsonify({'success': False, 'error': 'هذا العضو غير مُعيَّن لهذه الوردية'}), 400
         
         # Validate absence reason for absent status - set default if not provided
-        if status == 'ABSENT' and not absence_reason:
+        if status == 'ABSENT' and (not absence_reason or absence_reason.strip() == ''):
             absence_reason = 'NO_REASON'  # Default to no reason if not specified
         
         # Check if attendance record already exists
@@ -1454,7 +1454,7 @@ def record_attendance(project_id):
         if existing_record:
             # Update existing record
             existing_record.status = AttendanceStatus(status)
-            existing_record.absence_reason = AbsenceReason(absence_reason) if absence_reason else None
+            existing_record.absence_reason = AbsenceReason(absence_reason) if absence_reason and absence_reason.strip() else None
             existing_record.late_reason = late_reason if status == 'LATE' else None
             existing_record.notes = notes
             existing_record.updated_at = datetime.utcnow()
@@ -1468,7 +1468,7 @@ def record_attendance(project_id):
                 entity_type=EntityType(entity_type),
                 entity_id=entity_id,
                 status=AttendanceStatus(status),
-                absence_reason=AbsenceReason(absence_reason) if absence_reason else None,
+                absence_reason=AbsenceReason(absence_reason) if absence_reason and absence_reason.strip() else None,
                 late_reason=late_reason if status == 'LATE' else None,
                 notes=notes,
                 recorded_by_user_id=current_user.id
@@ -1484,7 +1484,11 @@ def record_attendance(project_id):
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        # Log the error for debugging
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Attendance recording error: {error_details}")
+        return jsonify({'success': False, 'error': f'خطأ في تسجيل الحضور: {str(e)}'}), 500
 
 @main_bp.route('/projects/<project_id>/shifts/<shift_id>/assignments', methods=['GET', 'POST'])
 @login_required
