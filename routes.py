@@ -1879,9 +1879,28 @@ def admin_panel():
     # Build project assignments mapping for each user
     project_assignments = {}
     for user in pm_users:
-        # Get projects where this user is the manager
-        assigned_projects = Project.query.filter_by(manager_id=user.id).all()
-        project_assignments[user.id] = assigned_projects
+        # Get projects where this user is the manager (check both manager_id and project_manager_id)
+        assigned_projects = []
+        
+        # Check by direct user manager_id
+        projects_by_user = Project.query.filter_by(manager_id=user.id).all()
+        assigned_projects.extend(projects_by_user)
+        
+        # Check by employee project_manager_id
+        employee = Employee.query.filter_by(user_account_id=user.id).first()
+        if employee:
+            projects_by_employee = Project.query.filter_by(project_manager_id=employee.id).all()
+            assigned_projects.extend(projects_by_employee)
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_projects = []
+        for project in assigned_projects:
+            if project.id not in seen:
+                seen.add(project.id)
+                unique_projects.append(project)
+        
+        project_assignments[user.id] = unique_projects
     
     # Get existing legacy permissions for backward compatibility
     legacy_permissions = {}
