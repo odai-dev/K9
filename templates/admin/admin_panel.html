@@ -247,12 +247,11 @@
                                 </thead>
                                 <tbody>
                                     {% for pm_user in pm_users %}
-                                        {% for project in projects %}
-                                            {% set permission_key = pm_user.id|string + "_" + project.id|string %}
-                                            {% set permission = permissions.get(permission_key) %}
-                                            {% set is_assigned = (project.project_manager_id == pm_user.id) %}
-                                            <!-- Only show rows where the manager is actually assigned to the project -->
-                                            {% if is_assigned %}
+                                        {% set user_projects = project_assignments.get(pm_user.id, []) %}
+                                        {% for project_data in user_projects %}
+                                            {% set permission_key = pm_user.id|string + "_" + project_data.id|string %}
+                                            {% set permission = legacy_permissions.get(permission_key) %}
+                                            {% set is_assigned = true %}
                                             <tr class="{{ 'table-success' if is_assigned else '' }}">
                                                 <td>
                                                     <div class="d-flex align-items-center">
@@ -274,9 +273,9 @@
                                                     <div class="d-flex align-items-center">
                                                         <i class="fas fa-project-diagram text-success me-2"></i>
                                                         <div>
-                                                            <strong>{{ project.name }}</strong>
+                                                            <strong>{{ project_data.name }}</strong>
                                                             <br>
-                                                            <small class="text-muted">{{ project.code }} | {{ project.status.value }}</small>
+                                                            <small class="text-muted">{{ project_data.code }} | {{ project_data.status_value }}</small>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -311,8 +310,8 @@
                                                             data-bs-target="#permissionModal"
                                                             data-user-id="{{ pm_user.id }}"
                                                             data-user-name="{{ pm_user.full_name }}"
-                                                            data-project-id="{{ project.id }}"
-                                                            data-project-name="{{ project.name }}"
+                                                            data-project-id="{{ project_data.id }}"
+                                                            data-project-name="{{ project_data.name }}"
                                                             {% if permission %}
                                                             data-assignments="{{ permission.can_manage_assignments|lower }}"
                                                             data-shifts="{{ permission.can_manage_shifts|lower }}"
@@ -337,7 +336,6 @@
                                                     </button>
                                                 </td>
                                             </tr>
-                                            {% endif %}
                                         {% endfor %}
                                     {% endfor %}
                                 </tbody>
