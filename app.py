@@ -93,7 +93,9 @@ with app.app_context():
     from routes import main_bp
     from auth import auth_bp
     from api_routes import api_bp
+    from admin_routes import admin_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(api_bp)
+    app.register_blueprint(admin_bp)

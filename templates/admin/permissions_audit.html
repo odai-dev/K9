@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}سجل تدقيق الصلاحيات{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">
+            <i class="fas fa-history me-2"></i>
+            سجل تدقيق الصلاحيات
+        </h1>
+        <a href="{{ url_for('admin.permissions_dashboard') }}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-right me-1"></i>
+            العودة لإدارة الصلاحيات
+        </a>
+    </div>
+
+    <!-- Filter Controls -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="target_user_id" class="form-label">المستخدم المستهدف</label>
+                    <select class="form-select" id="target_user_id" name="target_user_id">
+                        <option value="">جميع المستخدمين</option>
+                        {% for pm in project_managers %}
+                        <option value="{{ pm.id }}" {% if filters.target_user_id == pm.id %}selected{% endif %}>
+                            {{ pm.full_name }} ({{ pm.username }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="section" class="form-label">القسم</label>
+                    <select class="form-select" id="section" name="section">
+                        <option value="">جميع الأقسام</option>
+                        {% for section in permission_structure.keys() %}
+                        <option value="{{ section }}" {% if filters.section == section %}selected{% endif %}>
+                            {{ section }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <label for="start_date" class="form-label">من تاريخ</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" value="{{ filters.start_date or '' }}">
+                </div>
+                
+                <div class="col-md-2">
+                    <label for="end_date" class="form-label">إلى تاريخ</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" value="{{ filters.end_date or '' }}">
+                </div>
+                
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-filter me-1"></i>
+                        فلترة
+                    </button>
+                    <a href="{{ url_for('admin.permissions_audit_log') }}" class="btn btn-outline-secondary">
+                        إعادة تعيين
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Audit Log Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>التاريخ والوقت</th>
+                            <th>المدير المُغيِّر</th>
+                            <th>المستخدم المستهدف</th>
+                            <th>القسم</th>
+                            <th>القسم الفرعي</th>
+                            <th>نوع الصلاحية</th>
+                            <th>التغيير</th>
+                            <th>المشروع</th>
+                            <th>عنوان IP</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in audit_logs.items %}
+                        <tr>
+                            <td>
+                                <small>{{ log.created_at.strftime('%Y-%m-%d') }}</small><br>
+                                <small class="text-muted">{{ log.created_at.strftime('%H:%M:%S') }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ log.changed_by.full_name }}</strong><br>
+                                <small class="text-muted">{{ log.changed_by.username }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ log.target_user.full_name }}</strong><br>
+                                <small class="text-muted">{{ log.target_user.username }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ log.section }}</span>
+                            </td>
+                            <td>{{ log.subsection }}</td>
+                            <td>
+                                <span class="badge bg-info">
+                                    {% if log.permission_type.value == 'VIEW' %}عرض
+                                    {% elif log.permission_type.value == 'CREATE' %}إنشاء
+                                    {% elif log.permission_type.value == 'EDIT' %}تعديل
+                                    {% elif log.permission_type.value == 'DELETE' %}حذف
+                                    {% elif log.permission_type.value == 'EXPORT' %}تصدير
+                                    {% elif log.permission_type.value == 'ASSIGN' %}تعيين
+                                    {% elif log.permission_type.value == 'APPROVE' %}اعتماد
+                                    {% else %}{{ log.permission_type.value }}
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if log.old_value %}
+                                        <span class="badge bg-success me-1">✓</span>
+                                    {% else %}
+                                        <span class="badge bg-danger me-1">✗</span>
+                                    {% endif %}
+                                    <i class="fas fa-arrow-left mx-1 text-muted"></i>
+                                    {% if log.new_value %}
+                                        <span class="badge bg-success">✓</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">✗</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if log.project_id %}
+                                    <span class="badge bg-primary">{{ log.project.name if log.project else log.project_id }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">عام</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted font-monospace">{{ log.ip_address or 'N/A' }}</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if not audit_logs.items %}
+            <div class="text-center py-4">
+                <i class="fas fa-search fa-2x text-muted mb-3"></i>
+                <h5 class="text-muted">لا توجد سجلات تدقيق</h5>
+                <p class="text-muted">لا توجد سجلات تدقيق تطابق المعايير المحددة</p>
+            </div>
+            {% endif %}
+
+            <!-- Pagination -->
+            {% if audit_logs.pages > 1 %}
+            <nav aria-label="التصفح">
+                <ul class="pagination justify-content-center">
+                    {% if audit_logs.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.permissions_audit_log', page=audit_logs.prev_num, **filters) }}">
+                            السابق
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in audit_logs.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != audit_logs.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.permissions_audit_log', page=page_num, **filters) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if audit_logs.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.permissions_audit_log', page=audit_logs.next_num, **filters) }}">
+                            التالي
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

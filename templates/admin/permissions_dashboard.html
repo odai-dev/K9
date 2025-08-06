@@ -1,0 +1,519 @@
+{% extends "base.html" %}
+
+{% block title %}تفويض الصلاحيات - لوحة التحكم{% endblock %}
+
+{% block extra_css %}
+<style>
+.permission-matrix {
+    overflow-x: auto;
+}
+
+.permission-card {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.permission-header {
+    background: #e9ecef;
+    padding: 10px 15px;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: bold;
+}
+
+.permission-row {
+    padding: 8px 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.permission-row:last-child {
+    border-bottom: none;
+}
+
+.permission-toggle {
+    margin: 2px;
+}
+
+.user-sidebar {
+    background: #f8f9fa;
+    border-left: 1px solid #dee2e6;
+    min-height: 80vh;
+}
+
+.user-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+}
+
+.user-item:hover {
+    background-color: #e9ecef;
+}
+
+.user-item.active {
+    background-color: #007bff;
+    color: white;
+}
+
+.section-accordion .accordion-button {
+    background-color: #f8f9fa;
+    color: #495057;
+}
+
+.section-accordion .accordion-button:not(.collapsed) {
+    background-color: #0d6efd;
+    color: #fff;
+}
+
+.bulk-controls {
+    background: #e3f2fd;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.permission-count-badge {
+    background: #28a745;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 12px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">
+            <i class="fas fa-user-shield me-2"></i>
+            تفويض الصلاحيات المتقدم
+        </h1>
+        <div class="btn-toolbar">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-outline-primary" id="exportAllBtn">
+                    <i class="fas fa-download me-1"></i>
+                    تصدير جميع الصلاحيات
+                </button>
+                <button type="button" class="btn btn-outline-info" id="auditLogBtn">
+                    <i class="fas fa-history me-1"></i>
+                    سجل التدقيق
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- User Sidebar -->
+        <div class="col-md-3">
+            <div class="user-sidebar rounded">
+                <div class="p-3 border-bottom">
+                    <h5 class="mb-3">مديرو المشاريع</h5>
+                    <div class="mb-3">
+                        <select class="form-select" id="projectFilter">
+                            <option value="">جميع المشاريع</option>
+                            {% for project in projects %}
+                            <option value="{{ project.id }}">{{ project.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="userList">
+                    {% for pm in project_managers %}
+                    <div class="user-item" data-user-id="{{ pm.id }}" data-username="{{ pm.username }}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ pm.full_name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ pm.username }}</small>
+                            </div>
+                            <span class="permission-count-badge" id="count-{{ pm.id }}">0</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Permission Matrix -->
+        <div class="col-md-9">
+            <div id="permissionMatrix" class="d-none">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 id="selectedUserName">اختر مستخدماً</h4>
+                    <div class="btn-group">
+                        <button class="btn btn-success btn-sm" id="initPermissionsBtn" style="display: none;">
+                            <i class="fas fa-plus me-1"></i>
+                            تهيئة الصلاحيات الافتراضية
+                        </button>
+                        <button class="btn btn-primary btn-sm" id="previewBtn" style="display: none;">
+                            <i class="fas fa-eye me-1"></i>
+                            معاينة العرض
+                        </button>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fas fa-download me-1"></i>
+                                تصدير
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" id="exportJsonBtn">JSON</a></li>
+                                <li><a class="dropdown-item" href="#" id="exportPdfBtn">PDF</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Permission Accordions -->
+                <div class="accordion section-accordion" id="permissionAccordion">
+                    {% for section, subsections in permission_structure.items() %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading{{ section }}">
+                            <button class="accordion-button collapsed" type="button" 
+                                    data-bs-toggle="collapse" data-bs-target="#collapse{{ section }}" 
+                                    aria-expanded="false" aria-controls="collapse{{ section }}">
+                                <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                                    <span>
+                                        {% if section == 'Dogs' %}
+                                        <i class="fas fa-dog me-2"></i>الكلاب
+                                        {% elif section == 'Employees' %}
+                                        <i class="fas fa-users me-2"></i>الموظفون
+                                        {% elif section == 'Projects' %}
+                                        <i class="fas fa-project-diagram me-2"></i>المشاريع
+                                        {% elif section == 'Training' %}
+                                        <i class="fas fa-dumbbell me-2"></i>التدريب
+                                        {% elif section == 'Veterinary' %}
+                                        <i class="fas fa-stethoscope me-2"></i>الطبابة
+                                        {% elif section == 'Breeding' %}
+                                        <i class="fas fa-heart me-2"></i>التربية
+                                        {% elif section == 'Attendance' %}
+                                        <i class="fas fa-calendar-check me-2"></i>الحضور
+                                        {% elif section == 'Reports' %}
+                                        <i class="fas fa-chart-line me-2"></i>التقارير
+                                        {% elif section == 'Analytics' %}
+                                        <i class="fas fa-analytics me-2"></i>التحليلات
+                                        {% endif %}
+                                        {{ section }}
+                                    </span>
+                                    <span class="badge bg-secondary section-count" id="sectionCount{{ section }}">0/{{ subsections|length * 7 }}</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="collapse{{ section }}" class="accordion-collapse collapse" 
+                             aria-labelledby="heading{{ section }}" data-bs-parent="#permissionAccordion">
+                            <div class="accordion-body">
+                                <!-- Bulk Controls -->
+                                <div class="bulk-controls">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small>التحكم المجمع:</small>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-success bulk-grant" data-section="{{ section }}">
+                                                <i class="fas fa-check-double me-1"></i>
+                                                منح الجميع
+                                            </button>
+                                            <button class="btn btn-danger bulk-revoke" data-section="{{ section }}">
+                                                <i class="fas fa-times me-1"></i>
+                                                إلغاء الجميع
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Permission Grid -->
+                                {% for subsection, permission_types in subsections.items() %}
+                                <div class="permission-row">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="col-md-4">
+                                            <strong>{{ subsection }}</strong>
+                                        </div>
+                                        <div class="col-md-8 d-flex justify-content-end flex-wrap">
+                                            {% for perm_type in permission_types %}
+                                            <div class="form-check form-switch permission-toggle">
+                                                <input class="form-check-input permission-switch" type="checkbox" 
+                                                       data-section="{{ section }}" 
+                                                       data-subsection="{{ subsection }}" 
+                                                       data-permission-type="{{ perm_type }}"
+                                                       id="{{ section }}_{{ subsection }}_{{ perm_type }}">
+                                                <label class="form-check-label" for="{{ section }}_{{ subsection }}_{{ perm_type }}">
+                                                    {% if perm_type == 'VIEW' %}عرض
+                                                    {% elif perm_type == 'CREATE' %}إنشاء
+                                                    {% elif perm_type == 'EDIT' %}تعديل
+                                                    {% elif perm_type == 'DELETE' %}حذف
+                                                    {% elif perm_type == 'EXPORT' %}تصدير
+                                                    {% elif perm_type == 'ASSIGN' %}تعيين
+                                                    {% elif perm_type == 'APPROVE' %}اعتماد
+                                                    {% else %}{{ perm_type }}
+                                                    {% endif %}
+                                                </label>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- No User Selected Message -->
+            <div id="noUserSelected" class="text-center py-5">
+                <i class="fas fa-user-plus fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">اختر مدير مشروع لإدارة صلاحياته</h4>
+                <p class="text-muted">حدد مستخدماً من القائمة الجانبية لعرض وتعديل الصلاحيات التفصيلية</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Indicator -->
+<div id="loadingIndicator" class="position-fixed top-50 start-50 translate-middle" style="display: none; z-index: 9999;">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">جاري التحميل...</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    let currentUserId = null;
+    let currentProjectId = null;
+
+    // User selection
+    $('.user-item').on('click', function() {
+        $('.user-item').removeClass('active');
+        $(this).addClass('active');
+        
+        currentUserId = $(this).data('user-id');
+        const username = $(this).data('username');
+        
+        $('#selectedUserName').text('صلاحيات: ' + $(this).find('strong').text());
+        $('#noUserSelected').addClass('d-none');
+        $('#permissionMatrix').removeClass('d-none');
+        $('#initPermissionsBtn, #previewBtn').show();
+        
+        loadUserPermissions();
+    });
+
+    // Project filter
+    $('#projectFilter').on('change', function() {
+        currentProjectId = $(this).val() || null;
+        if (currentUserId) {
+            loadUserPermissions();
+        }
+    });
+
+    // Load user permissions
+    function loadUserPermissions() {
+        if (!currentUserId) return;
+        
+        showLoading();
+        
+        const url = `/admin/permissions/user/${currentUserId}${currentProjectId ? '?project_id=' + currentProjectId : ''}`;
+        
+        $.get(url)
+            .done(function(data) {
+                populatePermissionMatrix(data.permissions);
+                updatePermissionCounts();
+            })
+            .fail(function(xhr) {
+                showAlert('error', 'فشل في تحميل الصلاحيات: ' + (xhr.responseJSON?.error || 'خطأ غير معروف'));
+            })
+            .always(function() {
+                hideLoading();
+            });
+    }
+
+    // Populate permission matrix
+    function populatePermissionMatrix(permissions) {
+        $('.permission-switch').prop('checked', false);
+        
+        Object.keys(permissions).forEach(section => {
+            Object.keys(permissions[section]).forEach(subsection => {
+                Object.keys(permissions[section][subsection]).forEach(permType => {
+                    const isGranted = permissions[section][subsection][permType];
+                    $(`#${section}_${subsection}_${permType}`).prop('checked', isGranted);
+                });
+            });
+        });
+    }
+
+    // Permission toggle
+    $('.permission-switch').on('change', function() {
+        if (!currentUserId) return;
+        
+        const $this = $(this);
+        const section = $this.data('section');
+        const subsection = $this.data('subsection');
+        const permissionType = $this.data('permission-type');
+        const isGranted = $this.is(':checked');
+        
+        updatePermission(section, subsection, permissionType, isGranted);
+    });
+
+    // Update permission
+    function updatePermission(section, subsection, permissionType, isGranted) {
+        const data = {
+            user_id: currentUserId,
+            section: section,
+            subsection: subsection,
+            permission_type: permissionType,
+            is_granted: isGranted
+        };
+        
+        if (currentProjectId) {
+            data.project_id = currentProjectId;
+        }
+        
+        $.ajax({
+            url: '/admin/permissions/update',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data)
+        })
+        .done(function(response) {
+            showAlert('success', response.message);
+            updatePermissionCounts();
+        })
+        .fail(function(xhr) {
+            showAlert('error', 'فشل في التحديث: ' + (xhr.responseJSON?.error || 'خطأ غير معروف'));
+            // Revert checkbox state
+            const checkbox = $(`#${section}_${subsection}_${permissionType}`);
+            checkbox.prop('checked', !isGranted);
+        });
+    }
+
+    // Bulk operations
+    $('.bulk-grant, .bulk-revoke').on('click', function() {
+        if (!currentUserId) return;
+        
+        const section = $(this).data('section');
+        const isGranted = $(this).hasClass('bulk-grant');
+        
+        const data = {
+            user_id: currentUserId,
+            section: section,
+            is_granted: isGranted
+        };
+        
+        if (currentProjectId) {
+            data.project_id = currentProjectId;
+        }
+        
+        $.ajax({
+            url: '/admin/permissions/bulk-update',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data)
+        })
+        .done(function(response) {
+            showAlert('success', response.message);
+            loadUserPermissions(); // Reload to reflect changes
+        })
+        .fail(function(xhr) {
+            showAlert('error', 'فشل في التحديث المجمع: ' + (xhr.responseJSON?.error || 'خطأ غير معروف'));
+        });
+    });
+
+    // Initialize permissions
+    $('#initPermissionsBtn').on('click', function() {
+        if (!currentUserId) return;
+        
+        $.post(`/admin/permissions/initialize/${currentUserId}`)
+            .done(function(response) {
+                showAlert('success', response.message);
+                loadUserPermissions();
+            })
+            .fail(function(xhr) {
+                showAlert('error', 'فشل في التهيئة: ' + (xhr.responseJSON?.error || 'خطأ غير معروف'));
+            });
+    });
+
+    // Export functions
+    $('#exportJsonBtn').on('click', function() {
+        if (!currentUserId) return;
+        
+        const url = `/admin/permissions/export/${currentUserId}${currentProjectId ? '?project_id=' + currentProjectId : ''}`;
+        window.open(url, '_blank');
+    });
+
+    $('#exportPdfBtn').on('click', function() {
+        if (!currentUserId) return;
+        
+        const url = `/admin/permissions/export-pdf/${currentUserId}${currentProjectId ? '?project_id=' + currentProjectId : ''}`;
+        window.open(url, '_blank');
+    });
+
+    $('#exportAllBtn').on('click', function() {
+        window.open('/admin/permissions/export-csv', '_blank');
+    });
+
+    // Preview
+    $('#previewBtn').on('click', function() {
+        if (!currentUserId) return;
+        
+        const url = `/admin/permissions/preview/${currentUserId}${currentProjectId ? '?project_id=' + currentProjectId : ''}`;
+        window.open(url, '_blank');
+    });
+
+    // Audit log
+    $('#auditLogBtn').on('click', function() {
+        window.open('/admin/permissions/audit', '_blank');
+    });
+
+    // Update permission counts
+    function updatePermissionCounts() {
+        const permissionStructure = {{ permission_structure|tojson }};
+        Object.keys(permissionStructure).forEach(section => {
+            const total = $(`.permission-switch[data-section="${section}"]`).length;
+            const granted = $(`.permission-switch[data-section="${section}"]:checked`).length;
+            $(`#sectionCount${section}`).text(`${granted}/${total}`);
+        });
+        
+        if (currentUserId) {
+            const totalGranted = $('.permission-switch:checked').length;
+            $(`#count-${currentUserId}`).text(totalGranted);
+        }
+    }
+
+    // Utility functions
+    function showLoading() {
+        $('#loadingIndicator').show();
+        $('#permissionMatrix').addClass('loading');
+    }
+
+    function hideLoading() {
+        $('#loadingIndicator').hide();
+        $('#permissionMatrix').removeClass('loading');
+    }
+
+    function showAlert(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const alert = $(`
+            <div class="alert ${alertClass} alert-dismissible fade show position-fixed" 
+                 style="top: 20px; right: 20px; z-index: 9999; max-width: 400px;">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `);
+        
+        $('body').append(alert);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            alert.alert('close');
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}
