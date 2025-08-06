@@ -219,7 +219,7 @@
                             </div>
                             <h5 class="card-title">جلسات التدريب</h5>
                             <h2 class="text-secondary mb-2">{{ stats.total_training }}</h2>
-                            <a href="{{ url_for('main.training_sessions') }}" class="btn btn-outline-secondary btn-sm">عرض التفاصيل</a>
+                            <a href="{{ url_for('main.training_list') }}" class="btn btn-outline-secondary btn-sm">عرض التفاصيل</a>
                         </div>
                     </div>
                 </div>
@@ -232,7 +232,7 @@
                             </div>
                             <h5 class="card-title">الزيارات البيطرية</h5>
                             <h2 class="text-danger mb-2">{{ stats.total_veterinary }}</h2>
-                            <a href="{{ url_for('main.veterinary_visits') }}" class="btn btn-outline-danger btn-sm">عرض التفاصيل</a>
+                            <a href="{{ url_for('main.veterinary_list') }}" class="btn btn-outline-danger btn-sm">عرض التفاصيل</a>
                         </div>
                     </div>
                 </div>
