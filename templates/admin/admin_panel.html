@@ -6,7 +6,7 @@
 
 {% block content %}
 <div class="container-fluid">
-    <!-- Statistics Cards -->
+    <!-- Enhanced Statistics Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
             <div class="card bg-primary text-white">
@@ -43,11 +43,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h4>{{ permissions|length }}</h4>
-                            <p class="mb-0">تكوينات الصلاحيات</p>
+                            <h4>{{ granted_permissions }}/{{ total_possible_permissions * pm_users|length }}</h4>
+                            <p class="mb-0">صلاحيات مُمنوحة</p>
                         </div>
                         <div class="align-self-center">
-                            <i class="fas fa-shield-alt fa-2x"></i>
+                            <i class="fas fa-user-lock fa-2x"></i>
                         </div>
                     </div>
                 </div>
@@ -58,11 +58,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h4>{{ pm_users|selectattr('active')|list|length }}</h4>
-                            <p class="mb-0">المستخدمين النشطين</p>
+                            <h4>{{ recent_audit_logs|length }}</h4>
+                            <p class="mb-0">تغييرات حديثة</p>
                         </div>
                         <div class="align-self-center">
-                            <i class="fas fa-user-check fa-2x"></i>
+                            <i class="fas fa-history fa-2x"></i>
                         </div>
                     </div>
                 </div>
@@ -70,7 +70,7 @@
         </div>
     </div>
 
-    <!-- Tabs Navigation -->
+    <!-- Enhanced Tabs Navigation -->
     <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">
@@ -80,8 +80,14 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="permissions-tab" data-bs-toggle="tab" data-bs-target="#permissions" type="button" role="tab">
-                <i class="fas fa-user-shield"></i>
-                إدارة الصلاحيات
+                <i class="fas fa-user-lock"></i>
+                الصلاحيات المتقدمة
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="audit-tab" data-bs-toggle="tab" data-bs-target="#audit" type="button" role="tab">
+                <i class="fas fa-history"></i>
+                سجل التدقيق
             </button>
         </li>
     </ul>
@@ -330,6 +336,216 @@
                 </div>
             </div>
         </div>
+
+        <!-- Enhanced Permissions Management Tab -->
+        <div class="tab-pane fade" id="permissions" role="tabpanel" aria-labelledby="permissions-tab">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-user-lock me-2"></i>
+                                نظام الصلاحيات المتقدم
+                            </h5>
+                            <p class="text-muted mb-0">إدارة الصلاحيات التفصيلية لمديري المشاريع</p>
+                        </div>
+                        <div class="card-body">
+                            {% if pm_users %}
+                                <!-- User Selection -->
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <label for="permissionUser" class="form-label">مدير المشروع</label>
+                                        <select class="form-select" id="permissionUser" onchange="loadUserPermissions()">
+                                            <option value="">اختر مدير المشروع</option>
+                                            {% for user in pm_users %}
+                                                <option value="{{ user.id }}">{{ user.full_name }} ({{ user.username }})</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="permissionProject" class="form-label">المشروع (اختياري)</label>
+                                        <select class="form-select" id="permissionProject" onchange="loadUserPermissions()">
+                                            <option value="">صلاحيات عامة</option>
+                                            {% for project in projects %}
+                                                <option value="{{ project.id }}">{{ project.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Permission Matrix -->
+                                <div id="permissionMatrix" style="display: none;">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>نظام الصلاحيات المتقدم:</strong> يحتوي على {{ total_possible_permissions }} صلاحية مختلفة موزعة على 9 أقسام رئيسية.
+                                    </div>
+
+                                    <!-- Permission Sections -->
+                                    {% for section, subsections in permission_structure.items() %}
+                                        <div class="card mb-3">
+                                            <div class="card-header">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <h6 class="mb-0">
+                                                        <i class="fas fa-layer-group me-2"></i>
+                                                        {{ section }}
+                                                    </h6>
+                                                    <div>
+                                                        <button type="button" class="btn btn-sm btn-success me-1" onclick="toggleSectionPermissions('{{ section }}', true)">
+                                                            منح الكل
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-danger" onclick="toggleSectionPermissions('{{ section }}', false)">
+                                                            إلغاء الكل
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-striped">
+                                                        <thead>
+                                                            <tr>
+                                                                <th style="width: 40%;">العملية</th>
+                                                                {% for perm_type in ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'EXPORT', 'ASSIGN', 'APPROVE'] %}
+                                                                    <th class="text-center" style="width: 8%;">
+                                                                        {% if perm_type == 'VIEW' %}عرض
+                                                                        {% elif perm_type == 'CREATE' %}إنشاء
+                                                                        {% elif perm_type == 'EDIT' %}تعديل
+                                                                        {% elif perm_type == 'DELETE' %}حذف
+                                                                        {% elif perm_type == 'EXPORT' %}تصدير
+                                                                        {% elif perm_type == 'ASSIGN' %}تعيين
+                                                                        {% elif perm_type == 'APPROVE' %}اعتماد
+                                                                        {% endif %}
+                                                                    </th>
+                                                                {% endfor %}
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for subsection, perm_types in subsections.items() %}
+                                                                <tr>
+                                                                    <td>{{ subsection }}</td>
+                                                                    {% for perm_type in ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'EXPORT', 'ASSIGN', 'APPROVE'] %}
+                                                                        <td class="text-center">
+                                                                            {% if perm_type in perm_types %}
+                                                                                <div class="form-check form-switch d-flex justify-content-center">
+                                                                                    <input class="form-check-input permission-checkbox" 
+                                                                                           type="checkbox" 
+                                                                                           id="{{ section }}_{{ subsection }}_{{ perm_type }}"
+                                                                                           data-section="{{ section }}"
+                                                                                           data-subsection="{{ subsection }}"
+                                                                                           data-permission-type="{{ perm_type }}"
+                                                                                           onchange="updatePermission(this)">
+                                                                                </div>
+                                                                            {% else %}
+                                                                                <span class="text-muted">-</span>
+                                                                            {% endif %}
+                                                                        </td>
+                                                                    {% endfor %}
+                                                                </tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+
+                                    <!-- Save Actions -->
+                                    <div class="d-flex justify-content-between mt-4">
+                                        <div>
+                                            <button type="button" class="btn btn-outline-secondary" onclick="resetPermissions()">
+                                                <i class="fas fa-undo me-2"></i>إعادة تعيين
+                                            </button>
+                                            <button type="button" class="btn btn-outline-info" onclick="previewPermissions()">
+                                                <i class="fas fa-eye me-2"></i>معاينة
+                                            </button>
+                                        </div>
+                                        <div>
+                                            <button type="button" class="btn btn-success" onclick="savePermissions()">
+                                                <i class="fas fa-save me-2"></i>حفظ التغييرات
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    لا توجد مديري مشاريع لإدارة صلاحياتهم.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audit Log Tab -->
+        <div class="tab-pane fade" id="audit" role="tabpanel" aria-labelledby="audit-tab">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-history me-2"></i>
+                                سجل تدقيق الصلاحيات
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_audit_logs %}
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>التاريخ والوقت</th>
+                                                <th>المستخدم المُحدث</th>
+                                                <th>القسم</th>
+                                                <th>العملية</th>
+                                                <th>التغيير</th>
+                                                <th>المشروع</th>
+                                                <th>IP</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for log in recent_audit_logs %}
+                                                <tr>
+                                                    <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                                    <td>
+                                                        {% if log.target_user %}
+                                                            <span class="badge bg-primary">{{ log.target_user.full_name }}</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ log.section }}</td>
+                                                    <td>{{ log.subsection }}</td>
+                                                    <td>
+                                                        {% if log.old_value != log.new_value %}
+                                                            <span class="badge bg-{{ 'success' if log.new_value else 'danger' }}">
+                                                                {{ 'مُمنوح' if log.new_value else 'مُلغى' }}
+                                                            </span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% if log.project %}
+                                                            {{ log.project.name }}
+                                                        {% else %}
+                                                            <span class="text-muted">عام</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td><small class="text-muted">{{ log.ip_address or '-' }}</small></td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    لا توجد سجلات تدقيق حتى الآن.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -540,6 +756,175 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('can_manage_performance').checked = button.getAttribute('data-performance') === 'true';
         document.getElementById('can_view_veterinary').checked = button.getAttribute('data-veterinary') === 'true';
         document.getElementById('can_view_breeding').checked = button.getAttribute('data-breeding') === 'true';
+    });
+
+    // Enhanced Permission System JavaScript
+    let currentUserPermissions = {};
+    let hasUnsavedChanges = false;
+
+    function loadUserPermissions() {
+        const userId = document.getElementById('permissionUser').value;
+        const projectId = document.getElementById('permissionProject').value;
+        
+        if (!userId) {
+            document.getElementById('permissionMatrix').style.display = 'none';
+            return;
+        }
+
+        // Show loading state
+        document.getElementById('permissionMatrix').style.display = 'block';
+        
+        // Fetch user permissions via AJAX
+        fetch(`/api/admin/permissions/${userId}?project_id=${projectId || ''}`)
+            .then(response => response.json())
+            .then(data => {
+                currentUserPermissions = data.permissions;
+                updatePermissionUI();
+                hasUnsavedChanges = false;
+            })
+            .catch(error => {
+                console.error('Error loading permissions:', error);
+                alert('خطأ في تحميل الصلاحيات');
+            });
+    }
+
+    function updatePermissionUI() {
+        document.querySelectorAll('.permission-checkbox').forEach(checkbox => {
+            const section = checkbox.dataset.section;
+            const subsection = checkbox.dataset.subsection;
+            const permType = checkbox.dataset.permissionType;
+            
+            if (currentUserPermissions[section] && 
+                currentUserPermissions[section][subsection] && 
+                currentUserPermissions[section][subsection][permType] !== undefined) {
+                checkbox.checked = currentUserPermissions[section][subsection][permType];
+            } else {
+                checkbox.checked = false;
+            }
+        });
+    }
+
+    function updatePermission(checkbox) {
+        const section = checkbox.dataset.section;
+        const subsection = checkbox.dataset.subsection;
+        const permType = checkbox.dataset.permissionType;
+        
+        if (!currentUserPermissions[section]) {
+            currentUserPermissions[section] = {};
+        }
+        if (!currentUserPermissions[section][subsection]) {
+            currentUserPermissions[section][subsection] = {};
+        }
+        
+        currentUserPermissions[section][subsection][permType] = checkbox.checked;
+        hasUnsavedChanges = true;
+    }
+
+    function toggleSectionPermissions(section, granted) {
+        document.querySelectorAll(`[data-section="${section}"]`).forEach(checkbox => {
+            checkbox.checked = granted;
+            updatePermission(checkbox);
+        });
+    }
+
+    function resetPermissions() {
+        if (hasUnsavedChanges && !confirm('هل أنت متأكد من إعادة تعيين التغييرات غير المحفوظة؟')) {
+            return;
+        }
+        loadUserPermissions();
+    }
+
+    function previewPermissions() {
+        const userId = document.getElementById('permissionUser').value;
+        const projectId = document.getElementById('permissionProject').value;
+        
+        if (!userId) {
+            alert('يرجى اختيار مدير مشروع أولاً');
+            return;
+        }
+
+        // Create preview modal
+        const modal = document.createElement('div');
+        modal.innerHTML = `
+            <div class="modal fade" id="previewModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">معاينة الصلاحيات</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <pre>${JSON.stringify(currentUserPermissions, null, 2)}</pre>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        new bootstrap.Modal(document.getElementById('previewModal')).show();
+    }
+
+    function savePermissions() {
+        const userId = document.getElementById('permissionUser').value;
+        const projectId = document.getElementById('permissionProject').value;
+        
+        if (!userId) {
+            alert('يرجى اختيار مدير مشروع أولاً');
+            return;
+        }
+
+        if (!hasUnsavedChanges) {
+            alert('لا توجد تغييرات للحفظ');
+            return;
+        }
+
+        // Show loading state
+        const saveBtn = document.querySelector('[onclick="savePermissions()"]');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جارٍ الحفظ...';
+        saveBtn.disabled = true;
+
+        // Send permissions to server
+        fetch('/api/admin/permissions/update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                project_id: projectId || null,
+                permissions: currentUserPermissions
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('تم حفظ الصلاحيات بنجاح');
+                hasUnsavedChanges = false;
+            } else {
+                alert('خطأ في حفظ الصلاحيات: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving permissions:', error);
+            alert('خطأ في حفظ الصلاحيات');
+        })
+        .finally(() => {
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        });
+    }
+
+    // Warn user about unsaved changes
+    window.addEventListener('beforeunload', function(e) {
+        if (hasUnsavedChanges) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
     });
 });
 </script>
