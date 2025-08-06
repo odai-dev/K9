@@ -1900,7 +1900,20 @@ def admin_panel():
                 seen.add(project.id)
                 unique_projects.append(project)
         
-        project_assignments[user.id] = unique_projects
+        # Convert Project objects to serializable dictionaries for frontend
+        project_data = []
+        for project in unique_projects:
+            project_data.append({
+                'id': str(project.id),
+                'name': project.name,
+                'code': project.code,
+                'status': project.status.name,
+                'status_value': project.status.value,
+                'start_date': project.start_date.strftime('%Y-%m-%d') if project.start_date else None,
+                'end_date': project.end_date.strftime('%Y-%m-%d') if project.end_date else None
+            })
+        
+        project_assignments[user.id] = project_data
     
     # Get existing legacy permissions for backward compatibility
     legacy_permissions = {}
