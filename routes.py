@@ -1427,9 +1427,9 @@ def record_attendance(project_id):
         if not assignment:
             return jsonify({'success': False, 'error': 'هذا العضو غير مُعيَّن لهذه الوردية'}), 400
         
-        # Validate absence reason for absent status
+        # Validate absence reason for absent status - set default if not provided
         if status == 'ABSENT' and not absence_reason:
-            return jsonify({'success': False, 'error': 'يجب تحديد سبب الغياب'}), 400
+            absence_reason = 'NO_REASON'  # Default to no reason if not specified
         
         # Check if attendance record already exists
         existing_record = ProjectAttendance.query.filter_by(
@@ -1652,7 +1652,7 @@ def bulk_attendance(project_id):
                 late_reason = None
             elif action == 'mark_all_absent':
                 status = AttendanceStatus.ABSENT
-                absence_reason = AbsenceReason(request.json.get('absence_reason', 'OTHER'))
+                absence_reason = AbsenceReason(request.json.get('absence_reason', 'NO_REASON'))
                 late_reason = None
             elif action == 'mark_all_late':
                 status = AttendanceStatus.LATE

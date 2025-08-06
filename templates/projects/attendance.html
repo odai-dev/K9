@@ -213,10 +213,12 @@ endblock %} {% block content %}
                     >
                     <select id="bulkAbsenceReason" class="form-select" required>
                         <option value="">اختر السبب...</option>
-                        <option value="NO_REASON">بدون عذر</option>
+                        <option value="NO_REASON">بلا سبب</option>
                         <option value="ANNUAL">إجازة سنوية</option>
                         <option value="SICK">إجازة مرضية</option>
-                        <option value="EMERGENCY">طارئة</option>
+                        <option value="EMERGENCY">حالة طارئة</option>
+                        <option value="TRAINING">تدريب</option>
+                        <option value="MISSION">مهمة</option>
                         <option value="OTHER">أخرى</option>
                     </select>
                 </div>
@@ -331,9 +333,12 @@ endblock %} {% block content %}
                         >
                         <select id="absenceReason" class="form-select">
                             <option value="">اختر السبب...</option>
+                            <option value="NO_REASON">بلا سبب</option>
                             <option value="ANNUAL">إجازة سنوية</option>
                             <option value="SICK">إجازة مرضية</option>
-                            <option value="EMERGENCY">طارئة</option>
+                            <option value="EMERGENCY">حالة طارئة</option>
+                            <option value="TRAINING">تدريب</option>
+                            <option value="MISSION">مهمة</option>
                             <option value="OTHER">أخرى</option>
                         </select>
                     </div>
@@ -571,7 +576,7 @@ endblock %} {% block content %}
         lateField.style.display = status === "LATE" ? "block" : "none";
 
         if (status === "ABSENT") {
-            document.getElementById("absenceReason").required = true;
+            document.getElementById("absenceReason").required = false; // Not required, has default
         } else {
             document.getElementById("absenceReason").required = false;
         }
@@ -590,8 +595,7 @@ endblock %} {% block content %}
         };
 
         if (formData.status === "ABSENT" && !formData.absence_reason) {
-            alert("يجب تحديد سبب الغياب");
-            return;
+            formData.absence_reason = "NO_REASON"; // Default to no reason if not specified
         }
 
         fetch(
@@ -640,10 +644,10 @@ endblock %} {% block content %}
             const absenceReason =
                 document.getElementById("bulkAbsenceReason").value;
             if (!absenceReason) {
-                alert("يجب تحديد سبب الغياب");
-                return;
+                requestData.absence_reason = "NO_REASON"; // Default to no reason
+            } else {
+                requestData.absence_reason = absenceReason;
             }
-            requestData.absence_reason = absenceReason;
             bootstrap.Modal.getInstance(
                 document.getElementById("bulkAbsentModal"),
             ).hide();

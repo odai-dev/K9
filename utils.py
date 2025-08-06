@@ -21,15 +21,24 @@ def allowed_file(filename):
 
 def log_audit(user_id, action, target_type, target_id, description=None, old_values=None, new_values=None):
     """Log an audit trail entry"""
+    import json
     try:
         audit_log = AuditLog()
         audit_log.user_id = user_id
         audit_log.action = action
         audit_log.target_type = target_type
         audit_log.target_id = target_id
-        audit_log.description = description
-        audit_log.old_values = old_values
-        audit_log.new_values = new_values
+        
+        # Ensure description is a string, not dict (for SQLite compatibility)
+        if isinstance(description, dict):
+            audit_log.description = json.dumps(description, ensure_ascii=False)
+        else:
+            audit_log.description = description
+            
+        # Ensure old_values and new_values are properly handled for SQLite
+        audit_log.old_values = json.dumps(old_values, ensure_ascii=False) if old_values and isinstance(old_values, dict) else old_values
+        audit_log.new_values = json.dumps(new_values, ensure_ascii=False) if new_values and isinstance(new_values, dict) else new_values
+        
         audit_log.ip_address = request.remote_addr if request else None
         audit_log.user_agent = request.headers.get('User-Agent') if request else None
         db.session.add(audit_log)
