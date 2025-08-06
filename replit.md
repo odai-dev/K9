@@ -96,6 +96,31 @@ Preferred communication style: Simple, everyday language.
   - Proper gunicorn server configuration for production-ready deployment
   - Client/server separation maintained with robust security practices
 
+### Enhanced Project Manager Constraint System Implementation
+- **Date**: August 6, 2025
+- **Changes**: Strengthened project manager assignment constraints to enforce one-active-project rule
+- **New Features**:
+  - Enhanced `validate_project_manager_assignment()` function with stricter validation
+  - Added `get_user_all_projects()` function to check all project statuses
+  - Project managers limited to one ACTIVE or PLANNED project at a time
+  - Validation enforced during project creation, manager assignment, and status changes
+  - Status change validation prevents activating projects when manager has ongoing projects
+- **Rules Enforced**:
+  - PROJECT_MANAGER can only manage one ACTIVE project at a time
+  - PROJECT_MANAGER can only manage one PLANNED project at a time
+  - New projects can only be assigned after previous projects are COMPLETED or CANCELLED
+  - GENERAL_ADMIN users are exempt from all constraints
+  - Clear Arabic error messages explaining constraint violations
+- **Components Enhanced**:
+  - `utils.py`: Enhanced validation functions with comprehensive project status checking
+  - `routes.py`: Added validation to project status change route
+  - Error messages provide specific details about conflicting projects
+- **Benefits**:
+  - Prevents project manager overload with clear one-project focus
+  - Ensures accountability and proper resource allocation
+  - Maintains system integrity with consistent constraint enforcement
+  - Provides clear feedback when constraints are violated
+
 ### Project Manager Constraint System Implementation
 - **Date**: August 5, 2025
 - **Changes**: Implemented project manager constraint system with admin override capability

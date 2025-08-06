@@ -688,7 +688,27 @@ def project_status_change(project_id):
     new_status = request.form.get('status')
     if new_status:
         old_status = project.status.value
-        project.status = ProjectStatus(new_status)
+        new_project_status = ProjectStatus(new_status)
+        
+        # If changing to ACTIVE or PLANNED, validate project manager constraints
+        if new_project_status in [ProjectStatus.ACTIVE, ProjectStatus.PLANNED] and project.project_manager_id:
+            manager = User.query.get(project.project_manager_id)
+            if manager and manager.role == UserRole.PROJECT_MANAGER:
+                # Temporarily set the new status for validation
+                original_status = project.status
+                project.status = new_project_status
+                
+                can_assign, error_msg = validate_project_manager_assignment(manager, project)
+                
+                # Restore original status
+                project.status = original_status
+                
+                if not can_assign:
+                    flash(f"لا يمكن تغيير حالة المشروع: {error_msg}", 'error')
+                    return redirect(url_for('main.projects'))
+        
+        # Apply the status change
+        project.status = new_project_status
         
         # Set finish date if completed
         if project.status == ProjectStatus.COMPLETED and not project.actual_end_date:
