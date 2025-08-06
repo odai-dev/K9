@@ -211,7 +211,7 @@
                         <i class="fas fa-user-shield"></i>
                         إدارة صلاحيات مديري المشاريع
                     </h5>
-                    <p class="text-muted mb-0">يمكنك التحكم في صلاحيات كل مدير مشروع لكل مشروع على حدة</p>
+                    <p class="text-muted mb-0">يظهر فقط المديرين المعينين للمشاريع - يمكنك التحكم في صلاحياتهم</p>
                 </div>
                 <div class="card-body">
                     {% if pm_users and projects %}
@@ -237,12 +237,18 @@
                                         {% for project in projects %}
                                             {% set permission_key = pm_user.id|string + "_" + project.id|string %}
                                             {% set permission = permissions.get(permission_key) %}
-                                            <tr>
+                                            {% set is_assigned = (project.project_manager_id == pm_user.id) %}
+                                            <!-- Only show rows where the manager is actually assigned to the project -->
+                                            {% if is_assigned %}
+                                            <tr class="{{ 'table-success' if is_assigned else '' }}">
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         <i class="fas fa-user text-primary me-2"></i>
                                                         <div>
                                                             <strong>{{ pm_user.full_name }}</strong>
+                                                            {% if is_assigned %}
+                                                                <span class="badge bg-success ms-2">مُعيّن</span>
+                                                            {% endif %}
                                                             <br>
                                                             <small class="text-muted">{{ pm_user.username }}</small>
                                                             {% if pm_user.employee_profile %}
@@ -257,7 +263,7 @@
                                                         <div>
                                                             <strong>{{ project.name }}</strong>
                                                             <br>
-                                                            <small class="text-muted">{{ project.code }}</small>
+                                                            <small class="text-muted">{{ project.code }} | {{ project.status.value }}</small>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -318,15 +324,17 @@
                                                     </button>
                                                 </td>
                                             </tr>
+                                            {% endif %}
                                         {% endfor %}
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
                     {% else %}
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            يجب إنشاء مديري مشاريع ومشاريع أولاً لإدارة الصلاحيات
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>لا توجد تعيينات حالية</strong><br>
+                            لا يوجد مديري مشاريع معينين حالياً. قم بتعيين مديرين للمشاريع أولاً لإدارة صلاحياتهم.
                         </div>
                     {% endif %}
                 </div>
