@@ -1873,8 +1873,15 @@ def admin_panel():
         Employee, Employee.user_account_id == User.id
     ).filter(Employee.role == EmployeeRole.PROJECT_MANAGER).all()
     
-    # Get all projects
+    # Get all projects with their manager information
     projects = Project.query.all()
+    
+    # Build project assignments mapping for each user
+    project_assignments = {}
+    for user in pm_users:
+        # Get projects where this user is the manager
+        assigned_projects = Project.query.filter_by(manager_id=user.id).all()
+        project_assignments[user.id] = assigned_projects
     
     # Get existing legacy permissions for backward compatibility
     legacy_permissions = {}
@@ -1909,6 +1916,7 @@ def admin_panel():
     return render_template('admin/admin_panel.html', 
                          pm_users=pm_users, 
                          projects=projects,
+                         project_assignments=project_assignments,
                          legacy_permissions=legacy_permissions,
                          enhanced_permissions=enhanced_permissions,
                          permission_structure=PERMISSION_STRUCTURE,
