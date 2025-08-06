@@ -493,10 +493,10 @@ def validate_project_manager_assignment(user, project):
     """
     Validate if a project manager can be assigned to a project.
     
-    Rules:
+    Enhanced Rules:
     - GENERAL_ADMIN can be assigned to any project
-    - PROJECT_MANAGER can only manage one ACTIVE or PLANNED project at a time
-    - PROJECT_MANAGER can be assigned to new projects only if their previous projects are COMPLETED or CANCELLED
+    - PROJECT_MANAGER can only manage ONE project at a time regardless of status
+    - PROJECT_MANAGER cannot be assigned to any project if they manage another ongoing project
     - PROJECT_MANAGER can be reassigned to the same project they're already managing
     """
     from models import ProjectStatus, UserRole
@@ -505,30 +505,55 @@ def validate_project_manager_assignment(user, project):
     if user.role == UserRole.GENERAL_ADMIN:
         return True, None
     
-    # For PROJECT_MANAGER role, enforce strict one-active-project rule
+    # For PROJECT_MANAGER role, enforce strict one-project rule
     if user.role == UserRole.PROJECT_MANAGER:
-        # Get current active projects for this manager
-        active_projects = get_user_active_projects(user)
-        
-        # Get all projects to check for planned projects too
+        # Get ALL projects (not just active) for this manager
         all_projects = get_user_all_projects(user)
-        planned_projects = [p for p in all_projects if p.status == ProjectStatus.PLANNED]
         
-        # Combine active and planned projects (ongoing projects)
-        ongoing_projects = active_projects + planned_projects
+        # Only consider ongoing projects (ACTIVE or PLANNED)
+        ongoing_projects = [p for p in all_projects if p.status in [ProjectStatus.ACTIVE, ProjectStatus.PLANNED]]
         
-        # If trying to assign to an active or planned project
-        if project.status in [ProjectStatus.ACTIVE, ProjectStatus.PLANNED]:
-            # Check if they already manage any other ongoing projects
-            other_ongoing_projects = [p for p in ongoing_projects if p.id != project.id]
+        # Check if they already manage any other ongoing projects
+        other_ongoing_projects = [p for p in ongoing_projects if p.id != project.id]
+        
+        if other_ongoing_projects:
+            project_names = []
+            for p in other_ongoing_projects:
+                status_text = "نشط" if p.status == ProjectStatus.ACTIVE else "مخطط"
+                project_names.append(f"{p.name} ({status_text})")
             
-            if other_ongoing_projects:
-                project_names = []
-                for p in other_ongoing_projects:
-                    status_text = "نشط" if p.status == ProjectStatus.ACTIVE else "مخطط"
-                    project_names.append(f"{p.name} ({status_text})")
-                
-                return False, f"المدير {user.username} يدير بالفعل المشروع: {', '.join(project_names)}. يجب إنهاء أو إلغاء المشروع الحالي قبل تعيين مشروع جديد."
+            return False, f"المدير {user.username} يدير بالفعل المشروع: {', '.join(project_names)}. يجب إنهاء أو إلغاء المشروع الحالي قبل تعيين مشروع جديد."
+    
+    return True, None
+
+def validate_project_status_change(project, new_status, current_user=None):
+    """
+    Validate if a project status change is allowed, especially for project manager constraints.
+    
+    Rules:
+    - If changing to ACTIVE or PLANNED, ensure the project manager doesn't have other ongoing projects
+    - If project manager is being changed while project is ACTIVE/PLANNED, validate the new manager
+    """
+    from models import ProjectStatus, UserRole
+    
+    # If changing to ACTIVE or PLANNED status, validate project manager
+    if new_status in [ProjectStatus.ACTIVE, ProjectStatus.PLANNED] and project.project_manager_id:
+        # Get the project manager user
+        from models import User
+        manager = User.query.get(project.project_manager_id)
+        
+        if manager and manager.role == UserRole.PROJECT_MANAGER:
+            # Temporarily set the new status for validation
+            original_status = project.status
+            project.status = new_status
+            
+            can_assign, error_msg = validate_project_manager_assignment(manager, project)
+            
+            # Restore original status
+            project.status = original_status
+            
+            if not can_assign:
+                return False, error_msg
     
     return True, None
 
