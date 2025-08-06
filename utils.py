@@ -458,38 +458,70 @@ def get_user_active_projects(user):
     
     return []
 
+def get_user_all_projects(user):
+    """Get ALL projects (regardless of status) for a PROJECT_MANAGER user"""
+    from models import Project, UserRole, Employee, EmployeeRole
+    
+    if user.role == UserRole.GENERAL_ADMIN:
+        return Project.query.all()
+    elif user.role == UserRole.PROJECT_MANAGER:
+        # Get all projects where this user is the manager
+        manager_projects = Project.query.filter_by(project_manager_id=user.id).all()
+        
+        # Also check through employee profile assignment
+        employee = Employee.query.filter_by(user_account_id=user.id, role=EmployeeRole.PROJECT_MANAGER).first()
+        if employee:
+            employee_projects = employee.projects
+            # Combine and deduplicate
+            all_projects = list(set(manager_projects + employee_projects))
+            return all_projects
+        
+        return manager_projects
+    
+    return []
+
 def validate_project_manager_assignment(user, project):
-    """Validate if a project manager can be assigned to a project"""
-    from models import ProjectStatus
+    """
+    Validate if a project manager can be assigned to a project.
+    
+    Rules:
+    - GENERAL_ADMIN can be assigned to any project
+    - PROJECT_MANAGER can only manage one ACTIVE or PLANNED project at a time
+    - PROJECT_MANAGER can be assigned to new projects only if their previous projects are COMPLETED or CANCELLED
+    - PROJECT_MANAGER can be reassigned to the same project they're already managing
+    """
+    from models import ProjectStatus, UserRole
     
     # Skip validation for GENERAL_ADMIN
-    if user.role.name == 'GENERAL_ADMIN':
+    if user.role == UserRole.GENERAL_ADMIN:
         return True, None
     
-    # Check if user can manage multiple projects (for now, assume False until column is added)
-    # TODO: Add can_manage_multiple_projects column support
-    can_manage_multiple = False
-    if can_manage_multiple:
-        return True, None
+    # For PROJECT_MANAGER role, enforce strict one-active-project rule
+    if user.role == UserRole.PROJECT_MANAGER:
+        # Get current active projects for this manager
+        active_projects = get_user_active_projects(user)
+        
+        # Get all projects to check for planned projects too
+        all_projects = get_user_all_projects(user)
+        planned_projects = [p for p in all_projects if p.status == ProjectStatus.PLANNED]
+        
+        # Combine active and planned projects (ongoing projects)
+        ongoing_projects = active_projects + planned_projects
+        
+        # If trying to assign to an active or planned project
+        if project.status in [ProjectStatus.ACTIVE, ProjectStatus.PLANNED]:
+            # Check if they already manage any other ongoing projects
+            other_ongoing_projects = [p for p in ongoing_projects if p.id != project.id]
+            
+            if other_ongoing_projects:
+                project_names = []
+                for p in other_ongoing_projects:
+                    status_text = "نشط" if p.status == ProjectStatus.ACTIVE else "مخطط"
+                    project_names.append(f"{p.name} ({status_text})")
+                
+                return False, f"المدير {user.username} يدير بالفعل المشروع: {', '.join(project_names)}. يجب إنهاء أو إلغاء المشروع الحالي قبل تعيين مشروع جديد."
     
-    # Check if project is active
-    if project.status != ProjectStatus.ACTIVE:
-        return True, None  # Can assign to non-active projects
-    
-    # Check current active projects
-    active_projects = get_user_active_projects(user)
-    
-    # If no active projects, can assign
-    if not active_projects:
-        return True, None
-    
-    # If already managing this project, it's OK
-    if project in active_projects:
-        return True, None
-    
-    # If managing other active projects, cannot assign
-    project_names = [p.name for p in active_projects]
-    return False, f"المدير {user.full_name} يدير بالفعل المشروع النشط: {', '.join(project_names)}"
+    return True, None
 
 def get_dog_active_project(dog_id, activity_date=None):
     """Get the active project for a dog at a specific date"""
