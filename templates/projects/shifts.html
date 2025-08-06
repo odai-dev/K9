@@ -143,41 +143,6 @@
                                                 </div>
                                             </td>
                                         </tr>
-                                        
-                                        <!-- Edit Shift Modal -->
-                                        <div class="modal fade" id="editShiftModal{{ shift.id }}" tabindex="-1">
-                                            <div class="modal-dialog">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">تعديل الوردية - {{ shift.name }}</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                    </div>
-                                                    <form method="POST" action="{{ url_for('main.project_shifts', project_id=project.id) }}">
-                                                        <input type="hidden" name="shift_id" value="{{ shift.id }}">
-                                                        <div class="modal-body">
-                                                            <div class="mb-3">
-                                                                <label for="editName{{ shift.id }}" class="form-label">اسم الوردية</label>
-                                                                <input type="text" name="name" id="editName{{ shift.id }}" class="form-control" value="{{ shift.name }}" required>
-                                                            </div>
-                                                            <div class="row">
-                                                                <div class="col-md-6">
-                                                                    <label for="editStartTime{{ shift.id }}" class="form-label">وقت البداية</label>
-                                                                    <input type="time" name="start_time" id="editStartTime{{ shift.id }}" class="form-control" value="{{ shift.start_time.strftime('%H:%M') }}" required>
-                                                                </div>
-                                                                <div class="col-md-6">
-                                                                    <label for="editEndTime{{ shift.id }}" class="form-label">وقت النهاية</label>
-                                                                    <input type="time" name="end_time" id="editEndTime{{ shift.id }}" class="form-control" value="{{ shift.end_time.strftime('%H:%M') }}" required>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                                                            <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
-                                                        </div>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
                                     {% endfor %}
                                 </tbody>
                             </table>
@@ -194,6 +159,43 @@
         </div>
     </div>
 </div>
+
+<!-- Edit Shift Modals (Outside the table for proper positioning) -->
+{% for shift in shifts %}
+<div class="modal fade" id="editShiftModal{{ shift.id }}" tabindex="-1" aria-labelledby="editShiftModalLabel{{ shift.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editShiftModalLabel{{ shift.id }}">تعديل الوردية - {{ shift.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('main.project_shifts', project_id=project.id) }}">
+                <input type="hidden" name="shift_id" value="{{ shift.id }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editName{{ shift.id }}" class="form-label">اسم الوردية</label>
+                        <input type="text" name="name" id="editName{{ shift.id }}" class="form-control" value="{{ shift.name }}" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="editStartTime{{ shift.id }}" class="form-label">وقت البداية</label>
+                            <input type="time" name="start_time" id="editStartTime{{ shift.id }}" class="form-control" value="{{ shift.start_time.strftime('%H:%M') }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editEndTime{{ shift.id }}" class="form-label">وقت النهاية</label>
+                            <input type="time" name="end_time" id="editEndTime{{ shift.id }}" class="form-control" value="{{ shift.end_time.strftime('%H:%M') }}" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
 
 <script>
 function toggleShiftStatus(shiftId, isActive) {
