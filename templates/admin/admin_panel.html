@@ -116,7 +116,6 @@
                                                 <th>اسم المستخدم</th>
                                                 <th>البريد الإلكتروني</th>
                                                 <th>المشاريع النشطة</th>
-                                                <th>إدارة متعددة</th>
                                                 <th>الحالة</th>
                                                 <th>الإجراءات</th>
                                             </tr>
@@ -146,15 +145,6 @@
                                                         {% else %}
                                                             <span class="text-muted">لا توجد مشاريع نشطة</span>
                                                         {% endif %}
-                                                    </td>
-                                                    <td>
-                                                        <form method="POST" action="{{ url_for('main.toggle_multiple_projects', user_id=user.id) }}" class="d-inline">
-                                                            <button type="submit" 
-                                                                    class="btn btn-sm btn-outline-secondary"
-                                                                    title="مقيد بمشروع واحد (سيتم إضافة الميزة قريباً)">
-                                                                <i class="fas fa-times"></i>
-                                                            </button>
-                                                        </form>
                                                     </td>
                                                     <td>
                                                         {% if user.active %}

@@ -2070,24 +2070,5 @@ def toggle_user_status(user_id):
     
     return redirect(url_for('main.admin_panel'))
 
-@main_bp.route('/admin/users/<int:user_id>/toggle_multiple_projects', methods=['POST'])
-@login_required
-def toggle_multiple_projects(user_id):
-    """Toggle user's ability to manage multiple projects"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
-        flash('ليس لديك صلاحية لتعديل قيود المشاريع', 'error')
-        return redirect(url_for('main.dashboard'))
-    
-    try:
-        user = User.query.get_or_404(user_id)
-        # TODO: Add support for can_manage_multiple_projects column
-        # user.can_manage_multiple_projects = not user.can_manage_multiple_projects
-        flash('ميزة إدارة المشاريع المتعددة ستكون متاحة قريباً', 'info')
-        return redirect(url_for('main.admin_panel'))
-        
-    except Exception as e:
-        db.session.rollback()
-        flash(f'خطأ في تعديل قيود المشاريع: {str(e)}', 'error')
-    
-    return redirect(url_for('main.admin_panel'))
+
 
