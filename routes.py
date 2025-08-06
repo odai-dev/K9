@@ -137,9 +137,9 @@ def dogs_view(dog_id):
         return redirect(url_for('main.dogs_list'))
     
     # Get related data
-    training_sessions = TrainingSession.query.filter_by(dog_id=dog_uuid).order_by(TrainingSession.created_at.desc()).all()
-    vet_visits = VeterinaryVisit.query.filter_by(dog_id=dog_uuid).order_by(VeterinaryVisit.created_at.desc()).all()
-    breeding_cycles = BreedingCycle.query.filter_by(dog_id=dog_uuid).order_by(BreedingCycle.created_at.desc()).all()
+    training_sessions = TrainingSession.query.filter_by(dog_id=dog.id).order_by(TrainingSession.created_at.desc()).all()
+    vet_visits = VeterinaryVisit.query.filter_by(dog_id=dog.id).order_by(VeterinaryVisit.created_at.desc()).all()
+    breeding_cycles = BreedingCycle.query.filter_by(dog_id=dog.id).order_by(BreedingCycle.created_at.desc()).all()
     
     return render_template('dogs/view.html', dog=dog, training_sessions=training_sessions, 
                          vet_visits=vet_visits, breeding_cycles=breeding_cycles)
@@ -721,12 +721,12 @@ def project_dog_add(project_id):
     dog_id = request.form.get('dog_id')
     if dog_id:
         # Check if already assigned
-        existing = ProjectDog.query.filter_by(project_id=project_uuid, dog_id=dog_id).first()
+        existing = ProjectDog.query.filter_by(project_id=project.id, dog_id=dog_id).first()
         if existing:
             flash('هذا الكلب مُعيَّن بالفعل للمشروع', 'error')
         else:
             project_dog = ProjectDog(
-                project_id=project_uuid,
+                project_id=project.id,
                 dog_id=dog_id,
                 is_active=True
             )
@@ -819,8 +819,8 @@ def project_assignments(project_id):
         return redirect(url_for('main.projects'))
     
     # Get current assignments
-    dog_assignments = ProjectAssignment.query.filter_by(project_id=project_uuid, is_active=True).filter(ProjectAssignment.dog_id.isnot(None)).all()
-    employee_assignments = ProjectAssignment.query.filter_by(project_id=project_uuid, is_active=True).filter(ProjectAssignment.employee_id.isnot(None)).all()
+    dog_assignments = ProjectAssignment.query.filter_by(project_id=project.id, is_active=True).filter(ProjectAssignment.dog_id.isnot(None)).all()
+    employee_assignments = ProjectAssignment.query.filter_by(project_id=project.id, is_active=True).filter(ProjectAssignment.employee_id.isnot(None)).all()
     
     # Get available dogs (not assigned to other active projects) and employees for assignment
     # Get dogs that are either not assigned or not assigned to active projects
@@ -828,7 +828,7 @@ def project_assignments(project_id):
         ProjectAssignment.is_active == True,
         ProjectAssignment.dog_id.isnot(None),
         Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED]),
-        Project.id != project_uuid  # Exclude current project
+        Project.id != project.id  # Exclude current project
     ).subquery()
     
     available_dogs = Dog.query.filter(
@@ -878,7 +878,7 @@ def project_assignment_add(project_id):
                 if dog_id:
                     # Check if already assigned to this project
                     existing = ProjectAssignment.query.filter_by(
-                        project_id=project_uuid, 
+                        project_id=project.id, 
                         dog_id=dog_id,
                         is_active=True
                     ).first()
@@ -900,7 +900,7 @@ def project_assignment_add(project_id):
                         continue
                     
                     assignment = ProjectAssignment(
-                        project_id=project_uuid,
+                        project_id=project.id,
                         dog_id=dog_id,
                         notes=notes,
                         is_active=True
@@ -919,14 +919,14 @@ def project_assignment_add(project_id):
                         
                     # Check if already assigned
                     existing = ProjectAssignment.query.filter_by(
-                        project_id=project_uuid, 
+                        project_id=project.id, 
                         employee_id=employee_id,
                         is_active=True
                     ).first()
                     
                     if not existing:
                         assignment = ProjectAssignment(
-                            project_id=project_uuid,
+                            project_id=project.id,
                             employee_id=employee_id,
                             notes=notes,
                             is_active=True
@@ -1045,7 +1045,7 @@ def project_incidents(project_id):
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
-    incidents = Incident.query.filter_by(project_id=project_uuid).order_by(Incident.incident_date.desc()).all()
+    incidents = Incident.query.filter_by(project_id=project.id).order_by(Incident.incident_date.desc()).all()
     
     return render_template('projects/incidents.html', project=project, incidents=incidents)
 
@@ -1067,7 +1067,7 @@ def project_incident_add(project_id):
     if request.method == 'POST':
         try:
             incident = Incident(
-                project_id=project_uuid,
+                project_id=project.id,
                 incident_date=datetime.strptime(request.form['incident_date'], '%Y-%m-%d').date(),
                 incident_time=datetime.strptime(request.form['incident_time'], '%H:%M').time() if request.form.get('incident_time') else None,
                 incident_type=request.form['incident_type'],
@@ -1109,7 +1109,7 @@ def project_suspicions(project_id):
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
-    suspicions = Suspicion.query.filter_by(project_id=project_uuid).order_by(Suspicion.discovery_date.desc()).all()
+    suspicions = Suspicion.query.filter_by(project_id=project.id).order_by(Suspicion.discovery_date.desc()).all()
     
     return render_template('projects/suspicions.html', project=project, suspicions=suspicions)
 
@@ -1131,7 +1131,7 @@ def project_suspicion_add(project_id):
     if request.method == 'POST':
         try:
             suspicion = Suspicion(
-                project_id=project_uuid,
+                project_id=project.id,
                 discovery_date=datetime.strptime(request.form['discovery_date'], '%Y-%m-%d').date(),
                 discovery_time=datetime.strptime(request.form['discovery_time'], '%H:%M').time() if request.form.get('discovery_time') else None,
                 suspicion_type=request.form['suspicion_type'],
@@ -1174,7 +1174,7 @@ def project_evaluations(project_id):
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
-    evaluations = PerformanceEvaluation.query.filter_by(project_id=project_uuid).order_by(PerformanceEvaluation.evaluation_date.desc()).all()
+    evaluations = PerformanceEvaluation.query.filter_by(project_id=project.id).order_by(PerformanceEvaluation.evaluation_date.desc()).all()
     
     return render_template('projects/evaluations.html', project=project, evaluations=evaluations)
 
@@ -1200,7 +1200,7 @@ def project_evaluation_add(project_id):
             target_dog_id = request.form.get('target_dog_id') if request.form.get('target_type') == 'DOG' else None
             
             evaluation = PerformanceEvaluation(
-                project_id=project_uuid,
+                project_id=project.id,
                 evaluation_date=datetime.strptime(request.form['evaluation_date'], '%Y-%m-%d').date(),
                 evaluator_id=current_user.id,
                 target_type=TargetType(request.form['target_type']),
