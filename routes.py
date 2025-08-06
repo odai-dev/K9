@@ -1407,14 +1407,25 @@ def record_attendance(project_id):
             return jsonify({'success': False, 'error': 'ليس لديك صلاحية للوصول إلى هذا المشروع'}), 403
     
     try:
-        shift_id = request.json['shift_id']
-        attendance_date = datetime.strptime(request.json['date'], '%Y-%m-%d').date()
-        entity_type = request.json['entity_type']
-        entity_id = request.json['entity_id']
-        status = request.json['status']
+        # Ensure request contains JSON data
+        if not request.json:
+            return jsonify({'success': False, 'error': 'البيانات المرسلة غير صحيحة'}), 400
+            
+        # Extract data with error handling
+        shift_id = request.json.get('shift_id')
+        date_str = request.json.get('date')
+        entity_type = request.json.get('entity_type')
+        entity_id = request.json.get('entity_id')
+        status = request.json.get('status')
         absence_reason = request.json.get('absence_reason')
         late_reason = request.json.get('late_reason')
         notes = request.json.get('notes', '')
+        
+        # Validate required fields
+        if not all([shift_id, date_str, entity_type, entity_id, status]):
+            return jsonify({'success': False, 'error': 'البيانات المطلوبة مفقودة'}), 400
+            
+        attendance_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         
         # Validate that entity is assigned to this shift
         assignment = ProjectShiftAssignment.query.filter_by(
