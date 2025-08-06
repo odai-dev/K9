@@ -583,6 +583,8 @@ endblock %} {% block content %}
     }
 
     function saveAttendance() {
+        console.log("saveAttendance called");
+        
         const formData = {
             shift_id: document.getElementById("shiftSelect").value,
             date: document.getElementById("attendanceDate").value,
@@ -594,10 +596,27 @@ endblock %} {% block content %}
             notes: document.getElementById("attendanceNotes").value,
         };
 
+        console.log("Form data:", formData);
+
         if (formData.status === "ABSENT" && !formData.absence_reason) {
             formData.absence_reason = "NO_REASON"; // Default to no reason if not specified
         }
+        
+        // Validate required fields
+        if (!formData.shift_id || !formData.date) {
+            console.error("Missing shift or date - please select both first");
+            showAlert("error", "يرجى تحديد الوردية والتاريخ أولاً");
+            return;
+        }
+        
+        if (!formData.entity_type || !formData.entity_id || !formData.status) {
+            console.error("Missing attendance data:", formData);
+            showAlert("error", "بيانات الحضور غير مكتملة");
+            return;
+        }
 
+        console.log("Sending request to server...");
+        
         fetch(
             `{{ url_for('main.record_attendance', project_id=project.id) }}`,
             {
@@ -608,8 +627,15 @@ endblock %} {% block content %}
                 body: JSON.stringify(formData),
             },
         )
-            .then((response) => response.json())
+            .then((response) => {
+                console.log("Response status:", response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then((data) => {
+                console.log("Response data:", data);
                 if (data.success) {
                     bootstrap.Modal.getInstance(
                         document.getElementById("attendanceModal"),
@@ -621,7 +647,8 @@ endblock %} {% block content %}
                 }
             })
             .catch((error) => {
-                showAlert("error", "حدث خطأ في حفظ البيانات");
+                console.error("Fetch error:", error);
+                showAlert("error", "حدث خطأ في حفظ البيانات: " + error.message);
             });
     }
 
