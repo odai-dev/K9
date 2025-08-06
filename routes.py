@@ -1375,22 +1375,36 @@ def project_shifts(project_id):
     
     if request.method == 'POST':
         try:
-            shift = ProjectShift(
-                project_id=project_id,
-                name=request.form['name'],
-                start_time=datetime.strptime(request.form['start_time'], '%H:%M').time(),
-                end_time=datetime.strptime(request.form['end_time'], '%H:%M').time()
-            )
-            db.session.add(shift)
+            shift_id = request.form.get('shift_id')
+            
+            if shift_id:  # Editing existing shift
+                shift = ProjectShift.query.get_or_404(shift_id)
+                shift.name = request.form['name']
+                shift.start_time = datetime.strptime(request.form['start_time'], '%H:%M').time()
+                shift.end_time = datetime.strptime(request.form['end_time'], '%H:%M').time()
+                
+                log_audit(current_user.id, AuditAction.EDIT, 'ProjectShift', shift.id, 
+                         description=f'Updated shift {shift.name} for project {project.name}')
+                
+                flash('تم تحديث الوردية بنجاح', 'success')
+            else:  # Creating new shift
+                shift = ProjectShift(
+                    project_id=project_id,
+                    name=request.form['name'],
+                    start_time=datetime.strptime(request.form['start_time'], '%H:%M').time(),
+                    end_time=datetime.strptime(request.form['end_time'], '%H:%M').time()
+                )
+                db.session.add(shift)
+                
+                log_audit(current_user.id, AuditAction.CREATE, 'ProjectShift', shift.id, 
+                         description=f'Created shift {shift.name} for project {project.name}')
+                
+                flash('تم إنشاء الوردية بنجاح', 'success')
+                
             db.session.commit()
-            
-            log_audit(current_user.id, AuditAction.CREATE, 'ProjectShift', shift.id, 
-                     description=f'Created shift {shift.name} for project {project.name}')
-            
-            flash('تم إنشاء الوردية بنجاح', 'success')
         except Exception as e:
             db.session.rollback()
-            flash(f'خطأ في إنشاء الوردية: {str(e)}', 'error')
+            flash(f'خطأ في معالجة الوردية: {str(e)}', 'error')
     
     shifts = ProjectShift.query.filter_by(project_id=project_id).all()
     return render_template('projects/shifts.html', project=project, shifts=shifts)
