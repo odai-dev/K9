@@ -1375,9 +1375,21 @@ def project_shifts(project_id):
     
     if request.method == 'POST':
         try:
+            action = request.form.get('action')
             shift_id = request.form.get('shift_id')
             
-            if shift_id:  # Editing existing shift
+            if action == 'toggle_status' and shift_id:  # Toggle shift status
+                shift = ProjectShift.query.get_or_404(shift_id)
+                is_active = request.form.get('is_active') == 'true'
+                shift.is_active = is_active
+                
+                status_text = 'تفعيل' if is_active else 'إيقاف'
+                log_audit(current_user.id, AuditAction.EDIT, 'ProjectShift', shift.id, 
+                         description=f'{status_text} shift {shift.name} for project {project.name}')
+                
+                flash(f'تم {status_text} الوردية بنجاح', 'success')
+                
+            elif shift_id and not action:  # Editing existing shift
                 shift = ProjectShift.query.get_or_404(shift_id)
                 shift.name = request.form['name']
                 shift.start_time = datetime.strptime(request.form['start_time'], '%H:%M').time()
