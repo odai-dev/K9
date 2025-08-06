@@ -1858,8 +1858,9 @@ def edit_shift_assignment(project_id, shift_id, assignment_id):
 @main_bp.route('/admin')
 @login_required
 def admin_panel():
-    """Unified admin interface for user and permission management"""
-    from models import ProjectManagerPermission
+    """Unified admin interface for user and permission management with enhanced granular permissions"""
+    from models import ProjectManagerPermission, SubPermission, PermissionAuditLog
+    from permission_utils import PERMISSION_STRUCTURE, get_user_permissions_for_project, initialize_default_permissions
     from werkzeug.security import generate_password_hash
     
     # Check admin access
@@ -1875,17 +1876,127 @@ def admin_panel():
     # Get all projects
     projects = Project.query.all()
     
-    # Get existing permissions
-    permissions = {}
+    # Get existing legacy permissions for backward compatibility
+    legacy_permissions = {}
     for permission in ProjectManagerPermission.query.all():
         key = f"{permission.user_id}_{permission.project_id}"
-        permissions[key] = permission
+        legacy_permissions[key] = permission
+    
+    # Get enhanced granular permissions
+    enhanced_permissions = {}
+    for user in pm_users:
+        user_permissions = {}
+        for project in projects:
+            user_permissions[project.id] = get_user_permissions_for_project(user.id, project.id)
+        user_permissions['global'] = get_user_permissions_for_project(user.id, None)
+        enhanced_permissions[user.id] = user_permissions
+    
+    # Get recent audit logs
+    recent_audit_logs = PermissionAuditLog.query.order_by(
+        PermissionAuditLog.created_at.desc()
+    ).limit(10).all()
+    
+    # Calculate permission statistics
+    total_possible_permissions = len([
+        (section, subsection, perm_type)
+        for section, subsections in PERMISSION_STRUCTURE.items()
+        for subsection, perm_types in subsections.items()
+        for perm_type in perm_types
+    ])
+    
+    granted_permissions = SubPermission.query.filter_by(is_granted=True).count()
     
     return render_template('admin/admin_panel.html', 
                          pm_users=pm_users, 
                          projects=projects,
-                         permissions=permissions,
+                         legacy_permissions=legacy_permissions,
+                         enhanced_permissions=enhanced_permissions,
+                         permission_structure=PERMISSION_STRUCTURE,
+                         recent_audit_logs=recent_audit_logs,
+                         total_possible_permissions=total_possible_permissions,
+                         granted_permissions=granted_permissions,
                          get_user_active_projects=get_user_active_projects)
+
+# Enhanced Permission API Endpoints
+@main_bp.route('/api/admin/permissions/<user_id>')
+@login_required
+def get_user_permissions_api(user_id):
+    """API endpoint to get user permissions for AJAX requests"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        project_id = request.args.get('project_id')
+        project_id = int(project_id) if project_id and project_id.strip() else None
+        
+        from permission_utils import get_user_permissions_for_project
+        permissions = get_user_permissions_for_project(user_id, project_id)
+        
+        return jsonify({
+            'success': True,
+            'permissions': permissions,
+            'user_id': user_id,
+            'project_id': project_id
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/admin/permissions/update', methods=['POST'])
+@login_required  
+def update_user_permissions_api():
+    """API endpoint to update user permissions via AJAX"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        project_id = data.get('project_id')
+        permissions = data.get('permissions', {})
+        
+        if not user_id:
+            return jsonify({'error': 'User ID required'}), 400
+        
+        # Get target user
+        target_user = User.query.get(user_id)
+        if not target_user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        from permission_utils import update_permission
+        from models import PermissionType
+        
+        update_count = 0
+        
+        # Update each permission
+        for section, subsections in permissions.items():
+            for subsection, perm_types in subsections.items():
+                for perm_type_str, is_granted in perm_types.items():
+                    try:
+                        perm_type = PermissionType(perm_type_str)
+                        success = update_permission(
+                            current_user, target_user, section, subsection, 
+                            perm_type, project_id, is_granted
+                        )
+                        if success:
+                            update_count += 1
+                    except ValueError:
+                        # Invalid permission type, skip
+                        continue
+        
+        return jsonify({
+            'success': True,
+            'message': f'Updated {update_count} permissions',
+            'updated_count': update_count
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @main_bp.route('/admin/sync_managers', methods=['POST'])
 @login_required

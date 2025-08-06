@@ -369,3 +369,28 @@ def export_permissions_matrix(user, project_id=None):
         "permissions": matrix,
         "exported_at": datetime.utcnow().isoformat()
     }
+
+def get_user_permissions_for_project(user_id, project_id):
+    """Get all permissions for a user in a specific project (or global if project_id is None)"""
+    permissions = SubPermission.query.filter_by(
+        user_id=user_id,
+        project_id=project_id
+    ).all()
+    
+    # Build permission matrix
+    matrix = {}
+    for section, subsections in PERMISSION_STRUCTURE.items():
+        matrix[section] = {}
+        for subsection, permission_types in subsections.items():
+            matrix[section][subsection] = {}
+            for perm_type in permission_types:
+                # Find the specific permission
+                specific_perm = next(
+                    (p for p in permissions if p.section == section 
+                     and p.subsection == subsection 
+                     and p.permission_type.value == perm_type), 
+                    None
+                )
+                matrix[section][subsection][perm_type] = specific_perm.is_granted if specific_perm else False
+    
+    return matrix
