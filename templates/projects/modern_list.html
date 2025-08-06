@@ -155,6 +155,14 @@
                                         <i class="fas fa-star me-2"></i>التقييمات
                                     </a>
                                 </li>
+                                {% if project.status.value == 'PLANNED' and current_user.role.value == 'GENERAL_ADMIN' %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button type="button" class="dropdown-item text-danger" onclick="confirmDelete('{{ project.id }}', '{{ project.name }}')">
+                                        <i class="fas fa-trash me-2"></i>حذف المشروع
+                                    </button>
+                                </li>
+                                {% endif %}
                             </ul>
                         </div>
                     </div>
@@ -327,4 +335,18 @@
     font-weight: 500;
 }
 </style>
+
+<!-- Hidden Delete Form -->
+<form id="deleteForm" method="POST" style="display: none;">
+</form>
+
+<script>
+function confirmDelete(projectId, projectName) {
+    if (confirm(`هل أنت متأكد من حذف المشروع "${projectName}"؟\n\nتحذير: هذا الإجراء لا يمكن التراجع عنه ويمكن فقط حذف المشاريع المخططة التي لم تبدأ بعد.`)) {
+        const form = document.getElementById('deleteForm');
+        form.action = `/projects/${projectId}/delete`;
+        form.submit();
+    }
+}
+</script>
 {% endblock %}

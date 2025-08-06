@@ -722,6 +722,60 @@ def project_status_change(project_id):
     
     return redirect(url_for('main.projects'))
 
+# Project Delete Route
+@main_bp.route('/projects/<project_id>/delete', methods=['POST'])
+@login_required
+def project_delete(project_id):
+    try:
+        project_id = project_id
+        project = Project.query.get_or_404(project_id)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects'))
+    
+    # Check permissions - Only GENERAL_ADMIN can delete projects
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('غير مسموح لك بحذف المشاريع', 'error')
+        return redirect(url_for('main.projects'))
+    
+    # Check if project is in PLANNED status only
+    if project.status != ProjectStatus.PLANNED:
+        flash('يمكن حذف المشاريع المخططة فقط التي لم تبدأ بعد', 'error')
+        return redirect(url_for('main.projects'))
+    
+    try:
+        project_name = project.name
+        
+        # Check for any related data that would prevent deletion
+        # Count related records
+        dogs_count = ProjectDog.query.filter_by(project_id=project.id).count()
+        assignments_count = ProjectAssignment.query.filter_by(project_id=project.id).count()
+        shifts_count = ProjectShift.query.filter_by(project_id=project.id).count()
+        incidents_count = Incident.query.filter_by(project_id=project.id).count()
+        suspicions_count = Suspicion.query.filter_by(project_id=project.id).count()
+        evaluations_count = PerformanceEvaluation.query.filter_by(project_id=project.id).count()
+        attendance_count = ProjectAttendance.query.filter_by(project_id=project.id).count()
+        
+        total_related = dogs_count + assignments_count + shifts_count + incidents_count + suspicions_count + evaluations_count + attendance_count
+        
+        if total_related > 0:
+            flash(f'لا يمكن حذف المشروع لأنه يحتوي على بيانات مرتبطة ({total_related} سجل). قم بإلغاء المشروع بدلاً من حذفه.', 'error')
+            return redirect(url_for('main.projects'))
+        
+        # Safe to delete - no related data
+        db.session.delete(project)
+        db.session.commit()
+        
+        log_audit(current_user.id, AuditAction.DELETE, 'Project', str(project.id), 
+                 f'حذف المشروع المخطط: {project_name}', None, {'project_name': project_name})
+        flash(f'تم حذف المشروع "{project_name}" بنجاح', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء حذف المشروع: {str(e)}', 'error')
+    
+    return redirect(url_for('main.projects'))
+
 # Project Dog Management
 @main_bp.route('/projects/<project_id>/dogs/add', methods=['POST'])
 @login_required
