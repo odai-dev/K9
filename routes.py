@@ -1438,9 +1438,9 @@ def record_attendance(project_id):
         if not assignment:
             return jsonify({'success': False, 'error': 'هذا العضو غير مُعيَّن لهذه الوردية'}), 400
         
-        # Validate absence reason for absent status - set default if not provided
+        # Validate absence reason for absent status - set default if not provided  
         if status == 'ABSENT' and (not absence_reason or absence_reason.strip() == ''):
-            absence_reason = 'NO_REASON'  # Default to no reason if not specified
+            absence_reason = AbsenceReason.NO_REASON.name  # Default to no reason if not specified
         
         # Check if attendance record already exists
         existing_record = ProjectAttendance.query.filter_by(
@@ -1454,7 +1454,7 @@ def record_attendance(project_id):
         if existing_record:
             # Update existing record
             existing_record.status = AttendanceStatus(status)
-            existing_record.absence_reason = AbsenceReason(absence_reason) if absence_reason and absence_reason.strip() else None
+            existing_record.absence_reason = AbsenceReason[absence_reason] if absence_reason and absence_reason.strip() else None
             existing_record.late_reason = late_reason if status == 'LATE' else None
             existing_record.notes = notes
             existing_record.updated_at = datetime.utcnow()
@@ -1468,7 +1468,7 @@ def record_attendance(project_id):
                 entity_type=EntityType(entity_type),
                 entity_id=entity_id,
                 status=AttendanceStatus(status),
-                absence_reason=AbsenceReason(absence_reason) if absence_reason and absence_reason.strip() else None,
+                absence_reason=AbsenceReason[absence_reason] if absence_reason and absence_reason.strip() else None,
                 late_reason=late_reason if status == 'LATE' else None,
                 notes=notes,
                 recorded_by_user_id=current_user.id
