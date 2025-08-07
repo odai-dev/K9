@@ -24,7 +24,8 @@
         <div class="container-fluid px-3">
             <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.dashboard') }}">
                 <i class="fas fa-shield-alt me-2 fs-4"></i>
-                <span class="fw-bold">نظام إدارة الكلاب البوليسية</span>
+                <span class="fw-bold d-none d-md-inline">نظام إدارة الكلاب البوليسية</span>
+                <span class="fw-bold d-md-none">K9 System</span>
             </a>
             
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -133,14 +134,6 @@
                         </a>
                     </li>
                     {% endif %}
-                    
-                    {% if current_user.role.value == 'GENERAL_ADMIN' %}
-                    <li class="nav-item">
-                        <a class="nav-link px-3 py-2 rounded-pill" href="{{ url_for('main.admin_panel') }}">
-                            <i class="fas fa-user-shield me-1"></i>الإدارة المتقدمة
-                        </a>
-                    </li>
-                    {% endif %}
                 </ul>
                 
                 <!-- Search -->
@@ -193,8 +186,8 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow">
                             <li><h6 class="dropdown-header">الحساب الشخصي</h6></li>
-                            {% if permissions.admin %}
-                            <li><a class="dropdown-item" href="{{ url_for('main.admin_panel') }}"><i class="fas fa-user-shield me-2"></i>لوحة تحكم المدير</a></li>
+                            {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_panel') }}"><i class="fas fa-user-shield me-2"></i>لوحة التحكم</a></li>
                             <li><hr class="dropdown-divider"></li>
                             {% endif %}
                             <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>تسجيل الخروج</a></li>
@@ -210,8 +203,8 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow">
                             <li><h6 class="dropdown-header">{{ current_user.full_name }}</h6></li>
-                            {% if permissions.admin %}
-                            <li><a class="dropdown-item" href="{{ url_for('main.admin_panel') }}"><i class="fas fa-user-shield me-2"></i>لوحة تحكم المدير</a></li>
+                            {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_panel') }}"><i class="fas fa-user-shield me-2"></i>لوحة التحكم</a></li>
                             <li><hr class="dropdown-divider"></li>
                             {% endif %}
                             <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>تسجيل الخروج</a></li>
