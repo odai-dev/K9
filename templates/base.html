@@ -24,8 +24,8 @@
         <div class="container-fluid px-3">
             <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.dashboard') }}">
                 <i class="fas fa-shield-alt me-2 fs-4"></i>
-                <span class="fw-bold d-none d-md-inline">نظام إدارة الكلاب البوليسية</span>
-                <span class="fw-bold d-md-none">K9 System</span>
+                <span class="fw-bold d-none d-lg-inline">نظام إدارة الكلاب البوليسية</span>
+                <span class="fw-bold d-lg-none">K9</span>
             </a>
             
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -42,26 +42,25 @@
                     
                     {% set permissions = get_user_permissions(current_user) %}
                     
-                    {% if permissions.dogs %}
+                    {% if permissions.dogs or permissions.employees %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="dogsDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-dog me-1"></i>الكلاب
+                        <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="resourcesDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-users me-1"></i>الموارد
                         </a>
                         <ul class="dropdown-menu shadow">
-                            <li><a class="dropdown-item" href="{{ url_for('main.dogs_list') }}"><i class="fas fa-list me-2"></i>قائمة الكلاب</a></li>
+                            {% if permissions.dogs %}
+                            <li><h6 class="dropdown-header">الكلاب</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.dogs_list') }}"><i class="fas fa-dog me-2"></i>قائمة الكلاب</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('main.dogs_add') }}"><i class="fas fa-plus me-2"></i>إضافة كلب</a></li>
-                        </ul>
-                    </li>
-                    {% endif %}
-                    
-                    {% if permissions.employees %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="employeesDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-users me-1"></i>الموظفين
-                        </a>
-                        <ul class="dropdown-menu shadow">
-                            <li><a class="dropdown-item" href="{{ url_for('main.employees_list') }}"><i class="fas fa-list me-2"></i>قائمة الموظفين</a></li>
+                            {% endif %}
+                            {% if permissions.dogs and permissions.employees %}
+                            <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            {% if permissions.employees %}
+                            <li><h6 class="dropdown-header">الموظفين</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.employees_list') }}"><i class="fas fa-users me-2"></i>قائمة الموظفين</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('main.employees_add') }}"><i class="fas fa-user-plus me-2"></i>إضافة موظف</a></li>
+                            {% endif %}
                         </ul>
                     </li>
                     {% endif %}
@@ -168,12 +167,7 @@
                     </li>
                 </ul>
                 
-                <!-- Quick Logout Button for Mobile -->
-                <div class="d-lg-none">
-                    <a class="btn btn-outline-light btn-sm me-2" href="{{ url_for('auth.logout') }}">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </a>
-                </div>
+
                 
                 <!-- User Menu for Desktop -->
                 <ul class="navbar-nav d-none d-lg-flex">
