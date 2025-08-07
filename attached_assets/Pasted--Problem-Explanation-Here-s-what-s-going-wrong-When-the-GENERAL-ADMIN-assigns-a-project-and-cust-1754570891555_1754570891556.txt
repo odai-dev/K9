@@ -1,0 +1,77 @@
+🛑 Problem Explanation
+Here’s what’s going wrong:
+
+When the GENERAL_ADMIN assigns a project and custom permissions to a PROJECT_MANAGER via the /admin dashboard, everything looks correct in the admin panel.
+
+But when logging in as that PROJECT_MANAGER, the user sees nothing — no projects, no data, no sections, no functionality.
+
+This means: the system is not enforcing or rendering the permissions saved by the admin when the Project Manager logs in.
+
+In other words:
+
+The permission assignments and project access are saved in the database, but they’re not being loaded or respected by the Project Manager’s view.
+
+✅ What Needs to Be Fixed (Instructions)
+1. Verify That Permissions Are Actually Saved
+First, confirm that when the GENERAL_ADMIN edits a Project Manager’s permissions, the changes are:
+
+Being written to the database
+
+Stored in the correct permissions table
+
+Assigned with the correct user and project references
+
+2. Ensure PM View Loads Only What He Is Allowed
+When a PROJECT_MANAGER logs in, the system should:
+
+Load their assigned projects
+
+Filter dashboard sections and menu items based on the permissions given by the admin
+
+Only allow access to actions they are authorized for (e.g., view dogs, upload medical records)
+
+Right now, this loading step is either missing or not connected to the admin-assigned permissions.
+
+3. Fix the Backend Logic for PM Login
+After login, the system must:
+
+Fetch the user’s role
+
+Retrieve their assigned permissions and projects
+
+Inject only the allowed content into the UI (dogs, training, incidents, etc.)
+
+Hide/disable anything they’re not allowed to access
+
+4. Fix the Frontend Rendering
+If the permissions and data are fetched correctly from the backend:
+
+The frontend (e.g., sidebar menu, dashboard stats) should only show what this specific user has access to.
+
+If nothing is shown, that means the frontend is either:
+
+Not receiving the correct data
+
+Or it’s checking the wrong permission logic
+
+5. Test This End-to-End
+Create a new test user with the PROJECT_MANAGER role:
+
+Assign them one project
+
+Give them access to:
+
+View dogs
+
+Upload training reports
+
+Log in as them
+
+Confirm:
+
+Only one project is visible
+
+Only the authorized actions are visible
+
+Unauthorized sections are fully hidden or blocked
+

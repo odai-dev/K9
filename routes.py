@@ -44,10 +44,31 @@ def dashboard():
         recent_vet_visits = VeterinaryVisit.query.order_by(VeterinaryVisit.created_at.desc()).limit(5).all()
         
     else:  # PROJECT_MANAGER
-        # Only show data assigned to this manager
-        assigned_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id).all()
-        assigned_employees = Employee.query.filter_by(assigned_to_user_id=current_user.id).all()
+        # Get data through project assignments for this manager
         assigned_projects = Project.query.filter_by(manager_id=current_user.id).all()
+        
+        # Get dogs and employees through project assignments
+        assigned_dogs = []
+        assigned_employees = []
+        
+        for project in assigned_projects:
+            # Get dogs assigned to this project
+            project_dogs = db.session.query(Dog).join(ProjectAssignment).filter(
+                ProjectAssignment.project_id == project.id,
+                ProjectAssignment.dog_id.isnot(None)
+            ).all()
+            assigned_dogs.extend(project_dogs)
+            
+            # Get employees assigned to this project
+            project_employees = db.session.query(Employee).join(ProjectAssignment).filter(
+                ProjectAssignment.project_id == project.id,
+                ProjectAssignment.employee_id.isnot(None)
+            ).all()
+            assigned_employees.extend(project_employees)
+        
+        # Remove duplicates
+        assigned_dogs = list(set(assigned_dogs))
+        assigned_employees = list(set(assigned_employees))
         
         stats['total_dogs'] = len(assigned_dogs)
         stats['active_dogs'] = len([d for d in assigned_dogs if d.current_status == DogStatus.ACTIVE])
@@ -56,9 +77,13 @@ def dashboard():
         stats['total_projects'] = len(assigned_projects)
         
         # Recent activities for assigned dogs only
-        dog_ids = [d.id for d in assigned_dogs]
-        recent_training = TrainingSession.query.filter(TrainingSession.dog_id.in_(dog_ids)).order_by(TrainingSession.created_at.desc()).limit(5).all()
-        recent_vet_visits = VeterinaryVisit.query.filter(VeterinaryVisit.dog_id.in_(dog_ids)).order_by(VeterinaryVisit.created_at.desc()).limit(5).all()
+        dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
+        if dog_ids:
+            recent_training = TrainingSession.query.filter(TrainingSession.dog_id.in_(dog_ids)).order_by(TrainingSession.created_at.desc()).limit(5).all()
+            recent_vet_visits = VeterinaryVisit.query.filter(VeterinaryVisit.dog_id.in_(dog_ids)).order_by(VeterinaryVisit.created_at.desc()).limit(5).all()
+        else:
+            recent_training = []
+            recent_vet_visits = []
     
     return render_template('dashboard.html', stats=stats, recent_training=recent_training, recent_vet_visits=recent_vet_visits)
 
@@ -69,8 +94,17 @@ def dogs_list():
     from datetime import date
     if current_user.role == UserRole.GENERAL_ADMIN:
         dogs = Dog.query.order_by(Dog.name).all()
-    else:
-        dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id).order_by(Dog.name).all()
+    else:  # PROJECT_MANAGER - get dogs through project assignments
+        assigned_projects = Project.query.filter_by(manager_id=current_user.id).all()
+        dogs = []
+        for project in assigned_projects:
+            project_dogs = db.session.query(Dog).join(ProjectAssignment).filter(
+                ProjectAssignment.project_id == project.id,
+                ProjectAssignment.dog_id.isnot(None)
+            ).all()
+            dogs.extend(project_dogs)
+        dogs = list(set(dogs))  # Remove duplicates
+        dogs.sort(key=lambda x: x.name or '')  # Sort by name
     
     return render_template('dogs/list.html', dogs=dogs, today=date.today())
 

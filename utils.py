@@ -27,8 +27,12 @@ def log_audit(user_id, action, target_type, target_id, description=None, old_val
         audit_log.user_id = user_id
         audit_log.action = action
         audit_log.target_type = target_type
-        # Convert target_id to string for UUID compatibility in PostgreSQL
-        audit_log.target_id = str(target_id) if target_id is not None else None
+        # Handle target_id properly for UUID compatibility
+        # Don't convert User IDs (integers) to UUIDs, leave them as None for User targets
+        if target_type == 'User' and isinstance(target_id, (int, str)) and str(target_id).isdigit():
+            audit_log.target_id = None  # Don't try to store integer user IDs as UUIDs
+        else:
+            audit_log.target_id = str(target_id) if target_id is not None else None
         
         # Ensure description is a string, not dict (for SQLite compatibility)
         if isinstance(description, dict):
@@ -262,10 +266,52 @@ def get_user_permissions(user):
             'admin': True
         }
     else:  # PROJECT_MANAGER
+        # Load permissions from SubPermission table for PROJECT_MANAGER
+        from models import SubPermission
         permissions = {section: False for section in ['dogs', 'employees', 'training', 'veterinary', 'breeding', 'projects', 'attendance', 'reports', 'admin']}
-        for section in user.allowed_sections or []:
-            if section in permissions:
-                permissions[section] = True
+        
+        # Check if user has any granted permissions in SubPermission table
+        user_permissions = SubPermission.query.filter_by(user_id=user.id, is_granted=True).all()
+        
+        # Map SubPermission sections to the main sections
+        section_mapping = {
+            'Dogs': 'dogs',
+            'Employees': 'employees', 
+            'Training': 'training',
+            'Veterinary': 'veterinary',
+            'Breeding': 'breeding',
+            'Projects': 'projects',
+            'Attendance': 'attendance',
+            'Reports': 'reports',
+            'Analytics': 'reports'
+        }
+        
+        # If user has any granted permissions, enable those sections
+        for perm in user_permissions:
+            mapped_section = section_mapping.get(perm.section)
+            if mapped_section and mapped_section in permissions:
+                permissions[mapped_section] = True
+                
+        # Also check assigned projects - if user has projects, they should see projects section
+        from models import Project
+        user_projects = Project.query.filter_by(manager_id=user.id).all()
+        if user_projects:
+            permissions['projects'] = True
+        
+        return permissions
+        
+        # If user has any granted permissions, enable those sections
+        for perm in user_permissions:
+            mapped_section = section_mapping.get(perm.section)
+            if mapped_section and mapped_section in permissions:
+                permissions[mapped_section] = True
+                
+        # Also check assigned projects - if user has projects, they should see projects section
+        from models import Project
+        user_projects = Project.query.filter_by(manager_id=user.id).all()
+        if user_projects:
+            permissions['projects'] = True
+        
         return permissions
 
 def get_project_manager_permissions(user, project_id):
