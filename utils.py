@@ -252,7 +252,7 @@ def generate_pdf_report(report_type, start_date, end_date, user):
     return filename
 
 def get_user_permissions(user):
-    """Get user permissions based on role and allowed sections"""
+    """Get user permissions based on role and SubPermission grants"""
     if user.role.value == 'GENERAL_ADMIN':
         return {
             'dogs': True,
@@ -267,7 +267,7 @@ def get_user_permissions(user):
         }
     else:  # PROJECT_MANAGER
         # Load permissions from SubPermission table for PROJECT_MANAGER
-        from models import SubPermission
+        from models import SubPermission, Project
         permissions = {section: False for section in ['dogs', 'employees', 'training', 'veterinary', 'breeding', 'projects', 'attendance', 'reports', 'admin']}
         
         # Check if user has any granted permissions in SubPermission table
@@ -292,22 +292,7 @@ def get_user_permissions(user):
             if mapped_section and mapped_section in permissions:
                 permissions[mapped_section] = True
                 
-        # Also check assigned projects - if user has projects, they should see projects section
-        from models import Project
-        user_projects = Project.query.filter_by(manager_id=user.id).all()
-        if user_projects:
-            permissions['projects'] = True
-        
-        return permissions
-        
-        # If user has any granted permissions, enable those sections
-        for perm in user_permissions:
-            mapped_section = section_mapping.get(perm.section)
-            if mapped_section and mapped_section in permissions:
-                permissions[mapped_section] = True
-                
-        # Also check assigned projects - if user has projects, they should see projects section
-        from models import Project
+        # Also check assigned projects - if user has projects assigned, they should see projects section
         user_projects = Project.query.filter_by(manager_id=user.id).all()
         if user_projects:
             permissions['projects'] = True
@@ -388,6 +373,107 @@ def get_project_manager_permissions(user, project_id):
         'can_view_veterinary': False,
         'can_view_breeding': False
     }
+
+def get_user_assigned_projects(user):
+    """Get projects with data that PROJECT_MANAGER can access based on SubPermission"""
+    from models import Project, UserRole, SubPermission
+    
+    if user.role == UserRole.GENERAL_ADMIN:
+        return Project.query.all()
+    elif user.role == UserRole.PROJECT_MANAGER:
+        # Get projects where this user is assigned as manager
+        assigned_projects = Project.query.filter_by(manager_id=user.id).all()
+        
+        # Also get projects from SubPermission grants
+        project_permissions = SubPermission.query.filter_by(
+            user_id=user.id, 
+            section="Projects",
+            is_granted=True
+        ).filter(SubPermission.project_id.isnot(None)).all()
+        
+        # Add projects from permission grants
+        permission_project_ids = [p.project_id for p in project_permissions]
+        permission_projects = Project.query.filter(Project.id.in_(permission_project_ids)).all() if permission_project_ids else []
+        
+        # Combine and deduplicate
+        all_projects = list(set(assigned_projects + permission_projects))
+        return all_projects
+    
+    return []
+
+def get_user_accessible_dogs(user):
+    """Get dogs that PROJECT_MANAGER can access based on SubPermission and project assignments"""
+    from models import Dog, UserRole, SubPermission, ProjectAssignment, Project, PermissionType
+    
+    if user.role == UserRole.GENERAL_ADMIN:
+        return Dog.query.all()
+    elif user.role == UserRole.PROJECT_MANAGER:
+        # Check if user has VIEW permission for Dogs
+        dogs_permission = SubPermission.query.filter_by(
+            user_id=user.id,
+            section="Dogs",
+            subsection="عرض قائمة الكلاب",
+            permission_type=PermissionType.VIEW,
+            is_granted=True
+        ).first()
+        
+        if not dogs_permission:
+            return []
+            
+        # Get projects this user has access to
+        user_projects = get_user_assigned_projects(user)
+        if not user_projects:
+            return []
+            
+        # Get dogs through project assignments
+        dogs = []
+        for project in user_projects:
+            project_dogs = db.session.query(Dog).join(ProjectAssignment).filter(
+                ProjectAssignment.project_id == project.id,
+                ProjectAssignment.dog_id.isnot(None)
+            ).all()
+            dogs.extend(project_dogs)
+        
+        return list(set(dogs))  # Remove duplicates
+    
+    return []
+
+def get_user_accessible_employees(user):
+    """Get employees that PROJECT_MANAGER can access based on SubPermission and project assignments"""
+    from models import Employee, UserRole, SubPermission, ProjectAssignment, Project, PermissionType
+    
+    if user.role == UserRole.GENERAL_ADMIN:
+        return Employee.query.all()
+    elif user.role == UserRole.PROJECT_MANAGER:
+        # Check if user has VIEW permission for Employees
+        employees_permission = SubPermission.query.filter_by(
+            user_id=user.id,
+            section="Employees",
+            subsection="عرض قائمة الموظفين",
+            permission_type=PermissionType.VIEW,
+            is_granted=True
+        ).first()
+        
+        if not employees_permission:
+            return []
+            
+        # Get projects this user has access to
+        user_projects = get_user_assigned_projects(user)
+        if not user_projects:
+            return []
+            
+        # Get employees through project assignments
+        employees = []
+        for project in user_projects:
+            project_employees = db.session.query(Employee).join(ProjectAssignment).filter(
+                ProjectAssignment.project_id == project.id,
+                ProjectAssignment.employee_id.isnot(None)
+            ).all()
+            employees.extend(project_employees)
+        
+        return list(set(employees))  # Remove duplicates
+    
+    return []
 
 def get_user_projects(user):
     """Get projects assigned to a PROJECT_MANAGER user"""
