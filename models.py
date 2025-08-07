@@ -107,6 +107,7 @@ class TargetType(Enum):
 class AuditAction(Enum):
     CREATE = "CREATE"
     EDIT = "EDIT"
+    UPDATE = "UPDATE"
     DELETE = "DELETE"
     EXPORT = "EXPORT"
     LOGIN = "LOGIN"
@@ -491,6 +492,8 @@ class Suspicion(db.Model):
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
     element_type = db.Column(db.Enum(ElementType), nullable=False)  # سلاح/مخدرات/متفجرات/أخرى
+    suspicion_type = db.Column(db.String(100))  # نوع الاشتباه
+    risk_level = db.Column(db.String(20), default='MEDIUM')  # LOW, MEDIUM, HIGH
     subtype = db.Column(db.String(100))  # نوع السلاح/العبوة
     discovery_date = db.Column(db.Date, nullable=False)
     discovery_time = db.Column(db.Time, nullable=False)
