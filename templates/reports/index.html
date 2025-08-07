@@ -183,7 +183,7 @@
                 <h5 class="modal-title">اختر الفترة الزمنية</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="reportForm" method="POST" action="{{ url_for('main.reports_generate') }}">
+            <form id="reportForm" method="POST" action="{{ url_for('main.reports_index') }}">
                 <div class="modal-body">
                     <input type="hidden" id="reportType" name="report_type">
                     

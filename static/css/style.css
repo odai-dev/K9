@@ -144,11 +144,115 @@ body {
     
     .navbar-nav .nav-link {
         margin: 0.25rem 0;
+        text-align: center;
+        border-radius: 8px;
     }
     
     #globalSearch {
         width: 100% !important;
         margin: 0.5rem 0;
+    }
+    
+    .navbar-brand span {
+        display: none;
+    }
+    
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+    
+    /* Mobile user menu */
+    .navbar-nav .nav-link .fw-semibold {
+        display: none;
+    }
+    
+    /* Mobile notifications */
+    .navbar-nav .nav-link .fs-5 {
+        font-size: 1.2rem !important;
+    }
+    
+    /* Main content mobile spacing */
+    main {
+        margin-top: 70px !important;
+        padding: 1rem !important;
+    }
+    
+    /* Card responsive */
+    .card {
+        margin-bottom: 1rem;
+    }
+    
+    /* Table responsive */
+    .table-responsive {
+        margin-bottom: 1rem;
+    }
+    
+    /* Button responsive */
+    .btn-group {
+        flex-wrap: wrap;
+    }
+    
+    .btn-group .btn {
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* Tablet responsiveness */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .navbar-brand span {
+        font-size: 0.9rem;
+    }
+    
+    .dropdown-menu {
+        min-width: 250px;
+        font-size: 0.9rem;
+    }
+    
+    /* Search on tablet */
+    #globalSearch {
+        width: 200px !important;
+    }
+}
+
+/* Small mobile devices */
+@media (max-width: 576px) {
+    .navbar {
+        padding: 0.5rem 0;
+    }
+    
+    .navbar-brand {
+        font-size: 1rem;
+    }
+    
+    .navbar-brand span {
+        display: none;
+    }
+    
+    .nav-link {
+        font-size: 0.9rem;
+    }
+    
+    .dropdown-menu {
+        min-width: 200px;
+        font-size: 0.85rem;
+    }
+    
+    main {
+        padding: 0.5rem !important;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .btn {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
     }
 }
 
