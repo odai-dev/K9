@@ -13,7 +13,7 @@ from models import (Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCyc
                    # New attendance models
                    ProjectShift, ProjectShiftAssignment, ProjectAttendance,
                    EntityType, AttendanceStatus, AbsenceReason)
-from utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment
+from utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
 import os
 from datetime import datetime, date
 import uuid
@@ -43,32 +43,11 @@ def dashboard():
         recent_training = TrainingSession.query.order_by(TrainingSession.created_at.desc()).limit(5).all()
         recent_vet_visits = VeterinaryVisit.query.order_by(VeterinaryVisit.created_at.desc()).limit(5).all()
         
-    else:  # PROJECT_MANAGER
-        # Get data through project assignments for this manager
-        assigned_projects = Project.query.filter_by(manager_id=current_user.id).all()
-        
-        # Get dogs and employees through project assignments
-        assigned_dogs = []
-        assigned_employees = []
-        
-        for project in assigned_projects:
-            # Get dogs assigned to this project
-            project_dogs = db.session.query(Dog).join(ProjectAssignment).filter(
-                ProjectAssignment.project_id == project.id,
-                ProjectAssignment.dog_id.isnot(None)
-            ).all()
-            assigned_dogs.extend(project_dogs)
-            
-            # Get employees assigned to this project
-            project_employees = db.session.query(Employee).join(ProjectAssignment).filter(
-                ProjectAssignment.project_id == project.id,
-                ProjectAssignment.employee_id.isnot(None)
-            ).all()
-            assigned_employees.extend(project_employees)
-        
-        # Remove duplicates
-        assigned_dogs = list(set(assigned_dogs))
-        assigned_employees = list(set(assigned_employees))
+    else:  # PROJECT_MANAGER - Use permission-based access
+        # Get data through SubPermission system
+        assigned_projects = get_user_assigned_projects(current_user)
+        assigned_dogs = get_user_accessible_dogs(current_user)
+        assigned_employees = get_user_accessible_employees(current_user)
         
         stats['total_dogs'] = len(assigned_dogs)
         stats['active_dogs'] = len([d for d in assigned_dogs if d.current_status == DogStatus.ACTIVE])
@@ -92,19 +71,9 @@ def dashboard():
 @login_required
 def dogs_list():
     from datetime import date
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        dogs = Dog.query.order_by(Dog.name).all()
-    else:  # PROJECT_MANAGER - get dogs through project assignments
-        assigned_projects = Project.query.filter_by(manager_id=current_user.id).all()
-        dogs = []
-        for project in assigned_projects:
-            project_dogs = db.session.query(Dog).join(ProjectAssignment).filter(
-                ProjectAssignment.project_id == project.id,
-                ProjectAssignment.dog_id.isnot(None)
-            ).all()
-            dogs.extend(project_dogs)
-        dogs = list(set(dogs))  # Remove duplicates
-        dogs.sort(key=lambda x: x.name or '')  # Sort by name
+    # Use permission-based access for both roles
+    dogs = get_user_accessible_dogs(current_user)
+    dogs.sort(key=lambda x: x.name or '')  # Sort by name
     
     return render_template('dogs/list.html', dogs=dogs, today=date.today())
 
