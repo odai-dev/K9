@@ -27,7 +27,8 @@ def log_audit(user_id, action, target_type, target_id, description=None, old_val
         audit_log.user_id = user_id
         audit_log.action = action
         audit_log.target_type = target_type
-        audit_log.target_id = target_id
+        # Convert target_id to string for UUID compatibility in PostgreSQL
+        audit_log.target_id = str(target_id) if target_id is not None else None
         
         # Ensure description is a string, not dict (for SQLite compatibility)
         if isinstance(description, dict):
