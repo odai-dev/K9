@@ -42,25 +42,26 @@
                     
                     {% set permissions = get_user_permissions(current_user) %}
                     
-                    {% if permissions.dogs or permissions.employees %}
+                    {% if permissions.dogs %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="managementDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-users-cog me-1"></i>الإدارة
+                        <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="dogsDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-dog me-1"></i>الكلاب
                         </a>
                         <ul class="dropdown-menu shadow">
-                            {% if permissions.dogs %}
-                            <li><h6 class="dropdown-header">إدارة الكلاب</h6></li>
-                            <li><a class="dropdown-item" href="{{ url_for('main.dogs_list') }}"><i class="fas fa-dog me-2"></i>قائمة الكلاب</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.dogs_list') }}"><i class="fas fa-list me-2"></i>قائمة الكلاب</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('main.dogs_add') }}"><i class="fas fa-plus me-2"></i>إضافة كلب</a></li>
-                            {% endif %}
-                            {% if permissions.dogs and permissions.employees %}
-                            <li><hr class="dropdown-divider"></li>
-                            {% endif %}
-                            {% if permissions.employees %}
-                            <li><h6 class="dropdown-header">إدارة الموظفين</h6></li>
-                            <li><a class="dropdown-item" href="{{ url_for('main.employees_list') }}"><i class="fas fa-users me-2"></i>قائمة الموظفين</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                    
+                    {% if permissions.employees %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="employeesDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-users me-1"></i>الموظفين
+                        </a>
+                        <ul class="dropdown-menu shadow">
+                            <li><a class="dropdown-item" href="{{ url_for('main.employees_list') }}"><i class="fas fa-list me-2"></i>قائمة الموظفين</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('main.employees_add') }}"><i class="fas fa-user-plus me-2"></i>إضافة موظف</a></li>
-                            {% endif %}
                         </ul>
                     </li>
                     {% endif %}
@@ -150,7 +151,22 @@
                     </button>
                 </div>
                 
-
+                <!-- Notifications -->
+                <ul class="navbar-nav me-2 d-none d-md-flex">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link position-relative" href="#" id="notificationsDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-bell fs-5"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6em;">3</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow" style="width: 300px;">
+                            <li><h6 class="dropdown-header">الإشعارات الأخيرة</h6></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item py-2" href="#"><i class="fas fa-info-circle text-info me-2"></i>تم إضافة كلب جديد</a></li>
+                            <li><a class="dropdown-item py-2" href="#"><i class="fas fa-calendar text-warning me-2"></i>موعد فحص بيطري قادم</a></li>
+                            <li><a class="dropdown-item py-2" href="#"><i class="fas fa-exclamation-triangle text-danger me-2"></i>مشروع يحتاج متابعة</a></li>
+                        </ul>
+                    </li>
+                </ul>
                 
                 <!-- Quick Logout Button for Mobile -->
                 <div class="d-lg-none">
