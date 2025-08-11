@@ -89,7 +89,7 @@ def dogs_add():
             photo_filename = None
             if 'photo' in request.files and request.files['photo'].filename:
                 photo = request.files['photo']
-                if allowed_file(photo.filename):
+                if photo.filename and allowed_file(photo.filename):
                     # Create unique filename
                     photo_filename = f"{uuid.uuid4()}_{secure_filename(photo.filename)}"
                     photo_path = os.path.join(current_app.config['UPLOAD_FOLDER'], photo_filename)
@@ -99,7 +99,7 @@ def dogs_add():
             birth_cert_filename = None
             if 'birth_certificate' in request.files and request.files['birth_certificate'].filename:
                 cert = request.files['birth_certificate']
-                if allowed_file(cert.filename):
+                if cert.filename and allowed_file(cert.filename):
                     # Create unique filename
                     birth_cert_filename = f"{uuid.uuid4()}_{secure_filename(cert.filename)}"
                     cert_path = os.path.join(current_app.config['UPLOAD_FOLDER'], birth_cert_filename)
@@ -996,12 +996,11 @@ def project_assignment_add(project_id):
                         flash(f'الكلب {dog.name} معيّن بالفعل لمشروع نشط آخر: {active_assignment.project.name}', 'error')
                         continue
                     
-                    assignment = ProjectAssignment(
-                        project_id=project.id,
-                        dog_id=dog_id,
-                        notes=notes,
-                        is_active=True
-                    )
+                    assignment = ProjectAssignment()
+                    assignment.project_id = project.id
+                    assignment.dog_id = dog_id
+                    assignment.notes = notes
+                    assignment.is_active = True
                     db.session.add(assignment)
                         
         elif assignment_type == 'employee':
@@ -1022,12 +1021,11 @@ def project_assignment_add(project_id):
                     ).first()
                     
                     if not existing:
-                        assignment = ProjectAssignment(
-                            project_id=project.id,
-                            employee_id=employee_id,
-                            notes=notes,
-                            is_active=True
-                        )
+                        assignment = ProjectAssignment()
+                        assignment.project_id = project.id
+                        assignment.employee_id = employee_id
+                        assignment.notes = notes
+                        assignment.is_active = True
                         db.session.add(assignment)
         
         # Handle project manager assignment separately 
