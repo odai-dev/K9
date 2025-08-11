@@ -5,6 +5,9 @@ This project is a comprehensive, web-based, and mobile-first K9 operations manag
 
 ## Recent Updates (August 2025)
 - **Migration Complete**: Successfully migrated from Replit Agent to standard Replit environment
+- **Database Upgraded**: Migrated from SQLite to PostgreSQL for better performance and scalability
+- **Form Submission Fixed**: Resolved critical bug where adding new dogs caused page refresh without saving
+- **Model Constructors Fixed**: Updated all database model instantiation to use proper field assignment pattern
 - **Permission System Fixed**: Resolved critical bug where PROJECT_MANAGER users couldn't access assigned data
 - **Integration Working**: Dashboard, dogs, employees, and projects now properly use SubPermission grants
 - **Authentication Verified**: Users can log in and access appropriate data based on their permissions
