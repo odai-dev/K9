@@ -80,11 +80,14 @@ def dogs_list():
 @main_bp.route('/dogs/add', methods=['GET', 'POST'])
 @login_required
 def dogs_add():
+    # Get potential parents for dropdowns
+    potential_parents = get_user_accessible_dogs(current_user)
+    
     if request.method == 'POST':
         try:
             # Handle photo upload
             photo_filename = None
-            if 'photo' in request.files and request.files['photo'].filename != '':
+            if 'photo' in request.files and request.files['photo'].filename:
                 photo = request.files['photo']
                 if allowed_file(photo.filename):
                     # Create unique filename
@@ -92,37 +95,57 @@ def dogs_add():
                     photo_path = os.path.join(current_app.config['UPLOAD_FOLDER'], photo_filename)
                     photo.save(photo_path)
             
+            # Handle birth certificate upload
+            birth_cert_filename = None
+            if 'birth_certificate' in request.files and request.files['birth_certificate'].filename:
+                cert = request.files['birth_certificate']
+                if allowed_file(cert.filename):
+                    # Create unique filename
+                    birth_cert_filename = f"{uuid.uuid4()}_{secure_filename(cert.filename)}"
+                    cert_path = os.path.join(current_app.config['UPLOAD_FOLDER'], birth_cert_filename)
+                    cert.save(cert_path)
+            
             # Determine who the dog should be assigned to
             assigned_to_user_id = current_user.id if current_user.role == UserRole.PROJECT_MANAGER else None
             
-            dog = Dog(
-                name=request.form['name'],
-                breed=request.form['breed'],
-                gender=DogGender(request.form['gender']),
-                date_of_birth=datetime.strptime(request.form['date_of_birth'], '%Y-%m-%d').date() if request.form['date_of_birth'] else None,
-                color=request.form.get('color'),
-                weight=float(request.form['weight']) if request.form.get('weight') else None,
-                height=float(request.form['height']) if request.form.get('height') else None,
-                microchip_id=request.form.get('microchip_id'),
-                current_status=DogStatus.ACTIVE,
-                health_notes=request.form.get('health_notes'),
-                training_notes=request.form.get('training_notes'),
-                photo_path=photo_filename,
-                assigned_to_user_id=assigned_to_user_id
-            )
+            # Create Dog instance
+            dog = Dog()
+            dog.name = request.form['name']
+            dog.code = request.form['code']
+            dog.breed = request.form['breed']
+            dog.family_line = request.form.get('family_line')
+            dog.gender = DogGender(request.form['gender'])
+            dog.birth_date = datetime.strptime(request.form['birth_date'], '%Y-%m-%d').date() if request.form['birth_date'] else None
+            dog.color = request.form.get('color')
+            dog.weight = float(request.form['weight']) if request.form.get('weight') and request.form['weight'].strip() else None
+            dog.height = float(request.form['height']) if request.form.get('height') and request.form['height'].strip() else None
+            dog.microchip_id = request.form.get('microchip_id')
+            dog.location = request.form.get('location')
+            dog.specialization = request.form.get('specialization')
+            dog.current_status = DogStatus.ACTIVE
+            dog.photo = photo_filename
+            dog.birth_certificate = birth_cert_filename
+            dog.assigned_to_user_id = assigned_to_user_id
+            
+            # Handle parent relationships
+            if request.form.get('father_id'):
+                dog.father_id = request.form['father_id']
+            if request.form.get('mother_id'):
+                dog.mother_id = request.form['mother_id']
             
             db.session.add(dog)
             db.session.commit()
             
-            log_audit(current_user.id, AuditAction.CREATE, 'Dog', dog.id, f'أضيف كلب جديد: {dog.name}', None, {'name': dog.name, 'breed': dog.breed})
+            log_audit(current_user.id, AuditAction.CREATE, 'Dog', dog.id, f'أضيف كلب جديد: {dog.name}', None, {'name': dog.name, 'breed': dog.breed, 'code': dog.code})
             flash('تم إضافة الكلب بنجاح', 'success')
             return redirect(url_for('main.dogs_list'))
             
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء إضافة الكلب: {str(e)}', 'error')
+            print(f"Error adding dog: {e}")
     
-    return render_template('dogs/add.html', genders=DogGender)
+    return render_template('dogs/add.html', genders=DogGender, potential_parents=potential_parents)
 
 @main_bp.route('/dogs/<dog_id>')
 @login_required
@@ -184,7 +207,7 @@ def dogs_edit(dog_id):
             dog.name = request.form['name']
             dog.breed = request.form['breed']
             dog.gender = DogGender(request.form['gender'])
-            dog.date_of_birth = datetime.strptime(request.form['date_of_birth'], '%Y-%m-%d').date() if request.form['date_of_birth'] else None
+            dog.birth_date = datetime.strptime(request.form['date_of_birth'], '%Y-%m-%d').date() if request.form['date_of_birth'] else None
             dog.color = request.form.get('color')
             dog.weight = float(request.form['weight']) if request.form.get('weight') else None
             dog.height = float(request.form['height']) if request.form.get('height') else None
@@ -224,20 +247,20 @@ def employees_add():
             # Determine who the employee should be assigned to
             assigned_to_user_id = current_user.id if current_user.role == UserRole.PROJECT_MANAGER else None
             
-            employee = Employee(
-                name=request.form['name'],
-                employee_id=request.form['employee_id'],
-                role=EmployeeRole(request.form['role']),
-                contact_info=request.form.get('contact_info'),
-                hire_date=datetime.strptime(request.form['hire_date'], '%Y-%m-%d').date() if request.form['hire_date'] else None,
-                is_active=True,
-                assigned_to_user_id=assigned_to_user_id
-            )
+            employee = Employee()
+            employee.name = request.form['name']
+            employee.employee_id = request.form['employee_id']
+            employee.role = EmployeeRole(request.form['role'])
+            employee.phone = request.form.get('phone')
+            employee.email = request.form.get('email')
+            employee.hire_date = datetime.strptime(request.form['hire_date'], '%Y-%m-%d').date() if request.form['hire_date'] else None
+            employee.is_active = True
+            employee.assigned_to_user_id = assigned_to_user_id
             
             db.session.add(employee)
             db.session.commit()
             
-            log_audit(current_user.id, 'CREATE', 'Employee', str(employee.id), {'name': employee.name, 'role': employee.role.value})
+            log_audit(current_user.id, AuditAction.CREATE, 'Employee', employee.id, f'أضيف موظف جديد: {employee.name}', None, {'name': employee.name, 'role': employee.role.value})
             flash('تم إضافة الموظف بنجاح', 'success')
             return redirect(url_for('main.employees_list'))
             
@@ -273,7 +296,7 @@ def employees_edit(employee_id):
             
             db.session.commit()
             
-            log_audit(current_user.id, 'UPDATE', 'Employee', str(employee.id), {'name': employee.name})
+            log_audit(current_user.id, AuditAction.UPDATE, 'Employee', employee.id, f'تم تحديث بيانات الموظف: {employee.name}', None, {'name': employee.name})
             flash('تم تحديث بيانات الموظف بنجاح', 'success')
             return redirect(url_for('main.employees_list'))
             
@@ -423,15 +446,14 @@ def breeding_list():
 def breeding_add():
     if request.method == 'POST':
         try:
-            cycle = BreedingCycle(
-                dog_id=request.form['dog_id'],
-                cycle_type=BreedingCycleType(request.form['cycle_type']),
-                start_date=datetime.strptime(request.form['start_date'], '%Y-%m-%d').date(),
-                end_date=datetime.strptime(request.form['end_date'], '%Y-%m-%d').date() if request.form.get('end_date') else None,
-                partner_dog_id=request.form.get('partner_dog_id') if request.form.get('partner_dog_id') else None,
-                result=BreedingResult(request.form['result']) if request.form.get('result') else None,
-                notes=request.form.get('notes')
-            )
+            cycle = BreedingCycle()
+            cycle.dog_id = request.form['dog_id']
+            cycle.cycle_type = BreedingCycleType(request.form['cycle_type'])
+            cycle.start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d').date()
+            cycle.end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d').date() if request.form.get('end_date') else None
+            cycle.partner_dog_id = request.form.get('partner_dog_id') if request.form.get('partner_dog_id') else None
+            cycle.result = BreedingResult(request.form['result']) if request.form.get('result') else None
+            cycle.notes = request.form.get('notes')
             
             db.session.add(cycle)
             db.session.commit()
@@ -547,18 +569,17 @@ def project_add():
             import string
             code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
             
-            project = Project(
-                name=request.form['name'],
-                code=code,
-                description=request.form.get('description'),
-                main_task=request.form.get('main_task'),
-                start_date=datetime.strptime(request.form['start_date'], '%Y-%m-%d').date(),
-                expected_completion_date=datetime.strptime(request.form['expected_completion_date'], '%Y-%m-%d').date() if request.form.get('expected_completion_date') else None,
-                status=ProjectStatus.PLANNED,
-                location=request.form.get('location'),
-                mission_type=request.form.get('mission_type'),
-                priority=request.form.get('priority', 'MEDIUM')
-            )
+            project = Project()
+            project.name = request.form['name']
+            project.code = code
+            project.description = request.form.get('description')
+            project.main_task = request.form.get('main_task')
+            project.start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d').date()
+            project.expected_completion_date = datetime.strptime(request.form['expected_completion_date'], '%Y-%m-%d').date() if request.form.get('expected_completion_date') else None
+            project.status = ProjectStatus.PLANNED
+            project.location = request.form.get('location')
+            project.mission_type = request.form.get('mission_type')
+            project.priority = request.form.get('priority', 'MEDIUM')
             
             # Validate project manager assignment if provided
             if manager_id:
@@ -802,11 +823,10 @@ def project_dog_add(project_id):
         if existing:
             flash('هذا الكلب مُعيَّن بالفعل للمشروع', 'error')
         else:
-            project_dog = ProjectDog(
-                project_id=project.id,
-                dog_id=dog_id,
-                is_active=True
-            )
+            project_dog = ProjectDog()
+            project_dog.project_id = project.id
+            project_dog.dog_id = dog_id
+            project_dog.is_active = True
             db.session.add(project_dog)
             db.session.commit()
             
