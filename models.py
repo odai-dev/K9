@@ -31,6 +31,7 @@ class UserRole(Enum):
 class EmployeeRole(Enum):
     HANDLER = "سائس"
     TRAINER = "مدرب"
+    BREEDER = "مربي"
     VET = "طبيب"
     PROJECT_MANAGER = "مسؤول مشروع"
     OPERATIONS = "عمليات"
