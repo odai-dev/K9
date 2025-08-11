@@ -78,12 +78,14 @@ def dogs_list():
     return render_template('dogs/list.html', dogs=dogs, today=date.today())
 
 @main_bp.route('/dogs/add', methods=['GET', 'POST'])
-@login_required
+@login_required  
 def dogs_add():
     # Get potential parents for dropdowns
     potential_parents = get_user_accessible_dogs(current_user)
     
+    print(f"Dogs add route called with method: {request.method}")
     if request.method == 'POST':
+        print(f"Form data: {dict(request.form)}")
         try:
             # Handle photo upload
             photo_filename = None
@@ -142,8 +144,10 @@ def dogs_add():
             
         except Exception as e:
             db.session.rollback()
-            flash(f'حدث خطأ أثناء إضافة الكلب: {str(e)}', 'error')
             print(f"Error adding dog: {e}")
+            import traceback
+            traceback.print_exc()
+            flash(f'حدث خطأ أثناء إضافة الكلب: {str(e)}', 'error')
     
     return render_template('dogs/add.html', genders=DogGender, potential_parents=potential_parents)
 
@@ -242,7 +246,9 @@ def employees_list():
 @main_bp.route('/employees/add', methods=['GET', 'POST'])
 @login_required
 def employees_add():
+    print(f"Employee add route called with method: {request.method}")
     if request.method == 'POST':
+        print(f"Form data: {dict(request.form)}")
         try:
             # Determine who the employee should be assigned to
             assigned_to_user_id = current_user.id if current_user.role == UserRole.PROJECT_MANAGER else None
@@ -250,7 +256,15 @@ def employees_add():
             employee = Employee()
             employee.name = request.form['name']
             employee.employee_id = request.form['employee_id']
-            employee.role = EmployeeRole(request.form['role'])
+            # Map form values to enum values
+            role_mapping = {
+                'HANDLER': EmployeeRole.HANDLER,
+                'TRAINER': EmployeeRole.TRAINER, 
+                'VET': EmployeeRole.VET,
+                'PROJECT_MANAGER': EmployeeRole.PROJECT_MANAGER,
+                'OPERATIONS': EmployeeRole.OPERATIONS
+            }
+            employee.role = role_mapping[request.form['role']]
             employee.phone = request.form.get('phone')
             employee.email = request.form.get('email')
             employee.hire_date = datetime.strptime(request.form['hire_date'], '%Y-%m-%d').date() if request.form['hire_date'] else None
@@ -266,6 +280,9 @@ def employees_add():
             
         except Exception as e:
             db.session.rollback()
+            print(f"Error adding employee: {e}")
+            import traceback
+            traceback.print_exc()
             flash(f'حدث خطأ أثناء إضافة الموظف: {str(e)}', 'error')
     
     return render_template('employees/add.html', roles=EmployeeRole)
@@ -289,7 +306,15 @@ def employees_edit(employee_id):
         try:
             employee.name = request.form['name']
             employee.employee_id = request.form['employee_id']
-            employee.role = EmployeeRole(request.form['role'])
+            # Map form values to enum values
+            role_mapping = {
+                'HANDLER': EmployeeRole.HANDLER,
+                'TRAINER': EmployeeRole.TRAINER, 
+                'VET': EmployeeRole.VET,
+                'PROJECT_MANAGER': EmployeeRole.PROJECT_MANAGER,
+                'OPERATIONS': EmployeeRole.OPERATIONS
+            }
+            employee.role = role_mapping[request.form['role']]
             employee.contact_info = request.form.get('contact_info')
             employee.hire_date = datetime.strptime(request.form['hire_date'], '%Y-%m-%d').date() if request.form['hire_date'] else None
             employee.is_active = 'is_active' in request.form
