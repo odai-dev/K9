@@ -262,8 +262,7 @@ def employees_add():
                 'TRAINER': EmployeeRole.TRAINER,
                 'BREEDER': EmployeeRole.BREEDER,
                 'VET': EmployeeRole.VET,
-                'PROJECT_MANAGER': EmployeeRole.PROJECT_MANAGER,
-                'OPERATIONS': EmployeeRole.OPERATIONS
+                'PROJECT_MANAGER': EmployeeRole.PROJECT_MANAGER
             }
             employee.role = role_mapping[request.form['role']]
             employee.phone = request.form.get('phone')
@@ -313,8 +312,7 @@ def employees_edit(employee_id):
                 'TRAINER': EmployeeRole.TRAINER,
                 'BREEDER': EmployeeRole.BREEDER,
                 'VET': EmployeeRole.VET,
-                'PROJECT_MANAGER': EmployeeRole.PROJECT_MANAGER,
-                'OPERATIONS': EmployeeRole.OPERATIONS
+                'PROJECT_MANAGER': EmployeeRole.PROJECT_MANAGER
             }
             employee.role = role_mapping[request.form['role']]
             employee.contact_info = request.form.get('contact_info')
