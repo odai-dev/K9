@@ -259,7 +259,8 @@ def employees_add():
             # Map form values to enum values
             role_mapping = {
                 'HANDLER': EmployeeRole.HANDLER,
-                'TRAINER': EmployeeRole.TRAINER, 
+                'TRAINER': EmployeeRole.TRAINER,
+                'BREEDER': EmployeeRole.BREEDER,
                 'VET': EmployeeRole.VET,
                 'PROJECT_MANAGER': EmployeeRole.PROJECT_MANAGER,
                 'OPERATIONS': EmployeeRole.OPERATIONS
@@ -309,7 +310,8 @@ def employees_edit(employee_id):
             # Map form values to enum values
             role_mapping = {
                 'HANDLER': EmployeeRole.HANDLER,
-                'TRAINER': EmployeeRole.TRAINER, 
+                'TRAINER': EmployeeRole.TRAINER,
+                'BREEDER': EmployeeRole.BREEDER,
                 'VET': EmployeeRole.VET,
                 'PROJECT_MANAGER': EmployeeRole.PROJECT_MANAGER,
                 'OPERATIONS': EmployeeRole.OPERATIONS

@@ -44,8 +44,11 @@
                         <td>
                             {% set role_map = {
                                 'HANDLER': {'class': 'primary', 'text': 'سائس'},
+                                'TRAINER': {'class': 'success', 'text': 'مدرب'},
+                                'BREEDER': {'class': 'warning', 'text': 'مربي'},
                                 'VET': {'class': 'info', 'text': 'طبيب'},
-                                'PROJECT_MANAGER': {'class': 'danger', 'text': 'مسؤول مشروع'}
+                                'PROJECT_MANAGER': {'class': 'danger', 'text': 'مسؤول مشروع'},
+                                'OPERATIONS': {'class': 'dark', 'text': 'عمليات'}
                             } %}
                             {% if employee.role.value in role_map %}
                                 <span class="badge bg-{{ role_map[employee.role.value]['class'] }}">

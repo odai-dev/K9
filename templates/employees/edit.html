@@ -49,8 +49,11 @@
                             <label for="role" class="form-label">المنصب <span class="text-danger">*</span></label>
                             <select class="form-select" id="role" name="role" required>
                                 <option value="HANDLER" {{ 'selected' if employee.role.name == 'HANDLER' else '' }}>سائس</option>
+                                <option value="TRAINER" {{ 'selected' if employee.role.name == 'TRAINER' else '' }}>مدرب</option>
+                                <option value="BREEDER" {{ 'selected' if employee.role.name == 'BREEDER' else '' }}>مربي</option>
                                 <option value="VET" {{ 'selected' if employee.role.name == 'VET' else '' }}>طبيب</option>
                                 <option value="PROJECT_MANAGER" {{ 'selected' if employee.role.name == 'PROJECT_MANAGER' else '' }}>مسؤول مشروع</option>
+                                <option value="OPERATIONS" {{ 'selected' if employee.role.name == 'OPERATIONS' else '' }}>عمليات</option>
                             </select>
                         </div>
                         
