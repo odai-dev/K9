@@ -460,11 +460,23 @@ def veterinary_add():
 def breeding_list():
     if current_user.role == UserRole.GENERAL_ADMIN:
         cycles = BreedingCycle.query.order_by(BreedingCycle.created_at.desc()).all()
+        all_dogs = Dog.query.all()
     else:
         assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
         cycles = BreedingCycle.query.filter(BreedingCycle.dog_id.in_(assigned_dog_ids)).order_by(BreedingCycle.created_at.desc()).all()
+        all_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id).all()
     
-    return render_template('breeding/index.html', cycles=cycles)
+    # Calculate breeding statistics
+    stats = {
+        'total_dogs': len(all_dogs),
+        'mature_dogs': len([d for d in all_dogs if d.gender == DogGender.FEMALE]),
+        'breeding_ready_females': len([d for d in all_dogs if d.gender == DogGender.FEMALE and d.current_status == DogStatus.ACTIVE]),
+        'breeding_males': len([d for d in all_dogs if d.gender == DogGender.MALE and d.current_status == DogStatus.ACTIVE]),
+        'active_pregnancies': 0,  # This would need pregnancy tracking
+        'recent_births': 0  # This would need birth tracking
+    }
+    
+    return render_template('breeding/index.html', cycles=cycles, stats=stats)
 
 @main_bp.route('/breeding/add', methods=['GET', 'POST'])
 @login_required
