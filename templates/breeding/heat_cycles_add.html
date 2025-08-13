@@ -34,8 +34,8 @@
                             <label for="dog_id" class="form-label">الأنثى <span class="text-danger">*</span></label>
                             <select class="form-select" id="dog_id" name="dog_id" required>
                                 <option value="">اختر الأنثى</option>
-                                {% for dog in dogs %}
-                                    <option value="{{ dog.id }}">{{ dog.name }} - {{ dog.code }}</option>
+                                {% for female in females %}
+                                    <option value="{{ female.id }}">{{ female.name }} - {{ female.code }}</option>
                                 {% endfor %}
                             </select>
                         </div>
