@@ -502,13 +502,16 @@ def breeding_add():
             db.session.rollback()
             flash(f'حدث خطأ أثناء تسجيل دورة التربية: {str(e)}', 'error')
     
-    # Get available dogs for the form
+    # Get available dogs for the form - separate males and females
     if current_user.role == UserRole.GENERAL_ADMIN:
-        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+        all_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
     else:
-        dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+        all_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
     
-    return render_template('breeding/add.html', dogs=dogs, cycle_types=BreedingCycleType, results=BreedingResult)
+    females = [dog for dog in all_dogs if dog.gender == DogGender.FEMALE]
+    males = [dog for dog in all_dogs if dog.gender == DogGender.MALE]
+    
+    return render_template('breeding/add.html', females=females, males=males, cycle_types=BreedingCycleType, results=BreedingResult)
 
 # Individual breeding component routes
 @main_bp.route('/breeding/maturity')
@@ -522,7 +525,14 @@ def maturity_add():
     if request.method == 'POST':
         flash('تم تسجيل البلوغ بنجاح', 'success')
         return redirect(url_for('main.maturity_list'))
-    return render_template('breeding/maturity_add.html')
+    
+    # Get available dogs for the form
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+    else:
+        dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+    
+    return render_template('breeding/maturity_add.html', dogs=dogs)
 
 @main_bp.route('/breeding/heat-cycles')
 @login_required  
@@ -535,7 +545,16 @@ def heat_cycles_add():
     if request.method == 'POST':
         flash('تم تسجيل الدورة بنجاح', 'success')
         return redirect(url_for('main.heat_cycles_list'))
-    return render_template('breeding/heat_cycles_add.html')
+    
+    # Get available female dogs for the form
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        all_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+    else:
+        all_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+    
+    females = [dog for dog in all_dogs if dog.gender == DogGender.FEMALE]
+    
+    return render_template('breeding/heat_cycles_add.html', females=females)
 
 @main_bp.route('/breeding/mating')
 @login_required
@@ -548,7 +567,19 @@ def mating_add():
     if request.method == 'POST':
         flash('تم تسجيل التزاوج بنجاح', 'success')
         return redirect(url_for('main.mating_list'))
-    return render_template('breeding/mating_add.html')
+    
+    # Get available dogs and employees for the form
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        all_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+        employees = Employee.query.filter_by(is_active=True).all()
+    else:
+        all_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+        employees = Employee.query.filter_by(assigned_to_user_id=current_user.id, is_active=True).all()
+    
+    females = [dog for dog in all_dogs if dog.gender == DogGender.FEMALE]
+    males = [dog for dog in all_dogs if dog.gender == DogGender.MALE]
+    
+    return render_template('breeding/mating_add.html', females=females, males=males, employees=employees)
 
 @main_bp.route('/breeding/pregnancy')
 @login_required
@@ -561,7 +592,15 @@ def pregnancy_add():
     if request.method == 'POST':
         flash('تم تسجيل الحمل بنجاح', 'success')
         return redirect(url_for('main.pregnancy_list'))
-    return render_template('breeding/pregnancy_add.html')
+    
+    # Get available female dogs for pregnancy
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        all_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+    else:
+        all_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+    
+    females = [dog for dog in all_dogs if dog.gender == DogGender.FEMALE]
+    return render_template('breeding/pregnancy_add.html', females=females)
 
 @main_bp.route('/breeding/delivery')
 @login_required
@@ -574,7 +613,15 @@ def delivery_add():
     if request.method == 'POST':
         flash('تم تسجيل الولادة بنجاح', 'success')
         return redirect(url_for('main.delivery_list'))
-    return render_template('breeding/delivery_add.html')
+    
+    # Get available female dogs for delivery
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        all_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+    else:
+        all_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+    
+    females = [dog for dog in all_dogs if dog.gender == DogGender.FEMALE]
+    return render_template('breeding/delivery_add.html', females=females)
 
 @main_bp.route('/breeding/puppies')
 @login_required
@@ -587,7 +634,16 @@ def puppies_add():
     if request.method == 'POST':
         flash('تم تسجيل الجرو بنجاح', 'success')
         return redirect(url_for('main.puppies_list'))
-    return render_template('breeding/puppies_add.html')
+    
+    # Get available dogs for parents
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        all_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+    else:
+        all_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+    
+    females = [dog for dog in all_dogs if dog.gender == DogGender.FEMALE]
+    males = [dog for dog in all_dogs if dog.gender == DogGender.MALE]
+    return render_template('breeding/puppies_add.html', females=females, males=males)
 
 @main_bp.route('/breeding/puppy-training')
 @login_required
