@@ -99,7 +99,9 @@ def update_attendance(employee_id):
             return jsonify({'error': 'Request body is required'}), 400
             
         status = data.get('status')
-        note = data.get('note', '').strip()
+        note = data.get('note', '')
+        if note:
+            note = note.strip()
         
         if not status:
             return jsonify({'error': 'Status is required'}), 400

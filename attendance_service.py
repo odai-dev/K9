@@ -202,11 +202,12 @@ def get_globally_editable_employees(target_date, search=None, status_filter=None
                 )
             )
         
-        # Get employee IDs that are NOT project-owned on the target date
-        project_owned_employee_ids = db.session.query(ProjectAssignment.employee_id).join(
+        # Get employee IDs that are project-owned on the target date (need to exclude these)
+        project_owned_subquery = db.session.query(ProjectAssignment.employee_id).join(
             Project, ProjectAssignment.project_id == Project.id
         ).filter(
             and_(
+                ProjectAssignment.employee_id.isnot(None),  # Only assignments with employee_id
                 ProjectAssignment.is_active == True,
                 or_(
                     Project.status == ProjectStatus.ACTIVE,
@@ -231,10 +232,14 @@ def get_globally_editable_employees(target_date, search=None, status_filter=None
                     )
                 )
             )
-        ).subquery()
+        )
+        
+        # Convert subquery to list to avoid SQLAlchemy issues
+        project_owned_employee_ids = [row[0] for row in project_owned_subquery.all() if row[0] is not None]
         
         # Exclude project-owned employees
-        query = query.filter(~Employee.id.in_(project_owned_employee_ids))
+        if project_owned_employee_ids:
+            query = query.filter(~Employee.id.in_(project_owned_employee_ids))
         
         # Get employees with their attendance for the date
         employees = query.order_by(Employee.name).all()
