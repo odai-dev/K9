@@ -122,6 +122,10 @@ class AttendanceStatus(Enum):
     PRESENT = "PRESENT"
     ABSENT = "ABSENT"
     LATE = "LATE"
+    SICK = "SICK"
+    LEAVE = "LEAVE"
+    REMOTE = "REMOTE"
+    OVERTIME = "OVERTIME"
 
 class AbsenceReason(Enum):
     ANNUAL = "إجازة سنوية"
@@ -1134,5 +1138,79 @@ class AuditLog(db.Model):
     
     def __repr__(self):
         return f'<AuditLog {self.user.username} - {self.action.value} - {self.target_type}>'
+
+class AttendanceDay(db.Model):
+    """Unified global attendance tracking - only for employees NOT assigned to active projects"""
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+    employee_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    status = db.Column(db.Enum(AttendanceStatus), nullable=False, default=AttendanceStatus.ABSENT)
+    note = db.Column(Text)
+    source = db.Column(db.String(16), default='global', nullable=False)  # 'global' or 'project'
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'))  # Set when source='project'
+    locked = db.Column(db.Boolean, default=False)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    employee = db.relationship('Employee', backref='attendance_days')
+    project = db.relationship('Project', backref='attendance_days')
+    
+    # Unique constraint
+    __table_args__ = (
+        db.UniqueConstraint('employee_id', 'date', name='unique_employee_date'),
+        db.Index('ix_attendance_day_date', 'date'),
+        db.Index('ix_attendance_day_employee_date', 'employee_id', 'date'),
+        # Constraint: project_id required when source='project'
+        db.CheckConstraint(
+            "(source != 'project') OR (source = 'project' AND project_id IS NOT NULL)",
+            name='project_id_required_for_project_source'
+        ),
+    )
+    
+    def __repr__(self):
+        return f'<AttendanceDay {self.employee.name} - {self.date} - {self.status.value}>'
+
+
+# Add helper method to Employee model
+def is_project_owned(self, target_date):
+    """Check if employee is assigned to any active project on the given date"""
+    from sqlalchemy import and_, or_
+    
+    # Check if employee has any active assignments that cover the target date
+    active_assignments = db.session.query(ProjectAssignment).join(Project).filter(
+        and_(
+            ProjectAssignment.employee_id == self.id,
+            ProjectAssignment.is_active == True,
+            or_(
+                Project.status == ProjectStatus.ACTIVE,
+                Project.status == ProjectStatus.PLANNED
+            ),
+            or_(
+                # Assignment has no end date (open-ended)
+                ProjectAssignment.assigned_to.is_(None),
+                # Or target date is within assignment period
+                and_(
+                    ProjectAssignment.assigned_from <= target_date,
+                    ProjectAssignment.assigned_to >= target_date
+                )
+            ),
+            or_(
+                # Project has no end date (open-ended)
+                Project.end_date.is_(None),
+                # Or target date is within project period
+                and_(
+                    Project.start_date <= target_date,
+                    Project.end_date >= target_date
+                )
+            )
+        )
+    ).first()
+    
+    return active_assignments is not None
+
+# Add the method to Employee class
+Employee.is_project_owned = is_project_owned
 
 
