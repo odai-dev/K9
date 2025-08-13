@@ -657,7 +657,7 @@ class MatingRecord(db.Model):
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     female_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     male_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
-    heat_cycle_id = db.Column(get_uuid_column(), db.ForeignKey('heat_cycle.id'), nullable=False)
+    heat_cycle_id = db.Column(get_uuid_column(), db.ForeignKey('heat_cycle.id'), nullable=True)
     
     mating_date = db.Column(db.Date, nullable=False)
     mating_time = db.Column(db.Time)

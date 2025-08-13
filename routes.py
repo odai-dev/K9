@@ -517,14 +517,38 @@ def breeding_add():
 @main_bp.route('/breeding/maturity')
 @login_required
 def maturity_list():
-    return render_template('breeding/maturity_list.html')
+    from models import DogMaturity
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        maturity_records = DogMaturity.query.order_by(DogMaturity.created_at.desc()).all()
+    else:
+        # Get assigned dogs and their maturity records
+        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
+        maturity_records = DogMaturity.query.filter(DogMaturity.dog_id.in_(assigned_dog_ids)).order_by(DogMaturity.created_at.desc()).all()
+    
+    return render_template('breeding/maturity_list.html', maturity_records=maturity_records)
 
 @main_bp.route('/breeding/maturity/add', methods=['GET', 'POST'])
 @login_required
 def maturity_add():
     if request.method == 'POST':
-        flash('تم تسجيل البلوغ بنجاح', 'success')
-        return redirect(url_for('main.maturity_list'))
+        try:
+            from models import DogMaturity
+            maturity = DogMaturity()
+            maturity.dog_id = request.form['dog_id']
+            maturity.maturity_date = datetime.strptime(request.form['maturity_date'], '%Y-%m-%d').date()
+            if request.form.get('weight_at_maturity'):
+                maturity.weight_at_maturity = float(request.form['weight_at_maturity'])
+            if request.form.get('height_at_maturity'):
+                maturity.height_at_maturity = float(request.form['height_at_maturity'])
+            maturity.notes = request.form.get('notes')
+            
+            db.session.add(maturity)
+            db.session.commit()
+            flash('تم تسجيل البلوغ بنجاح', 'success')
+            return redirect(url_for('main.maturity_list'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ: {str(e)}', 'error')
     
     # Get available dogs for the form
     if current_user.role == UserRole.GENERAL_ADMIN:
@@ -537,14 +561,42 @@ def maturity_add():
 @main_bp.route('/breeding/heat-cycles')
 @login_required  
 def heat_cycles_list():
-    return render_template('breeding/heat_cycles_list.html')
+    from models import HeatCycle
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        heat_cycles = HeatCycle.query.order_by(HeatCycle.created_at.desc()).all()
+    else:
+        # Get assigned dogs and their heat cycles
+        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
+        heat_cycles = HeatCycle.query.filter(HeatCycle.dog_id.in_(assigned_dog_ids)).order_by(HeatCycle.created_at.desc()).all()
+    
+    return render_template('breeding/heat_cycles_list.html', heat_cycles=heat_cycles)
 
 @main_bp.route('/breeding/heat-cycles/add', methods=['GET', 'POST'])
 @login_required
 def heat_cycles_add():
     if request.method == 'POST':
-        flash('تم تسجيل الدورة بنجاح', 'success')
-        return redirect(url_for('main.heat_cycles_list'))
+        try:
+            from models import HeatCycle
+            heat_cycle = HeatCycle()
+            heat_cycle.dog_id = request.form['dog_id']
+            # Auto-increment cycle number for this dog
+            existing_cycles = HeatCycle.query.filter_by(dog_id=request.form['dog_id']).count()
+            heat_cycle.cycle_number = existing_cycles + 1
+            heat_cycle.start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d').date()
+            if request.form.get('end_date'):
+                heat_cycle.end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d').date()
+            heat_cycle.behavioral_changes = request.form.get('behavioral_changes')
+            heat_cycle.physical_signs = request.form.get('physical_signs')
+            heat_cycle.appetite_changes = request.form.get('appetite_changes')
+            heat_cycle.notes = request.form.get('notes')
+            
+            db.session.add(heat_cycle)
+            db.session.commit()
+            flash('تم تسجيل الدورة الحرارية بنجاح', 'success')
+            return redirect(url_for('main.heat_cycles_list'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ: {str(e)}', 'error')
     
     # Get available female dogs for the form
     if current_user.role == UserRole.GENERAL_ADMIN:
@@ -559,14 +611,50 @@ def heat_cycles_add():
 @main_bp.route('/breeding/mating')
 @login_required
 def mating_list():
-    return render_template('breeding/mating_list.html')
+    from models import MatingRecord
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        mating_records = MatingRecord.query.order_by(MatingRecord.created_at.desc()).all()
+    else:
+        # Get assigned dogs and their mating records
+        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
+        mating_records = MatingRecord.query.filter(
+            db.or_(MatingRecord.female_id.in_(assigned_dog_ids), MatingRecord.male_id.in_(assigned_dog_ids))
+        ).order_by(MatingRecord.created_at.desc()).all()
+    
+    return render_template('breeding/mating_list.html', mating_records=mating_records)
 
 @main_bp.route('/breeding/mating/add', methods=['GET', 'POST'])
 @login_required
 def mating_add():
     if request.method == 'POST':
-        flash('تم تسجيل التزاوج بنجاح', 'success')
-        return redirect(url_for('main.mating_list'))
+        try:
+            from models import MatingRecord
+            mating = MatingRecord()
+            mating.female_id = request.form['female_id']
+            mating.male_id = request.form['male_id']
+            # For now, we'll skip heat_cycle_id requirement or set it to null
+            # mating.heat_cycle_id = request.form.get('heat_cycle_id')  # Optional for now
+            mating.mating_date = datetime.strptime(request.form['mating_date'], '%Y-%m-%d').date()
+            if request.form.get('mating_time'):
+                mating.mating_time = datetime.strptime(request.form['mating_time'], '%H:%M').time()
+            mating.location = request.form.get('location')
+            if request.form.get('supervised_by'):
+                mating.supervised_by = request.form['supervised_by']
+            if request.form.get('duration_minutes'):
+                mating.duration_minutes = int(request.form['duration_minutes'])
+            if request.form.get('success_rate'):
+                mating.success_rate = int(request.form['success_rate'])
+            mating.behavior_observed = request.form.get('behavior_observed')
+            mating.complications = request.form.get('complications')
+            mating.notes = request.form.get('notes')
+            
+            db.session.add(mating)
+            db.session.commit()
+            flash('تم تسجيل التزاوج بنجاح', 'success')
+            return redirect(url_for('main.mating_list'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ: {str(e)}', 'error')
     
     # Get available dogs and employees for the form
     if current_user.role == UserRole.GENERAL_ADMIN:
