@@ -1,0 +1,121 @@
+You are a senior full-stack engineer extending an existing Flask + SQLAlchemy app with Bootstrap RTL and role-based access (GENERAL_ADMIN, PROJECT_MANAGER). The repo already contains core files like models.py, api_routes.py, routes.py, templates/, and static/, and mentions project-based attendance in features. Keep code consistent with current patterns, folder structure, and RTL UI. 
+GitHub
+
+Objective
+Add a top-level Unified Global Attendance module in the main navbar (GENERAL_ADMIN only) with this critical rule:
+
+Project Ownership Rule (hard requirement): If an employee is assigned to any active project on date D (e.g., assignment.start_date ≤ D ≤ assignment.end_date or open-ended active assignment), then that employee’s attendance for D is owned by that project, and therefore the employee must be completely excluded from the Unified Global Attendance page and cannot be edited or assigned there for D. All viewing/marking for that employee/date must happen only in the project’s attendance dashboard.
+
+No exceptions. The global page must never list or allow any action on such employees for that date.
+
+Data Model (extend models.py)
+AttendanceStatus enum (SQLite/Postgres compatible):
+PRESENT, ABSENT, SICK, LEAVE, REMOTE, OVERTIME.
+
+AttendanceDay table:
+
+id UUID PK (follow existing UUID style)
+
+employee_id FK→Employee.id (non-null)
+
+date Date (non-null)
+
+status AttendanceStatus (non-null, default ABSENT)
+
+note Text (nullable)
+
+source String(16) in { "global", "project" } (default "global")
+
+project_id FK→Project.id (nullable; set when source="project")
+
+locked Boolean (default False)
+
+Unique(employee_id, date); indexes on date and (employee_id,date)
+
+Employee helper:
+is_project_owned(date D) → True if any active assignment covers D.
+
+The Project Ownership Rule is independent of whether a project manager already marked attendance; assignment alone to an active project on D moves control to the project.
+
+Backend Services (attendance_service.py or utils.py)
+resolve_project_control(employee_id, D) → { is_owned: bool, project_id, project_name } using assignment joins.
+
+get_attendance_day(employee_id, D)
+
+set_attendance_global(employee_id, D, status, note) — must call resolve_project_control and refuse if is_owned.
+
+Add a before_flush or service-layer guard that prevents creating/updating a row with source="global" when resolve_project_control(..., D).is_owned == True. Raise a domain error the API maps to 409.
+
+API (api_routes.py)
+GET /api/attendance?date=YYYY-MM-DD&search=&status=
+
+Return only employees NOT project-owned on that date.
+
+Include pagination and filters (status, search by name).
+
+PUT /api/attendance/<employee_id>?date=YYYY-MM-DD
+
+Upsert only if NOT project-owned; otherwise return 409 JSON:
+{ "error": "Employee is assigned to an active project on this date. Edit attendance in the project dashboard." }
+
+GET /api/attendance/stats?date=YYYY-MM-DD
+
+Counts per status among globally editable employees (i.e., not project-owned).
+
+Do not expose project-owned employees in these unified endpoints.
+
+Project Attendance Interop (existing feature)
+In project dashboards, when a project manager marks attendance for (employee, D), create/update AttendanceDay with:
+source="project", locked=True, project_id=<id>.
+
+This must automatically exclude that employee from the unified page for D (owned by project via assignment anyway).
+
+If an employee is on multiple active projects for D, pick a deterministic controller (e.g., earliest-starting active assignment on D). Document the choice in code comments and warn in the project UI if needed.
+
+Web UI (templates/attendance/index.html + static/js/attendance.js)
+Title: الحضور الموحد
+
+Top controls: date picker (defaults to today), search, status filter.
+
+Table lists ONLY employees not project-owned for the selected date — no rows for project-owned employees.
+
+Banner note: “Employees assigned to active projects today are managed in project attendance and are not shown here.”
+
+Summary cards from /api/attendance/stats.
+
+Navbar: add الحضور linking to /attendance, visible only to GENERAL_ADMIN.
+
+Permissions & Security
+/attendance page + its APIs: GENERAL_ADMIN only.
+
+Project attendance remains under PROJECT_MANAGER scope.
+
+CSRF + server-side validation for date and status; never trust the client.
+
+Tests
+No project on D → PUT /api/attendance/<emp>?date=D returns 200, creates/updates source="global", locked=False.
+
+Has active project on D (even if project hasn’t marked yet) → PUT returns 409; no global row created/changed.
+
+GET /api/attendance?date=D never lists project-owned employees.
+
+Project attendance writes create source="project", locked=True, and those employees remain absent from unified responses for D.
+
+Audit
+On every change (global or project), log actor, employee_id, date, old→new status, note, source, project_id (nullable), timestamp, using the repo’s audit utilities.
+
+Performance
+Add the described indexes.
+
+Efficient single-join implementation for resolve_project_control.
+
+Paginate listing.
+
+Acceptance Criteria (must all pass)
+From the main navbar, GENERAL_ADMIN opens الحضور and, for date D, sees only employees not assigned to any active project on D.
+
+Any attempt (UI/API) to mark attendance for an employee assigned to an active project on D yields 409 with the project-ownership message.
+
+Project managers continue to manage attendance within their project dashboards; those employees never appear in unified global attendance for the same date.
+
+Stats and listings in the unified module reflect only globally-editable employees.

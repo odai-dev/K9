@@ -12,7 +12,7 @@ from models import (Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCyc
                    project_employee_assignment, project_dog_assignment,
                    # New attendance models
                    ProjectShift, ProjectShiftAssignment, ProjectAttendance,
-                   EntityType, AttendanceStatus, AbsenceReason)
+                   EntityType, AttendanceStatus, AbsenceReason, AttendanceDay)
 from utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
 import os
 from datetime import datetime, date
@@ -2479,6 +2479,25 @@ def toggle_user_status(user_id):
         flash(f'خطأ في تعديل حالة المستخدم: {str(e)}', 'error')
     
     return redirect(url_for('main.admin_panel'))
+
+# UNIFIED GLOBAL ATTENDANCE SYSTEM
+# Only accessible to GENERAL_ADMIN users
+
+@main_bp.route('/attendance')
+@login_required
+def unified_attendance():
+    """Unified Global Attendance page - GENERAL_ADMIN only"""
+    # Only GENERAL_ADMIN can access unified attendance
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('ليس لديك صلاحية للوصول إلى نظام الحضور الموحد', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    # Get current date
+    today = date.today()
+    
+    return render_template('attendance/index.html', 
+                         today=today,
+                         AttendanceStatus=AttendanceStatus)
 
 
 

@@ -124,7 +124,13 @@
                     </li>
                     {% endif %}
                     
-
+                    {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                    <li class="nav-item">
+                        <a class="nav-link px-3 py-2 rounded-pill" href="{{ url_for('main.unified_attendance') }}">
+                            <i class="fas fa-calendar-check me-1"></i>الحضور
+                        </a>
+                    </li>
+                    {% endif %}
                     
                     {% if permissions.reports %}
                     <li class="nav-item">
