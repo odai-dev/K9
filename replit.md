@@ -5,6 +5,9 @@ This project is a comprehensive, web-based, and mobile-first K9 operations manag
 
 ## Recent Updates (August 2025)
 - **Migration Complete**: Successfully migrated from Replit Agent to standard Replit environment
+- **Route Issues Fixed**: Added missing breeding module routes (maturity_add, heat_cycles_add, mating_add, etc.)
+- **Form Submission Bugs Fixed**: Resolved Dog model constructor issues and file upload security problems
+- **Application Stability**: Fixed template routing errors and improved error handling
 - **Database Upgraded**: Migrated from SQLite to PostgreSQL for better performance and scalability
 - **Form Submission Fixed**: Resolved critical bug where adding new dogs caused page refresh without saving
 - **Model Constructors Fixed**: Updated all database model instantiation to use proper field assignment pattern

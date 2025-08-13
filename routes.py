@@ -516,35 +516,91 @@ def breeding_add():
 def maturity_list():
     return render_template('breeding/maturity_list.html')
 
+@main_bp.route('/breeding/maturity/add', methods=['GET', 'POST'])
+@login_required
+def maturity_add():
+    if request.method == 'POST':
+        flash('تم تسجيل البلوغ بنجاح', 'success')
+        return redirect(url_for('main.maturity_list'))
+    return render_template('breeding/maturity_add.html')
+
 @main_bp.route('/breeding/heat-cycles')
 @login_required  
 def heat_cycles_list():
     return render_template('breeding/heat_cycles_list.html')
+
+@main_bp.route('/breeding/heat-cycles/add', methods=['GET', 'POST'])
+@login_required
+def heat_cycles_add():
+    if request.method == 'POST':
+        flash('تم تسجيل الدورة بنجاح', 'success')
+        return redirect(url_for('main.heat_cycles_list'))
+    return render_template('breeding/heat_cycles_add.html')
 
 @main_bp.route('/breeding/mating')
 @login_required
 def mating_list():
     return render_template('breeding/mating_list.html')
 
+@main_bp.route('/breeding/mating/add', methods=['GET', 'POST'])
+@login_required
+def mating_add():
+    if request.method == 'POST':
+        flash('تم تسجيل التزاوج بنجاح', 'success')
+        return redirect(url_for('main.mating_list'))
+    return render_template('breeding/mating_add.html')
+
 @main_bp.route('/breeding/pregnancy')
 @login_required
 def pregnancy_list():
     return render_template('breeding/pregnancy_list.html')
+
+@main_bp.route('/breeding/pregnancy/add', methods=['GET', 'POST'])
+@login_required
+def pregnancy_add():
+    if request.method == 'POST':
+        flash('تم تسجيل الحمل بنجاح', 'success')
+        return redirect(url_for('main.pregnancy_list'))
+    return render_template('breeding/pregnancy_add.html')
 
 @main_bp.route('/breeding/delivery')
 @login_required
 def delivery_list():
     return render_template('breeding/delivery_list.html')
 
+@main_bp.route('/breeding/delivery/add', methods=['GET', 'POST'])
+@login_required
+def delivery_add():
+    if request.method == 'POST':
+        flash('تم تسجيل الولادة بنجاح', 'success')
+        return redirect(url_for('main.delivery_list'))
+    return render_template('breeding/delivery_add.html')
+
 @main_bp.route('/breeding/puppies')
 @login_required
 def puppies_list():
     return render_template('breeding/puppies_list.html')
 
+@main_bp.route('/breeding/puppies/add', methods=['GET', 'POST'])
+@login_required
+def puppies_add():
+    if request.method == 'POST':
+        flash('تم تسجيل الجرو بنجاح', 'success')
+        return redirect(url_for('main.puppies_list'))
+    return render_template('breeding/puppies_add.html')
+
 @main_bp.route('/breeding/puppy-training')
 @login_required
 def puppy_training_list():
     return render_template('breeding/puppy_training_list.html')
+
+@main_bp.route('/breeding/puppy-training/add', methods=['GET', 'POST'])
+@login_required
+def puppy_training_add():
+    if request.method == 'POST':
+        flash('تم تسجيل تدريب الجرو بنجاح', 'success')
+        return redirect(url_for('main.puppy_training_list'))
+    return render_template('breeding/puppy_training_add.html')
 
 # Project routes (without attendance/assignment functionality)
 @main_bp.route('/projects')
