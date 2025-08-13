@@ -93,7 +93,8 @@ def dogs_add():
                 photo = request.files['photo']
                 if photo.filename and allowed_file(photo.filename):
                     # Create unique filename
-                    photo_filename = f"{uuid.uuid4()}_{secure_filename(photo.filename)}"
+                    safe_filename = secure_filename(photo.filename or 'image')
+                    photo_filename = f"{uuid.uuid4()}_{safe_filename}"
                     photo_path = os.path.join(current_app.config['UPLOAD_FOLDER'], photo_filename)
                     photo.save(photo_path)
             
@@ -103,37 +104,35 @@ def dogs_add():
                 cert = request.files['birth_certificate']
                 if cert.filename and allowed_file(cert.filename):
                     # Create unique filename
-                    birth_cert_filename = f"{uuid.uuid4()}_{secure_filename(cert.filename)}"
+                    safe_cert_filename = secure_filename(cert.filename or 'certificate')
+                    birth_cert_filename = f"{uuid.uuid4()}_{safe_cert_filename}"
                     cert_path = os.path.join(current_app.config['UPLOAD_FOLDER'], birth_cert_filename)
                     cert.save(cert_path)
             
             # Determine who the dog should be assigned to
             assigned_to_user_id = current_user.id if current_user.role == UserRole.PROJECT_MANAGER else None
             
-            # Create Dog instance
-            dog = Dog()
-            dog.name = request.form['name']
-            dog.code = request.form['code']
-            dog.breed = request.form['breed']
-            dog.family_line = request.form.get('family_line')
-            dog.gender = DogGender(request.form['gender'])
-            dog.birth_date = datetime.strptime(request.form['birth_date'], '%Y-%m-%d').date() if request.form['birth_date'] else None
-            dog.color = request.form.get('color')
-            dog.weight = float(request.form['weight']) if request.form.get('weight') and request.form['weight'].strip() else None
-            dog.height = float(request.form['height']) if request.form.get('height') and request.form['height'].strip() else None
-            dog.microchip_id = request.form.get('microchip_id')
-            dog.location = request.form.get('location')
-            dog.specialization = request.form.get('specialization')
-            dog.current_status = DogStatus.ACTIVE
-            dog.photo = photo_filename
-            dog.birth_certificate = birth_cert_filename
-            dog.assigned_to_user_id = assigned_to_user_id
-            
-            # Handle parent relationships
-            if request.form.get('father_id'):
-                dog.father_id = request.form['father_id']
-            if request.form.get('mother_id'):
-                dog.mother_id = request.form['mother_id']
+            # Create Dog instance using proper constructor
+            dog = Dog(
+                name=request.form['name'],
+                code=request.form['code'], 
+                breed=request.form['breed'],
+                family_line=request.form.get('family_line'),
+                gender=DogGender(request.form['gender']),
+                birth_date=datetime.strptime(request.form['birth_date'], '%Y-%m-%d').date() if request.form['birth_date'] else None,
+                color=request.form.get('color'),
+                weight=float(request.form['weight']) if request.form.get('weight') and request.form['weight'].strip() else None,
+                height=float(request.form['height']) if request.form.get('height') and request.form['height'].strip() else None,
+                microchip_id=request.form.get('microchip_id'),
+                location=request.form.get('location'),
+                specialization=request.form.get('specialization'),
+                current_status=DogStatus.ACTIVE,
+                photo=photo_filename,
+                birth_certificate=birth_cert_filename,
+                assigned_to_user_id=assigned_to_user_id,
+                father_id=request.form.get('father_id') if request.form.get('father_id') else None,
+                mother_id=request.form.get('mother_id') if request.form.get('mother_id') else None
+            )
             
             db.session.add(dog)
             db.session.commit()
