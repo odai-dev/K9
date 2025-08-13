@@ -593,14 +593,11 @@ def pregnancy_add():
         flash('تم تسجيل الحمل بنجاح', 'success')
         return redirect(url_for('main.pregnancy_list'))
     
-    # Get available female dogs for pregnancy
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        all_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
-    else:
-        all_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+    # Get available mating records for pregnancy - pregnancy template expects 'matings'
+    # For now, we'll simulate this data structure since we don't have BreedingCycle or Mating models yet
+    matings = []  # This would normally be Mating.query.all() when implemented
     
-    females = [dog for dog in all_dogs if dog.gender == DogGender.FEMALE]
-    return render_template('breeding/pregnancy_add.html', females=females)
+    return render_template('breeding/pregnancy_add.html', matings=matings)
 
 @main_bp.route('/breeding/delivery')
 @login_required
@@ -614,14 +611,15 @@ def delivery_add():
         flash('تم تسجيل الولادة بنجاح', 'success')
         return redirect(url_for('main.delivery_list'))
     
-    # Get available female dogs for delivery
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        all_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
-    else:
-        all_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+    # Get available pregnancy records and employees for delivery
+    pregnancies = []  # This would be Pregnancy.query.all() when implemented
     
-    females = [dog for dog in all_dogs if dog.gender == DogGender.FEMALE]
-    return render_template('breeding/delivery_add.html', females=females)
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        employees = Employee.query.filter_by(is_active=True).all()
+    else:
+        employees = Employee.query.filter_by(assigned_to_user_id=current_user.id, is_active=True).all()
+    
+    return render_template('breeding/delivery_add.html', pregnancies=pregnancies, employees=employees)
 
 @main_bp.route('/breeding/puppies')
 @login_required
@@ -635,15 +633,10 @@ def puppies_add():
         flash('تم تسجيل الجرو بنجاح', 'success')
         return redirect(url_for('main.puppies_list'))
     
-    # Get available dogs for parents
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        all_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
-    else:
-        all_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+    # Get delivery records for puppies - puppies template expects 'deliveries'
+    deliveries = []  # This would be Delivery.query.all() when implemented
     
-    females = [dog for dog in all_dogs if dog.gender == DogGender.FEMALE]
-    males = [dog for dog in all_dogs if dog.gender == DogGender.MALE]
-    return render_template('breeding/puppies_add.html', females=females, males=males)
+    return render_template('breeding/puppies_add.html', deliveries=deliveries)
 
 @main_bp.route('/breeding/puppy-training')
 @login_required
@@ -656,7 +649,16 @@ def puppy_training_add():
     if request.method == 'POST':
         flash('تم تسجيل تدريب الجرو بنجاح', 'success')
         return redirect(url_for('main.puppy_training_list'))
-    return render_template('breeding/puppy_training_add.html')
+    
+    # Get puppies and trainers for puppy training
+    puppies = []  # This would be Puppy.query.all() when implemented
+    
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        trainers = Employee.query.filter_by(role=EmployeeRole.TRAINER, is_active=True).all()
+    else:
+        trainers = Employee.query.filter_by(assigned_to_user_id=current_user.id, role=EmployeeRole.TRAINER, is_active=True).all()
+    
+    return render_template('breeding/puppy_training_add.html', puppies=puppies, trainers=trainers)
 
 # Project routes (without attendance/assignment functionality)
 @main_bp.route('/projects')
