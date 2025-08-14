@@ -1635,8 +1635,16 @@ def reports_generate():
         if value:
             filters[field] = value
 
+    # Check export format
+    export_format = request.form.get('export_format', 'pdf')
+    
     try:
-        filename = generate_pdf_report(report_type, start_date, end_date, current_user, filters)
+        if export_format == 'excel':
+            from utils import generate_excel_report
+            filename = generate_excel_report(report_type, start_date, end_date, current_user, filters)
+        else:
+            filename = generate_pdf_report(report_type, start_date, end_date, current_user, filters)
+        
         upload_dir = current_app.config['UPLOAD_FOLDER']
         return send_from_directory(upload_dir, filename, as_attachment=True)
     except Exception as e:
