@@ -14,6 +14,7 @@ from datetime import datetime
 import uuid
 import arabic_reshaper
 from bidi.algorithm import get_display
+import re
 
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx'}
 
@@ -70,13 +71,16 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
     # Try to register an Arabic-capable font, fall back to default if not available
     arabic_font = 'Helvetica'  # Default fallback
     
-    # Try multiple font options
-    font_options = [
-        ('static/fonts/NotoSansArabic-Regular.ttf', 'NotoSansArabic'),
-        ('static/fonts/Amiri-Regular.ttf', 'Amiri')
-    ]
+    # Register fonts with fallbacks
+    font_files = {
+        'Amiri': 'static/fonts/Amiri-Regular.ttf',
+        'NotoSansArabic': 'static/fonts/NotoSansArabic-Regular.ttf',
+        'DejaVuSans': 'static/fonts/DejaVuSans.ttf'
+    }
     
-    for font_file, font_name in font_options:
+    registered_fonts = []
+    
+    for font_name, font_file in font_files.items():
         try:
             font_path = os.path.join(current_app.root_path, font_file)
             if os.path.exists(font_path):
@@ -88,16 +92,46 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
                         continue
                 
                 pdfmetrics.registerFont(TTFont(font_name, font_path))
-                arabic_font = font_name
-                print(f"Successfully registered Arabic font: {font_name}")
-                break
+                registered_fonts.append(font_name)
+                print(f"Successfully registered font: {font_name}")
         except Exception as e:
             print(f"Font registration error for {font_file}: {e}")
             continue
     
-    # Function to ensure Arabic text is properly shaped and encoded
+    # Set primary Arabic font
+    if 'Amiri' in registered_fonts:
+        arabic_font = 'Amiri'
+    elif 'NotoSansArabic' in registered_fonts:
+        arabic_font = 'NotoSansArabic'
+    else:
+        arabic_font = 'Helvetica'
+    
+    # Set Latin fallback font  
+    latin_font = 'DejaVuSans' if 'DejaVuSans' in registered_fonts else 'Helvetica'
+    
+    # Initialize Arabic text processing
+    ARABIC_RE = re.compile(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]+')
+    reshaper = arabic_reshaper.ArabicReshaper({
+        'delete_harakat': False,
+        'support_ligatures': True,
+        'use_unshaped_instead_of_isolated': False
+    })
+    
+    def shape_mixed(text):
+        """Reshape only Arabic segments, preserve Latin text"""
+        if not text:
+            return ""
+        text = str(text)
+        
+        # Reshape only Arabic tokens
+        def _reshape(m):
+            return reshaper.reshape(m.group(0))
+        reshaped = ARABIC_RE.sub(_reshape, text)
+        # Set base_dir='R' so Arabic context stays RTL while leaving Latin intact
+        return get_display(reshaped, base_dir='R')
+    
     def safe_arabic_text(text):
-        """Ensure Arabic text is properly shaped and encoded for PDF generation"""
+        """Properly handle mixed Arabic/English text for PDF generation"""
         if not text:
             return ""
         # Ensure the text is a string and properly encoded
@@ -105,19 +139,10 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
             text = text.decode('utf-8')
         text = str(text)
         
-        # Check if text contains Arabic characters (more precise detection)
-        arabic_chars = sum(1 for char in text if 
-                          '\u0600' <= char <= '\u06FF' or '\u0750' <= char <= '\u077F' or 
-                          '\u08A0' <= char <= '\u08FF' or '\uFB50' <= char <= '\uFDFF' or 
-                          '\uFE70' <= char <= '\uFEFF')
-        
-        # Only apply Arabic processing if text has significant Arabic content
-        if arabic_chars > 0 and arabic_chars >= len([c for c in text if c.isalpha()]) * 0.3:
-            # Apply Arabic reshaping and bidirectional text processing
+        # Check if text contains any Arabic characters
+        if ARABIC_RE.search(text):
             try:
-                reshaped_text = arabic_reshaper.reshape(text)
-                bidi_text = get_display(reshaped_text)
-                return bidi_text
+                return shape_mixed(text)
             except Exception as e:
                 print(f"Arabic text processing error: {e}")
                 return text
@@ -160,23 +185,67 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
     # Leave space beneath the header
     story.append(Spacer(1, 60))
 
-    # Helper to build tables with coloured header row and numbered column
+    # Helper to build tables with proper mixed language support
     def build_table(data, header_bg_color):
-        # Prepend row numbers and apply safe Arabic text handling
-        numbered_data = []
-        header = [safe_arabic_text('م')] + [safe_arabic_text(col) for col in data[0]]
-        numbered_data.append(header)
+        # Convert all cells to Paragraphs with proper font handling
+        from reportlab.platypus import Paragraph
+        
+        # Create styles for Arabic and mixed content
+        arabic_style = ParagraphStyle(
+            'ArabicCell',
+            parent=normal_style,
+            fontName=arabic_font,
+            fontSize=9,
+            alignment=2,  # RIGHT align for Arabic
+            leading=12
+        )
+        
+        latin_style = ParagraphStyle(
+            'LatinCell', 
+            parent=normal_style,
+            fontName=latin_font,
+            fontSize=9,
+            alignment=1,  # CENTER align for codes/numbers
+            leading=12
+        )
+        
+        def make_cell_paragraph(text, is_header=False):
+            """Convert text to Paragraph with proper font selection"""
+            if not text:
+                return Paragraph("", latin_style)
+            
+            text = str(text)
+            # Check if this looks like a code/ID (alphanumeric, no Arabic)
+            if re.match(r'^[A-Za-z0-9\-_]+$', text):
+                return Paragraph(text, latin_style)
+            # Mixed or Arabic content
+            else:
+                processed_text = safe_arabic_text(text)
+                style = arabic_style if is_header else arabic_style
+                return Paragraph(processed_text, style)
+        
+        # Process header row
+        header_row = [make_cell_paragraph('م', True)]  # Row number header
+        for col in data[0]:
+            header_row.append(make_cell_paragraph(col, True))
+        
+        # Process data rows
+        table_data = [header_row]
         for idx, row in enumerate(data[1:], start=1):
-            safe_row = [str(idx)] + [safe_arabic_text(str(cell)) for cell in row]
-            numbered_data.append(safe_row)
-        table = Table(numbered_data, repeatRows=1)
+            data_row = [Paragraph(str(idx), latin_style)]  # Row number
+            for cell in row:
+                data_row.append(make_cell_paragraph(cell, False))
+            table_data.append(data_row)
+        
+        table = Table(table_data, repeatRows=1)
         table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), header_bg_color),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('FONTNAME', (0, 0), (-1, -1), arabic_font),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('GRID', (0, 0), (-1, -1), 0.6, header_bg_color),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.lightgrey])
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.lightgrey]),
+            ('FONTSIZE', (0, 0), (-1, -1), 9)
         ]))
         return table
     
