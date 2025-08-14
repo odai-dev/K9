@@ -1,0 +1,438 @@
+You will modify the Flask‑based K9 repository (https://github.com/odai-dev/K9.git) to build a complete, professional reporting system. At present, the /reports page simply displays statistics without the ability to generate reports. Your task is to implement back‑end routes, extend the report generation utility, and update the front‑end so that users can generate polished Arabic PDF reports for all major entities. The look and feel of the reports should be based on the provided DOCX templates (daily breeder report, daily health report, project manager report, etc.), which feature a logo, Arabic titles, coloured table headers, numbered rows, and signature sections.
+
+1 Add a /reports/generate endpoint
+
+Open routes.py. Immediately after the existing reports_index view (around line 1575), define a new route:
+
+@main_bp.route('/reports/generate', methods=['POST'])
+@login_required
+def reports_generate():
+    """
+    Generate a report based on type, optional date range and optional filters.
+    Supported report types: 'dogs', 'employees', 'training', 'veterinary',
+                            'breeding', 'projects'.
+    Additional filters (passed via POST form) vary by type:
+      - dogs: status, gender
+      - employees: role, status
+      - training: category
+      - veterinary: visit_type
+      - breeding: cycle_type
+      - projects: project_status
+    """
+    report_type = request.form.get('report_type')
+    start_date_str = request.form.get('start_date')
+    end_date_str = request.form.get('end_date')
+
+    # Parse ISO date strings into date objects (may be None)
+    start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date() if start_date_str else None
+    end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else None
+
+    # Extract filter values from the POST data into a dict
+    filters = {}
+    for field in ['status', 'gender', 'role', 'category', 'visit_type', 'cycle_type', 'project_status']:
+        value = request.form.get(field)
+        if value:
+            filters[field] = value
+
+    try:
+        filename = generate_pdf_report(report_type, start_date, end_date, current_user, filters)
+        upload_dir = current_app.config['UPLOAD_FOLDER']
+        return send_from_directory(upload_dir, filename, as_attachment=True)
+    except Exception as e:
+        flash(f'تعذّر إنشاء التقرير: {str(e)}', 'error')
+        return redirect(url_for('main.reports_index'))
+
+
+This endpoint reads the report type and optional parameters, constructs a filters dictionary, then calls an enhanced generate_pdf_report (see below). Use send_from_directory so the client downloads the generated PDF.
+
+2 Extend generate_pdf_report to support all entities and Arabic styling
+
+The existing function in utils.py currently builds only dog, training and veterinary reports
+GitHub
+GitHub
+. Rewrite it to accept a filters parameter and to cover employees, breeding cycles and projects. Ensure all strings in the PDF are in Arabic.
+
+def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
+    """
+    Build a professional Arabic PDF report.
+    :param report_type: one of 'dogs', 'employees', 'training', 'veterinary', 'breeding', 'projects'
+    :param start_date: optional start date (datetime.date)
+    :param end_date: optional end date (datetime.date)
+    :param user: current_user for permission filtering
+    :param filters: optional dict with keys appropriate to report_type
+    :return: filename of generated PDF
+    """
+    from models import Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCycle, Project
+    filters = filters or {}
+
+    # Register an Arabic‑capable font (ensure 'Amiri-Regular.ttf' or similar is included in your project)
+    pdfmetrics.registerFont(TTFont('Amiri', os.path.join(current_app.root_path, 'static/fonts/Amiri-Regular.ttf')))
+
+    # Generate a unique filename and file path
+    filename = f"report_{report_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+
+    # Prepare the document with generous margins (similar to the DOCX templates)
+    doc = SimpleDocTemplate(filepath, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
+
+    story = []
+    styles = getSampleStyleSheet()
+
+    # Custom style definitions: Arabic text should be right‑aligned and use the registered font
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontName='Amiri',
+                                 fontSize=18, textColor=colors.HexColor('#C00000'),
+                                 alignment=1, spaceAfter=20)  # centre‑aligned red title
+    header_style = ParagraphStyle('Header', parent=styles['Heading2'], fontName='Amiri',
+                                  fontSize=12, alignment=2)  # right‑aligned
+    normal_style = ParagraphStyle('NormalAr', parent=styles['Normal'], fontName='Amiri',
+                                  fontSize=10, alignment=2)
+
+    # Draw header: logo (top left), title (centre), day/date (top right)
+    def build_header(canvas_obj, doc_obj):
+        width, height = A4
+        # Company logo; put a PNG named 'logo.png' inside static/img or adjust path accordingly
+        logo_path = os.path.join(current_app.root_path, 'static/img/logo.png')
+        if os.path.exists(logo_path):
+            canvas_obj.drawImage(logo_path, x=doc_obj.leftMargin,
+                                 y=height - doc_obj.topMargin + 20, width=50, height=50, preserveAspectRatio=True)
+        # Report title in Arabic (set later in each section)
+        # Day/Date placeholders on the right
+        canvas_obj.setFont('Amiri', 12)
+        canvas_obj.drawRightString(width - doc_obj.rightMargin, height - doc_obj.topMargin + 50,
+                                   f"اليوم:               ")
+        canvas_obj.drawRightString(width - doc_obj.rightMargin, height - doc_obj.topMargin + 30,
+                                   f"التاريخ:          /  /     ")
+
+    doc.build([] , onFirstPage=build_header)  # draw header on the first page
+    story.append(Spacer(1, 60))  # leave space beneath the header
+
+    # Helper to build tables with coloured header row and numbered column
+    def build_table(data, header_bg_color):
+        # Prepend row numbers
+        numbered_data = []
+        header = ['م'] + data[0]
+        numbered_data.append(header)
+        for idx, row in enumerate(data[1:], start=1):
+            numbered_data.append([str(idx)] + row)
+        table = Table(numbered_data, repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), header_bg_color),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('FONTNAME', (0, 0), (-1, -1), 'Amiri'),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('GRID', (0, 0), (-1, -1), 0.6, header_bg_color),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.lightgrey])
+        ]))
+        return table
+
+    # Collect data based on report_type
+    if report_type == 'dogs':
+        story.append(Paragraph("تقرير الكلاب", title_style))
+        # Fetch dogs accessible by the current user
+        dogs = Dog.query.all() if user.role.value == 'GENERAL_ADMIN' \
+            else Dog.query.filter_by(assigned_to_user_id=user.id).all()
+        # Apply filters
+        status_filter = filters.get('status')
+        gender_filter = filters.get('gender')
+        if status_filter:
+            dogs = [d for d in dogs if d.current_status.value == status_filter]
+        if gender_filter:
+            dogs = [d for d in dogs if d.gender.value == gender_filter]
+        data = [['اسم الكلب', 'الكود', 'السلالة', 'الجنس', 'الحالة', 'الموقع']]
+        for dog in dogs:
+            gender_ar = 'ذكر' if dog.gender.value == 'MALE' else 'أنثى'
+            status_ar = {'ACTIVE': 'نشط', 'RETIRED': 'متقاعد', 'DECEASED': 'متوفى', 'TRAINING': 'تدريب'}.get(dog.current_status.value, dog.current_status.value)
+            data.append([
+                dog.name or '', dog.code or '', dog.breed or '', gender_ar, status_ar, dog.location or ''
+            ])
+        story.append(build_table(data, colors.HexColor('#603913')))  # brown header like the DOCX
+    elif report_type == 'employees':
+        story.append(Paragraph("تقرير الموظفين", title_style))
+        employees = Employee.query.all()
+        role_filter = filters.get('role')
+        status_filter = filters.get('status')
+        if role_filter:
+            employees = [e for e in employees if e.role.value == role_filter]
+        if status_filter:
+            is_active = (status_filter == 'ACTIVE')
+            employees = [e for e in employees if e.is_active == is_active]
+        data = [['الاسم', 'الرقم الوظيفي', 'الوظيفة', 'تاريخ التعيين', 'الحالة', 'الهاتف', 'البريد']]
+        role_map = {
+            'TRAINER': 'مدرب', 'HANDLER': 'معالج', 'VETERINARIAN': 'طبيب بيطري',
+            'MANAGER': 'مدير', 'OTHER': 'أخرى'
+        }
+        for emp in employees:
+            status_ar = 'نشط' if emp.is_active else 'غير نشط'
+            data.append([
+                emp.name, emp.employee_id or '',
+                role_map.get(emp.role.value, emp.role.value),
+                emp.hire_date.strftime('%Y-%m-%d') if emp.hire_date else '',
+                status_ar,
+                emp.phone or '', emp.email or ''
+            ])
+        story.append(build_table(data, colors.HexColor('#854321')))  # a darker brown
+    elif report_type == 'training':
+        story.append(Paragraph("تقرير التدريب", title_style))
+        sessions = TrainingSession.query
+        # Apply date range
+        if start_date and end_date:
+            sessions = sessions.filter(TrainingSession.session_date >= start_date,
+                                       TrainingSession.session_date <= end_date)
+        # Restrict to assigned dogs for project managers
+        if user.role.value != 'GENERAL_ADMIN':
+            assigned_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=user.id).all()]
+            sessions = sessions.filter(TrainingSession.dog_id.in_(assigned_ids))
+        # Filter by category
+        category_filter = filters.get('category')
+        if category_filter:
+            sessions = sessions.filter(TrainingSession.category == category_filter)
+        sessions = sessions.all()
+        data = [['اسم الكلب', 'المدرب', 'الفئة', 'الموضوع', 'التاريخ', 'المدة (دقيقة)', 'التقييم']]
+        category_map = {
+            'OBEDIENCE': 'طاعة', 'DETECTION': 'كشف', 'AGILITY': 'رشاقة',
+            'ATTACK': 'هجوم', 'FITNESS': 'لياقة'
+        }
+        for s in sessions:
+            data.append([
+                s.dog.name, s.trainer.name,
+                category_map.get(s.category.value, s.category.value),
+                s.subject or '',
+                s.session_date.strftime('%Y-%m-%d'),
+                str(s.duration), f"{s.success_rating}/10"
+            ])
+        story.append(build_table(data, colors.HexColor('#305496')))  # deep blue header
+    elif report_type == 'veterinary':
+        story.append(Paragraph("تقرير الطبابة", title_style))
+        visits = VeterinaryVisit.query
+        if start_date and end_date:
+            visits = visits.filter(VeterinaryVisit.visit_date >= start_date,
+                                   VeterinaryVisit.visit_date <= end_date)
+        if user.role.value != 'GENERAL_ADMIN':
+            assigned_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=user.id).all()]
+            visits = visits.filter(VeterinaryVisit.dog_id.in_(assigned_ids))
+        visit_type_filter = filters.get('visit_type')
+        if visit_type_filter:
+            visits = visits.filter(VeterinaryVisit.visit_type == visit_type_filter)
+        visits = visits.all()
+        data = [['الكلب', 'الطبيب', 'نوع الزيارة', 'التاريخ', 'التشخيص', 'العلاج']]
+        visit_type_map = {'ROUTINE': 'روتينية', 'EMERGENCY': 'طارئة', 'VACCINATION': 'تطعيم'}
+        for v in visits:
+            data.append([
+                v.dog.name,
+                v.vet.name,
+                visit_type_map.get(v.visit_type.value, v.visit_type.value),
+                v.visit_date.strftime('%Y-%m-%d'),
+                v.diagnosis or '', v.treatment or ''
+            ])
+        story.append(build_table(data, colors.HexColor('#008080')))  # teal header
+    elif report_type == 'breeding':
+        story.append(Paragraph("تقرير التكاثر", title_style))
+        cycles = BreedingCycle.query
+        if start_date and end_date:
+            cycles = cycles.filter(BreedingCycle.start_date >= start_date,
+                                   BreedingCycle.start_date <= end_date)
+        cycle_type_filter = filters.get('cycle_type')
+        if cycle_type_filter:
+            cycles = cycles.filter(BreedingCycle.cycle_type == cycle_type_filter)
+        cycles = cycles.all()
+        data = [['الأم', 'الأب', 'نوع الدورة', 'تاريخ التزاوج',
+                 'تاريخ الولادة المتوقع', 'تاريخ الولادة', 'النتيجة',
+                 'عدد الجراء', 'الناجون']]
+        cycle_map = {'HEAT': 'حرارة', 'PREGNANCY': 'حمل', 'POST_BIRTH': 'بعد الولادة'}
+        result_map = {'SUCCESS': 'ناجحة', 'FAILURE': 'فاشلة', 'IN_PROGRESS': 'جارية'}
+        for c in cycles:
+            data.append([
+                c.female_dog.name if c.female_dog else '',
+                c.male_dog.name if c.male_dog else '',
+                cycle_map.get(c.cycle_type.value, c.cycle_type.value),
+                c.mating_date.strftime('%Y-%m-%d') if c.mating_date else '',
+                c.expected_delivery_date.strftime('%Y-%m-%d') if c.expected_delivery_date else '',
+                c.actual_delivery_date.strftime('%Y-%m-%d') if c.actual_delivery_date else '',
+                result_map.get(c.result.value, '') if c.result else '',
+                c.number_of_puppies or '',
+                c.number_of_surviving_puppies or ''
+            ])
+        story.append(build_table(data, colors.HexColor('#008000')))  # green header
+    elif report_type == 'projects':
+        story.append(Paragraph("تقرير المشاريع", title_style))
+        projects = Project.query
+        if start_date and end_date:
+            projects = projects.filter(Project.start_date >= start_date,
+                                       Project.start_date <= end_date)
+        status_filter = filters.get('project_status')
+        if status_filter:
+            projects = projects.filter(Project.status == status_filter)
+        projects = projects.all()
+        data = [['اسم المشروع', 'الكود', 'الحالة', 'تاريخ البداية',
+                 'تاريخ النهاية', 'المدير', 'الموقع']]
+        status_map = {
+            'ACTIVE': 'نشط', 'COMPLETED': 'منجز',
+            'CANCELLED': 'ملغى', 'ON_HOLD': 'معلق'
+        }
+        for p in projects:
+            data.append([
+                p.name, p.code or '',
+                status_map.get(p.status.value, p.status.value),
+                p.start_date.strftime('%Y-%m-%d') if p.start_date else '',
+                p.end_date.strftime('%Y-%m-%d') if p.end_date else '',
+                p.manager.name if p.manager else '',
+                p.location or ''
+            ])
+        story.append(build_table(data, colors.HexColor('#7030A0')))  # purple header
+
+    # Add generation timestamp and user
+    story.append(Spacer(1, 20))
+    story.append(Paragraph(f"تم إنشاء التقرير في: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", normal_style))
+    story.append(Paragraph(f"بواسطة: {user.full_name}", normal_style))
+
+    # Add notes and signature lines as seen in the DOCX templates
+    story.append(Spacer(1, 40))
+    story.append(Paragraph("ملاحظات:", header_style))
+    story.append(Spacer(1, 60))
+    story.append(Paragraph("اسم المسؤول: ..............................     التوقيع: ..............................", normal_style))
+    story.append(Paragraph("اسم المشروع: ..............................     التوقيع: ..............................", normal_style))
+
+    # Build the document (pass the same header function to ensure header appears on each page)
+    doc.build(story, onFirstPage=build_header, onLaterPages=build_header)
+
+    # Log audit entry (the original function does this)
+    log_audit(user.id, 'EXPORT', 'Report', filename, {
+        'report_type': report_type,
+        'start_date': start_date.isoformat() if start_date else None,
+        'end_date': end_date.isoformat() if end_date else None
+    })
+
+    return filename
+
+
+Key points:
+
+All report titles and column headings are Arabic.
+
+A custom Arabic font (Amiri) is registered and used to ensure proper glyph shaping.
+
+A header function draws the logo and Arabic day/date labels; modify the path to your logo file.
+
+build_table automatically numbers rows and colours the header row to match the professional look of your DOCX templates (different colours can be chosen per report).
+
+Notes and signature lines replicate the dotted signature area in the sample reports.
+
+3 Update the reports dashboard front‑end (Jinja template and JavaScript)
+
+The current templates/reports/index.html only opens a modal for some report types and lacks filter controls
+GitHub
+. Make the following changes:
+
+In the modal body, insert a <div id="dynamicFilters" class="row g-3 mb-3"></div> after the date inputs. This container will be populated via JavaScript.
+
+Modify the existing script block:
+
+<script>
+let currentReportType = '';
+
+// Populate dynamic filter fields based on the selected report type (Arabic labels)
+function populateFilters(reportType) {
+    const container = document.getElementById('dynamicFilters');
+    container.innerHTML = '';
+
+    const createSelect = (labelText, name, options) => {
+        const label = document.createElement('label');
+        label.textContent = labelText;
+        const select = document.createElement('select');
+        select.name = name;
+        select.className = 'form-select';
+        options.forEach(([value, text]) => {
+            const opt = document.createElement('option');
+            opt.value = value;
+            opt.textContent = text;
+            select.appendChild(opt);
+        });
+        container.appendChild(label);
+        container.appendChild(select);
+    };
+
+    switch (reportType) {
+        case 'dogs':
+            createSelect('الحالة:', 'status',
+                [['', 'الكل'], ['ACTIVE','نشط'], ['RETIRED','متقاعد'], ['DECEASED','متوفى'], ['TRAINING','تدريب']]);
+            createSelect('الجنس:', 'gender',
+                [['', 'الكل'], ['MALE','ذكر'], ['FEMALE','أنثى']]);
+            break;
+        case 'employees':
+            createSelect('الوظيفة:', 'role',
+                [['', 'الكل'], ['TRAINER','مدرب'], ['HANDLER','معالج'],
+                 ['VETERINARIAN','طبيب بيطري'], ['MANAGER','مدير'], ['OTHER','أخرى']]);
+            createSelect('الحالة:', 'status',
+                [['', 'الكل'], ['ACTIVE','نشط'], ['INACTIVE','غير نشط']]);
+            break;
+        case 'training':
+            createSelect('فئة التدريب:', 'category',
+                [['', 'الكل'], ['OBEDIENCE','طاعة'], ['DETECTION','كشف'], ['AGILITY','رشاقة'],
+                 ['ATTACK','هجوم'], ['FITNESS','لياقة']]);
+            break;
+        case 'veterinary':
+            createSelect('نوع الزيارة:', 'visit_type',
+                [['', 'الكل'], ['ROUTINE','روتينية'], ['EMERGENCY','طارئة'], ['VACCINATION','تطعيم']]);
+            break;
+        case 'breeding':
+            createSelect('نوع الدورة:', 'cycle_type',
+                [['', 'الكل'], ['HEAT','حرارة'], ['PREGNANCY','حمل'], ['POST_BIRTH','بعد الولادة']]);
+            break;
+        case 'projects':
+            createSelect('حالة المشروع:', 'project_status',
+                [['', 'الكل'], ['ACTIVE','نشط'], ['COMPLETED','منجز'], ['CANCELLED','ملغى'], ['ON_HOLD','معلق']]);
+            break;
+    }
+}
+
+function generateReport(reportType) {
+    currentReportType = reportType;
+    document.getElementById('reportType').value = reportType;
+    populateFilters(reportType);
+
+    // Default date range: last 30 days
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 30);
+    document.getElementById('startDate').value = start.toISOString().split('T')[0];
+    document.getElementById('endDate').value = end.toISOString().split('T')[0];
+
+    const modal = new bootstrap.Modal(document.getElementById('dateRangeModal'));
+    modal.show();
+}
+</script>
+
+
+Remove the old conditional logic that automatically submits dogs and employees reports without showing the modal.
+
+Ensure all Arabic text on the page (buttons, labels, headings) remains unchanged or is translated appropriately.
+
+4 Form submission
+
+The modal’s <form id="reportForm"> should POST to /reports/generate and include:
+
+A hidden <input id="reportType" name="report_type">.
+
+The start_date and end_date inputs.
+
+The dynamically created <select> elements for filters (the name attributes defined above ensure they are submitted automatically).
+
+Add client‑side validation: ensure endDate >= startDate and provide Arabic error messages if not.
+
+5 Styling hints based on the DOCX templates
+
+The DOCX samples you provided show how official reports should look. Emulate these features:
+
+Header: left‑aligned company logo (PNG), centre‑aligned Arabic report title in bold red, right‑aligned fields for “اليوم:” and “التاريخ:”.
+
+Table design: thick coloured grid lines, a dark header row with white Arabic text, and row numbers down the right‑hand side.
+
+Footer: space for “ملاحظات” followed by dotted lines, and lines for names and signatures (“اسم المسؤول: … التوقيع: …”).
+
+Colours: use deep reds, greens and browns as header backgrounds. Define them via hex codes when styling the ReportLab tables.
+
+Fonts: register and use an Arabic font (such as Amiri or Noto Naskh Arabic) to ensure correct ligatures and right‑to‑left text shaping.
+
+Make sure all PDF content—including dynamic data, labels and headings—is rendered in Arabic. Avoid mixing English except for internal code identifiers.
+
+By following this detailed plan, the reporting module in the K9 project will evolve from a placeholder to a sophisticated, fully Arabic reporting system with advanced filtering and professional‑quality PDF output that mirrors the aesthetics of the provided templates
