@@ -12,6 +12,8 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from datetime import datetime
 import uuid
+import arabic_reshaper
+from bidi.algorithm import get_display
 
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx'}
 
@@ -93,15 +95,29 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
             print(f"Font registration error for {font_file}: {e}")
             continue
     
-    # Function to ensure Arabic text is properly encoded
+    # Function to ensure Arabic text is properly shaped and encoded
     def safe_arabic_text(text):
-        """Ensure Arabic text is properly encoded for PDF generation"""
+        """Ensure Arabic text is properly shaped and encoded for PDF generation"""
         if not text:
             return ""
         # Ensure the text is a string and properly encoded
         if isinstance(text, bytes):
             text = text.decode('utf-8')
-        return str(text)
+        text = str(text)
+        
+        # Check if text contains Arabic characters
+        if any('\u0600' <= char <= '\u06FF' or '\u0750' <= char <= '\u077F' or 
+               '\u08A0' <= char <= '\u08FF' or '\uFB50' <= char <= '\uFDFF' or 
+               '\uFE70' <= char <= '\uFEFF' for char in text):
+            # Apply Arabic reshaping and bidirectional text processing
+            try:
+                reshaped_text = arabic_reshaper.reshape(text)
+                bidi_text = get_display(reshaped_text)
+                return bidi_text
+            except Exception as e:
+                print(f"Arabic text processing error: {e}")
+                return text
+        return text
 
     # Generate a unique filename and file path
     filename = f"report_{report_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
