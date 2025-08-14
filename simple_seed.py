@@ -175,12 +175,7 @@ def create_simple_data():
             # Commit employees first to get their IDs
             db.session.commit()
             
-            # Find the PROJECT_MANAGER employee for project assignment
-            project_manager_employee = None
-            for emp in created_employees:
-                if emp.role == EmployeeRole.PROJECT_MANAGER:
-                    project_manager_employee = emp
-                    break
+            # No project manager assignments - following updated business rules
             
             # Create sample projects following business rule: 
             # Project Manager can only be assigned to one ACTIVE project at a time
@@ -197,7 +192,7 @@ def create_simple_data():
                     'mission_type': 'حراسة الحدود',
                     'priority': 'HIGH',
                     'manager_id': 1,  # admin user
-                    'project_manager_id': project_manager_employee.id if project_manager_employee else None
+                    'project_manager_id': None  # No project manager assignment
                 },
                 {
                     'name': 'تدريب الكلاب الجديدة 2025',
@@ -248,22 +243,18 @@ def create_simple_data():
             for proj in created_projects:
                 db.session.refresh(proj)
             
-            # Create assignments between employees and dogs to demonstrate the system
-            # Assign project manager employee to their active project
-            if project_manager_employee and created_projects:
-                active_project = None
-                for project in created_projects:
-                    if project.status == ProjectStatus.ACTIVE:
-                        active_project = project
-                        break
-                        
-                if active_project:
-                    # Link the project manager employee to the active project
-                    active_project.assigned_employees.append(project_manager_employee)
+            # Create assignments between dogs and projects only - no project manager assignments
+            # Find the active project and assign some dogs to it
+            active_project = None
+            for project in created_projects:
+                if project.status == ProjectStatus.ACTIVE:
+                    active_project = project
+                    break
                     
-                    # Assign some dogs to the active project
-                    for dog in created_dogs[:3]:  # Assign first 3 dogs
-                        active_project.assigned_dogs.append(dog)
+            if active_project:
+                # Assign some dogs to the active project
+                for dog in created_dogs[:3]:  # Assign first 3 dogs
+                    active_project.assigned_dogs.append(dog)
             
             db.session.commit()
             
