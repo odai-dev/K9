@@ -1656,12 +1656,64 @@ def reports_preview():
     start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date() if start_date_str else None
     end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else None
     
-    # Build filters dict
+    # Build comprehensive filters dict from form data
     filters = {}
-    for field in ['status', 'gender', 'role', 'category', 'visit_type', 'cycle_type', 'project_status']:
+    
+    # Basic filters
+    basic_fields = ['status', 'gender', 'role', 'category', 'visit_type', 'cycle_type', 'project_status']
+    for field in basic_fields:
         value = request.form.get(field)
         if value:
             filters[field] = value
+    
+    # Multi-select filters (handle arrays)
+    multi_select_fields = ['gender[]', 'training_status[]', 'role[]', 'shift[]', 'employment_status[]', 
+                          'project_status[]', 'priority_level[]', 'project_type[]', 'training_category[]',
+                          'visit_type[]', 'cycle_type[]', 'cycle_outcome[]', 'manager[]']
+    
+    for field in multi_select_fields:
+        values = request.form.getlist(field)
+        if values:
+            base_field = field.replace('[]', '')
+            filters[base_field] = values
+    
+    # Range filters
+    range_fields = {
+        'age': ('age_min', 'age_max'),
+        'hire_date': ('hire_date_min', 'hire_date_max'),
+        'rating': ('rating_min', 'rating_max'),
+        'duration': ('duration_min', 'duration_max'),
+        'puppies': ('puppies_min', 'puppies_max')
+    }
+    
+    for range_name, (min_field, max_field) in range_fields.items():
+        min_val = request.form.get(min_field)
+        max_val = request.form.get(max_field)
+        if min_val or max_val:
+            filters[range_name] = {'min': min_val, 'max': max_val}
+    
+    # Text and keyword filters
+    text_fields = ['breed', 'location_cluster', 'diagnosis_keyword', 'treatment_type', 'custom_tags']
+    for field in text_fields:
+        value = request.form.get(field)
+        if value:
+            filters[field] = value.strip()
+    
+    # Special filters
+    keyword = request.form.get('keyword', '').strip()
+    if keyword:
+        filters['keyword'] = keyword
+        
+    has_attachments = request.form.get('has_attachments')
+    if has_attachments:
+        filters['has_attachments'] = has_attachments == 'true'
+        
+    activity_filter = request.form.get('activity_filter')
+    if activity_filter:
+        filters['activity_filter'] = activity_filter
+        
+    filter_logic = request.form.get('filter_logic', 'AND')
+    filters['logic'] = filter_logic
     
     # Get data based on report type
     records = []
@@ -1669,35 +1721,133 @@ def reports_preview():
         dogs = Dog.query.all() if current_user.role.value == 'GENERAL_ADMIN' \
             else Dog.query.filter_by(assigned_to_user_id=current_user.id).all()
         
-        # Apply filters
-        if filters.get('status'):
-            dogs = [d for d in dogs if d.current_status.value == filters['status']]
-        if filters.get('gender'):
-            dogs = [d for d in dogs if d.gender.value == filters['gender']]
-            
+        # Apply advanced filters
+        filtered_dogs = []
         for dog in dogs:
+            include = True
+            
+            # Gender filter (multi-select)
+            if filters.get('gender') and isinstance(filters['gender'], list):
+                if dog.gender.value not in filters['gender']:
+                    include = False
+            elif filters.get('gender') and dog.gender.value != filters['gender']:
+                include = False
+            
+            # Training status filter (multi-select) 
+            if filters.get('training_status') and isinstance(filters['training_status'], list):
+                if dog.current_status.value not in filters['training_status']:
+                    include = False
+            elif filters.get('status') and dog.current_status.value != filters['status']:
+                include = False
+                
+            # Breed filter (text search)
+            if filters.get('breed') and filters['breed'].lower() not in (dog.breed or '').lower():
+                include = False
+                
+            # Age range filter 
+            if filters.get('age'):
+                age_min = filters['age'].get('min')
+                age_max = filters['age'].get('max')
+                dog_age = (datetime.now().date() - dog.date_of_birth).days / 365 if dog.date_of_birth else 0
+                if age_min and dog_age < float(age_min):
+                    include = False
+                if age_max and dog_age > float(age_max):
+                    include = False
+            
+            # Keyword search in all text fields
+            if filters.get('keyword'):
+                keyword = filters['keyword'].lower()
+                searchable_text = ' '.join([
+                    dog.name or '', dog.code or '', dog.breed or '', 
+                    dog.location or '', dog.microchip_id or '', dog.notes or ''
+                ]).lower()
+                if keyword not in searchable_text:
+                    include = False
+            
+            # Activity filters
+            if filters.get('activity_filter') == 'no_activity_30':
+                # Check if dog has no training sessions in last 30 days
+                from models import TrainingSession
+                thirty_days_ago = datetime.now().date() - timedelta(days=30)
+                recent_sessions = TrainingSession.query.filter(
+                    TrainingSession.dog_id == dog.id,
+                    TrainingSession.session_date >= thirty_days_ago
+                ).count()
+                if recent_sessions > 0:
+                    include = False
+            
+            if include:
+                filtered_dogs.append(dog)
+            
+        for dog in filtered_dogs:
             records.append({
                 'اسم الكلب': dog.name or '',
                 'الكود': dog.code or '',
                 'السلالة': dog.breed or '',
                 'الجنس': 'ذكر' if dog.gender.value == 'MALE' else 'أنثى',
                 'الحالة': {'ACTIVE': 'نشط', 'RETIRED': 'متقاعد', 'DECEASED': 'متوفى', 'TRAINING': 'تدريب'}.get(dog.current_status.value, ''),
-                'الموقع': dog.location or ''
+                'الموقع': dog.location or '',
+                'العمر': str(int((datetime.now().date() - dog.date_of_birth).days / 365)) + ' سنة' if dog.date_of_birth else 'غير محدد'
             })
     
     elif report_type == 'employees':
         employees = Employee.query.all()
-        if filters.get('role'):
-            employees = [e for e in employees if e.role.value == filters['role']]
-        if filters.get('status'):
-            is_active = (filters['status'] == 'ACTIVE')
-            employees = [e for e in employees if e.is_active == is_active]
-            
+        
+        # Apply advanced filters
+        filtered_employees = []
         for emp in employees:
+            include = True
+            
+            # Role filter (multi-select)
+            if filters.get('role') and isinstance(filters['role'], list):
+                if emp.role.value not in filters['role']:
+                    include = False
+            elif filters.get('role') and emp.role.value != filters['role']:
+                include = False
+            
+            # Employment status filter
+            if filters.get('employment_status') and isinstance(filters['employment_status'], list):
+                emp_status = 'ACTIVE' if emp.is_active else 'INACTIVE'
+                if emp_status not in filters['employment_status']:
+                    include = False
+            elif filters.get('status'):
+                is_active = (filters['status'] == 'ACTIVE')
+                if emp.is_active != is_active:
+                    include = False
+            
+            # Hire date range filter
+            if filters.get('hire_date') and emp.hire_date:
+                hire_min = filters['hire_date'].get('min')
+                hire_max = filters['hire_date'].get('max')
+                if hire_min and emp.hire_date < datetime.strptime(hire_min, '%Y-%m-%d').date():
+                    include = False
+                if hire_max and emp.hire_date > datetime.strptime(hire_max, '%Y-%m-%d').date():
+                    include = False
+            
+            # Shift filter (multi-select)
+            if filters.get('shift') and isinstance(filters['shift'], list):
+                emp_shift = 'MORNING'  # Default shift for existing employees
+                if emp_shift not in filters['shift']:
+                    include = False
+            
+            # Keyword search
+            if filters.get('keyword'):
+                keyword = filters['keyword'].lower()
+                searchable_text = ' '.join([
+                    emp.name or '', emp.employee_id or '', emp.phone or '', 
+                    emp.email or '', emp.address or ''
+                ]).lower()
+                if keyword not in searchable_text:
+                    include = False
+            
+            if include:
+                filtered_employees.append(emp)
+            
+        for emp in filtered_employees:
             records.append({
                 'الاسم': emp.name,
                 'الرقم الوظيفي': emp.employee_id or '',
-                'الوظيفة': emp.role.value,
+                'الوظيفة': {'HANDLER': 'معالج', 'TRAINER': 'مدرب', 'VET': 'طبيب بيطري', 'PROJECT_MANAGER': 'مدير مشروع', 'BREEDER': 'مربي'}.get(emp.role.value, emp.role.value),
                 'تاريخ التعيين': emp.hire_date.strftime('%Y-%m-%d') if emp.hire_date else '',
                 'الحالة': 'نشط' if emp.is_active else 'غير نشط',
                 'الهاتف': emp.phone or '',
