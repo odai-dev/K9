@@ -127,8 +127,9 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
         def _reshape(m):
             return reshaper.reshape(m.group(0))
         reshaped = ARABIC_RE.sub(_reshape, text)
-        # Set base_dir='R' so Arabic context stays RTL while leaving Latin intact
-        return get_display(reshaped, base_dir='R')
+        # Use 'L' (left-to-right) base direction to preserve column order
+        # Only individual Arabic words will be RTL, not the entire text flow
+        return get_display(reshaped, base_dir='L')
     
     def safe_arabic_text(text):
         """Properly handle mixed Arabic/English text for PDF generation"""
@@ -203,7 +204,7 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
         latin_style = ParagraphStyle(
             'LatinCell', 
             parent=normal_style,
-            fontName=latin_font,
+            fontName=arabic_font,  # Use same font to avoid mixing issues
             fontSize=9,
             alignment=1,  # CENTER align for codes/numbers
             leading=12
@@ -215,14 +216,17 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
                 return Paragraph("", latin_style)
             
             text = str(text)
-            # Check if this looks like a code/ID (alphanumeric, no Arabic)
-            if re.match(r'^[A-Za-z0-9\-_]+$', text):
+            # For codes/IDs, don't apply Arabic processing
+            if re.match(r'^[A-Za-z0-9\-_\.]+$', text):
                 return Paragraph(text, latin_style)
-            # Mixed or Arabic content
+            # Mixed or Arabic content - apply careful processing
             else:
-                processed_text = safe_arabic_text(text)
-                style = arabic_style if is_header else arabic_style
-                return Paragraph(processed_text, style)
+                # Only apply reshaping if there's actual Arabic content
+                if ARABIC_RE.search(text):
+                    processed_text = safe_arabic_text(text)
+                else:
+                    processed_text = text
+                return Paragraph(processed_text, arabic_style)
         
         # Process header row
         header_row = [make_cell_paragraph('م', True)]  # Row number header
@@ -245,7 +249,11 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('GRID', (0, 0), (-1, -1), 0.6, header_bg_color),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.lightgrey]),
-            ('FONTSIZE', (0, 0), (-1, -1), 9)
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('LEFTPADDING', (0, 0), (-1, -1), 6),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 3),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3)
         ]))
         return table
     
