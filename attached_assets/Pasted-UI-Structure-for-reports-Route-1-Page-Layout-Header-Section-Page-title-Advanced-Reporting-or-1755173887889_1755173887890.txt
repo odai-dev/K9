@@ -1,0 +1,100 @@
+UI Structure for /reports Route
+1. Page Layout
+
+Header Section
+
+Page title: "Advanced Reporting" (or Arabic equivalent if RTL mode is enabled).
+
+Subheading describing the purpose: “Generate, preview, and export comprehensive reports for all system modules.”
+
+Small breadcrumb navigation: Home > Reports.
+
+Filters & Search Panel (top section)
+
+Collapsible filter card with:
+
+Date Range Picker: Start date & end date fields.
+
+Report Type Dropdown: Daily trainer report, handler health report, site attendance, incident report, etc. (based on your DOCX files).
+
+Entity Selector: Multi-select for dogs, employees, projects, handlers, sites.
+
+Status Filters: Active, completed, pending, incident, suspected case, etc.
+
+Keyword Search Field: Search inside report fields.
+
+Advanced Filters Button: Expands to show extra fields (location, shift time, project manager, etc.).
+
+Apply Filters Button (primary color) + Reset Filters link.
+
+The filter section should be sticky so it stays visible while scrolling.
+
+Live Preview Panel (center section)
+
+On applying filters, a dynamic data table appears:
+
+Columns based on the selected report type.
+
+Each column should have sortable headers and inline search.
+
+Pagination controls (with “Rows per page” selector).
+
+Responsive design for mobile devices (stacked view).
+
+Above table:
+
+Summary badges: Total Records, Filtered Records, Date Range, etc.
+
+Selectable Rows: User can choose which entries to include in the export.
+
+Report Preview Modal (clicking “Preview” button)
+
+Shows formatted PDF-like preview matching the formal design of your DOCX samples.
+
+Includes logo, Arabic font styling, headers/footers, and table styles before exporting.
+
+“Back to Table” button to close modal.
+
+Export Controls Panel (bottom section)
+
+Export options: PDF, Excel, CSV.
+
+Export styling:
+
+PDFs must replicate the formal templates you uploaded (logo, headers, tables, signature lines).
+
+Excel/CSV should be clean and ready for analysis.
+
+Checkbox: “Include filters in exported report”.
+
+Button: Download Now (primary color).
+
+2. Styling & Branding
+
+Brand Colors: Use same palette as the rest of the K9 system.
+
+Arabic RTL Support: Flip layout and align text to the right if Arabic mode is active.
+
+Table Styles:
+
+Alternating row colors for readability.
+
+Bold header row with subtle background color.
+
+Numeric columns right-aligned, text left-aligned (or flipped in RTL).
+
+Font Choice:
+
+Arabic-friendly font like "Cairo" or "Amiri".
+
+English font like "Roboto" or "Open Sans".
+
+3. Interactivity & UX
+
+All filters update the table instantly via AJAX without page reload.
+
+The preview modal should load in <2 seconds with accurate formatting.
+
+Export should respect active filters & selections.
+
+Responsive design that works on desktop, tablet, and mobile.
