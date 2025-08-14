@@ -1,0 +1,67 @@
+add the following:
+
+Entity-Specific Field Filters
+
+Dogs: Filter by breed, age range, gender, training status, health status, or current assignment.
+
+Employees/Handlers: Filter by role (trainer, vet, handler, manager), team/shift, hire date range, active/inactive status, or performance rating.
+
+Projects: Filter by start or end date range, project status (active/completed/cancelled/on hold), priority level, type (training, security, patrol), or location cluster.
+
+Veterinary Visits: Filter by visit type (routine/emergency/vaccination), specific veterinarian, diagnosis keyword, or treatment type.
+
+Breeding Cycles: Filter by cycle type (heat, pregnancy, post-birth), specific sire or dam, expected delivery month, or cycle outcome (successful/failed/in-progress).
+
+Incidents & Suspicion Reports: Filter by incident type (weapon, explosives, narcotics, etc.), severity level, whether a witness is recorded, or presence of supporting documents/photos.
+
+Multi-Select & Range Filters
+
+Allow users to select multiple statuses at once (e.g., active and training dogs).
+
+Include numeric range sliders for metrics such as dog age or weight.
+
+Support selection of multiple locations or projects simultaneously.
+
+Attachment & Evidence Filters
+
+Filter reports by whether supporting photos or documents are attached (e.g., incidents with photo evidence).
+
+Filter by presence of witness statements or medical prescriptions.
+
+Keyword & Full-Text Search
+
+Provide an advanced search field that can search across descriptive fields, notes, and incident narratives for keywords.
+
+This is especially useful for long-form text fields like incident descriptions or veterinary diagnoses.
+
+Custom Tags & Labels
+
+Users can assign custom tags (e.g., “urgent,” “follow-up required,” “training priority”) to entities.
+
+Filters then allow selection of one or more tags to isolate items needing special attention.
+
+Hierarchical & Relational Filters
+
+Filter dogs by their current handler or project assignment (e.g., show all dogs assigned to “Project Alpha”).
+
+Filter incidents by the handler involved or by project.
+
+Filter employees based on the dogs or projects they’re assigned to.
+
+Temporal & Frequency Filters
+
+Define quick date shortcuts (last 7 days, last 30 days, last quarter, last year).
+
+Add frequency conditions such as “incidents involving X dog more than three times in the past month.”
+
+Show only records with no activity (dogs without training sessions in the last 30 days).
+
+Conditional Filters
+
+Combine filters with AND/OR logic (e.g., find dogs with health issues AND assigned to Project Beta, or training sessions rated below 7 OR scheduled on weekends).
+
+Allow grouping conditions so that filters can be nested for complex queries.
+
+Adding these more advanced filters would let managers quickly identify patterns and anomalies—such as dogs lacking recent vet visits, employees with overdue training, or projects with frequent incidents. The extra granularity also helps prepare very precise reports for auditing, compliance, and operational insight, without sacrificing ease of use.
+
+These suggestions build on the basic filters you already have and align with the formal Arabic reporting structure seen in your example documents (with fields like “اسم الكلب,” “اسم السائس,” and various observations and metrics)
