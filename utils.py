@@ -509,6 +509,210 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
     
     return filename
 
+def generate_excel_report(report_type, start_date, end_date, user, filters=None):
+    """
+    Generate an Excel report for the specified type and filters
+    :param report_type: one of 'dogs', 'employees', 'training', 'veterinary', 'breeding', 'projects'
+    :param start_date: optional start date (datetime.date)
+    :param end_date: optional end date (datetime.date)
+    :param user: current_user for permission filtering
+    :param filters: optional dict with keys appropriate to report_type
+    :return: filename of generated Excel file
+    """
+    from models import Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCycle, Project
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.utils import get_column_letter
+    
+    filters = filters or {}
+    
+    # Create workbook and worksheet
+    wb = Workbook()
+    ws = wb.active
+    
+    # Arabic font and styling
+    arabic_font = Font(name='Calibri', size=11, bold=False)
+    header_font = Font(name='Calibri', size=12, bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='366092', end_color='366092', fill_type='solid')
+    border = Border(left=Side(style='thin'), right=Side(style='thin'), 
+                   top=Side(style='thin'), bottom=Side(style='thin'))
+    
+    # Generate filename
+    filename = f"report_{report_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+    
+    # Collect data based on report_type
+    if report_type == 'dogs':
+        ws.title = "تقرير الكلاب"
+        
+        # Headers
+        headers = ['رقم', 'اسم الكلب', 'الكود', 'السلالة', 'الجنس', 'الحالة', 'الموقع', 'العمر']
+        
+        # Fetch dogs accessible by the current user
+        dogs = Dog.query.all() if user.role.value == 'GENERAL_ADMIN' \
+            else Dog.query.filter_by(assigned_to_user_id=user.id).all()
+        
+        # Apply filters
+        status_filter = filters.get('status')
+        gender_filter = filters.get('gender')
+        if status_filter:
+            dogs = [d for d in dogs if d.current_status.value == status_filter]
+        if gender_filter:
+            dogs = [d for d in dogs if d.gender.value == gender_filter]
+        
+        # Write headers
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col)
+            cell.value = header
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = border
+        
+        # Write data
+        for row, dog in enumerate(dogs, 2):
+            gender_ar = 'ذكر' if dog.gender.value == 'MALE' else 'أنثى'
+            status_ar = {
+                'ACTIVE': 'نشط', 'RETIRED': 'متقاعد', 
+                'DECEASED': 'متوفى', 'TRAINING': 'تدريب'
+            }.get(dog.current_status.value, dog.current_status.value)
+            
+            age = (datetime.now().date() - dog.date_of_birth).days // 365 if dog.date_of_birth else ''
+            
+            data = [row-1, dog.name or '', dog.code or '', dog.breed or '', 
+                   gender_ar, status_ar, dog.location or '', age]
+            
+            for col, value in enumerate(data, 1):
+                cell = ws.cell(row=row, column=col)
+                cell.value = value
+                cell.font = arabic_font
+                cell.border = border
+                cell.alignment = Alignment(horizontal='center')
+    
+    elif report_type == 'employees':
+        ws.title = "تقرير الموظفين"
+        
+        # Headers
+        headers = ['رقم', 'الاسم', 'الرقم الوظيفي', 'الوظيفة', 'تاريخ التعيين', 'الحالة', 'الهاتف', 'البريد']
+        
+        employees = Employee.query.all()
+        role_filter = filters.get('role')
+        status_filter = filters.get('status')
+        if role_filter:
+            employees = [e for e in employees if e.role.value == role_filter]
+        if status_filter:
+            is_active = (status_filter == 'ACTIVE')
+            employees = [e for e in employees if e.is_active == is_active]
+        
+        # Write headers
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col)
+            cell.value = header
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = border
+        
+        # Write data
+        role_map = {
+            'TRAINER': 'مدرب', 'HANDLER': 'معالج', 'VET': 'طبيب بيطري',
+            'PROJECT_MANAGER': 'مدير مشروع', 'BREEDER': 'مربي'
+        }
+        
+        for row, emp in enumerate(employees, 2):
+            status_ar = 'نشط' if emp.is_active else 'غير نشط'
+            data = [row-1, emp.name, emp.employee_id or '', 
+                   role_map.get(emp.role.value, emp.role.value),
+                   emp.hire_date.strftime('%Y-%m-%d') if emp.hire_date else '',
+                   status_ar, emp.phone or '', emp.email or '']
+            
+            for col, value in enumerate(data, 1):
+                cell = ws.cell(row=row, column=col)
+                cell.value = value
+                cell.font = arabic_font
+                cell.border = border
+                cell.alignment = Alignment(horizontal='center')
+    
+    elif report_type == 'training':
+        ws.title = "تقرير التدريب"
+        
+        # Headers
+        headers = ['رقم', 'اسم الكلب', 'المدرب', 'الفئة', 'الموضوع', 'التاريخ', 'المدة (دقيقة)', 'التقييم']
+        
+        sessions = TrainingSession.query
+        # Apply date range
+        if start_date and end_date:
+            sessions = sessions.filter(TrainingSession.session_date >= start_date,
+                                       TrainingSession.session_date <= end_date)
+        # Restrict to assigned dogs for project managers
+        if user.role.value != 'GENERAL_ADMIN':
+            assigned_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=user.id).all()]
+            sessions = sessions.filter(TrainingSession.dog_id.in_(assigned_ids))
+        # Filter by category
+        category_filter = filters.get('category')
+        if category_filter:
+            sessions = sessions.filter(TrainingSession.category == category_filter)
+        sessions = sessions.all()
+        
+        # Write headers
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col)
+            cell.value = header
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = border
+        
+        # Write data
+        category_map = {
+            'OBEDIENCE': 'طاعة', 'DETECTION': 'كشف', 'AGILITY': 'رشاقة',
+            'ATTACK': 'هجوم', 'FITNESS': 'لياقة'
+        }
+        
+        for row, session in enumerate(sessions, 2):
+            data = [row-1, 
+                   session.dog.name if session.dog else '',
+                   session.trainer.name if session.trainer else '',
+                   category_map.get(session.category.value, session.category.value),
+                   session.subject or '',
+                   session.session_date.strftime('%Y-%m-%d') if session.session_date else '',
+                   session.duration or '',
+                   f"{session.success_rating}/10" if session.success_rating else '']
+            
+            for col, value in enumerate(data, 1):
+                cell = ws.cell(row=row, column=col)
+                cell.value = value
+                cell.font = arabic_font
+                cell.border = border
+                cell.alignment = Alignment(horizontal='center')
+    
+    # Auto-adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column_letter = get_column_letter(column[0].column)
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Save file
+    wb.save(filepath)
+    
+    # Log the report generation
+    log_audit(user.id, 'EXPORT', 'Report', filename, {
+        'report_type': report_type,
+        'format': 'excel',
+        'start_date': start_date.isoformat() if start_date else None,
+        'end_date': end_date.isoformat() if end_date else None,
+        'filters': filters
+    })
+    
+    return filename
+
 def get_user_permissions(user):
     """Get user permissions based on role and SubPermission grants"""
     if user.role.value == 'GENERAL_ADMIN':
