@@ -2641,10 +2641,9 @@ def attendance_assignments():
     assignments = ShiftAssignment.query.filter_by(is_active=True).all()
     shifts = Shift.query.filter_by(is_active=True).all()
     
-    # Get available employees and dogs (not assigned to active projects)
+    # Get available employees (not assigned to active projects)
     today = date.today()
     available_employees = []
-    available_dogs = []
     
     # Get all employees
     all_employees = Employee.query.filter_by(is_active=True).all()
@@ -2653,24 +2652,10 @@ def attendance_assignments():
         if not employee.is_project_owned(today):
             available_employees.append(employee)
     
-    # Get all dogs
-    all_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
-    for dog in all_dogs:
-        # Check if dog is assigned to any active project
-        active_project_assignment = ProjectAssignment.query.join(Project).filter(
-            ProjectAssignment.dog_id == dog.id,
-            ProjectAssignment.is_active == True,
-            Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])
-        ).first()
-        
-        if not active_project_assignment:
-            available_dogs.append(dog)
-    
     return render_template('attendance/assignments.html', 
                          assignments=assignments,
                          shifts=shifts,
                          available_employees=available_employees,
-                         available_dogs=available_dogs,
                          EntityType=EntityType)
 
 @main_bp.route('/attendance/assignments/add', methods=['POST'])
@@ -2696,6 +2681,10 @@ def attendance_assignments_add():
         
         if existing:
             return jsonify({'success': False, 'error': 'هذا العضو مُعيَّن بالفعل لهذه الوردية'})
+        
+        # Only allow EMPLOYEE entity type
+        if entity_type != 'EMPLOYEE':
+            return jsonify({'success': False, 'error': 'يُسمح فقط بتعيين الموظفين في هذا النظام'})
         
         # Create new assignment
         assignment = ShiftAssignment(
@@ -2744,10 +2733,11 @@ def attendance_record():
         selected_shift = shifts[0]
         shift_id = selected_shift.id
     
-    # Get assignments for selected shift
+    # Get employee assignments for selected shift only
     assignments = ShiftAssignment.query.filter_by(
         shift_id=shift_id,
-        is_active=True
+        is_active=True,
+        entity_type=EntityType.EMPLOYEE
     ).all()
     
     # Get existing attendance records for the date and shift
