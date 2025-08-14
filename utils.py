@@ -52,201 +52,262 @@ def log_audit(user_id, action, target_type, target_id, description=None, old_val
         db.session.rollback()
         print(f"Error logging audit: {str(e)}")
 
-def generate_pdf_report(report_type, start_date, end_date, user):
-    """Generate PDF reports based on type and date range"""
-    from models import Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCycle
-    
-    # Create filename
+def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
+    """
+    Build a professional Arabic PDF report.
+    :param report_type: one of 'dogs', 'employees', 'training', 'veterinary', 'breeding', 'projects'
+    :param start_date: optional start date (datetime.date)
+    :param end_date: optional end date (datetime.date)
+    :param user: current_user for permission filtering
+    :param filters: optional dict with keys appropriate to report_type
+    :return: filename of generated PDF
+    """
+    from models import Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCycle, Project
+    filters = filters or {}
+
+    # Try to register an Arabic-capable font, fall back to default if not available
+    try:
+        font_path = os.path.join(current_app.root_path, 'static/fonts/Amiri-Regular.ttf')
+        if os.path.exists(font_path):
+            pdfmetrics.registerFont(TTFont('Amiri', font_path))
+            arabic_font = 'Amiri'
+        else:
+            arabic_font = 'Helvetica'  # Fallback to default font
+    except:
+        arabic_font = 'Helvetica'  # Fallback if font registration fails
+
+    # Generate a unique filename and file path
     filename = f"report_{report_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
     filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-    
-    # Create the PDF document
-    doc = SimpleDocTemplate(filepath, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
-    
-    # Container for the 'Flowable' objects
+
+    # Prepare the document with generous margins (similar to the DOCX templates)
+    doc = SimpleDocTemplate(filepath, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
+
     story = []
-    
-    # Define styles
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=16,
-        spaceAfter=30,
-        alignment=1,  # Center alignment
-    )
+
+    # Custom style definitions: Arabic text should be right-aligned and use the registered font
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontName=arabic_font,
+                                 fontSize=18, textColor=colors.HexColor('#C00000'),
+                                 alignment=1, spaceAfter=20)  # centre-aligned red title
+    header_style = ParagraphStyle('Header', parent=styles['Heading2'], fontName=arabic_font,
+                                  fontSize=12, alignment=2)  # right-aligned
+    normal_style = ParagraphStyle('NormalAr', parent=styles['Normal'], fontName=arabic_font,
+                                  fontSize=10, alignment=2)
+
+    # Draw header: logo (top left), title (centre), day/date (top right)
+    def build_header(canvas_obj, doc_obj):
+        width, height = A4
+        # Company logo; put a PNG named 'logo.png' inside static/img or adjust path accordingly
+        logo_path = os.path.join(current_app.root_path, 'static/img/logo.png')
+        if os.path.exists(logo_path):
+            canvas_obj.drawImage(logo_path, x=doc_obj.leftMargin,
+                                 y=height - doc_obj.topMargin + 20, width=50, height=50, preserveAspectRatio=True)
+        # Day/Date placeholders on the right
+        canvas_obj.setFont(arabic_font, 12)
+        canvas_obj.drawRightString(width - doc_obj.rightMargin, height - doc_obj.topMargin + 50,
+                                   f"اليوم:               ")
+        canvas_obj.drawRightString(width - doc_obj.rightMargin, height - doc_obj.topMargin + 30,
+                                   f"التاريخ:          /  /     ")
+
+    # Leave space beneath the header
+    story.append(Spacer(1, 60))
+
+    # Helper to build tables with coloured header row and numbered column
+    def build_table(data, header_bg_color):
+        # Prepend row numbers
+        numbered_data = []
+        header = ['م'] + data[0]
+        numbered_data.append(header)
+        for idx, row in enumerate(data[1:], start=1):
+            numbered_data.append([str(idx)] + row)
+        table = Table(numbered_data, repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), header_bg_color),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('FONTNAME', (0, 0), (-1, -1), arabic_font),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('GRID', (0, 0), (-1, -1), 0.6, header_bg_color),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.lightgrey])
+        ]))
+        return table
     
-    heading_style = ParagraphStyle(
-        'CustomHeading',
-        parent=styles['Heading2'],
-        fontSize=14,
-        spaceAfter=12,
-        alignment=2,  # Right alignment for Arabic
-    )
-    
-    normal_style = ParagraphStyle(
-        'CustomNormal',
-        parent=styles['Normal'],
-        fontSize=10,
-        alignment=2,  # Right alignment for Arabic
-    )
-    
-    # Add title
+    # Collect data based on report_type
     if report_type == 'dogs':
-        title = "تقرير الكلاب"
-        # Get dogs data
-        if user.role.value == 'GENERAL_ADMIN':
-            dogs = Dog.query.all()
-        else:
-            dogs = Dog.query.filter_by(assigned_to_user_id=user.id).all()
-        
-        story.append(Paragraph(title, title_style))
-        story.append(Spacer(1, 12))
-        
-        # Create table data
+        story.append(Paragraph("تقرير الكلاب", title_style))
+        # Fetch dogs accessible by the current user
+        dogs = Dog.query.all() if user.role.value == 'GENERAL_ADMIN' \
+            else Dog.query.filter_by(assigned_to_user_id=user.id).all()
+        # Apply filters
+        status_filter = filters.get('status')
+        gender_filter = filters.get('gender')
+        if status_filter:
+            dogs = [d for d in dogs if d.current_status.value == status_filter]
+        if gender_filter:
+            dogs = [d for d in dogs if d.gender.value == gender_filter]
         data = [['اسم الكلب', 'الكود', 'السلالة', 'الجنس', 'الحالة', 'الموقع']]
         for dog in dogs:
             gender_ar = 'ذكر' if dog.gender.value == 'MALE' else 'أنثى'
             status_ar = {'ACTIVE': 'نشط', 'RETIRED': 'متقاعد', 'DECEASED': 'متوفى', 'TRAINING': 'تدريب'}.get(dog.current_status.value, dog.current_status.value)
             data.append([
-                dog.name or '',
-                dog.code or '',
-                dog.breed or '',
-                gender_ar,
+                dog.name or '', dog.code or '', dog.breed or '', gender_ar, status_ar, dog.location or ''
+            ])
+        story.append(build_table(data, colors.HexColor('#603913')))  # brown header like the DOCX
+    elif report_type == 'employees':
+        story.append(Paragraph("تقرير الموظفين", title_style))
+        employees = Employee.query.all()
+        role_filter = filters.get('role')
+        status_filter = filters.get('status')
+        if role_filter:
+            employees = [e for e in employees if e.role.value == role_filter]
+        if status_filter:
+            is_active = (status_filter == 'ACTIVE')
+            employees = [e for e in employees if e.is_active == is_active]
+        data = [['الاسم', 'الرقم الوظيفي', 'الوظيفة', 'تاريخ التعيين', 'الحالة', 'الهاتف', 'البريد']]
+        role_map = {
+            'مدرب': 'مدرب', 'سائس': 'معالج', 'طبيب': 'طبيب بيطري',
+            'مسؤول مشروع': 'مدير', 'مربي': 'مربي'
+        }
+        for emp in employees:
+            status_ar = 'نشط' if emp.is_active else 'غير نشط'
+            data.append([
+                emp.name, emp.employee_id or '',
+                role_map.get(emp.role.value, emp.role.value),
+                emp.hire_date.strftime('%Y-%m-%d') if emp.hire_date else '',
                 status_ar,
-                dog.location or ''
+                emp.phone or '', emp.email or ''
             ])
-        
-        # Create table
-        table = Table(data)
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 12),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-        ]))
-        story.append(table)
-    
+        story.append(build_table(data, colors.HexColor('#854321')))  # a darker brown
     elif report_type == 'training':
-        title = "تقرير التدريب"
-        # Get training sessions
-        if user.role.value == 'GENERAL_ADMIN':
-            sessions = TrainingSession.query.filter(
-                TrainingSession.session_date >= start_date,
-                TrainingSession.session_date <= end_date
-            ).all() if start_date and end_date else TrainingSession.query.all()
-        else:
-            assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=user.id).all()]
-            sessions = TrainingSession.query.filter(
-                TrainingSession.dog_id.in_(assigned_dog_ids)
-            ).all()
-            if start_date and end_date:
-                sessions = [s for s in sessions if start_date <= s.session_date.date() <= end_date]
-        
-        story.append(Paragraph(title, title_style))
-        story.append(Spacer(1, 12))
-        
-        # Create table data
-        data = [['الكلب', 'المدرب', 'النوع', 'الموضوع', 'التاريخ', 'المدة (دقيقة)', 'التقييم']]
-        for session in sessions:
-            category_ar = {
-                'OBEDIENCE': 'طاعة',
-                'DETECTION': 'كشف',
-                'AGILITY': 'رشاقة',
-                'ATTACK': 'هجوم',
-                'FITNESS': 'لياقة'
-            }.get(session.category.value, session.category.value)
-            
+        story.append(Paragraph("تقرير التدريب", title_style))
+        sessions = TrainingSession.query
+        # Apply date range
+        if start_date and end_date:
+            sessions = sessions.filter(TrainingSession.session_date >= start_date,
+                                       TrainingSession.session_date <= end_date)
+        # Restrict to assigned dogs for project managers
+        if user.role.value != 'GENERAL_ADMIN':
+            assigned_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=user.id).all()]
+            sessions = sessions.filter(TrainingSession.dog_id.in_(assigned_ids))
+        # Filter by category
+        category_filter = filters.get('category')
+        if category_filter:
+            sessions = sessions.filter(TrainingSession.category == category_filter)
+        sessions = sessions.all()
+        data = [['اسم الكلب', 'المدرب', 'الفئة', 'الموضوع', 'التاريخ', 'المدة (دقيقة)', 'التقييم']]
+        category_map = {
+            'OBEDIENCE': 'طاعة', 'DETECTION': 'كشف', 'AGILITY': 'رشاقة',
+            'ATTACK': 'هجوم', 'FITNESS': 'لياقة'
+        }
+        for s in sessions:
             data.append([
-                session.dog.name,
-                session.trainer.name,
-                category_ar,
-                session.subject,
-                session.session_date.strftime('%Y-%m-%d'),
-                str(session.duration),
-                f"{session.success_rating}/10"
+                s.dog.name, s.trainer.name,
+                category_map.get(s.category.value, s.category.value),
+                s.subject or '',
+                s.session_date.strftime('%Y-%m-%d'),
+                str(s.duration), f"{s.success_rating}/10"
             ])
-        
-        table = Table(data)
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-        ]))
-        story.append(table)
-    
+        story.append(build_table(data, colors.HexColor('#305496')))  # deep blue header
     elif report_type == 'veterinary':
-        title = "تقرير الطبابة"
-        # Get veterinary visits
-        if user.role.value == 'GENERAL_ADMIN':
-            visits = VeterinaryVisit.query.filter(
-                VeterinaryVisit.visit_date >= start_date,
-                VeterinaryVisit.visit_date <= end_date
-            ).all() if start_date and end_date else VeterinaryVisit.query.all()
-        else:
-            assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=user.id).all()]
-            visits = VeterinaryVisit.query.filter(
-                VeterinaryVisit.dog_id.in_(assigned_dog_ids)
-            ).all()
-            if start_date and end_date:
-                visits = [v for v in visits if start_date <= v.visit_date.date() <= end_date]
-        
-        story.append(Paragraph(title, title_style))
-        story.append(Spacer(1, 12))
-        
-        # Create table data
+        story.append(Paragraph("تقرير الطبابة", title_style))
+        visits = VeterinaryVisit.query
+        if start_date and end_date:
+            visits = visits.filter(VeterinaryVisit.visit_date >= start_date,
+                                   VeterinaryVisit.visit_date <= end_date)
+        if user.role.value != 'GENERAL_ADMIN':
+            assigned_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=user.id).all()]
+            visits = visits.filter(VeterinaryVisit.dog_id.in_(assigned_ids))
+        visit_type_filter = filters.get('visit_type')
+        if visit_type_filter:
+            visits = visits.filter(VeterinaryVisit.visit_type == visit_type_filter)
+        visits = visits.all()
         data = [['الكلب', 'الطبيب', 'نوع الزيارة', 'التاريخ', 'التشخيص', 'العلاج']]
-        for visit in visits:
-            visit_type_ar = {
-                'ROUTINE': 'روتينية',
-                'EMERGENCY': 'طارئة',
-                'VACCINATION': 'تطعيم'
-            }.get(visit.visit_type.value, visit.visit_type.value)
-            
+        visit_type_map = {'ROUTINE': 'روتينية', 'EMERGENCY': 'طارئة', 'VACCINATION': 'تطعيم'}
+        for v in visits:
             data.append([
-                visit.dog.name,
-                visit.vet.name,
-                visit_type_ar,
-                visit.visit_date.strftime('%Y-%m-%d'),
-                visit.diagnosis or '',
-                visit.treatment or ''
+                v.dog.name,
+                v.vet.name,
+                visit_type_map.get(v.visit_type.value, v.visit_type.value),
+                v.visit_date.strftime('%Y-%m-%d'),
+                v.diagnosis or '', v.treatment or ''
             ])
-        
-        table = Table(data)
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-        ]))
-        story.append(table)
-    
-    # Add generation info
+        story.append(build_table(data, colors.HexColor('#008080')))  # teal header
+    elif report_type == 'breeding':
+        story.append(Paragraph("تقرير التكاثر", title_style))
+        cycles = BreedingCycle.query
+        if start_date and end_date:
+            cycles = cycles.filter(BreedingCycle.mating_date >= start_date,
+                                   BreedingCycle.mating_date <= end_date)
+        cycle_type_filter = filters.get('cycle_type')
+        if cycle_type_filter:
+            cycles = cycles.filter(BreedingCycle.cycle_type == cycle_type_filter)
+        cycles = cycles.all()
+        data = [['الأم', 'الأب', 'نوع الدورة', 'تاريخ التزاوج',
+                 'تاريخ الولادة المتوقع', 'تاريخ الولادة', 'النتيجة',
+                 'عدد الجراء', 'الناجون']]
+        cycle_map = {'NATURAL': 'طبيعي', 'ARTIFICIAL': 'صناعي'}
+        result_map = {'SUCCESSFUL': 'ناجحة', 'FAILED': 'فاشلة', 'UNKNOWN': 'غير معروف'}
+        for c in cycles:
+            data.append([
+                c.female.name if c.female else '',
+                c.male.name if c.male else '',
+                cycle_map.get(c.cycle_type.value, c.cycle_type.value),
+                c.mating_date.strftime('%Y-%m-%d') if c.mating_date else '',
+                c.expected_delivery_date.strftime('%Y-%m-%d') if c.expected_delivery_date else '',
+                c.actual_delivery_date.strftime('%Y-%m-%d') if c.actual_delivery_date else '',
+                result_map.get(c.result.value, '') if c.result else '',
+                c.number_of_puppies or '',
+                c.puppies_survived or ''
+            ])
+        story.append(build_table(data, colors.HexColor('#008000')))  # green header
+    elif report_type == 'projects':
+        story.append(Paragraph("تقرير المشاريع", title_style))
+        projects = Project.query
+        if start_date and end_date:
+            projects = projects.filter(Project.start_date >= start_date,
+                                       Project.start_date <= end_date)
+        status_filter = filters.get('project_status')
+        if status_filter:
+            projects = projects.filter(Project.status == status_filter)
+        projects = projects.all()
+        data = [['اسم المشروع', 'الكود', 'الحالة', 'تاريخ البداية',
+                 'تاريخ النهاية', 'المدير', 'الموقع']]
+        status_map = {
+            'ACTIVE': 'نشط', 'COMPLETED': 'منجز',
+            'CANCELLED': 'ملغى', 'PLANNED': 'مخطط'
+        }
+        for p in projects:
+            data.append([
+                p.name, p.code or '',
+                status_map.get(p.status.value, p.status.value),
+                p.start_date.strftime('%Y-%m-%d') if p.start_date else '',
+                p.end_date.strftime('%Y-%m-%d') if p.end_date else '',
+                p.manager.full_name if p.manager else '',
+                p.location or ''
+            ])
+        story.append(build_table(data, colors.HexColor('#7030A0')))  # purple header
+
+    # Add generation timestamp and user
     story.append(Spacer(1, 20))
     story.append(Paragraph(f"تم إنشاء التقرير في: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", normal_style))
     story.append(Paragraph(f"بواسطة: {user.full_name}", normal_style))
+
+    # Add notes and signature lines as seen in the DOCX templates
+    story.append(Spacer(1, 40))
+    story.append(Paragraph("ملاحظات:", header_style))
+    story.append(Spacer(1, 60))
+    story.append(Paragraph("اسم المسؤول: ..............................     التوقيع: ..............................", normal_style))
+    story.append(Paragraph("اسم المدير: ..............................     التوقيع: ..............................", normal_style))
     
-    # Build PDF
-    doc.build(story)
-    
+    # Build PDF with header
+    doc.build(story, onFirstPage=build_header)
+
     # Log the report generation
     log_audit(user.id, 'EXPORT', 'Report', filename, {
         'report_type': report_type,
         'start_date': start_date.isoformat() if start_date else None,
-        'end_date': end_date.isoformat() if end_date else None
+        'end_date': end_date.isoformat() if end_date else None,
+        'filters': filters
     })
     
     return filename

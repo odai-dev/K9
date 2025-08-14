@@ -1591,6 +1591,44 @@ def reports_index():
     
     return render_template('reports/index.html', stats=stats)
 
+@main_bp.route('/reports/generate', methods=['POST'])
+@login_required
+def reports_generate():
+    """
+    Generate a report based on type, optional date range and optional filters.
+    Supported report types: 'dogs', 'employees', 'training', 'veterinary',
+                            'breeding', 'projects'.
+    Additional filters (passed via POST form) vary by type:
+      - dogs: status, gender
+      - employees: role, status
+      - training: category
+      - veterinary: visit_type
+      - breeding: cycle_type
+      - projects: project_status
+    """
+    report_type = request.form.get('report_type')
+    start_date_str = request.form.get('start_date')
+    end_date_str = request.form.get('end_date')
+
+    # Parse ISO date strings into date objects (may be None)
+    start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date() if start_date_str else None
+    end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else None
+
+    # Extract filter values from the POST data into a dict
+    filters = {}
+    for field in ['status', 'gender', 'role', 'category', 'visit_type', 'cycle_type', 'project_status']:
+        value = request.form.get(field)
+        if value:
+            filters[field] = value
+
+    try:
+        filename = generate_pdf_report(report_type, start_date, end_date, current_user, filters)
+        upload_dir = current_app.config['UPLOAD_FOLDER']
+        return send_from_directory(upload_dir, filename, as_attachment=True)
+    except Exception as e:
+        flash(f'تعذّر إنشاء التقرير: {str(e)}', 'error')
+        return redirect(url_for('main.reports_index'))
+
 
 # ============================================================================
 # ATTENDANCE SYSTEM ROUTES
