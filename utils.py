@@ -66,16 +66,32 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
     filters = filters or {}
 
     # Try to register an Arabic-capable font, fall back to default if not available
-    try:
-        font_path = os.path.join(current_app.root_path, 'static/fonts/Amiri-Regular.ttf')
-        if os.path.exists(font_path):
-            pdfmetrics.registerFont(TTFont('Amiri', font_path))
-            arabic_font = 'Amiri'
-        else:
-            arabic_font = 'Helvetica'  # Fallback to default font
-    except Exception as e:
-        print(f"Font registration error: {e}")
-        arabic_font = 'Helvetica'  # Fallback if font registration fails
+    arabic_font = 'Helvetica'  # Default fallback
+    
+    # Try multiple font options
+    font_options = [
+        ('static/fonts/NotoSansArabic-Regular.ttf', 'NotoSansArabic'),
+        ('static/fonts/Amiri-Regular.ttf', 'Amiri')
+    ]
+    
+    for font_file, font_name in font_options:
+        try:
+            font_path = os.path.join(current_app.root_path, font_file)
+            if os.path.exists(font_path):
+                # Verify it's a valid font file (not ZIP)
+                with open(font_path, 'rb') as f:
+                    header = f.read(4)
+                    if header[:2] == b'PK':  # ZIP file signature
+                        print(f"Font file {font_file} is corrupted (ZIP file)")
+                        continue
+                
+                pdfmetrics.registerFont(TTFont(font_name, font_path))
+                arabic_font = font_name
+                print(f"Successfully registered Arabic font: {font_name}")
+                break
+        except Exception as e:
+            print(f"Font registration error for {font_file}: {e}")
+            continue
     
     # Function to ensure Arabic text is properly encoded
     def safe_arabic_text(text):
