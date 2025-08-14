@@ -28,10 +28,12 @@ Runs comprehensive system check
 ## That's It! 🎉
 
 The system is designed to work **out-of-the-box** in Replit with:
-- ✅ SQLite database (auto-created)
+- ✅ PostgreSQL database (auto-configured)
 - ✅ UUID compatibility (automatic)
-- ✅ Arabic RTL interface
+- ✅ Arabic RTL interface with full language support
 - ✅ Mobile-responsive design
+- ✅ Ultra-granular permission system
+- ✅ Project-based attendance tracking
 - ✅ All features ready to use
 
 ## What You Get
@@ -57,17 +59,20 @@ The system is designed to work **out-of-the-box** in Replit with:
 
 ## Common Questions
 
-**Q: Getting UUID errors?**
-A: Delete `k9_operations.db` and restart
+**Q: Getting database connection errors?**
+A: Restart the application - PostgreSQL auto-configures
 
 **Q: Missing dependencies?**
 A: They auto-install from `pyproject.toml`
 
 **Q: Arabic text not showing correctly?**
-A: Ensure internet connection for Google Fonts
+A: Ensure internet connection for Google Fonts (Noto Sans Arabic)
+
+**Q: Permission access issues?**
+A: Check admin dashboard for granular permission assignments
 
 **Q: Want to reset everything?**
-A: Delete database file, restart, run `simple_seed.py` again
+A: Database resets automatically on restart, run `simple_seed.py` again
 
 ## File Structure Overview
 ```

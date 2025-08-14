@@ -72,16 +72,13 @@ Expected output:
 
 ## If Something Goes Wrong
 
-### Problem: UUID/SQLite Errors
-**Symptoms**: Errors mentioning "type 'UUID' is not supported"
+### Problem: Database Connection Errors
+**Symptoms**: Errors mentioning database connection failures
 
 **Solution**:
 1. Stop the application
-2. In Shell tab, run:
-```bash
-rm -f k9_operations.db instance/k9_operations.db
-```
-3. Click "Run" again
+2. Restart by clicking "Run" again
+3. PostgreSQL database will auto-configure via environment variables
 4. Wait for admin user creation message
 
 ### Problem: Dependencies Missing
@@ -137,15 +134,17 @@ Your-Repl-Name/
 
 ## Database Information
 
-### Automatic SQLite Mode
+### Automatic PostgreSQL Mode
 - The system automatically detects Replit environment
-- Uses SQLite database for compatibility
-- UUID fields automatically converted to strings
-- No PostgreSQL setup needed
+- Uses PostgreSQL database for production compatibility
+- UUID fields use native PostgreSQL UUID type
+- Automatic connection pooling and optimization
+- Environment variables managed by Replit
 
-### Database File Location
-- Main database: `k9_operations.db` (in project root)
-- Backup location: `instance/k9_operations.db`
+### Database Configuration
+- Database: Automatically configured via `DATABASE_URL`
+- Connection: Managed by Replit infrastructure
+- Schema: Auto-created on first startup
 
 ## Feature Overview After Import
 
