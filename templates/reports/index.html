@@ -109,11 +109,11 @@
             <div class="card h-100">
                 <div class="card-body text-center">
                     <div class="report-icon mb-3">
-                        <i class="fas fa-clock fa-3x text-secondary"></i>
+                        <i class="fas fa-project-diagram fa-3x text-dark"></i>
                     </div>
-                    <h5 class="card-title">تقرير الحضور والغياب</h5>
-                    <p class="card-text">إحصائيات حضور وغياب الموظفين</p>
-                    <button class="btn btn-secondary" onclick="showDateRangeModal('attendance')">
+                    <h5 class="card-title">تقرير المشاريع</h5>
+                    <p class="card-text">إحصائيات وتفاصيل المشاريع النشطة والمكتملة</p>
+                    <button class="btn btn-dark" onclick="showDateRangeModal('projects')">
                         <i class="fas fa-download me-2"></i>
                         إنشاء تقرير
                     </button>
@@ -183,7 +183,7 @@
                 <h5 class="modal-title">اختر الفترة الزمنية</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="reportForm" method="POST" action="{{ url_for('main.reports_index') }}">
+            <form id="reportForm" method="POST" action="{{ url_for('main.reports_generate') }}">
                 <div class="modal-body">
                     <input type="hidden" id="reportType" name="report_type">
                     
