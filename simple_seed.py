@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 """
 Simple seed script to add sample data to the K9 Operations Management System
+
+This script creates realistic sample data that follows all current business rules:
+- Project Managers can only be assigned to ONE active project at a time
+- Projects have proper status transitions (PLANNED -> ACTIVE -> COMPLETED)
+- Employees are properly assigned to projects with role-based permissions
+- Dogs are assigned to projects and handlers appropriately
+- All data follows the current database schema and validation rules
 """
 
 from app import app, db
@@ -15,6 +22,16 @@ import uuid
 def create_simple_data():
     with app.app_context():
         print("🌱 Adding sample data to K9 Operations Management System...")
+        
+        # Check if sample data already exists
+        existing_user = User.query.filter_by(username='manager1').first()
+        if existing_user:
+            print("⚠️ Sample data already exists. Skipping creation.")
+            print("🔐 Login credentials:")
+            print("   admin / admin123 (General Admin)")
+            print("   manager1 / manager123 (Project Manager)")
+            print("   manager2 / manager123 (Project Manager)")
+            return
         
         try:
             # Create additional users
@@ -183,7 +200,18 @@ def create_simple_data():
                 db.session.add(employee)
                 created_employees.append(employee)
             
-            # Create sample projects (simple version without project_manager_id)
+            # Commit employees first to get their IDs
+            db.session.commit()
+            
+            # Find the PROJECT_MANAGER employee for project assignment
+            project_manager_employee = None
+            for emp in created_employees:
+                if emp.role == EmployeeRole.PROJECT_MANAGER:
+                    project_manager_employee = emp
+                    break
+            
+            # Create sample projects following business rule: 
+            # Project Manager can only be assigned to one ACTIVE project at a time
             projects_data = [
                 {
                     'name': 'مشروع أمن الحدود الشرقية',
@@ -196,33 +224,36 @@ def create_simple_data():
                     'location': 'المنطقة الشرقية',
                     'mission_type': 'حراسة الحدود',
                     'priority': 'HIGH',
-                    'manager_id': 1  # admin user
+                    'manager_id': created_users[0].id if created_users else 1,  # manager1 user
+                    'project_manager_id': project_manager_employee.id if project_manager_employee else None
                 },
                 {
-                    'name': 'تدريب الكلاب الجديدة 2024',
+                    'name': 'تدريب الكلاب الجديدة 2025',
                     'code': 'PROJ-002',
                     'main_task': 'تدريب الكلاب الجديدة',
                     'description': 'برنامج تدريب شامل للكلاب الجديدة المنضمة للوحدة',
-                    'start_date': date(2024, 2, 1),
-                    'expected_completion_date': date(2024, 8, 31),
-                    'status': ProjectStatus.ACTIVE,
+                    'start_date': date(2025, 2, 1),
+                    'expected_completion_date': date(2025, 8, 31),
+                    'status': ProjectStatus.PLANNED,  # PLANNED, not ACTIVE - respects the business rule
                     'location': 'مركز التدريب الرئيسي',
                     'mission_type': 'تدريب',
                     'priority': 'MEDIUM',
-                    'manager_id': 1
+                    'manager_id': created_users[1].id if len(created_users) > 1 else 1,  # manager2 user
+                    'project_manager_id': None  # No PM assigned yet since this project is PLANNED
                 },
                 {
                     'name': 'مشروع أمن المطارات',
                     'code': 'PROJ-003',
                     'main_task': 'حراسة المطارات',
                     'description': 'تأمين المطارات الرئيسية باستخدام كلاب كشف المتفجرات',
-                    'start_date': date(2024, 3, 15),
-                    'expected_completion_date': date(2024, 11, 30),
-                    'status': ProjectStatus.PLANNED,
+                    'start_date': date(2025, 3, 15),
+                    'expected_completion_date': date(2025, 11, 30),
+                    'status': ProjectStatus.COMPLETED,  # COMPLETED project - allows PM reassignment
                     'location': 'مطارات متعددة',
                     'mission_type': 'أمن المطارات',
                     'priority': 'HIGH',
-                    'manager_id': 1
+                    'manager_id': 1,  # admin user
+                    'project_manager_id': None
                 }
             ]
             
@@ -233,6 +264,34 @@ def create_simple_data():
                     setattr(project, key, value)
                 db.session.add(project)
                 created_projects.append(project)
+            
+            # Commit projects first to establish their IDs properly
+            db.session.commit()
+            
+            # Refresh all objects to ensure proper ID assignment
+            for dog in created_dogs:
+                db.session.refresh(dog)
+            for emp in created_employees:
+                db.session.refresh(emp)
+            for proj in created_projects:
+                db.session.refresh(proj)
+            
+            # Create assignments between employees and dogs to demonstrate the system
+            # Assign project manager employee to their active project
+            if project_manager_employee and created_projects:
+                active_project = None
+                for project in created_projects:
+                    if project.status == ProjectStatus.ACTIVE:
+                        active_project = project
+                        break
+                        
+                if active_project:
+                    # Link the project manager employee to the active project
+                    active_project.assigned_employees.append(project_manager_employee)
+                    
+                    # Assign some dogs to the active project
+                    for dog in created_dogs[:3]:  # Assign first 3 dogs
+                        active_project.assigned_dogs.append(dog)
             
             db.session.commit()
             

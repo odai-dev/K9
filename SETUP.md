@@ -19,19 +19,18 @@ python -m pip install flask flask-sqlalchemy flask-login flask-migrate gunicorn 
 ```
 
 ### Step 3: Database Setup
-**IMPORTANT**: The system automatically uses SQLite for Replit compatibility.
+**IMPORTANT**: The system automatically uses PostgreSQL for production compatibility.
 
 1. **Clean Start** (recommended for imports):
 ```bash
-# Remove any existing database files
-rm -f k9_operations.db instance/k9_operations.db
-
-# Start the application - database will be created automatically
+# Database is automatically configured via Replit environment variables
+# No manual setup required - PostgreSQL database created automatically
 ```
 
-2. **Environment Variables** (optional):
-   - `DATABASE_URL`: Leave empty for SQLite (default)
+2. **Environment Variables** (automatic):
+   - `DATABASE_URL`: Automatically configured by Replit
    - `SESSION_SECRET`: Automatically generated if not set
+   - All environment variables managed by Replit infrastructure
 
 ### Step 4: Start the Application
 Click the "Run" button in Replit or use:
@@ -62,25 +61,25 @@ This creates:
 
 ## Troubleshooting Import Issues
 
-### UUID/SQLite Compatibility Errors
-If you see errors like "type 'UUID' is not supported":
+### Database Connection Errors
+If you see database connection errors:
 
-1. **Check Database File**:
+1. **Check Environment Variables**:
 ```bash
-ls -la k9_operations.db
-# If exists, remove it
-rm k9_operations.db
+# Verify DATABASE_URL is set (should be automatic in Replit)
+echo $DATABASE_URL
 ```
 
 2. **Restart Application**:
    - Stop the current run
    - Click "Run" again
-   - Database will be recreated with proper SQLite compatibility
+   - Database connection will be recreated automatically
 
-3. **Verify Code Changes**:
-   The codebase should automatically handle UUID/string conversion, but if issues persist:
-   - Check that `models.py` uses `get_uuid_column()` function
-   - Verify `routes.py` doesn't use `uuid.UUID()` conversions
+3. **Verify PostgreSQL Compatibility**:
+   The codebase handles PostgreSQL natively with UUID support:
+   - Models use native UUID columns for PostgreSQL
+   - Automatic fallback to string UUIDs for SQLite (local development)
+   - Connection pooling configured for production use
 
 ### Missing Dependencies
 ```bash
@@ -119,9 +118,10 @@ python simple_seed.py
 ## Environment-Specific Notes
 
 ### Replit Environment
-- SQLite database automatically used
-- File uploads stored in `uploads/` directory
-- Port 5000 automatically configured
+- PostgreSQL database automatically configured
+- File uploads stored in `uploads/` directory with security scanning
+- Port 5000 automatically configured with proper proxy handling
+- Environment variables managed by Replit infrastructure
 - No additional server setup needed
 
 ### Local Development

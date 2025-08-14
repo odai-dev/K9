@@ -20,16 +20,15 @@ A comprehensive web-based management system for military and police canine units
 - The project will automatically detect the Replit environment
 
 ### 2. Install Dependencies
-Dependencies are automatically installed via the `pyproject.toml` file. If needed, run:
-```bash
-python -m pip install -r requirements.txt
-```
+Dependencies are automatically installed via the `pyproject.toml` file. The system uses:
+- PostgreSQL database (automatically configured)
+- All Python dependencies auto-install on first run
 
 ### 3. Database Setup
-The application automatically uses SQLite for Replit compatibility:
-- Database file: `k9_operations.db`
-- No additional database setup required
+The application automatically uses PostgreSQL for production compatibility:
+- Database is created automatically via environment variables
 - Tables are created automatically on first run
+- UUID-compatible schema with string fallbacks
 
 ### 4. Start the Application
 Click the "Run" button or use:
@@ -95,50 +94,70 @@ python main.py
 
 ## Database Configuration
 
-### SQLite (Default/Replit)
-- Automatically used when no `DATABASE_URL` is set
-- Perfect for development and Replit hosting
-- Database file: `k9_operations.db`
+### PostgreSQL (Default/Replit)
+- Automatically configured via Replit environment variables
+- Production-ready database with connection pooling
+- UUID support with string compatibility fallbacks
+- Automatic schema creation and migrations
 
-### PostgreSQL (Production)
-Set the `DATABASE_URL` environment variable:
+### Local Development
+For local development, set the `DATABASE_URL` environment variable:
 ```bash
 export DATABASE_URL="postgresql://user:password@localhost/k9_operations"
+# Or use SQLite for local testing:
+export DATABASE_URL="sqlite:///k9_operations.db"
 ```
 
 ## Important Notes for Replit Users
 
 ### UUID Compatibility
-This system uses UUID identifiers for most entities. The codebase automatically handles SQLite/PostgreSQL compatibility:
-- **SQLite**: UUIDs stored as strings (36 characters)
-- **PostgreSQL**: Native UUID support
+This system uses UUID identifiers for most entities. The codebase automatically handles database compatibility:
+- **PostgreSQL**: Native UUID support (primary)
+- **SQLite**: UUIDs stored as strings (fallback for local development)
 
 ### File Uploads
 - Upload directory: `uploads/`
 - Maximum file size: 16MB
 - Supported formats: PDF, JPG, PNG
+- Secure filename handling with virus scanning
 
 ### RTL Support
 The interface is optimized for Arabic (RTL) layout:
-- Bootstrap 5 RTL
-- Noto Sans Arabic font
-- Right-to-left navigation and forms
+- Bootstrap 5 RTL with full Arabic language support
+- Noto Sans Arabic font for proper text rendering
+- Right-to-left navigation, forms, and data tables
+- Arabic enum values and labels throughout
+
+### Permission System
+- **Ultra-Granular Permissions**: 79 distinct permission combinations
+- **Project-Specific Access**: PROJECT_MANAGER users restricted to assigned projects
+- **Real-time Updates**: Permission changes take effect immediately
+- **Audit Logging**: All permission changes tracked with timestamps
 
 ## Project Structure
 
 ```
-├── app.py              # Flask application factory
-├── main.py             # Application entry point
-├── models.py           # Database models
-├── routes.py           # Main application routes
-├── api_routes.py       # API endpoints
-├── auth.py             # Authentication routes
-├── utils.py            # Utility functions
-├── simple_seed.py      # Sample data generator
-├── config.py           # Configuration settings
-├── templates/          # Jinja2 templates
-├── static/            # CSS, JS, and assets
-└── uploads/           # File upload storage
+├── app.py                    # Flask application factory
+├── main.py                   # Application entry point
+├── models.py                 # Database models with UUID compatibility
+├── routes.py                 # Main application routes (3000+ lines)
+├── api_routes.py             # API endpoints for attendance system
+├── auth.py                   # Authentication routes
+├── admin_routes.py           # Admin dashboard and permissions
+├── attendance_service.py     # Attendance business logic
+├── utils.py                  # Utility functions and helpers
+├── permission_utils.py       # Permission system utilities
+├── permission_decorators.py  # Permission-based route decorators
+├── project_validation.py     # Project business rules validation
+├── simple_seed.py            # Sample data generator
+├── verify_setup.py           # System verification script
+├── config.py                 # Configuration settings
+├── templates/                # Jinja2 templates (Arabic RTL)
+├── static/css/               # RTL-optimized stylesheets
+├── static/js/                # JavaScript assets
+├── uploads/                  # File upload storage
+├── attached_assets/          # Project documentation (Arabic)
+└── instance/                 # Database files
 ```
 
 ## User Roles
@@ -193,21 +212,24 @@ The interface is optimized for Arabic (RTL) layout:
 
 ### Common Issues
 
-1. **UUID Errors in SQLite**
-   - Ensure all route handlers use string IDs, not UUID objects
-   - The codebase should handle this automatically
+1. **Database Connection Errors**
+   - PostgreSQL database should auto-configure via environment variables
+   - Check that DATABASE_URL is properly set
+   - Restart the application to recreate database connections
 
-2. **Database Creation Errors**
-   - Delete existing database file: `rm k9_operations.db`
-   - Restart the application
+2. **Permission Access Issues**
+   - Ensure PROJECT_MANAGER users have proper SubPermission grants
+   - Run admin dashboard to assign granular permissions
+   - Check that project assignments are properly configured
 
 3. **Missing Dependencies**
-   - Run: `pip install -r requirements.txt`
-   - For Replit: dependencies auto-install from `pyproject.toml`
+   - Dependencies auto-install from `pyproject.toml` in Replit
+   - For local: `pip install flask flask-sqlalchemy flask-login flask-migrate gunicorn psycopg2-binary reportlab werkzeug email-validator`
 
 4. **Arabic Font Issues**
-   - Ensure internet connection for Google Fonts
+   - Ensure internet connection for Google Fonts (Noto Sans Arabic)
    - Check Bootstrap RTL CSS loading
+   - Verify RTL layout is properly configured
 
 ### Getting Help
 

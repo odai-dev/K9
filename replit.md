@@ -4,6 +4,10 @@
 This project is a comprehensive, web-based, and mobile-first K9 operations management system designed for military and police canine units. It provides an Arabic RTL-compatible UI. The system's core purpose is to manage the entire lifecycle of K9s, encompassing employee supervision, project management, training, veterinary care, breeding, and operational missions. The system aims to streamline operations, enhance efficiency, and provide robust tracking and reporting for critical canine unit functions, supporting a vision for optimized K9 deployment and resource utilization.
 
 ## Recent Updates (August 2025)
+- **Codebase Cleanup Complete**: Removed 10+ obsolete files including backup routes, test scripts, and redundant seed files - August 14, 2025
+- **Documentation Updated**: Refreshed all README, SETUP, QUICKSTART, and IMPORT_GUIDE files to reflect current PostgreSQL setup
+- **Attached Assets Cleaned**: Removed 22+ temporary pasted files and screenshots, keeping only essential Arabic documentation
+- **Simple Seed Enhanced**: Updated to follow current business rules (Project Manager single active project constraint)
 - **Migration Complete**: Successfully migrated from Replit Agent to standard Replit environment - August 14, 2025
 - **Route Issues Fixed**: Added missing breeding module routes (maturity_add, heat_cycles_add, mating_add, etc.)
 - **Form Submission Bugs Fixed**: Resolved Dog model constructor issues and file upload security problems
@@ -17,8 +21,7 @@ This project is a comprehensive, web-based, and mobile-first K9 operations manag
 - **Bug Fixes Complete**: Fixed critical form submission issues for dogs and employees add functionality
 - **Enum Mapping Fixed**: Resolved EmployeeRole enum mismatch between form values and database values
 - **Employee Roles Complete**: Added TRAINER (مدرب) and BREEDER (مربي) roles to all employee interfaces
-- **Code Quality**: Reduced LSP errors from 32 to 28, improved file upload handling and model instantiation
-- **Debugging Added**: Comprehensive error tracking and form data validation implemented
+- **Code Quality**: Significantly improved with obsolete file removal and documentation updates
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -71,8 +74,8 @@ Preferred communication style: Simple, everyday language.
 - **Fonts**: Google Fonts (Noto Sans Arabic).
 
 ### Database Requirements
-- **Primary Database**: PostgreSQL for production, SQLite for development/Replit.
-- **Auto-Detection**: System automatically detects database type from DATABASE_URL.
-- **UUID Compatibility**: Automatic string/UUID conversion for SQLite compatibility.
-- **Connection Pooling**: Configured for production PostgreSQL.
-- **Migration Support**: Alembic.
+- **Primary Database**: PostgreSQL for production and Replit environments (automatically configured).
+- **Auto-Detection**: System automatically detects database type from DATABASE_URL environment variable.
+- **UUID Compatibility**: Native UUID support for PostgreSQL, automatic string fallback for SQLite in local development.
+- **Connection Pooling**: Configured for production PostgreSQL with pool recycling and pre-ping.
+- **Migration Support**: Flask-Migrate with Alembic for schema versioning and automatic table creation.
