@@ -38,19 +38,17 @@
                                 </select>
                             </div>
                             
-                            <div class="col-md-2 mb-3">
-                                <label for="entity_type" class="form-label">نوع العضو <span class="text-danger">*</span></label>
-                                <select class="form-select" id="entity_type" name="entity_type" required>
-                                    <option value="">اختر النوع</option>
-                                    <option value="EMPLOYEE">موظف</option>
-                                    <option value="DOG">كلب</option>
-                                </select>
+                            <div class="col-md-2 mb-3" style="display: none;">
+                                <input type="hidden" id="entity_type" name="entity_type" value="EMPLOYEE">
                             </div>
                             
-                            <div class="col-md-3 mb-3">
-                                <label for="entity_id" class="form-label">العضو <span class="text-danger">*</span></label>
+                            <div class="col-md-5 mb-3">
+                                <label for="entity_id" class="form-label">الموظف <span class="text-danger">*</span></label>
                                 <select class="form-select" id="entity_id" name="entity_id" required>
-                                    <option value="">اختر العضو</option>
+                                    <option value="">اختر الموظف</option>
+                                    {% for employee in available_employees %}
+                                    <option value="{{ employee.id }}">{{ employee.name }} ({{ employee.employee_id }})</option>
+                                    {% endfor %}
                                 </select>
                             </div>
                             
@@ -84,9 +82,8 @@
                             <thead class="bg-light">
                                 <tr>
                                     <th class="border-0">الوردية</th>
-                                    <th class="border-0">نوع العضو</th>
-                                    <th class="border-0">رمز العضو</th>
-                                    <th class="border-0">اسم العضو</th>
+                                    <th class="border-0">رمز الموظف</th>
+                                    <th class="border-0">اسم الموظف</th>
                                     <th class="border-0">تاريخ التعيين</th>
                                     <th class="border-0">ملاحظات</th>
                                     <th class="border-0">الإجراءات</th>
@@ -94,22 +91,12 @@
                             </thead>
                             <tbody>
                                 {% for assignment in assignments %}
+                                {% if assignment.entity_type == EntityType.EMPLOYEE %}
                                 <tr>
                                     <td>
                                         <strong>{{ assignment.shift.name }}</strong>
                                         <br>
                                         <small class="text-muted">{{ assignment.shift.start_time.strftime('%H:%M') }} - {{ assignment.shift.end_time.strftime('%H:%M') }}</small>
-                                    </td>
-                                    <td>
-                                        {% if assignment.entity_type == EntityType.EMPLOYEE %}
-                                        <span class="badge bg-info">
-                                            <i class="fas fa-user me-1"></i>موظف
-                                        </span>
-                                        {% else %}
-                                        <span class="badge bg-warning">
-                                            <i class="fas fa-paw me-1"></i>كلب
-                                        </span>
-                                        {% endif %}
                                     </td>
                                     <td><code>{{ assignment.get_entity_code() }}</code></td>
                                     <td>{{ assignment.get_entity_name() }}</td>
@@ -125,6 +112,7 @@
                                         </div>
                                     </td>
                                 </tr>
+                                {% endif %}
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -147,27 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const entityTypeSelect = document.getElementById('entity_type');
     const entityIdSelect = document.getElementById('entity_id');
     
-    // Available entities data from server
-    const availableEmployees = {{ available_employees|tojson }};
-    const availableDogs = {{ available_dogs|tojson }};
-    
-    // Update entity options when type changes
-    entityTypeSelect.addEventListener('change', function() {
-        const selectedType = this.value;
-        entityIdSelect.innerHTML = '<option value="">اختر العضو</option>';
-        
-        if (selectedType === 'EMPLOYEE') {
-            availableEmployees.forEach(employee => {
-                const option = new Option(`${employee.name} (${employee.employee_id})`, employee.id);
-                entityIdSelect.appendChild(option);
-            });
-        } else if (selectedType === 'DOG') {
-            availableDogs.forEach(dog => {
-                const option = new Option(`${dog.name} (${dog.code})`, dog.id);
-                entityIdSelect.appendChild(option);
-            });
-        }
-    });
+    // Entity type is now fixed to EMPLOYEE, no need for dynamic loading
     
     // Handle form submission
     document.getElementById('addAssignmentForm').addEventListener('submit', function(e) {
