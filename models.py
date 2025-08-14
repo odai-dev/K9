@@ -1173,6 +1173,148 @@ class AttendanceDay(db.Model):
         return f'<AttendanceDay {self.employee.name} - {self.date} - {self.status.value}>'
 
 
+# ============================================================================
+# STANDALONE ATTENDANCE SYSTEM MODELS (NOT PROJECT-SPECIFIC)
+# ============================================================================
+
+class Shift(db.Model):
+    """Standalone shifts for general attendance tracking (not project-specific)"""
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+    name = db.Column(db.String(100), nullable=False)  # Morning, Evening, Night, or custom
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<Shift {self.name} ({self.start_time} - {self.end_time})>'
+
+class ShiftAssignment(db.Model):
+    """Assignment of employees/dogs to standalone shifts"""
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+    shift_id = db.Column(get_uuid_column(), db.ForeignKey('shift.id'), nullable=False)
+    entity_type = db.Column(db.Enum(EntityType), nullable=False)
+    entity_id = db.Column(get_uuid_column(), nullable=False)  # Points to employee.id or dog.id
+    is_active = db.Column(db.Boolean, default=True)
+    
+    assigned_date = db.Column(db.Date, default=date.today)
+    notes = db.Column(Text)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    shift = db.relationship('Shift', backref='assignments')
+    
+    # Constraint to prevent duplicate assignments
+    __table_args__ = (
+        db.UniqueConstraint('shift_id', 'entity_type', 'entity_id', name='unique_standalone_shift_entity_assignment'),
+    )
+    
+    def get_entity_name(self):
+        """Get the name of the assigned entity (employee or dog)"""
+        if self.entity_type == EntityType.EMPLOYEE:
+            employee = Employee.query.get(self.entity_id)
+            return employee.name if employee else "Unknown Employee"
+        elif self.entity_type == EntityType.DOG:
+            dog = Dog.query.get(self.entity_id)
+            return dog.name if dog else "Unknown Dog"
+        return "Unknown"
+    
+    def get_entity_code(self):
+        """Get the code/ID of the assigned entity"""
+        if self.entity_type == EntityType.EMPLOYEE:
+            employee = Employee.query.get(self.entity_id)
+            return employee.employee_id if employee else "N/A"
+        elif self.entity_type == EntityType.DOG:
+            dog = Dog.query.get(self.entity_id)
+            return dog.code if dog else "N/A"
+        return "N/A"
+    
+    def __repr__(self):
+        return f'<ShiftAssignment {self.get_entity_name()} -> {self.shift.name}>'
+
+class Attendance(db.Model):
+    """Standalone attendance records (not project-specific)"""
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+    shift_id = db.Column(get_uuid_column(), db.ForeignKey('shift.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    entity_type = db.Column(db.Enum(EntityType), nullable=False)
+    entity_id = db.Column(get_uuid_column(), nullable=False)  # Points to employee.id or dog.id
+    
+    # Attendance status
+    status = db.Column(db.Enum(AttendanceStatus), nullable=False)
+    absence_reason = db.Column(db.Enum(AbsenceReason), nullable=True)  # Only for ABSENT status
+    late_reason = db.Column(Text, nullable=True)  # Only for LATE status
+    notes = db.Column(Text)
+    
+    # Time tracking
+    check_in_time = db.Column(db.Time, nullable=True)
+    check_out_time = db.Column(db.Time, nullable=True)
+    
+    # Recorded by
+    recorded_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    shift = db.relationship('Shift', backref='attendance_records')
+    recorded_by = db.relationship('User', backref='recorded_standalone_attendance')
+    
+    # Constraints
+    __table_args__ = (
+        # Only one attendance record per entity per shift per date
+        db.UniqueConstraint('shift_id', 'date', 'entity_type', 'entity_id', 
+                          name='unique_standalone_attendance_record'),
+        # Check constraint: absence_reason required when status is ABSENT
+        db.CheckConstraint(
+            "(status != 'ABSENT') OR (status = 'ABSENT' AND absence_reason IS NOT NULL)",
+            name='standalone_absence_reason_required_for_absent'
+        ),
+    )
+    
+    def get_entity_name(self):
+        """Get the name of the entity (employee or dog)"""
+        if self.entity_type == EntityType.EMPLOYEE:
+            employee = Employee.query.get(self.entity_id)
+            return employee.name if employee else "Unknown Employee"
+        elif self.entity_type == EntityType.DOG:
+            dog = Dog.query.get(self.entity_id)
+            return dog.name if dog else "Unknown Dog"
+        return "Unknown"
+    
+    def get_entity_code(self):
+        """Get the code/ID of the entity"""
+        if self.entity_type == EntityType.EMPLOYEE:
+            employee = Employee.query.get(self.entity_id)
+            return employee.employee_id if employee else "N/A"
+        elif self.entity_type == EntityType.DOG:
+            dog = Dog.query.get(self.entity_id)
+            return dog.code if dog else "N/A"
+        return "N/A"
+    
+    def __repr__(self):
+        return f'<Attendance {self.get_entity_name()} - {self.status.value} on {self.date}>'
+        
+    def get_status_display(self):
+        """Get Arabic display text for status"""
+        status_map = {
+            'PRESENT': 'حاضر',
+            'ABSENT': 'غائب', 
+            'LATE': 'متأخر'
+        }
+        return status_map.get(self.status.value, self.status.value)
+    
+    def get_absence_reason_display(self):
+        """Get Arabic display text for absence reason"""
+        if self.absence_reason:
+            return self.absence_reason.value
+        return ''
+
+
 # Add helper method to Employee model
 def is_project_owned(self, target_date):
     """Check if employee is assigned to any active project on the given date"""

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}إنشاء وردية جديدة{% endblock %}
+
+{% block content %}
+<div class="container-fluid rtl">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="h3 text-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    إنشاء وردية جديدة
+                </h2>
+                <a href="{{ url_for('main.attendance_shifts') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>العودة للورديات
+                </a>
+            </div>
+
+            <!-- Form -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock me-2"></i>
+                        معلومات الوردية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label for="name" class="form-label">اسم الوردية <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" required
+                                       placeholder="مثال: الصباحية، المسائية، الليلية">
+                                <div class="form-text">يمكنك استخدام أسماء مخصصة للوردية</div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="start_time" class="form-label">وقت البداية <span class="text-danger">*</span></label>
+                                <input type="time" class="form-control" id="start_time" name="start_time" required>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="end_time" class="form-label">وقت النهاية <span class="text-danger">*</span></label>
+                                <input type="time" class="form-control" id="end_time" name="end_time" required>
+                            </div>
+                        </div>
+
+                        <!-- Quick Time Presets -->
+                        <div class="mb-4">
+                            <label class="form-label">أوقات جاهزة (اختياري)</label>
+                            <div class="row">
+                                <div class="col-md-4 mb-2">
+                                    <button type="button" class="btn btn-outline-info w-100 time-preset" 
+                                            data-start="06:00" data-end="14:00">
+                                        <i class="fas fa-sun me-2"></i>الصباحية (6:00 - 14:00)
+                                    </button>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <button type="button" class="btn btn-outline-warning w-100 time-preset" 
+                                            data-start="14:00" data-end="22:00">
+                                        <i class="fas fa-sun me-2"></i>المسائية (14:00 - 22:00)
+                                    </button>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <button type="button" class="btn btn-outline-dark w-100 time-preset" 
+                                            data-start="22:00" data-end="06:00">
+                                        <i class="fas fa-moon me-2"></i>الليلية (22:00 - 6:00)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('main.attendance_shifts') }}" class="btn btn-secondary">إلغاء</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>إنشاء الوردية
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Time preset buttons
+    document.querySelectorAll('.time-preset').forEach(button => {
+        button.addEventListener('click', function() {
+            document.getElementById('start_time').value = this.dataset.start;
+            document.getElementById('end_time').value = this.dataset.end;
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة تعيينات الورديات{% endblock %}
+
+{% block content %}
+<div class="container-fluid rtl">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="h3 text-primary">
+                    <i class="fas fa-user-clock me-2"></i>
+                    إدارة تعيينات الورديات
+                </h2>
+                <a href="{{ url_for('main.unified_attendance') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>العودة للرئيسية
+                </a>
+            </div>
+
+            <!-- Add Assignment Form -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-plus me-2"></i>
+                        إضافة تعيين جديد
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="addAssignmentForm">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label for="shift_id" class="form-label">الوردية <span class="text-danger">*</span></label>
+                                <select class="form-select" id="shift_id" name="shift_id" required>
+                                    <option value="">اختر الوردية</option>
+                                    {% for shift in shifts %}
+                                    <option value="{{ shift.id }}">{{ shift.name }} ({{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-2 mb-3">
+                                <label for="entity_type" class="form-label">نوع العضو <span class="text-danger">*</span></label>
+                                <select class="form-select" id="entity_type" name="entity_type" required>
+                                    <option value="">اختر النوع</option>
+                                    <option value="EMPLOYEE">موظف</option>
+                                    <option value="DOG">كلب</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="entity_id" class="form-label">العضو <span class="text-danger">*</span></label>
+                                <select class="form-select" id="entity_id" name="entity_id" required>
+                                    <option value="">اختر العضو</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="notes" class="form-label">ملاحظات</label>
+                                <input type="text" class="form-control" id="notes" name="notes" placeholder="ملاحظات اختيارية">
+                            </div>
+                            
+                            <div class="col-md-1 mb-3 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Current Assignments -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        التعيينات الحالية
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if assignments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="border-0">الوردية</th>
+                                    <th class="border-0">نوع العضو</th>
+                                    <th class="border-0">رمز العضو</th>
+                                    <th class="border-0">اسم العضو</th>
+                                    <th class="border-0">تاريخ التعيين</th>
+                                    <th class="border-0">ملاحظات</th>
+                                    <th class="border-0">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assignment in assignments %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ assignment.shift.name }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ assignment.shift.start_time.strftime('%H:%M') }} - {{ assignment.shift.end_time.strftime('%H:%M') }}</small>
+                                    </td>
+                                    <td>
+                                        {% if assignment.entity_type == EntityType.EMPLOYEE %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-user me-1"></i>موظف
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-paw me-1"></i>كلب
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td><code>{{ assignment.get_entity_code() }}</code></td>
+                                    <td>{{ assignment.get_entity_name() }}</td>
+                                    <td>{{ assignment.assigned_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ assignment.notes or '-' }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-danger remove-assignment" 
+                                                    data-assignment-id="{{ assignment.id }}"
+                                                    title="إزالة التعيين">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-user-clock fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">لا توجد تعيينات</h5>
+                        <p class="text-muted">قم بإضافة أول تعيين لبدء إدارة الحضور</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const entityTypeSelect = document.getElementById('entity_type');
+    const entityIdSelect = document.getElementById('entity_id');
+    
+    // Available entities data from server
+    const availableEmployees = {{ available_employees|tojson }};
+    const availableDogs = {{ available_dogs|tojson }};
+    
+    // Update entity options when type changes
+    entityTypeSelect.addEventListener('change', function() {
+        const selectedType = this.value;
+        entityIdSelect.innerHTML = '<option value="">اختر العضو</option>';
+        
+        if (selectedType === 'EMPLOYEE') {
+            availableEmployees.forEach(employee => {
+                const option = new Option(`${employee.name} (${employee.employee_id})`, employee.id);
+                entityIdSelect.appendChild(option);
+            });
+        } else if (selectedType === 'DOG') {
+            availableDogs.forEach(dog => {
+                const option = new Option(`${dog.name} (${dog.code})`, dog.id);
+                entityIdSelect.appendChild(option);
+            });
+        }
+    });
+    
+    // Handle form submission
+    document.getElementById('addAssignmentForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        fetch('{{ url_for("main.attendance_assignments_add") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                showAlert('success', data.message);
+                // Reload page to show new assignment
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('danger', data.error);
+            }
+        })
+        .catch(error => {
+            showAlert('danger', 'حدث خطأ في إضافة التعيين');
+            console.error('Error:', error);
+        });
+    });
+    
+    // Handle assignment removal
+    document.querySelectorAll('.remove-assignment').forEach(button => {
+        button.addEventListener('click', function() {
+            if (confirm('هل أنت متأكد من إزالة هذا التعيين؟')) {
+                const assignmentId = this.dataset.assignmentId;
+                
+                fetch(`/attendance/assignments/${assignmentId}/remove`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert('success', data.message);
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showAlert('danger', data.error);
+                    }
+                })
+                .catch(error => {
+                    showAlert('danger', 'حدث خطأ في إزالة التعيين');
+                    console.error('Error:', error);
+                });
+            }
+        });
+    });
+    
+    function showAlert(type, message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.row'));
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}
