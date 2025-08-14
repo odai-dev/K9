@@ -1,22 +1,61 @@
 /* Custom CSS for K9 Operations Management System */
 
-/* RTL Support and Arabic Font */
+/* CSS Variables for Theme Support */
+:root {
+    /* Light Theme Colors */
+    --bg-primary: #f8f9fa;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #e9ecef;
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --text-muted: #adb5bd;
+    --border-color: #dee2e6;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --card-bg: #ffffff;
+    --nav-bg: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    --nav-text: #ffffff;
+    --dropdown-bg: rgba(255, 255, 255, 0.98);
+    --input-bg: #ffffff;
+    --input-border: #ced4da;
+}
+
+[data-theme="dark"] {
+    /* Dark Theme Colors */
+    --bg-primary: #121212;
+    --bg-secondary: #1e1e1e;
+    --bg-tertiary: #2d2d2d;
+    --text-primary: #ffffff;
+    --text-secondary: #b3b3b3;
+    --text-muted: #666666;
+    --border-color: #404040;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --card-bg: #1e1e1e;
+    --nav-bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    --nav-text: #ffffff;
+    --dropdown-bg: rgba(30, 30, 30, 0.98);
+    --input-bg: #2d2d2d;
+    --input-border: #404040;
+}
+
+/* Global Transition for Smooth Theme Changes */
 * {
     font-family: 'Noto Sans Arabic', sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 body {
-    background-color: #f8f9fa;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     font-size: 14px;
     line-height: 1.6;
 }
 
 /* Navigation Styling */
 .navbar {
-    box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 20px var(--shadow-color);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+    background: var(--nav-bg) !important;
     border-bottom: 3px solid rgba(255,255,255,0.1);
     padding: 0.75rem 0;
     z-index: 1050;
@@ -46,33 +85,37 @@ body {
     margin: 0 2px;
     transition: all 0.3s ease;
     position: relative;
-    color: rgba(255,255,255,0.9) !important;
+    color: var(--nav-text) !important;
+    opacity: 0.9;
     font-size: 0.9rem;
 }
 
 .navbar-nav .nav-link:hover,
 .navbar-nav .nav-link:focus {
     background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
-    color: #ffffff !important;
+    color: var(--nav-text) !important;
+    opacity: 1;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px var(--shadow-color);
 }
 
 .navbar-nav .nav-link.active {
     background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
-    color: #ffffff !important;
+    color: var(--nav-text) !important;
+    opacity: 1;
 }
 
 .dropdown-menu {
     border: none;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    box-shadow: 0 8px 30px var(--shadow-color);
     border-radius: 12px;
     margin-top: 8px;
     padding: 0.75rem 0;
-    background: rgba(255,255,255,0.98);
+    background: var(--dropdown-bg);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     min-width: 200px;
+    border: 1px solid var(--border-color);
 }
 
 .dropdown-item {
@@ -81,19 +124,19 @@ body {
     transition: all 0.3s ease;
     border-radius: 8px;
     margin: 0 0.5rem;
-    color: #495057;
+    color: var(--text-primary);
 }
 
 .dropdown-item:hover,
 .dropdown-item:focus {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    color: #212529;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
     transform: translateX(-5px);
 }
 
 .dropdown-header {
     font-weight: 600;
-    color: #6c757d;
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-size: 0.75rem;
@@ -102,13 +145,14 @@ body {
 .dropdown-divider {
     margin: 0.5rem 1rem;
     opacity: 0.3;
+    border-color: var(--border-color);
 }
 
 /* Search styling */
 #globalSearch {
     background: rgba(255,255,255,0.1);
     border: 2px solid rgba(255,255,255,0.2);
-    color: white;
+    color: var(--nav-text);
     transition: all 0.3s ease;
 }
 
@@ -116,11 +160,314 @@ body {
     background: rgba(255,255,255,0.15);
     border-color: rgba(255,255,255,0.4);
     box-shadow: 0 0 0 0.25rem rgba(255,255,255,0.1);
-    color: white;
+    color: var(--nav-text);
 }
 
 #globalSearch::placeholder {
     color: rgba(255,255,255,0.7);
+}
+
+/* Theme Toggle Button Styling */
+#themeToggle {
+    transition: all 0.3s ease;
+    border: 2px solid rgba(255,255,255,0.3);
+}
+
+#themeToggle:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.5);
+    transform: scale(1.05);
+}
+
+/* Cards and Content Areas */
+.card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.card-header {
+    background-color: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.card-footer {
+    background-color: var(--bg-tertiary);
+    border-top: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+/* Form Controls */
+.form-control {
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--text-primary);
+}
+
+.form-control:focus {
+    background-color: var(--input-bg);
+    border-color: #007bff;
+    color: var(--text-primary);
+    box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+}
+
+.form-control::placeholder {
+    color: var(--text-muted);
+}
+
+.form-select {
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--text-primary);
+}
+
+.form-select:focus {
+    background-color: var(--input-bg);
+    border-color: #007bff;
+    color: var(--text-primary);
+}
+
+/* Tables */
+.table {
+    color: var(--text-primary);
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > td,
+.table-striped > tbody > tr:nth-of-type(odd) > th {
+    background-color: var(--bg-tertiary);
+}
+
+.table th {
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.table td {
+    border-color: var(--border-color);
+}
+
+/* Modals */
+.modal-content {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border-color);
+}
+
+.modal-title {
+    color: var(--text-primary);
+}
+
+/* Alerts */
+.alert {
+    border: 1px solid var(--border-color);
+}
+
+/* List Groups */
+.list-group-item {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.list-group-item:hover {
+    background-color: var(--bg-tertiary);
+}
+
+/* Badges */
+.badge {
+    color: white;
+}
+
+/* Progress Bars */
+.progress {
+    background-color: var(--bg-tertiary);
+}
+
+/* Breadcrumbs */
+.breadcrumb {
+    background-color: var(--bg-tertiary);
+}
+
+.breadcrumb-item a {
+    color: var(--text-secondary);
+}
+
+.breadcrumb-item.active {
+    color: var(--text-primary);
+}
+
+/* Buttons */
+.btn-outline-primary {
+    color: #007bff;
+    border-color: #007bff;
+}
+
+[data-theme="dark"] .btn-outline-primary {
+    color: #6ea8fe;
+    border-color: #6ea8fe;
+}
+
+.btn-outline-primary:hover {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+[data-theme="dark"] .btn-outline-primary:hover {
+    background-color: #6ea8fe;
+    border-color: #6ea8fe;
+    color: #000;
+}
+
+/* Secondary buttons for dark mode */
+[data-theme="dark"] .btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+[data-theme="dark"] .btn-outline-secondary {
+    color: #adb5bd;
+    border-color: #6c757d;
+}
+
+/* Links */
+a {
+    color: #007bff;
+    transition: color 0.3s ease;
+}
+
+[data-theme="dark"] a {
+    color: #6ea8fe;
+}
+
+a:hover {
+    color: #0056b3;
+}
+
+[data-theme="dark"] a:hover {
+    color: #9ec5fe;
+}
+
+/* Text colors */
+.text-muted {
+    color: var(--text-muted) !important;
+}
+
+.text-secondary {
+    color: var(--text-secondary) !important;
+}
+
+/* Border utilities */
+.border {
+    border-color: var(--border-color) !important;
+}
+
+.border-top {
+    border-top-color: var(--border-color) !important;
+}
+
+.border-bottom {
+    border-bottom-color: var(--border-color) !important;
+}
+
+.border-start {
+    border-left-color: var(--border-color) !important;
+}
+
+.border-end {
+    border-right-color: var(--border-color) !important;
+}
+
+/* Background utilities */
+.bg-light {
+    background-color: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .bg-light {
+    background-color: var(--bg-secondary) !important;
+}
+
+/* Scrollbar styling for dark mode */
+[data-theme="dark"] ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* Smooth transitions for theme changes */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Enhanced theme toggle button with animation */
+#themeToggle i {
+    transition: transform 0.3s ease;
+}
+
+#themeToggle:hover i {
+    transform: rotate(20deg);
+}
+
+/* User avatar styling for dark mode */
+[data-theme="dark"] .rounded-circle.bg-light {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Pagination for dark mode */
+[data-theme="dark"] .page-link {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .page-link:hover {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+/* Tooltip styling for dark mode */
+[data-theme="dark"] .tooltip .tooltip-inner {
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+}
+
+/* Custom dashboard stats cards enhancement */
+.stats-card {
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px var(--shadow-color);
 }
 
 /* Notification styling */
