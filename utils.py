@@ -117,37 +117,76 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
         'use_unshaped_instead_of_isolated': False
     })
     
-    def shape_mixed(text):
+    def shape_mixed(txt):
         """Reshape only Arabic segments, preserve Latin text"""
-        if not text:
-            return ""
-        text = str(text)
-        
-        # Reshape only Arabic tokens
+        if not txt:
+            return ''
+        txt = str(txt)
         def _reshape(m):
             return reshaper.reshape(m.group(0))
-        reshaped = ARABIC_RE.sub(_reshape, text)
-        # Use 'L' (left-to-right) base direction to preserve column order
-        # Only individual Arabic words will be RTL, not the entire text flow
-        return get_display(reshaped, base_dir='L')
+        reshaped = ARABIC_RE.sub(_reshape, txt)
+        return get_display(reshaped, base_dir='R')
     
-    def safe_arabic_text(text):
-        """Properly handle mixed Arabic/English text for PDF generation"""
-        if not text:
-            return ""
-        # Ensure the text is a string and properly encoded
-        if isinstance(text, bytes):
-            text = text.decode('utf-8')
-        text = str(text)
+    # Define paragraph styles
+    STYLE_AR_R = ParagraphStyle('AR_R', fontName=arabic_font, fontSize=10, alignment=2)  # RIGHT
+    STYLE_LTR = ParagraphStyle('LTR', fontName=arabic_font, fontSize=10, alignment=0)   # LEFT
+    STYLE_HDR = ParagraphStyle('HDR', fontName=arabic_font, fontSize=11, alignment=2, textColor=colors.whitesmoke)
+    
+    def para_ar(v):
+        """Create Arabic paragraph with right alignment"""
+        return Paragraph(shape_mixed('' if v is None else str(v)), STYLE_AR_R)
+    
+    def para_ltr(v):
+        """Create Latin paragraph with left alignment"""
+        return Paragraph('' if v is None else str(v), STYLE_LTR)
+    
+    def hdr(text_ar):
+        """Create header paragraph"""
+        return Paragraph(shape_mixed(text_ar), STYLE_HDR)
+    
+    def build_training_table(training_sessions):
+        from reportlab.lib.units import mm
+        header = [
+            hdr('رقم'),
+            hdr('اسم الكلب'),
+            hdr('المدرب'),
+            hdr('الفئة'),
+            hdr('الموضوع'),
+            hdr('التاريخ'),
+            hdr('المدة (دقيقة)'),
+            hdr('التقييم')
+        ]
         
-        # Check if text contains any Arabic characters
-        if ARABIC_RE.search(text):
-            try:
-                return shape_mixed(text)
-            except Exception as e:
-                print(f"Arabic text processing error: {e}")
-                return text
-        return text
+        rows = [header]
+        for i, session in enumerate(training_sessions, start=1):
+            category_map = {
+                'OBEDIENCE': 'طاعة', 'DETECTION': 'كشف', 'AGILITY': 'رشاقة',
+                'ATTACK': 'هجوم', 'FITNESS': 'لياقة'
+            }
+            
+            rows.append([
+                para_ltr(i),
+                para_ar(session.dog.name if session.dog else ''),
+                para_ar(session.trainer.name if session.trainer else ''),
+                para_ar(category_map.get(session.category.value, session.category.value)),
+                para_ar(session.subject or ''),
+                para_ltr(session.session_date.strftime('%Y-%m-%d') if session.session_date else ''),
+                para_ltr(str(session.duration) if session.duration else ''),
+                para_ar(f"{session.success_rating}/10" if session.success_rating else '')
+            ])
+        
+        col_widths = [12*mm, 30*mm, 25*mm, 20*mm, 35*mm, 25*mm, 20*mm, 25*mm]
+        table = Table(rows, repeatRows=1, colWidths=col_widths)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#305496')),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#305496')),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('ALIGN', (0,1), (0,-1), 'LEFT'),  # رقم
+            ('ALIGN', (5,1), (5,-1), 'LEFT'),  # التاريخ
+            ('ALIGN', (6,1), (6,-1), 'LEFT'),  # المدة
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.lightgrey])
+        ]))
+        return table
 
     # Generate a unique filename and file path
     filename = f"report_{report_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
@@ -186,80 +225,99 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
     # Leave space beneath the header
     story.append(Spacer(1, 60))
 
-    # Helper to build tables with proper mixed language support
-    def build_table(data, header_bg_color):
-        # Convert all cells to Paragraphs with proper font handling
-        from reportlab.platypus import Paragraph
+    # Helper to build specific report tables
+    def build_dogs_table(dogs):
+        from reportlab.lib.units import mm
+        header = [
+            hdr('رقم'),
+            hdr('اسم الكلب'),
+            hdr('الكود'),
+            hdr('السلالة'),
+            hdr('الجنس'),
+            hdr('الحالة'),
+            hdr('الموقع'),
+        ]
         
-        # Create styles for Arabic and mixed content
-        arabic_style = ParagraphStyle(
-            'ArabicCell',
-            parent=normal_style,
-            fontName=arabic_font,
-            fontSize=9,
-            alignment=2,  # RIGHT align for Arabic
-            leading=12
-        )
-        
-        latin_style = ParagraphStyle(
-            'LatinCell', 
-            parent=normal_style,
-            fontName=arabic_font,  # Use same font to avoid mixing issues
-            fontSize=9,
-            alignment=1,  # CENTER align for codes/numbers
-            leading=12
-        )
-        
-        def make_cell_paragraph(text, is_header=False):
-            """Convert text to Paragraph with proper font selection"""
-            if not text:
-                return Paragraph("", latin_style)
+        rows = [header]
+        for i, d in enumerate(dogs, start=1):
+            gender_ar = 'ذكر' if d.gender.value == 'MALE' else 'أنثى'
+            status_ar = {
+                'ACTIVE': 'نشط', 'RETIRED': 'متقاعد', 
+                'DECEASED': 'متوفى', 'TRAINING': 'تدريب'
+            }.get(d.current_status.value, d.current_status.value)
             
-            text = str(text)
-            # For codes/IDs, don't apply Arabic processing
-            if re.match(r'^[A-Za-z0-9\-_\.]+$', text):
-                return Paragraph(text, latin_style)
-            # Mixed or Arabic content - apply careful processing
-            else:
-                # Only apply reshaping if there's actual Arabic content
-                if ARABIC_RE.search(text):
-                    processed_text = safe_arabic_text(text)
-                else:
-                    processed_text = text
-                return Paragraph(processed_text, arabic_style)
+            rows.append([
+                para_ltr(i),
+                para_ar(d.name or ''),
+                para_ltr(d.code or ''),
+                para_ar(d.breed or ''),
+                para_ar(gender_ar),
+                para_ar(status_ar),
+                para_ar(d.location or ''),
+            ])
         
-        # Process header row
-        header_row = [make_cell_paragraph('م', True)]  # Row number header
-        for col in data[0]:
-            header_row.append(make_cell_paragraph(col, True))
-        
-        # Process data rows
-        table_data = [header_row]
-        for idx, row in enumerate(data[1:], start=1):
-            data_row = [Paragraph(str(idx), latin_style)]  # Row number
-            for cell in row:
-                data_row.append(make_cell_paragraph(cell, False))
-            table_data.append(data_row)
-        
-        table = Table(table_data, repeatRows=1)
+        col_widths = [12*mm, 35*mm, 25*mm, 30*mm, 18*mm, 25*mm, 30*mm]
+        table = Table(rows, repeatRows=1, colWidths=col_widths)
         table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), header_bg_color),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('GRID', (0, 0), (-1, -1), 0.6, header_bg_color),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.lightgrey]),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('LEFTPADDING', (0, 0), (-1, -1), 6),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 6),
-            ('TOPPADDING', (0, 0), (-1, -1), 3),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 3)
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#603913')),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#603913')),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('ALIGN', (0,1), (0,-1), 'LEFT'),  # رقم
+            ('ALIGN', (2,1), (2,-1), 'LEFT'),  # الكود
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.lightgrey])
+        ]))
+        return table
+    
+    def build_employees_table(employees):
+        from reportlab.lib.units import mm
+        header = [
+            hdr('رقم'),
+            hdr('الاسم'),
+            hdr('الرقم الوظيفي'),
+            hdr('الوظيفة'),
+            hdr('تاريخ التعيين'),
+            hdr('الحالة'),
+            hdr('الهاتف'),
+            hdr('البريد')
+        ]
+        
+        rows = [header]
+        role_map = {
+            'مدرب': 'مدرب', 'سائس': 'معالج', 'طبيب': 'طبيب بيطري',
+            'مسؤول مشروع': 'مدير', 'مربي': 'مربي'
+        }
+        
+        for i, emp in enumerate(employees, start=1):
+            status_ar = 'نشط' if emp.is_active else 'غير نشط'
+            rows.append([
+                para_ltr(i),
+                para_ar(emp.name),
+                para_ltr(emp.employee_id or ''),
+                para_ar(role_map.get(emp.role.value, emp.role.value)),
+                para_ltr(emp.hire_date.strftime('%Y-%m-%d') if emp.hire_date else ''),
+                para_ar(status_ar),
+                para_ltr(emp.phone or ''),
+                para_ltr(emp.email or '')
+            ])
+        
+        col_widths = [12*mm, 35*mm, 20*mm, 25*mm, 25*mm, 20*mm, 25*mm, 35*mm]
+        table = Table(rows, repeatRows=1, colWidths=col_widths)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#854321')),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#854321')),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('ALIGN', (0,1), (0,-1), 'LEFT'),  # رقم
+            ('ALIGN', (2,1), (2,-1), 'LEFT'),  # الرقم الوظيفي
+            ('ALIGN', (4,1), (4,-1), 'LEFT'),  # تاريخ التعيين
+            ('ALIGN', (6,1), (6,-1), 'LEFT'),  # الهاتف
+            ('ALIGN', (7,1), (7,-1), 'LEFT'),  # البريد
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.lightgrey])
         ]))
         return table
     
     # Collect data based on report_type
     if report_type == 'dogs':
-        story.append(Paragraph(safe_arabic_text("تقرير الكلاب"), title_style))
+        story.append(Paragraph(shape_mixed("تقرير الكلاب"), title_style))
         # Fetch dogs accessible by the current user
         dogs = Dog.query.all() if user.role.value == 'GENERAL_ADMIN' \
             else Dog.query.filter_by(assigned_to_user_id=user.id).all()
@@ -270,16 +328,9 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
             dogs = [d for d in dogs if d.current_status.value == status_filter]
         if gender_filter:
             dogs = [d for d in dogs if d.gender.value == gender_filter]
-        data = [['اسم الكلب', 'الكود', 'السلالة', 'الجنس', 'الحالة', 'الموقع']]
-        for dog in dogs:
-            gender_ar = 'ذكر' if dog.gender.value == 'MALE' else 'أنثى'
-            status_ar = {'ACTIVE': 'نشط', 'RETIRED': 'متقاعد', 'DECEASED': 'متوفى', 'TRAINING': 'تدريب'}.get(dog.current_status.value, dog.current_status.value)
-            data.append([
-                dog.name or '', dog.code or '', dog.breed or '', gender_ar, status_ar, dog.location or ''
-            ])
-        story.append(build_table(data, colors.HexColor('#603913')))  # brown header like the DOCX
+        story.append(build_dogs_table(dogs))
     elif report_type == 'employees':
-        story.append(Paragraph(safe_arabic_text("تقرير الموظفين"), title_style))
+        story.append(Paragraph(shape_mixed("تقرير الموظفين"), title_style))
         employees = Employee.query.all()
         role_filter = filters.get('role')
         status_filter = filters.get('status')
@@ -288,23 +339,10 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
         if status_filter:
             is_active = (status_filter == 'ACTIVE')
             employees = [e for e in employees if e.is_active == is_active]
-        data = [['الاسم', 'الرقم الوظيفي', 'الوظيفة', 'تاريخ التعيين', 'الحالة', 'الهاتف', 'البريد']]
-        role_map = {
-            'مدرب': 'مدرب', 'سائس': 'معالج', 'طبيب': 'طبيب بيطري',
-            'مسؤول مشروع': 'مدير', 'مربي': 'مربي'
-        }
-        for emp in employees:
-            status_ar = 'نشط' if emp.is_active else 'غير نشط'
-            data.append([
-                emp.name, emp.employee_id or '',
-                role_map.get(emp.role.value, emp.role.value),
-                emp.hire_date.strftime('%Y-%m-%d') if emp.hire_date else '',
-                status_ar,
-                emp.phone or '', emp.email or ''
-            ])
-        story.append(build_table(data, colors.HexColor('#854321')))  # a darker brown
+        story.append(build_employees_table(employees))
+    
     elif report_type == 'training':
-        story.append(Paragraph(safe_arabic_text("تقرير التدريب"), title_style))
+        story.append(Paragraph(shape_mixed("تقرير التدريب"), title_style))
         sessions = TrainingSession.query
         # Apply date range
         if start_date and end_date:
@@ -319,20 +357,7 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
         if category_filter:
             sessions = sessions.filter(TrainingSession.category == category_filter)
         sessions = sessions.all()
-        data = [['اسم الكلب', 'المدرب', 'الفئة', 'الموضوع', 'التاريخ', 'المدة (دقيقة)', 'التقييم']]
-        category_map = {
-            'OBEDIENCE': 'طاعة', 'DETECTION': 'كشف', 'AGILITY': 'رشاقة',
-            'ATTACK': 'هجوم', 'FITNESS': 'لياقة'
-        }
-        for s in sessions:
-            data.append([
-                s.dog.name, s.trainer.name,
-                category_map.get(s.category.value, s.category.value),
-                s.subject or '',
-                s.session_date.strftime('%Y-%m-%d'),
-                str(s.duration), f"{s.success_rating}/10"
-            ])
-        story.append(build_table(data, colors.HexColor('#305496')))  # deep blue header
+        story.append(build_training_table(sessions))
     elif report_type == 'veterinary':
         story.append(Paragraph(safe_arabic_text("تقرير الطبابة"), title_style))
         visits = VeterinaryVisit.query
