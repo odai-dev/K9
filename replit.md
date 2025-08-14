@@ -4,6 +4,7 @@
 This project is a comprehensive, web-based, and mobile-first K9 operations management system designed for military and police canine units. It provides an Arabic RTL-compatible UI. The system's core purpose is to manage the entire lifecycle of K9s, encompassing employee supervision, project management, training, veterinary care, breeding, and operational missions. The system aims to streamline operations, enhance efficiency, and provide robust tracking and reporting for critical canine unit functions, supporting a vision for optimized K9 deployment and resource utilization.
 
 ## Recent Updates (August 2025)
+- **Dark/Light Mode Toggle**: Implemented comprehensive dark mode with smooth transitions, theme persistence, and full UI component support - August 14, 2025
 - **Project Manager Credentials Removed**: Removed PM username/password from seed data - only admin user created by default - August 14, 2025
 - **Codebase Cleanup Complete**: Removed 10+ obsolete files including backup routes, test scripts, and redundant seed files - August 14, 2025
 - **Documentation Updated**: Refreshed all README, SETUP, QUICKSTART, and IMPORT_GUIDE files to reflect current PostgreSQL setup
