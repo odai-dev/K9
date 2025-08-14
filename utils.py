@@ -105,10 +105,14 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
             text = text.decode('utf-8')
         text = str(text)
         
-        # Check if text contains Arabic characters
-        if any('\u0600' <= char <= '\u06FF' or '\u0750' <= char <= '\u077F' or 
-               '\u08A0' <= char <= '\u08FF' or '\uFB50' <= char <= '\uFDFF' or 
-               '\uFE70' <= char <= '\uFEFF' for char in text):
+        # Check if text contains Arabic characters (more precise detection)
+        arabic_chars = sum(1 for char in text if 
+                          '\u0600' <= char <= '\u06FF' or '\u0750' <= char <= '\u077F' or 
+                          '\u08A0' <= char <= '\u08FF' or '\uFB50' <= char <= '\uFDFF' or 
+                          '\uFE70' <= char <= '\uFEFF')
+        
+        # Only apply Arabic processing if text has significant Arabic content
+        if arabic_chars > 0 and arabic_chars >= len([c for c in text if c.isalpha()]) * 0.3:
             # Apply Arabic reshaping and bidirectional text processing
             try:
                 reshaped_text = arabic_reshaper.reshape(text)
