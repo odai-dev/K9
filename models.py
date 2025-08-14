@@ -247,6 +247,48 @@ class Employee(db.Model):
     assigned_dogs = db.relationship('Dog', secondary=employee_dog_assignment, back_populates='assigned_employees')
     projects = db.relationship('Project', secondary=project_employee_assignment, back_populates='assigned_employees')
     
+    def is_project_owned(self, target_date):
+        """Check if employee is assigned to any active or planned projects for the given date"""
+        from datetime import date
+        from sqlalchemy import and_, or_
+        if isinstance(target_date, str):
+            try:
+                target_date = date.fromisoformat(target_date)
+            except ValueError:
+                return False
+        
+        # Check if employee has any active assignments for the target date
+        active_assignments = db.session.query(ProjectAssignment).join(Project).filter(
+            and_(
+                ProjectAssignment.employee_id == self.id,
+                ProjectAssignment.is_active == True,
+                or_(
+                    Project.status == ProjectStatus.ACTIVE,
+                    Project.status == ProjectStatus.PLANNED
+                ),
+                or_(
+                    # Assignment has no end date (open-ended)
+                    ProjectAssignment.assigned_to.is_(None),
+                    # Or target date is within assignment period
+                    and_(
+                        ProjectAssignment.assigned_from <= target_date,
+                        ProjectAssignment.assigned_to >= target_date
+                    )
+                ),
+                or_(
+                    # Project has no end date (open-ended)
+                    Project.end_date.is_(None),
+                    # Or target date is within project period
+                    and_(
+                        Project.start_date <= target_date,
+                        Project.end_date >= target_date
+                    )
+                )
+            )
+        ).first()
+        
+        return active_assignments is not None
+
     def __repr__(self):
         return f'<Employee {self.name} ({self.employee_id})>'
 
@@ -1315,44 +1357,6 @@ class Attendance(db.Model):
         return ''
 
 
-# Add helper method to Employee model
-def is_project_owned(self, target_date):
-    """Check if employee is assigned to any active project on the given date"""
-    from sqlalchemy import and_, or_
-    
-    # Check if employee has any active assignments that cover the target date
-    active_assignments = db.session.query(ProjectAssignment).join(Project).filter(
-        and_(
-            ProjectAssignment.employee_id == self.id,
-            ProjectAssignment.is_active == True,
-            or_(
-                Project.status == ProjectStatus.ACTIVE,
-                Project.status == ProjectStatus.PLANNED
-            ),
-            or_(
-                # Assignment has no end date (open-ended)
-                ProjectAssignment.assigned_to.is_(None),
-                # Or target date is within assignment period
-                and_(
-                    ProjectAssignment.assigned_from <= target_date,
-                    ProjectAssignment.assigned_to >= target_date
-                )
-            ),
-            or_(
-                # Project has no end date (open-ended)
-                Project.end_date.is_(None),
-                # Or target date is within project period
-                and_(
-                    Project.start_date <= target_date,
-                    Project.end_date >= target_date
-                )
-            )
-        )
-    ).first()
-    
-    return active_assignments is not None
-
-# Add the method to Employee class
-Employee.is_project_owned = is_project_owned
+# All model methods are properly defined within their respective classes
 
 
