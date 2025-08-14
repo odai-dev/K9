@@ -127,6 +127,16 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
         reshaped = ARABIC_RE.sub(_reshape, txt)
         return get_display(reshaped, base_dir='R')
     
+    def safe_arabic_text(txt):
+        """Safe Arabic text processing for direct canvas drawing"""
+        if not txt:
+            return ''
+        txt = str(txt)
+        def _reshape(m):
+            return reshaper.reshape(m.group(0))
+        reshaped = ARABIC_RE.sub(_reshape, txt)
+        return get_display(reshaped, base_dir='R')
+    
     # Define paragraph styles
     STYLE_AR_R = ParagraphStyle('AR_R', fontName=arabic_font, fontSize=10, alignment=2)  # RIGHT
     STYLE_LTR = ParagraphStyle('LTR', fontName=arabic_font, fontSize=10, alignment=0)   # LEFT
@@ -314,6 +324,43 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.lightgrey])
         ]))
         return table
+    
+    def build_table(data, header_color):
+        """Build a generic table with Arabic/RTL support"""
+        from reportlab.lib.units import mm
+        
+        # Convert first row (headers) to proper format
+        if data and len(data) > 0:
+            header_row = [hdr(cell) for cell in data[0]]
+            data_rows = []
+            
+            # Convert data rows
+            for row in data[1:]:
+                converted_row = []
+                for cell in row:
+                    if isinstance(cell, str) and ARABIC_RE.search(cell):
+                        converted_row.append(para_ar(cell))
+                    else:
+                        converted_row.append(para_ltr(str(cell)))
+                data_rows.append(converted_row)
+            
+            # Combine header and data
+            all_rows = [header_row] + data_rows
+            
+            # Calculate column widths (distribute evenly)
+            num_cols = len(data[0]) if data else 1
+            col_width = 190 / num_cols  # Total available width distributed
+            col_widths = [col_width*mm] * num_cols
+            
+            table = Table(all_rows, repeatRows=1, colWidths=col_widths)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,0), header_color),
+                ('GRID', (0,0), (-1,-1), 0.5, header_color),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.lightgrey])
+            ]))
+            return table
+        return None
     
     # Collect data based on report_type
     if report_type == 'dogs':
