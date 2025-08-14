@@ -17,7 +17,7 @@ from models import (Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCyc
                    Shift, ShiftAssignment, Attendance)
 from utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
 import os
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import uuid
 
 main_bp = Blueprint('main', __name__)
@@ -1748,7 +1748,7 @@ def reports_preview():
             if filters.get('age'):
                 age_min = filters['age'].get('min')
                 age_max = filters['age'].get('max')
-                dog_age = (datetime.now().date() - dog.date_of_birth).days / 365 if dog.date_of_birth else 0
+                dog_age = (datetime.now().date() - dog.birth_date).days / 365 if dog.birth_date else 0
                 if age_min and dog_age < float(age_min):
                     include = False
                 if age_max and dog_age > float(age_max):
@@ -1787,7 +1787,7 @@ def reports_preview():
                 'الجنس': 'ذكر' if dog.gender.value == 'MALE' else 'أنثى',
                 'الحالة': {'ACTIVE': 'نشط', 'RETIRED': 'متقاعد', 'DECEASED': 'متوفى', 'TRAINING': 'تدريب'}.get(dog.current_status.value, ''),
                 'الموقع': dog.location or '',
-                'العمر': str(int((datetime.now().date() - dog.date_of_birth).days / 365)) + ' سنة' if dog.date_of_birth else 'غير محدد'
+                'العمر': str(int((datetime.now().date() - dog.birth_date).days / 365)) + ' سنة' if dog.birth_date else 'غير محدد'
             })
     
     elif report_type == 'employees':

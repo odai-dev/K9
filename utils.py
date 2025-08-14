@@ -73,8 +73,19 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
             arabic_font = 'Amiri'
         else:
             arabic_font = 'Helvetica'  # Fallback to default font
-    except:
+    except Exception as e:
+        print(f"Font registration error: {e}")
         arabic_font = 'Helvetica'  # Fallback if font registration fails
+    
+    # Function to ensure Arabic text is properly encoded
+    def safe_arabic_text(text):
+        """Ensure Arabic text is properly encoded for PDF generation"""
+        if not text:
+            return ""
+        # Ensure the text is a string and properly encoded
+        if isinstance(text, bytes):
+            text = text.decode('utf-8')
+        return str(text)
 
     # Generate a unique filename and file path
     filename = f"report_{report_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
@@ -106,21 +117,22 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
         # Day/Date placeholders on the right
         canvas_obj.setFont(arabic_font, 12)
         canvas_obj.drawRightString(width - doc_obj.rightMargin, height - doc_obj.topMargin + 50,
-                                   f"اليوم:               ")
+                                   safe_arabic_text("اليوم:               "))
         canvas_obj.drawRightString(width - doc_obj.rightMargin, height - doc_obj.topMargin + 30,
-                                   f"التاريخ:          /  /     ")
+                                   safe_arabic_text("التاريخ:          /  /     "))
 
     # Leave space beneath the header
     story.append(Spacer(1, 60))
 
     # Helper to build tables with coloured header row and numbered column
     def build_table(data, header_bg_color):
-        # Prepend row numbers
+        # Prepend row numbers and apply safe Arabic text handling
         numbered_data = []
-        header = ['م'] + data[0]
+        header = [safe_arabic_text('م')] + [safe_arabic_text(col) for col in data[0]]
         numbered_data.append(header)
         for idx, row in enumerate(data[1:], start=1):
-            numbered_data.append([str(idx)] + row)
+            safe_row = [str(idx)] + [safe_arabic_text(str(cell)) for cell in row]
+            numbered_data.append(safe_row)
         table = Table(numbered_data, repeatRows=1)
         table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), header_bg_color),
@@ -134,7 +146,7 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
     
     # Collect data based on report_type
     if report_type == 'dogs':
-        story.append(Paragraph("تقرير الكلاب", title_style))
+        story.append(Paragraph(safe_arabic_text("تقرير الكلاب"), title_style))
         # Fetch dogs accessible by the current user
         dogs = Dog.query.all() if user.role.value == 'GENERAL_ADMIN' \
             else Dog.query.filter_by(assigned_to_user_id=user.id).all()
@@ -154,7 +166,7 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
             ])
         story.append(build_table(data, colors.HexColor('#603913')))  # brown header like the DOCX
     elif report_type == 'employees':
-        story.append(Paragraph("تقرير الموظفين", title_style))
+        story.append(Paragraph(safe_arabic_text("تقرير الموظفين"), title_style))
         employees = Employee.query.all()
         role_filter = filters.get('role')
         status_filter = filters.get('status')
@@ -179,7 +191,7 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
             ])
         story.append(build_table(data, colors.HexColor('#854321')))  # a darker brown
     elif report_type == 'training':
-        story.append(Paragraph("تقرير التدريب", title_style))
+        story.append(Paragraph(safe_arabic_text("تقرير التدريب"), title_style))
         sessions = TrainingSession.query
         # Apply date range
         if start_date and end_date:
@@ -209,7 +221,7 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
             ])
         story.append(build_table(data, colors.HexColor('#305496')))  # deep blue header
     elif report_type == 'veterinary':
-        story.append(Paragraph("تقرير الطبابة", title_style))
+        story.append(Paragraph(safe_arabic_text("تقرير الطبابة"), title_style))
         visits = VeterinaryVisit.query
         if start_date and end_date:
             visits = visits.filter(VeterinaryVisit.visit_date >= start_date,
@@ -233,7 +245,7 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
             ])
         story.append(build_table(data, colors.HexColor('#008080')))  # teal header
     elif report_type == 'breeding':
-        story.append(Paragraph("تقرير التكاثر", title_style))
+        story.append(Paragraph(safe_arabic_text("تقرير التكاثر"), title_style))
         cycles = BreedingCycle.query
         if start_date and end_date:
             cycles = cycles.filter(BreedingCycle.mating_date >= start_date,
@@ -261,7 +273,7 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
             ])
         story.append(build_table(data, colors.HexColor('#008000')))  # green header
     elif report_type == 'projects':
-        story.append(Paragraph("تقرير المشاريع", title_style))
+        story.append(Paragraph(safe_arabic_text("تقرير المشاريع"), title_style))
         projects = Project.query
         if start_date and end_date:
             projects = projects.filter(Project.start_date >= start_date,
@@ -289,15 +301,15 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
 
     # Add generation timestamp and user
     story.append(Spacer(1, 20))
-    story.append(Paragraph(f"تم إنشاء التقرير في: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", normal_style))
-    story.append(Paragraph(f"بواسطة: {user.full_name}", normal_style))
+    story.append(Paragraph(safe_arabic_text(f"تم إنشاء التقرير في: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"), normal_style))
+    story.append(Paragraph(safe_arabic_text(f"بواسطة: {user.full_name}"), normal_style))
 
     # Add notes and signature lines as seen in the DOCX templates
     story.append(Spacer(1, 40))
-    story.append(Paragraph("ملاحظات:", header_style))
+    story.append(Paragraph(safe_arabic_text("ملاحظات:"), header_style))
     story.append(Spacer(1, 60))
-    story.append(Paragraph("اسم المسؤول: ..............................     التوقيع: ..............................", normal_style))
-    story.append(Paragraph("اسم المدير: ..............................     التوقيع: ..............................", normal_style))
+    story.append(Paragraph(safe_arabic_text("اسم المسؤول: ..............................     التوقيع: .............................."), normal_style))
+    story.append(Paragraph(safe_arabic_text("اسم المدير: ..............................     التوقيع: .............................."), normal_style))
     
     # Build PDF with header
     doc.build(story, onFirstPage=build_header)
