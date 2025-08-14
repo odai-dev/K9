@@ -3,7 +3,9 @@
 Simple seed script to add sample data to the K9 Operations Management System
 
 This script creates realistic sample data that follows all current business rules:
-- Project Managers can only be assigned to ONE active project at a time
+- Only creates employee and dog sample data, no additional user accounts
+- Projects are managed by the admin user only
+- Project Managers (employees) can only be assigned to ONE active project at a time
 - Projects have proper status transitions (PLANNED -> ACTIVE -> COMPLETED)
 - Employees are properly assigned to projects with role-based permissions
 - Dogs are assigned to projects and handlers appropriately
@@ -24,47 +26,17 @@ def create_simple_data():
         print("🌱 Adding sample data to K9 Operations Management System...")
         
         # Check if sample data already exists
-        existing_user = User.query.filter_by(username='manager1').first()
-        if existing_user:
+        existing_dog = Dog.query.filter_by(code='K9-001').first()
+        existing_employee = Employee.query.filter_by(employee_id='EMP-001').first()
+        if existing_dog or existing_employee:
             print("⚠️ Sample data already exists. Skipping creation.")
             print("🔐 Login credentials:")
             print("   admin / admin123 (General Admin)")
-            print("   manager1 / manager123 (Project Manager)")
-            print("   manager2 / manager123 (Project Manager)")
             return
         
         try:
-            # Create additional users
-            users_data = [
-                {
-                    'username': 'manager1',
-                    'email': 'manager1@k9ops.com',
-                    'password': 'manager123',
-                    'role': UserRole.PROJECT_MANAGER,
-                    'full_name': 'أحمد محمد العلي',
-                    'active': True
-                },
-                {
-                    'username': 'manager2',
-                    'email': 'manager2@k9ops.com', 
-                    'password': 'manager123',
-                    'role': UserRole.PROJECT_MANAGER,
-                    'full_name': 'فاطمة سعد الدين',
-                    'active': True
-                }
-            ]
-            
+            # No additional users created - only admin user exists
             created_users = []
-            for user_data in users_data:
-                user = User()
-                user.username = user_data['username']
-                user.email = user_data['email']
-                user.password_hash = generate_password_hash(user_data['password'])
-                user.role = user_data['role']
-                user.full_name = user_data['full_name']
-                user.active = user_data['active']
-                db.session.add(user)
-                created_users.append(user)
             
             # Create sample dogs
             dogs_data = [
@@ -224,7 +196,7 @@ def create_simple_data():
                     'location': 'المنطقة الشرقية',
                     'mission_type': 'حراسة الحدود',
                     'priority': 'HIGH',
-                    'manager_id': created_users[0].id if created_users else 1,  # manager1 user
+                    'manager_id': 1,  # admin user
                     'project_manager_id': project_manager_employee.id if project_manager_employee else None
                 },
                 {
@@ -238,7 +210,7 @@ def create_simple_data():
                     'location': 'مركز التدريب الرئيسي',
                     'mission_type': 'تدريب',
                     'priority': 'MEDIUM',
-                    'manager_id': created_users[1].id if len(created_users) > 1 else 1,  # manager2 user
+                    'manager_id': 1,  # admin user
                     'project_manager_id': None  # No PM assigned yet since this project is PLANNED
                 },
                 {
@@ -297,15 +269,12 @@ def create_simple_data():
             
             print("✅ Sample data created successfully!")
             print("📊 Created:")
-            print(f"   👥 {len(created_users)} additional users")
             print(f"   🐕 {len(created_dogs)} dogs")
             print(f"   👨‍💼 {len(created_employees)} employees")
             print(f"   📋 {len(created_projects)} projects")
             print()
             print("🔐 Login credentials:")
             print("   admin / admin123 (General Admin)")
-            print("   manager1 / manager123 (Project Manager)")
-            print("   manager2 / manager123 (Project Manager)")
             
         except Exception as e:
             db.session.rollback()
