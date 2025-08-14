@@ -53,9 +53,7 @@ Default admin account:
 - **Username**: `admin`
 - **Password**: `admin123`
 
-Additional test accounts (after running seed script):
-- **Username**: `manager1` **Password**: `manager123`
-- **Username**: `manager2` **Password**: `manager123`
+Note: Only admin user is created by default. Project Manager users must be created manually through the admin interface.
 
 ## Local Development Setup
 

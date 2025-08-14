@@ -15,7 +15,7 @@ Click "Run" button → Wait for "✓ Default admin user created"
 ```bash
 python simple_seed.py
 ```
-Creates 5 dogs, 4 employees, 3 projects + test accounts
+Creates 5 dogs, 4 employees, 3 projects (admin user only)
 
 ### 4. Verify Everything Works (Optional)
 ```bash
