@@ -12,7 +12,9 @@ from models import (Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCyc
                    project_employee_assignment, project_dog_assignment,
                    # New attendance models
                    ProjectShift, ProjectShiftAssignment, ProjectAttendance,
-                   EntityType, AttendanceStatus, AbsenceReason, AttendanceDay)
+                   EntityType, AttendanceStatus, AbsenceReason, AttendanceDay,
+                   # Standalone attendance models
+                   Shift, ShiftAssignment, Attendance)
 from utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
 import os
 from datetime import datetime, date
@@ -2486,18 +2488,553 @@ def toggle_user_status(user_id):
 @main_bp.route('/attendance')
 @login_required
 def unified_attendance():
-    """Unified Global Attendance page - GENERAL_ADMIN only"""
+    """Main attendance dashboard - standalone attendance system"""
     # Only GENERAL_ADMIN can access unified attendance
     if current_user.role != UserRole.GENERAL_ADMIN:
         flash('ليس لديك صلاحية للوصول إلى نظام الحضور الموحد', 'error')
         return redirect(url_for('main.dashboard'))
     
-    # Get current date
+    # Get current date and basic statistics
     today = date.today()
     
-    return render_template('attendance/index.html', 
+    # Get all active shifts
+    shifts = Shift.query.filter_by(is_active=True).all()
+    
+    # Statistics for today
+    stats = {}
+    if shifts:
+        total_assignments = 0
+        present_count = 0
+        absent_count = 0
+        late_count = 0
+        
+        for shift in shifts:
+            shift_assignments = ShiftAssignment.query.filter_by(shift_id=shift.id, is_active=True).count()
+            total_assignments += shift_assignments
+            
+            shift_present = Attendance.query.filter_by(
+                shift_id=shift.id,
+                date=today,
+                status=AttendanceStatus.PRESENT
+            ).count()
+            
+            shift_absent = Attendance.query.filter_by(
+                shift_id=shift.id,
+                date=today,
+                status=AttendanceStatus.ABSENT
+            ).count()
+            
+            shift_late = Attendance.query.filter_by(
+                shift_id=shift.id,
+                date=today,
+                status=AttendanceStatus.LATE
+            ).count()
+            
+            present_count += shift_present
+            absent_count += shift_absent
+            late_count += shift_late
+        
+        stats = {
+            'total_assignments': total_assignments,
+            'present': present_count,
+            'absent': absent_count,
+            'late': late_count,
+            'recorded': present_count + absent_count + late_count
+        }
+    else:
+        stats = {
+            'total_assignments': 0,
+            'present': 0,
+            'absent': 0,
+            'late': 0,
+            'recorded': 0
+        }
+    
+    return render_template('attendance/dashboard.html', 
                          today=today,
+                         shifts=shifts,
+                         stats=stats,
                          AttendanceStatus=AttendanceStatus)
+
+@main_bp.route('/attendance/shifts')
+@login_required
+def attendance_shifts():
+    """Manage standalone shifts"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('ليس لديك صلاحية للوصول إلى إدارة الورديات', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    shifts = Shift.query.order_by(Shift.start_time).all()
+    return render_template('attendance/shifts.html', shifts=shifts)
+
+@main_bp.route('/attendance/shifts/add', methods=['GET', 'POST'])
+@login_required
+def attendance_shifts_add():
+    """Add new shift"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('ليس لديك صلاحية لإضافة ورديات', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    if request.method == 'POST':
+        try:
+            shift = Shift(
+                name=request.form['name'],
+                start_time=datetime.strptime(request.form['start_time'], '%H:%M').time(),
+                end_time=datetime.strptime(request.form['end_time'], '%H:%M').time(),
+                is_active=True
+            )
+            
+            db.session.add(shift)
+            db.session.commit()
+            
+            log_audit(current_user.id, AuditAction.CREATE, 'Shift', shift.id,
+                     description=f'Created shift {shift.name}')
+            
+            flash('تم إنشاء الوردية بنجاح', 'success')
+            return redirect(url_for('main.attendance_shifts'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'خطأ في إنشاء الوردية: {str(e)}', 'error')
+    
+    return render_template('attendance/shift_add.html')
+
+@main_bp.route('/attendance/shifts/<shift_id>/edit', methods=['GET', 'POST'])
+@login_required
+def attendance_shifts_edit(shift_id):
+    """Edit shift"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('ليس لديك صلاحية لتعديل الورديات', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    shift = Shift.query.get_or_404(shift_id)
+    
+    if request.method == 'POST':
+        try:
+            shift.name = request.form['name']
+            shift.start_time = datetime.strptime(request.form['start_time'], '%H:%M').time()
+            shift.end_time = datetime.strptime(request.form['end_time'], '%H:%M').time()
+            shift.is_active = 'is_active' in request.form
+            
+            db.session.commit()
+            
+            log_audit(current_user.id, AuditAction.EDIT, 'Shift', shift.id,
+                     description=f'Updated shift {shift.name}')
+            
+            flash('تم تحديث الوردية بنجاح', 'success')
+            return redirect(url_for('main.attendance_shifts'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'خطأ في تحديث الوردية: {str(e)}', 'error')
+    
+    return render_template('attendance/shift_edit.html', shift=shift)
+
+@main_bp.route('/attendance/assignments')
+@login_required
+def attendance_assignments():
+    """Manage shift assignments"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('ليس لديك صلاحية للوصول إلى تعيينات الورديات', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    assignments = ShiftAssignment.query.filter_by(is_active=True).all()
+    shifts = Shift.query.filter_by(is_active=True).all()
+    
+    # Get available employees and dogs (not assigned to active projects)
+    today = date.today()
+    available_employees = []
+    available_dogs = []
+    
+    # Get all employees
+    all_employees = Employee.query.filter_by(is_active=True).all()
+    for employee in all_employees:
+        # Check if employee is assigned to any active project
+        if not employee.is_project_owned(today):
+            available_employees.append(employee)
+    
+    # Get all dogs
+    all_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+    for dog in all_dogs:
+        # Check if dog is assigned to any active project
+        active_project_assignment = ProjectAssignment.query.join(Project).filter(
+            ProjectAssignment.dog_id == dog.id,
+            ProjectAssignment.is_active == True,
+            Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])
+        ).first()
+        
+        if not active_project_assignment:
+            available_dogs.append(dog)
+    
+    return render_template('attendance/assignments.html', 
+                         assignments=assignments,
+                         shifts=shifts,
+                         available_employees=available_employees,
+                         available_dogs=available_dogs,
+                         EntityType=EntityType)
+
+@main_bp.route('/attendance/assignments/add', methods=['POST'])
+@login_required
+def attendance_assignments_add():
+    """Add shift assignment"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        return jsonify({'success': False, 'error': 'ليس لديك صلاحية لإضافة تعيينات'}), 403
+    
+    try:
+        shift_id = request.form['shift_id']
+        entity_type = request.form['entity_type']
+        entity_id = request.form['entity_id']
+        notes = request.form.get('notes', '')
+        
+        # Check if assignment already exists
+        existing = ShiftAssignment.query.filter_by(
+            shift_id=shift_id,
+            entity_type=EntityType(entity_type),
+            entity_id=entity_id,
+            is_active=True
+        ).first()
+        
+        if existing:
+            return jsonify({'success': False, 'error': 'هذا العضو مُعيَّن بالفعل لهذه الوردية'})
+        
+        # Create new assignment
+        assignment = ShiftAssignment(
+            shift_id=shift_id,
+            entity_type=EntityType(entity_type),
+            entity_id=entity_id,
+            notes=notes,
+            is_active=True
+        )
+        
+        db.session.add(assignment)
+        db.session.commit()
+        
+        log_audit(current_user.id, AuditAction.CREATE, 'ShiftAssignment', assignment.id,
+                 description=f'Assigned {assignment.get_entity_name()} to shift')
+        
+        return jsonify({'success': True, 'message': 'تم التعيين بنجاح'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'خطأ في التعيين: {str(e)}'})
+
+@main_bp.route('/attendance/record')
+@login_required
+def attendance_record():
+    """Daily attendance recording"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('ليس لديك صلاحية لتسجيل الحضور', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    # Get selected date (default to today)
+    selected_date_str = request.args.get('date', date.today().strftime('%Y-%m-%d'))
+    selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+    
+    # Get selected shift (default to first active shift)
+    shift_id = request.args.get('shift_id')
+    shifts = Shift.query.filter_by(is_active=True).order_by(Shift.start_time).all()
+    
+    if not shifts:
+        flash('لا توجد ورديات نشطة. يرجى إنشاء وردية أولاً', 'warning')
+        return redirect(url_for('main.attendance_shifts'))
+    
+    if shift_id:
+        selected_shift = Shift.query.get_or_404(shift_id)
+    else:
+        selected_shift = shifts[0]
+        shift_id = selected_shift.id
+    
+    # Get assignments for selected shift
+    assignments = ShiftAssignment.query.filter_by(
+        shift_id=shift_id,
+        is_active=True
+    ).all()
+    
+    # Get existing attendance records for the date and shift
+    attendance_records = {}
+    existing_records = Attendance.query.filter_by(
+        shift_id=shift_id,
+        date=selected_date
+    ).all()
+    
+    for record in existing_records:
+        key = f"{record.entity_type.value}_{record.entity_id}"
+        attendance_records[key] = record
+    
+    return render_template('attendance/record.html',
+                         shifts=shifts,
+                         selected_shift=selected_shift,
+                         selected_date=selected_date,
+                         assignments=assignments,
+                         attendance_records=attendance_records,
+                         AttendanceStatus=AttendanceStatus,
+                         AbsenceReason=AbsenceReason,
+                         EntityType=EntityType)
+
+@main_bp.route('/attendance/record/save', methods=['POST'])
+@login_required
+def attendance_record_save():
+    """Save individual attendance record"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        return jsonify({'success': False, 'error': 'ليس لديك صلاحية لتسجيل الحضور'}), 403
+    
+    try:
+        data = request.json
+        shift_id = data['shift_id']
+        entity_type = data['entity_type']
+        entity_id = data['entity_id']
+        attendance_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+        status = data['status']
+        absence_reason = data.get('absence_reason')
+        late_reason = data.get('late_reason')
+        notes = data.get('notes', '')
+        check_in_time = data.get('check_in_time')
+        check_out_time = data.get('check_out_time')
+        
+        # Validate that entity is assigned to this shift
+        assignment = ShiftAssignment.query.filter_by(
+            shift_id=shift_id,
+            entity_type=EntityType(entity_type),
+            entity_id=entity_id,
+            is_active=True
+        ).first()
+        
+        if not assignment:
+            return jsonify({'success': False, 'error': 'هذا العضو غير مُعيَّن لهذه الوردية'})
+        
+        # Set default absence reason if absent and no reason provided
+        if status == 'ABSENT' and (not absence_reason or absence_reason.strip() == ''):
+            absence_reason = 'NO_REASON'
+        
+        # Check if record already exists
+        existing_record = Attendance.query.filter_by(
+            shift_id=shift_id,
+            date=attendance_date,
+            entity_type=EntityType(entity_type),
+            entity_id=entity_id
+        ).first()
+        
+        if existing_record:
+            # Update existing record
+            existing_record.status = AttendanceStatus(status)
+            existing_record.absence_reason = AbsenceReason[absence_reason] if absence_reason and absence_reason.strip() else None
+            existing_record.late_reason = late_reason if status == 'LATE' else None
+            existing_record.notes = notes
+            existing_record.check_in_time = datetime.strptime(check_in_time, '%H:%M').time() if check_in_time else None
+            existing_record.check_out_time = datetime.strptime(check_out_time, '%H:%M').time() if check_out_time else None
+            existing_record.updated_at = datetime.utcnow()
+            
+            record = existing_record
+        else:
+            # Create new record
+            record = Attendance(
+                shift_id=shift_id,
+                date=attendance_date,
+                entity_type=EntityType(entity_type),
+                entity_id=entity_id,
+                status=AttendanceStatus(status),
+                absence_reason=AbsenceReason[absence_reason] if absence_reason and absence_reason.strip() else None,
+                late_reason=late_reason if status == 'LATE' else None,
+                notes=notes,
+                check_in_time=datetime.strptime(check_in_time, '%H:%M').time() if check_in_time else None,
+                check_out_time=datetime.strptime(check_out_time, '%H:%M').time() if check_out_time else None,
+                recorded_by_user_id=current_user.id
+            )
+            db.session.add(record)
+        
+        db.session.commit()
+        
+        log_audit(current_user.id, AuditAction.CREATE, 'Attendance', record.id,
+                 description=f'Recorded attendance for {record.get_entity_name()}: {status}')
+        
+        return jsonify({'success': True, 'message': 'تم تسجيل الحضور بنجاح'})
+        
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'خطأ في تسجيل الحضور: {str(e)}'})
+
+@main_bp.route('/attendance/bulk', methods=['POST'])
+@login_required
+def attendance_bulk():
+    """Bulk attendance operations"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        return jsonify({'success': False, 'error': 'ليس لديك صلاحية للعمليات المجمعة'}), 403
+    
+    try:
+        data = request.json
+        action = data['action']  # 'mark_all_present' or 'mark_all_absent'
+        shift_id = data['shift_id']
+        attendance_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+        absence_reason = data.get('absence_reason', 'NO_REASON') if action == 'mark_all_absent' else None
+        
+        # Get all assignments for this shift
+        assignments = ShiftAssignment.query.filter_by(
+            shift_id=shift_id,
+            is_active=True
+        ).all()
+        
+        updated_count = 0
+        
+        for assignment in assignments:
+            # Check if record already exists
+            existing_record = Attendance.query.filter_by(
+                shift_id=shift_id,
+                date=attendance_date,
+                entity_type=assignment.entity_type,
+                entity_id=assignment.entity_id
+            ).first()
+            
+            if action == 'mark_all_present':
+                status = AttendanceStatus.PRESENT
+                reason = None
+            else:  # mark_all_absent
+                status = AttendanceStatus.ABSENT
+                reason = AbsenceReason[absence_reason] if absence_reason else AbsenceReason.NO_REASON
+            
+            if existing_record:
+                existing_record.status = status
+                existing_record.absence_reason = reason
+                existing_record.late_reason = None
+                existing_record.updated_at = datetime.utcnow()
+            else:
+                record = Attendance(
+                    shift_id=shift_id,
+                    date=attendance_date,
+                    entity_type=assignment.entity_type,
+                    entity_id=assignment.entity_id,
+                    status=status,
+                    absence_reason=reason,
+                    recorded_by_user_id=current_user.id
+                )
+                db.session.add(record)
+            
+            updated_count += 1
+        
+        db.session.commit()
+        
+        log_audit(current_user.id, AuditAction.CREATE, 'Attendance', None,
+                 description=f'Bulk attendance action: {action} for {updated_count} entities')
+        
+        return jsonify({'success': True, 'message': f'تم تحديث حضور {updated_count} عضو بنجاح'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'خطأ في العملية المجمعة: {str(e)}'})
+
+@main_bp.route('/attendance/reports')
+@login_required
+def attendance_reports():
+    """Generate attendance reports"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('ليس لديك صلاحية لإنشاء التقارير', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    # Show report form
+    shifts = Shift.query.filter_by(is_active=True).all()
+    return render_template('attendance/report.html', shifts=shifts)
+
+@main_bp.route('/attendance/report/generate', methods=['POST'])
+@login_required
+def attendance_report_generate():
+    """Generate and download attendance report"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d').date()
+        end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d').date()
+        shift_id = request.form.get('shift_id')
+        
+        if start_date > end_date:
+            flash('تاريخ البداية يجب أن يكون قبل تاريخ النهاية', 'error')
+            return redirect(url_for('main.attendance_reports'))
+        
+        # Build query
+        query = Attendance.query.filter(
+            Attendance.date >= start_date,
+            Attendance.date <= end_date
+        )
+        
+        if shift_id:
+            query = query.filter_by(shift_id=shift_id)
+            shift = Shift.query.get(shift_id)
+            report_title = f"تقرير حضور - {shift.name} - من {start_date} إلى {end_date}"
+        else:
+            report_title = f"تقرير حضور شامل - من {start_date} إلى {end_date}"
+        
+        records = query.order_by(Attendance.date.desc(), Attendance.shift_id).all()
+        
+        # Generate CSV
+        import csv
+        import io
+        from flask import Response
+        
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # CSV Header
+        writer.writerow([
+            'التاريخ', 'الوردية', 'نوع العضو', 'رمز العضو', 'اسم العضو', 
+            'الحالة', 'سبب الغياب', 'سبب التأخير', 'وقت الدخول', 'وقت الخروج', 'ملاحظات'
+        ])
+        
+        for record in records:
+            writer.writerow([
+                record.date.strftime('%Y-%m-%d'),
+                record.shift.name,
+                'موظف' if record.entity_type == EntityType.EMPLOYEE else 'كلب',
+                record.get_entity_code(),
+                record.get_entity_name(),
+                record.get_status_display(),
+                record.get_absence_reason_display(),
+                record.late_reason or '',
+                record.check_in_time.strftime('%H:%M') if record.check_in_time else '',
+                record.check_out_time.strftime('%H:%M') if record.check_out_time else '',
+                record.notes or ''
+            ])
+        
+        output.seek(0)
+        
+        # Create response
+        response = Response(
+            output.getvalue(),
+            content_type='text/csv; charset=utf-8-sig'
+        )
+        filename = f'attendance_report_{start_date}_{end_date}.csv'
+        response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+        
+        log_audit(current_user.id, AuditAction.EXPORT, 'Attendance', None,
+                 description=f'Generated attendance report for {start_date} to {end_date}')
+        
+        return response
+        
+    except Exception as e:
+        flash(f'خطأ في إنشاء التقرير: {str(e)}', 'error')
+        return redirect(url_for('main.attendance_reports'))
+
+@main_bp.route('/attendance/assignments/<assignment_id>/remove', methods=['POST'])
+@login_required
+def attendance_assignments_remove(assignment_id):
+    """Remove shift assignment"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        return jsonify({'success': False, 'error': 'ليس لديك صلاحية لإزالة التعيينات'}), 403
+    
+    try:
+        assignment = ShiftAssignment.query.get_or_404(assignment_id)
+        assignment.is_active = False
+        
+        db.session.commit()
+        
+        log_audit(current_user.id, AuditAction.DELETE, 'ShiftAssignment', assignment.id,
+                 description=f'Removed assignment for {assignment.get_entity_name()}')
+        
+        return jsonify({'success': True, 'message': 'تم إزالة التعيين بنجاح'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'خطأ في إزالة التعيين: {str(e)}'})
 
 
 
