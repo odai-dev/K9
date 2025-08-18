@@ -106,3 +106,9 @@ with app.app_context():
     from attendance_reporting_api import bp as reports_attendance_api_bp
     app.register_blueprint(reports_attendance_ui_bp, url_prefix='/reports/attendance')
     app.register_blueprint(reports_attendance_api_bp, url_prefix='/api/reports/attendance')
+    
+    # Add route to serve uploaded files
+    from flask import send_from_directory
+    @app.route('/uploads/<path:filename>')
+    def uploaded_file(filename):
+        return send_from_directory('uploads', filename)
