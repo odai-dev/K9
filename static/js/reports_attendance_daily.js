@@ -81,8 +81,15 @@ class DailyAttendanceReport {
     }
 
     showSuccess(message) {
-        document.getElementById('success-message').textContent = message;
+        const successElement = document.getElementById('success-message');
         const successAlert = document.getElementById('success-alert');
+        
+        if (!successElement || !successAlert) {
+            console.log('Success:', message); // Log success since no UI elements
+            return;
+        }
+        
+        successElement.textContent = message;
         successAlert.style.display = 'block';
         successAlert.classList.add('show');
         
