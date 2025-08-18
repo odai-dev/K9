@@ -14,16 +14,16 @@ ARABIC_DAY_NAMES = {
     6: "الأحد"       # Sunday
 }
 
-# Group 1 (Left block) column headers - 8 columns
+# Group 1 (Left block) column headers - 8 columns (RTL order)
 GROUP_1_HEADERS = [
-    "م",                    # Serial number
-    "اسم الموظف",           # Employee name
-    "اسم الموظف البديل",    # Substitute employee name
-    "اسم الكلب",            # Dog name
-    "وقت الحضور",           # Check-in time
     "التوقيع",              # Signature
     "وقت الانصراف",         # Check-out time
-    "التوقيع"               # Signature
+    "التوقيع",              # Signature
+    "وقت الحضور",           # Check-in time
+    "اسم الكلب",            # Dog name
+    "اسم الموظف البديل",    # Substitute employee name
+    "اسم الموظف",           # Employee name
+    "م"                     # Serial number
 ]
 
 # Group 2 (Right block) column headers - 7 columns  
