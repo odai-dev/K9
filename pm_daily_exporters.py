@@ -181,28 +181,28 @@ def _build_main_table(data: Dict[str, Any], font_name: str) -> List[Any]:
         
         # Create table for this group
         if table_data:
-            # Column widths (reversed order with adjustments)
+            # Compact column widths for better screen fit
             col_widths = [
-                30*mm,  # المخالفات
-                18*mm,  # تقييم الأداء: المدرب
-                15*mm,  # الصحي
-                18*mm,  # المربي
-                15*mm,  # الكلب
-                20*mm,  # السائس (made bigger as requested)
-                15*mm,  # نزول ميداني
-                15*mm,  # التدريب: أخرى
-                15*mm,  # التدريب: تنشيطي
-                15*mm,  # سقاية الكلب
-                15*mm,  # تغذية الكلب
-                15*mm,  # فحص الكلب
-                12*mm,  # النظافة
-                12*mm,  # المظهر
-                12*mm,  # البطاقة
-                12*mm,  # الزي
-                20*mm,  # الفترة
-                25*mm,  # موقع الدوام
-                30*mm,  # اسم الكلب (made smaller as requested)
-                35*mm,  # اسم الموظف
+                25*mm,  # المخالفات
+                14*mm,  # تقييم الأداء: المدرب
+                12*mm,  # الصحي
+                14*mm,  # المربي
+                12*mm,  # الكلب
+                16*mm,  # السائس (kept relatively bigger)
+                12*mm,  # نزول ميداني
+                12*mm,  # التدريب: أخرى
+                12*mm,  # التدريب: تنشيطي
+                12*mm,  # سقاية الكلب
+                12*mm,  # تغذية الكلب
+                12*mm,  # فحص الكلب
+                10*mm,  # النظافة
+                10*mm,  # المظهر
+                10*mm,  # البطاقة
+                10*mm,  # الزي
+                16*mm,  # الفترة
+                20*mm,  # موقع الدوام
+                24*mm,  # اسم الكلب
+                28*mm,  # اسم الموظف
             ]
             
             table = Table(table_data, colWidths=col_widths)
@@ -215,8 +215,8 @@ def _build_main_table(data: Dict[str, Any], font_name: str) -> List[Any]:
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                 ('FONTNAME', (0, 0), (-1, -1), font_name),
-                ('FONTSIZE', (0, 0), (-1, 0), 7),   # Header font
-                ('FONTSIZE', (0, 1), (-1, -1), 6), # Data font
+                ('FONTSIZE', (0, 0), (-1, 0), 6),   # Header font - reduced for compact view
+                ('FONTSIZE', (0, 1), (-1, -1), 5), # Data font - reduced for compact view
                 ('BOTTOMPADDING', (0, 0), (-1, 0), 3),
                 ('TOPPADDING', (0, 0), (-1, -1), 2),
                 ('BOTTOMPADDING', (0, 1), (-1, -1), 2),
