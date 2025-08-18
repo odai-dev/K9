@@ -150,8 +150,8 @@ def export_daily_attendance_pdf(data: Dict[str, Any]) -> str:
             elif group.get("group_no") == 2:
                 group_2_data = group.get("rows", [])
         
-        # Create side-by-side tables for Group 1 and Group 2
-        # Group 1 Table (Left side with 8 columns)
+        # Standardize table structure - both groups use same 8-column layout
+        # Group 1 Table
         group_1_table_data = [
             [rtl(header) for header in GROUP_1_HEADERS]
         ]
@@ -174,16 +174,17 @@ def export_daily_attendance_pdf(data: Dict[str, Any]) -> str:
         while len(group_1_table_data) < 11:  # 1 header + 10 data rows
             group_1_table_data.append(["", "", "", "", "", "", "", ""])
         
-        # Group 2 Table (Right side with 7 columns)
+        # Group 2 Table - using same 8-column structure as Group 1
         group_2_table_data = [
-            [rtl(header) for header in GROUP_2_HEADERS]
+            [rtl(header) for header in GROUP_1_HEADERS]  # Use same headers as Group 1
         ]
         
-        # Add Group 2 rows
+        # Add Group 2 rows - adapt data to match Group 1 structure
         for row in group_2_data:
             table_row = [
                 str(row.get("seq_no", "")),
-                rtl(row.get("employee_or_substitute_name", "")),
+                rtl(row.get("employee_or_substitute_name", "")),  # Map to employee_name column
+                "",  # Empty substitute column since Group 2 combines employee/substitute
                 rtl(row.get("dog_name", "")),
                 row.get("check_in_time", ""),
                 "",  # Signature box (empty)
@@ -194,7 +195,7 @@ def export_daily_attendance_pdf(data: Dict[str, Any]) -> str:
         
         # Ensure minimum 8 rows for Group 2
         while len(group_2_table_data) < 9:  # 1 header + 8 data rows
-            group_2_table_data.append(["", "", "", "", "", "", ""])
+            group_2_table_data.append(["", "", "", "", "", "", "", ""])
         
         # Create Group 1 table (full width)
         group_1_table = Table(group_1_table_data, colWidths=[
@@ -218,10 +219,11 @@ def export_daily_attendance_pdf(data: Dict[str, Any]) -> str:
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightblue])
         ]))
         
-        # Create Group 2 table (full width)
+        # Create Group 2 table (same structure as Group 1)
         group_2_table = Table(group_2_table_data, colWidths=[
             0.4*inch,  # م
-            2.0*inch,  # اسم الموظف / البديل
+            1.4*inch,  # اسم الموظف
+            1.4*inch,  # اسم الموظف البديل
             1.2*inch,  # اسم الكلب
             1.0*inch,  # وقت الحضور
             0.8*inch,  # التوقيع
