@@ -130,15 +130,15 @@ def _build_main_table(data: Dict[str, Any], font_name: str) -> List[Any]:
     """Build separate tables for each group stacked vertically"""
     story = []
     
-    # Arabic column headers
+    # Arabic column headers (reversed order)
     headers = [
-        "اسم الموظف", "اسم الكلب", "موقع الدوام", "الفترة",
-        "الزي", "البطاقة", "المظهر", "النظافة",
-        "فحص الكلب", "تغذية الكلب", "سقاية الكلب",
-        "التدريب: تنشيطي", "التدريب: أخرى",
+        "المخالفات",
+        "تقييم الأداء: المدرب", "الصحي", "المربي", "الكلب", "السائس",
         "نزول ميداني",
-        "تقييم الأداء: السائس", "الكلب", "المربي", "الصحي", "المدرب",
-        "المخالفات"
+        "التدريب: أخرى", "التدريب: تنشيطي",
+        "سقاية الكلب", "تغذية الكلب", "فحص الكلب",
+        "النظافة", "المظهر", "البطاقة", "الزي",
+        "الفترة", "موقع الدوام", "اسم الكلب", "اسم الموظف"
     ]
     
     # Process RTL headers
@@ -181,28 +181,28 @@ def _build_main_table(data: Dict[str, Any], font_name: str) -> List[Any]:
         
         # Create table for this group
         if table_data:
-            # Optimize column widths for better text fit
+            # Column widths (reversed order with adjustments)
             col_widths = [
-                35*mm,  # اسم الموظف
-                35*mm,  # اسم الكلب
-                25*mm,  # موقع الدوام
-                20*mm,  # الفترة
-                12*mm,  # الزي
-                12*mm,  # البطاقة
-                12*mm,  # المظهر
-                12*mm,  # النظافة
-                15*mm,  # فحص الكلب
-                15*mm,  # تغذية الكلب
-                15*mm,  # سقاية الكلب
-                15*mm,  # التدريب: تنشيطي
-                15*mm,  # التدريب: أخرى
-                15*mm,  # نزول ميداني
-                18*mm,  # السائس
-                15*mm,  # الكلب
-                18*mm,  # المربي
-                15*mm,  # الصحي
-                18*mm,  # المدرب
                 30*mm,  # المخالفات
+                18*mm,  # تقييم الأداء: المدرب
+                15*mm,  # الصحي
+                18*mm,  # المربي
+                15*mm,  # الكلب
+                20*mm,  # السائس (made bigger as requested)
+                15*mm,  # نزول ميداني
+                15*mm,  # التدريب: أخرى
+                15*mm,  # التدريب: تنشيطي
+                15*mm,  # سقاية الكلب
+                15*mm,  # تغذية الكلب
+                15*mm,  # فحص الكلب
+                12*mm,  # النظافة
+                12*mm,  # المظهر
+                12*mm,  # البطاقة
+                12*mm,  # الزي
+                20*mm,  # الفترة
+                25*mm,  # موقع الدوام
+                30*mm,  # اسم الكلب (made smaller as requested)
+                35*mm,  # اسم الموظف
             ]
             
             table = Table(table_data, colWidths=col_widths)
@@ -243,49 +243,51 @@ def _build_row_data(row: Dict[str, Any]) -> List[str]:
     Returns:
         List of cell values for the table
     """
-    # Handle special rows
+    # Handle special rows (reversed order)
     if row.get('is_on_leave_row'):
         employee_name = rtl(row.get('on_leave_employee_name') or 'اسم الفرد المأجز')
         dog_name = rtl(row.get('on_leave_dog_name') or 'اسم الكلب')
         leave_type = rtl(row.get('on_leave_type') or '')
         note = rtl(row.get('on_leave_note') or '')
-        return [employee_name, dog_name, leave_type, note] + [''] * 16
+        # Reversed: note, leave_type, dog_name, employee_name + 16 empty
+        return [note, leave_type] + [''] * 14 + [dog_name, employee_name]
     
     if row.get('is_replacement_row'):
         employee_name = rtl(row.get('replacement_employee_name') or 'اسم الفرد البديل')
         dog_name = rtl(row.get('replacement_dog_name') or 'اسم الكلب البديل')
-        return [employee_name, dog_name] + [''] * 18
+        # Reversed: 18 empty + dog_name, employee_name
+        return [''] * 18 + [dog_name, employee_name]
     
-    # Normal row data
+    # Normal row data (reversed order to match headers)
     return [
-        rtl(row.get('employee_name', '')),
-        rtl(row.get('dog_name', '')),
-        rtl(row.get('site_name', '')),
-        rtl(row.get('shift_name', '')),
+        rtl(row.get('violations', '')),
         
-        # Checkboxes: ■ for True, □ for False
-        '■' if row.get('uniform_ok') else '□',
-        '■' if row.get('card_ok') else '□',
-        '■' if row.get('appearance_ok') else '□',
-        '■' if row.get('cleanliness_ok') else '□',
-        
-        '■' if row.get('dog_exam_done') else '□',
-        '■' if row.get('dog_fed') else '□',
-        '■' if row.get('dog_watered') else '□',
-        
-        '■' if row.get('training_tansheti') else '□',
-        '■' if row.get('training_other') else '□',
+        # Performance evaluations (reversed)
+        rtl(row.get('perf_mudarrib', '')),
+        rtl(row.get('perf_sehi', '')),
+        rtl(row.get('perf_murabbi', '')),
+        rtl(row.get('perf_dog', '')),
+        rtl(row.get('perf_sais', '')),
         
         '■' if row.get('field_deployment_done') else '□',
         
-        # Performance evaluations
-        rtl(row.get('perf_sais', '')),
-        rtl(row.get('perf_dog', '')),
-        rtl(row.get('perf_murabbi', '')),
-        rtl(row.get('perf_sehi', '')),
-        rtl(row.get('perf_mudarrib', '')),
+        '■' if row.get('training_other') else '□',
+        '■' if row.get('training_tansheti') else '□',
         
-        rtl(row.get('violations', ''))
+        '■' if row.get('dog_watered') else '□',
+        '■' if row.get('dog_fed') else '□',
+        '■' if row.get('dog_exam_done') else '□',
+        
+        # Checkboxes: ■ for True, □ for False (reversed)
+        '■' if row.get('cleanliness_ok') else '□',
+        '■' if row.get('appearance_ok') else '□',
+        '■' if row.get('card_ok') else '□',
+        '■' if row.get('uniform_ok') else '□',
+        
+        rtl(row.get('shift_name', '')),
+        rtl(row.get('site_name', '')),
+        rtl(row.get('dog_name', '')),
+        rtl(row.get('employee_name', ''))
     ]
 
 
