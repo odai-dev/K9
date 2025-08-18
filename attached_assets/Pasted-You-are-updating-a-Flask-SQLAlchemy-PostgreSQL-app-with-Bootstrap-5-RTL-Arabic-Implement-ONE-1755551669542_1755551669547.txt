@@ -1,0 +1,249 @@
+You are updating a Flask + SQLAlchemy + PostgreSQL app with Bootstrap 5 RTL (Arabic).
+Implement ONE report end-to-end: **Reports → Attendance → Unified Matrix**.
+
+PURPOSE
+- Show a matrix (grid) of employees (rows) vs dates (columns) with attendance status cells.
+- Enforce the “ownership rule”: if an employee has a project-controlled attendance on a date,
+  they MUST be excluded entirely from the unified matrix for that date.
+- Support filtering (date range, employees, projects for scoping, shifts), exporting (PDF/Excel/CSV),
+  and strict RBAC (GENERAL_ADMIN global, PROJECT_MANAGER scoped to assigned projects).
+
+========================================
+A) FILES TO CREATE / UPDATE (exact paths)
+========================================
+
+1) Package: app/reports/attendance/
+   - app/reports/attendance/unified_routes.py
+   - app/reports/attendance/unified_api.py
+   - app/reports/attendance/unified_services.py
+   - app/reports/attendance/unified_exporters.py
+
+2) Templates:
+   - templates/reports/attendance/unified_matrix.html
+   - templates/reports/attendance/_unified_filters.html
+
+3) Static:
+   - static/js/reports_attendance_unified.js
+
+4) Permissions (extend your existing system):
+   - app/utils/permissions.py  → add keys for this report
+
+5) (Re)use models added in earlier steps:
+   - ProjectAttendance (with is_project_controlled, date, status, check_in_time, check_out_time, etc.)
+   - Optional: AttendanceDayLeave (not required for this matrix)
+   No new tables are required for this step.
+
+6) Tests:
+   - tests/test_reports_attendance_unified.py
+
+========================================
+B) PERMISSIONS
+========================================
+Add keys:
+- "reports:attendance:unified:view"
+- "reports:attendance:unified:export"
+
+Decorators:
+- @require_perm("reports:attendance:unified:view") on UI + /run API
+- @require_perm("reports:attendance:unified:export") on export APIs
+
+Role rules:
+- GENERAL_ADMIN: granted both by default.
+- PROJECT_MANAGER: granted view by default; export requires explicit permission. Data must be scoped to projects they manage.
+
+========================================
+C) FILTERS & CONTRACT
+========================================
+Filters JSON (POST body):
+{
+  "date_from": "YYYY-MM-DD",        // required
+  "date_to":   "YYYY-MM-DD",        // required
+  "employee_ids": [],               // optional filter
+  "project_ids": [],                // used ONLY to scope PMs; admin can ignore or apply
+  "shift_ids": [],                  // optional
+  "include_dogs": false,            // if true, show per-employee dog assignment in a separate column
+  "status_in": ["PRESENT","ABSENT","LATE","SICK","LEAVE","REMOTE","OVERTIME"], // optional subset
+  "page": 1, "per_page": 50         // server-side pagination on employees (rows)
+}
+
+API run response contract:
+{
+  "date_from": "YYYY-MM-DD",
+  "date_to":   "YYYY-MM-DD",
+  "days": [ "YYYY-MM-DD", ... ],      // inclusive list of dates in range, ordered
+  "rows": [
+    {
+      "employee_id": "<uuid>",
+      "employee_name": "…",
+      "dog_name": "…" | null,          // only if include_dogs=true
+      "cells": [
+        {
+          "date": "YYYY-MM-DD",
+          "status": "PRESENT|ABSENT|LATE|SICK|LEAVE|REMOTE|OVERTIME|null",
+          "project_controlled": true|false,
+          "check_in_time": "HH:MM" | null,
+          "check_out_time": "HH:MM" | null,
+          "tooltip": "Arabic one-line summary for hover"
+        }
+        // one cell per day in "days"
+      ]
+    }
+  ],
+  "pagination": { "page":1, "per_page":50, "total_rows": N, "pages": P },
+  "legend": [
+     {"key":"PRESENT","label_ar":"حاضر"},
+     {"key":"ABSENT","label_ar":"غائب"},
+     {"key":"LATE","label_ar":"متأخر"},
+     {"key":"SICK","label_ar":"مرضية"},
+     {"key":"LEAVE","label_ar":"إجازة"},
+     {"key":"REMOTE","label_ar":"عن بُعد"},
+     {"key":"OVERTIME","label_ar":"عمل إضافي"}
+  ]
+}
+
+Export payload (same filters) + return:
+{ "path": "uploads/reports/YYYY/MM/unified_matrix_{YYYYMMDD}-{YYYYMMDD}.pdf" }
+(or .xlsx / .csv for other exporters)
+
+========================================
+D) BLUEPRINTS & ROUTES
+========================================
+Register in app/app.py:
+- from app.reports.attendance.unified_routes import bp as unified_ui_bp
+- from app.reports.attendance.unified_api import bp as unified_api_bp
+- app.register_blueprint(unified_ui_bp, url_prefix="/reports/attendance")
+- app.register_blueprint(unified_api_bp, url_prefix="/api/reports/attendance")
+
+UI Blueprint (unified_routes.py):
+- name: "reports_attendance_unified_ui"
+- GET /unified → renders templates/reports/attendance/unified_matrix.html
+  - Optional query params to prefill filters.
+  - Protected with @login_required + @require_perm("reports:attendance:unified:view")
+
+API Blueprint (unified_api.py):
+- name: "reports_attendance_unified_api"
+Endpoints:
+1) POST /run/unified
+   - Body: filters JSON above.
+   - Validate: date_from/date_to required; max 62 days to protect performance (hard cap).
+   - Enforce PM scoping (see E).
+   - Apply ownership rule (see E) to EXCLUDE project-controlled rows for a date from the unified matrix.
+   - Return contract in section C.
+
+2) POST /export/pdf/unified
+   - Body: same filters.
+   - Generate Arabic PDF grid with the same visible data.
+   - Save under uploads/reports/YYYY/MM/.
+   - Return {"path": "...pdf"}.
+
+3) POST /export/excel/unified and /export/csv/unified (optional but implement now if simple).
+
+All API endpoints require @login_required; export endpoints also require @require_perm("reports:attendance:unified:export").
+
+========================================
+E) DATA PROVIDER (unified_services.py)
+========================================
+Implement function:
+  get_unified_matrix(filters: dict, user) -> dict
+
+Algorithm:
+1) Parse filters (date_from..date_to inclusive). Generate ordered list "days".
+2) Determine visible employees:
+   - If GENERAL_ADMIN: all active employees unless employee_ids filter is provided.
+   - If PROJECT_MANAGER: collect employees who belong to the PM’s assigned active projects in the range. Optionally intersect with employee_ids.
+3) Ownership rule (CRITICAL):
+   - Build a subquery S for (employee_id, date) pairs where ProjectAttendance.is_project_controlled = true
+     and attendance exists for that date (any project). This marks project-controlled attendance.
+   - When composing the unified matrix, EXCLUDE any (employee, date) pair that appears in S entirely
+     (i.e., the cell becomes null and the row for that date is not counted).
+4) Pull attendance for the remaining (employee, date) pairs from ProjectAttendance where is_project_controlled = false,
+   OR from any "global/unified" source you use for non-project attendance. If none, return null cells.
+5) If filters.status_in provided, map any status not in the set to null (hide it).
+6) If include_dogs=true, resolve latest dog assignment for that employee in the range (if applicable).
+7) Build rows[] with cells[] for each date, including a concise Arabic tooltip
+   e.g., "حاضر 07:45 → 16:05" / "غائب" / "إجازة سنوية".
+8) Attach pagination (limit/offset over employee rows).
+
+Performance:
+- Pre-fetch all attendances in a single range query filtered by employees list and dates.
+- Use indexes (ix_attendance_date, ix_attendance_project_date).
+- Avoid N+1 by eager-loading employee names once and using dict lookups.
+
+========================================
+F) PDF & EXCEL EXPORT (unified_exporters.py)
+========================================
+- PDF: ReportLab, A4 landscape. Arabic RTL via app/utils/pdf_rtl.rtl().
+- Header bar (Arabic):
+  - "المصفوفة الموحدة للحضور"
+  - "الفترة: {DD/MM/YYYY} – {DD/MM/YYYY}"
+- Table structure:
+  - First column(s): "اسم الموظف" (and "اسم الكلب" if include_dogs=true)
+  - Then one column per day in "days".
+  - Cell text shows Arabic label for status; include small times if present (e.g., "حاضر\n07:45–16:05").
+  - Style project-controlled cells as **blank** (omitted from unified per rule).
+- Excel: openpyxl; same header row and columns; freeze header row and first column; autosize columns.
+- CSV: first row headers; one row per employee with a cell per date.
+
+========================================
+G) TEMPLATE & JS
+========================================
+templates/reports/attendance/unified_matrix.html:
+- Extends base.html.
+- Title: "المصفوفة الموحدة للحضور".
+- Include filters partial _unified_filters.html with:
+  - Date range pickers
+  - Employee multi-select
+  - Toggle include_dogs
+  - (Admin only) status filter checklist
+- Results area:
+  - Sticky header table in RTL.
+  - Left-most column shows employee (and optional dog) names.
+  - One column per day.
+  - Legend (colored badges): حاضر/غائب/متأخر/مرضية/إجازة/عن بُعد/عمل إضافي.
+- Actions:
+  - Export PDF / Excel / CSV buttons.
+
+static/js/reports_attendance_unified.js:
+- Debounce filter changes; POST to /api/reports/attendance/run/unified; render table.
+- Handle pagination (prev/next).
+- On export click, POST filters to export endpoint; open returned file path.
+
+========================================
+H) NAVIGATION
+========================================
+Add a menu item under Reports → Attendance:
+- "Unified Matrix" → /reports/attendance/unified
+
+========================================
+I) TESTS
+========================================
+tests/test_reports_attendance_unified.py:
+- Seed:
+  - 4 employees (E1..E4).
+  - Date range of 7 days.
+  - For E1: mark project-controlled attendance for 3 days (should be excluded those days).
+  - For E2: unified/global rows only.
+  - For E3: mix of PRESENT/ABSENT.
+  - For E4: no data (all null cells).
+- Assert:
+  - /run returns days length = 7 and correct exclusion per ownership rule.
+  - Legend keys present.
+  - Export returns path and file exists.
+
+========================================
+J) QUALITY & NOTES
+========================================
+- Validate inputs; 400 on bad dates; forbid >62 days span.
+- Respect RBAC and PM scoping strictly.
+- Use joinedload/selectinload to avoid N+1.
+- Keep Arabic strings consistent:
+  - Column labels: "اسم الموظف", "اسم الكلب"
+  - Status labels: "حاضر","غائب","متأخر","مرضية","إجازة","عن بُعد","عمل إضافي"
+- Save files in uploads/reports/YYYY/MM/.
+- Keep code modular with docstrings and type hints.
+
+IMPORTANT ARABIC RTL NOTE:
+At the very end, REVERSE the visual order of table columns in the HTML and PDF
+so that the newest date appears at the FAR LEFT and the oldest at the FAR RIGHT,
+making the grid more natural for right-to-left reading. (Generate data in chronological
+order but render columns in reversed order for Arabic RTL.)
