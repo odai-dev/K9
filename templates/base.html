@@ -133,10 +133,17 @@
                     {% endif %}
                     
                     {% if permissions.reports %}
-                    <li class="nav-item">
-                        <a class="nav-link px-3 py-2 rounded-pill" href="{{ url_for('main.reports_index') }}">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-chart-bar me-1"></i>التقارير
                         </a>
+                        <ul class="dropdown-menu shadow">
+                            <li><h6 class="dropdown-header">تقارير الحضور</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('reports_attendance_ui.daily_sheet') }}"><i class="fas fa-calendar-check me-2"></i>كشف التحضير اليومي</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">تقارير أخرى</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.reports_index') }}"><i class="fas fa-chart-line me-2"></i>التقارير العامة</a></li>
+                        </ul>
                     </li>
                     {% endif %}
                 </ul>

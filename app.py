@@ -54,6 +54,7 @@ login_manager.login_message_category = 'info'
 with app.app_context():
     # Make sure to import the models here or their tables won't be created
     import models  # noqa: F401
+    import models_attendance_reporting  # noqa: F401
 
     db.create_all()
     
@@ -99,3 +100,9 @@ with app.app_context():
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(api_bp)
     app.register_blueprint(admin_bp)
+    
+    # Register attendance reporting blueprints
+    from attendance_reporting_routes import bp as reports_attendance_ui_bp
+    from attendance_reporting_api import bp as reports_attendance_api_bp
+    app.register_blueprint(reports_attendance_ui_bp, url_prefix='/reports/attendance')
+    app.register_blueprint(reports_attendance_api_bp, url_prefix='/api/reports/attendance')
