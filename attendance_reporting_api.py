@@ -69,11 +69,9 @@ def run_daily_sheet():
             action=AuditAction.EXPORT,
             target_type='AttendanceReport',
             target_id=project_id,
-            target_name=f"Daily Sheet - {date_str}",
             description=f"Generated daily attendance sheet for project {project_id} on {date_str}",
             old_values={},
-            new_values={"report_type": "daily_sheet", "date": date_str},
-            ip_address=request.remote_addr
+            new_values={"report_type": "daily_sheet", "date": date_str}
         )
         
         return jsonify(result), 200
@@ -146,11 +144,9 @@ def export_pdf_daily_sheet():
             action=AuditAction.EXPORT,
             target_type='AttendanceReport',
             target_id=project_id,
-            target_name=f"Daily Sheet PDF - {date_str}",
             description=f"Exported daily attendance sheet PDF for project {project_id} on {date_str}",
             old_values={},
-            new_values={"report_type": "daily_sheet_pdf", "date": date_str, "file_path": pdf_path},
-            ip_address=request.remote_addr
+            new_values={"report_type": "daily_sheet_pdf", "date": date_str, "file_path": pdf_path}
         )
         
         return jsonify({"path": pdf_path}), 200
