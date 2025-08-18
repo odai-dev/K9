@@ -102,7 +102,7 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">الرئيسية</a></li>
-                <li class="breadcrumb-item"><a href="{{ url_for('main.reports') }}">التقارير</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('main.reports_index') }}">التقارير</a></li>
                 <li class="breadcrumb-item active" aria-current="page">المصفوفة الموحدة للحضور</li>
             </ol>
         </nav>
@@ -202,10 +202,12 @@
         initializeUnifiedMatrix();
         
         // Pre-fill filters if provided
-        const prefillData = {{ prefill_data | tojsonfilter | safe }};
+        {% if prefill_data %}
+        const prefillData = {{ prefill_data | tojson | safe }};
         if (prefillData) {
             prefillFilters(prefillData);
         }
+        {% endif %}
     });
 </script>
 {% endblock %}
