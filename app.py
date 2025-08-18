@@ -107,6 +107,12 @@ with app.app_context():
     app.register_blueprint(reports_attendance_ui_bp, url_prefix='/reports/attendance')
     app.register_blueprint(reports_attendance_api_bp, url_prefix='/api/reports/attendance')
     
+    # Register PM Daily Report blueprints
+    from pm_daily_routes import bp as pm_daily_ui_bp
+    from pm_daily_api import bp as pm_daily_api_bp
+    app.register_blueprint(pm_daily_ui_bp, url_prefix='/reports/attendance')
+    app.register_blueprint(pm_daily_api_bp, url_prefix='/api/reports/attendance')
+    
     # Add route to serve uploaded files
     from flask import send_from_directory
     @app.route('/uploads/<path:filename>')

@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}التقرير اليومي لمسؤول المشروع{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-file-alt ml-2"></i>
+                        التقرير اليومي لمسؤول المشروع
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- Filters -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label for="project-select" class="form-label">اختيار المشروع</label>
+                            <select id="project-select" class="form-select">
+                                <option value="">-- اختر مشروع --</option>
+                                {% for project in projects %}
+                                <option value="{{ project.id }}" 
+                                        {% if prefill_project_id == project.id|string %}selected{% endif %}>
+                                    {{ project.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="date-input" class="form-label">التاريخ</label>
+                            <input type="date" id="date-input" class="form-control" 
+                                   value="{{ prefill_date }}">
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="button" id="update-btn" class="btn btn-primary ml-2">
+                                <i class="fas fa-sync-alt ml-1"></i>
+                                تحديث
+                            </button>
+                            <button type="button" id="export-btn" class="btn btn-success" disabled>
+                                <i class="fas fa-download ml-1"></i>
+                                تصدير PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Loading indicator -->
+                    <div id="loading" class="text-center d-none">
+                        <div class="spinner-border" role="status">
+                            <span class="sr-only">جاري التحميل...</span>
+                        </div>
+                        <p class="mt-2">جاري تحميل التقرير...</p>
+                    </div>
+
+                    <!-- Error display -->
+                    <div id="error-display" class="alert alert-danger d-none" role="alert">
+                        <i class="fas fa-exclamation-triangle ml-2"></i>
+                        <span id="error-message"></span>
+                    </div>
+
+                    <!-- Report content -->
+                    <div id="report-content" class="d-none">
+                        <!-- Header info -->
+                        <div id="report-header" class="mb-4 text-center">
+                            <h4 id="report-title"></h4>
+                        </div>
+
+                        <!-- Groups container -->
+                        <div id="groups-container" class="row">
+                            <!-- Groups will be dynamically inserted here -->
+                        </div>
+
+                        <!-- Special rows section -->
+                        <div id="special-rows" class="mt-4">
+                            <h5 class="mb-3">معلومات إضافية</h5>
+                            <div id="special-rows-content">
+                                <!-- Special rows will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Group template -->
+<template id="group-template">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="group-title"></h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered mb-0">
+                        <thead class="table-light">
+                            <tr class="group-headers">
+                                <th>اسم الموظف</th>
+                                <th>اسم الكلب</th>
+                                <th>موقع الدوام</th>
+                                <th>الفترة</th>
+                                <th>الزي</th>
+                                <th>البطاقة</th>
+                                <th>المظهر</th>
+                                <th>النظافة</th>
+                                <th>فحص الكلب</th>
+                                <th>تغذية الكلب</th>
+                                <th>سقاية الكلب</th>
+                                <th>تنشيطي</th>
+                                <th>أخرى</th>
+                                <th>نزول ميداني</th>
+                                <th>السائس</th>
+                                <th>الكلب</th>
+                                <th>المربي</th>
+                                <th>الصحي</th>
+                                <th>المدرب</th>
+                                <th>المخالفات</th>
+                            </tr>
+                        </thead>
+                        <tbody class="group-body">
+                            <!-- Rows will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Row template -->
+<template id="row-template">
+    <tr>
+        <td class="employee-name"></td>
+        <td class="dog-name"></td>
+        <td class="site-name"></td>
+        <td class="shift-name"></td>
+        <td class="uniform-ok"></td>
+        <td class="card-ok"></td>
+        <td class="appearance-ok"></td>
+        <td class="cleanliness-ok"></td>
+        <td class="dog-exam-done"></td>
+        <td class="dog-fed"></td>
+        <td class="dog-watered"></td>
+        <td class="training-tansheti"></td>
+        <td class="training-other"></td>
+        <td class="field-deployment-done"></td>
+        <td class="perf-sais"></td>
+        <td class="perf-dog"></td>
+        <td class="perf-murabbi"></td>
+        <td class="perf-sehi"></td>
+        <td class="perf-mudarrib"></td>
+        <td class="violations"></td>
+    </tr>
+</template>
+
+<!-- Special row template -->
+<template id="special-row-template">
+    <div class="card mb-2">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <strong class="special-type"></strong>
+                </div>
+                <div class="col-md-3">
+                    <span class="special-employee"></span>
+                </div>
+                <div class="col-md-2">
+                    <span class="special-dog"></span>
+                </div>
+                <div class="col-md-2">
+                    <span class="special-leave-type"></span>
+                </div>
+                <div class="col-md-2">
+                    <span class="special-note"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script src="{{ url_for('static', filename='js/reports_attendance_pm_daily.js') }}"></script>
+{% endblock %}
