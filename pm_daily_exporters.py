@@ -74,14 +74,14 @@ def _generate_pdf(data: Dict[str, Any], file_path: str):
     register_arabic_fonts()
     font_name = get_arabic_font_name()
     
-    # Create document with portrait A4 for vertical stacked tables
+    # Create document with landscape A4 for wide tables stacked vertically
     doc = SimpleDocTemplate(
         file_path,
-        pagesize=A4,
-        rightMargin=20*mm,
-        leftMargin=20*mm,
-        topMargin=20*mm,
-        bottomMargin=20*mm
+        pagesize=landscape(A4),
+        rightMargin=15*mm,
+        leftMargin=15*mm,
+        topMargin=15*mm,
+        bottomMargin=15*mm
     )
     
     # Build document content
@@ -181,19 +181,45 @@ def _build_main_table(data: Dict[str, Any], font_name: str) -> List[Any]:
         
         # Create table for this group
         if table_data:
-            table = Table(table_data)
+            # Optimize column widths for better fit
+            col_widths = [
+                25*mm,  # اسم الموظف
+                25*mm,  # اسم الكلب
+                20*mm,  # موقع الدوام
+                15*mm,  # الفترة
+                8*mm,   # الزي
+                8*mm,   # البطاقة
+                8*mm,   # المظهر
+                8*mm,   # النظافة
+                10*mm,  # فحص الكلب
+                10*mm,  # تغذية الكلب
+                10*mm,  # سقاية الكلب
+                10*mm,  # التدريب: تنشيطي
+                10*mm,  # التدريب: أخرى
+                10*mm,  # نزول ميداني
+                12*mm,  # السائس
+                10*mm,  # الكلب
+                12*mm,  # المربي
+                10*mm,  # الصحي
+                12*mm,  # المدرب
+                20*mm,  # المخالفات
+            ]
             
-            # Table styling
+            table = Table(table_data, colWidths=col_widths)
+            
+            # Table styling with optimized font sizes
             table_style = [
                 # Header row styling
                 ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                 ('FONTNAME', (0, 0), (-1, -1), font_name),
-                ('FONTSIZE', (0, 0), (-1, 0), 8),
-                ('FONTSIZE', (0, 1), (-1, -1), 7),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTSIZE', (0, 0), (-1, 0), 6),   # Smaller header font
+                ('FONTSIZE', (0, 1), (-1, -1), 5), # Smaller data font
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 3),
+                ('TOPPADDING', (0, 0), (-1, -1), 1),
+                ('BOTTOMPADDING', (0, 1), (-1, -1), 1),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
             ]
             
             table.setStyle(TableStyle(table_style))
