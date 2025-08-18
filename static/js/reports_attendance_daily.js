@@ -316,8 +316,9 @@ class DailyAttendanceReport {
     downloadFile(filePath) {
         // Create a temporary download link
         const link = document.createElement('a');
-        link.href = '/' + filePath; // Prepend slash for absolute path
+        link.href = filePath.startsWith('/') ? filePath : '/' + filePath; // Ensure absolute path
         link.download = filePath.split('/').pop(); // Get filename
+        link.target = '_blank'; // Open in new tab for better browser support
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
