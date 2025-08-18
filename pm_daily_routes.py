@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 from datetime import date
 
 from permission_decorators import require_permission
-from models import Project, UserRole
+from models import Project, UserRole, ProjectStatus
 from utils import get_user_permissions
 
 # Create blueprint
@@ -32,11 +32,14 @@ def pm_daily():
     
     # Get accessible projects for filter dropdown
     if current_user.role == UserRole.GENERAL_ADMIN:
-        projects = Project.query.filter_by(active=True).order_by(Project.name).all()
+        projects = Project.query.filter(
+            Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])
+        ).order_by(Project.name).all()
     else:
         # PROJECT_MANAGER sees only managed projects
         projects = Project.query.filter(
             Project.manager_id == current_user.id,
+            Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])
         ).order_by(Project.name).all()
     
     return render_template(
