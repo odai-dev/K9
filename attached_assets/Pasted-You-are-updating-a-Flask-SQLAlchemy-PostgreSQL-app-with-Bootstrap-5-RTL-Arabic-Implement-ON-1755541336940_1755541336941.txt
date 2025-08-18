@@ -1,0 +1,247 @@
+You are updating a Flask + SQLAlchemy + PostgreSQL app with Bootstrap 5 RTL (Arabic). 
+Implement ONE report end-to-end: **Reports → Attendance → Daily Sheet** that mirrors the paper DOCX form "كشوفات تحضير المواقع-1.docx".
+
+IMPORTANT PRINCIPLES
+- Keep everything Arabic RTL in the UI.
+- Respect session auth + CSRF.
+- Respect RBAC: GENERAL_ADMIN can see all; PROJECT_MANAGER only their assigned projects.
+- Keep code modular, documented, and production-grade.
+
+========================================
+A) FILES TO CREATE / UPDATE (exact paths)
+========================================
+
+1) Create package: app/reports/attendance/
+   - app/reports/attendance/__init__.py
+   - app/reports/attendance/routes.py        # UI routes (HTML pages)
+   - app/reports/attendance/api.py           # JSON API for run/export
+   - app/reports/attendance/services.py      # data provider (stub now; fill basic query)
+   - app/reports/attendance/exporters.py     # PDF/Excel exporters (implement PDF now)
+   - app/reports/attendance/constants.py     # enums, labels, mapping for the printed sheet
+
+2) Templates (Jinja):
+   - templates/reports/attendance/daily_sheet.html
+   - templates/reports/attendance/_filters.html      # reusable filter bar
+
+3) Static:
+   - static/js/reports_attendance_daily.js
+
+4) Models / migration:
+   - app/models_attendance_reporting.py     # new models for this report
+   - migrations/versions/xxxx_daily_sheet.py  # alembic migration
+
+5) Utilities (if not present):
+   - app/utils/pdf_rtl.py     # Arabic RTL helpers (arabic_reshaper + bidi)
+   - app/utils/permissions.py # add permission keys here if this is your pattern
+   - app/utils/nav_inject.py  # safe helper to inject nav link if you use dynamic nav
+
+6) Tests:
+   - tests/test_reports_attendance_daily.py
+
+7) Seed (optional but helpful for demo):
+   - simple_seed.py  # append small function seed_attendance_daily_demo()
+
+========================================
+B) PERMISSIONS (granular)
+========================================
+Add these permission constants (adjust to your existing pattern):
+- "reports:attendance:view"
+- "reports:attendance:export"
+
+GENERAL_ADMIN: grant both by default.
+PROJECT_MANAGER: grant "view" by default; "export" only if explicitly enabled.
+
+Implement a decorator `@require_perm("reports:attendance:view")` for UI + API read, 
+and `@require_perm("reports:attendance:export")` for export endpoints.
+
+========================================
+C) DATABASE (models + migration)
+========================================
+Create file app/models_attendance_reporting.py with:
+
+- Enums:
+  - AttendanceStatus = {PRESENT, ABSENT, LATE, SICK, LEAVE, REMOTE, OVERTIME}
+  - LeaveType = {ANNUAL, SICK, EMERGENCY, OTHER}
+
+- Model: ProjectAttendance (extend if already exists)
+  Fields (in addition to your existing ones):
+    - date (Date, NOT NULL)
+    - project_id (UUID FK → project.id, NOT NULL)
+    - shift_id (UUID FK → project_shift.id, NULL)
+    - group_no (Integer, default 1, NOT NULL)   # 1 = left block, 2 = right block
+    - seq_no (Integer, default 1, NOT NULL)     # row order within the group
+    - employee_id (UUID FK → employee.id, NULL)
+    - substitute_employee_id (UUID FK → employee.id, NULL)  # used on left block
+    - dog_id (UUID FK → dog.id, NULL)
+    - check_in_time (Time, NULL)
+    - check_out_time (Time, NULL)
+    - status (Enum AttendanceStatus, NOT NULL default PRESENT)
+    - is_project_controlled (Boolean, NOT NULL default True)
+    - created_at, updated_at
+
+  Indexes:
+    - ix_attendance_date (date)
+    - ix_attendance_project_date (project_id, date)
+    - ix_attendance_group_seq (project_id, date, group_no, seq_no)
+
+  Unique constraint:
+    - uq_attendance_print_slot (project_id, date, group_no, seq_no)
+
+- Model: AttendanceDayLeave (powers the "employees on leave" mini-table)
+  Fields:
+    - id (UUID pk)
+    - project_id (UUID FK → project.id, NOT NULL)
+    - date (Date, NOT NULL)
+    - seq_no (Integer, NOT NULL, default 1)
+    - employee_id (UUID FK → employee.id, NULL)
+    - leave_type (Enum LeaveType, NOT NULL)
+    - note (String(250), NULL)
+    - created_at (DateTime, default now)
+
+  Indexes:
+    - ix_dayleave_date (date)
+    - ix_dayleave_project_date (project_id, date)
+
+  Unique constraint:
+    - uq_dayleave_print_slot (project_id, date, seq_no)
+
+Create migration migrations/versions/xxxx_daily_sheet.py:
+- Add missing ProjectAttendance columns/indexes/constraints
+- Create AttendanceDayLeave table + indexes + unique
+- Add FK for substitute_employee_id
+- Provide downgrade() to cleanly remove.
+
+========================================
+D) BLUEPRINTS & ROUTES (exact)
+========================================
+Register Blueprints in app/app.py (or wherever you register):
+- from app.reports.attendance.routes import bp as reports_attendance_ui_bp
+- from app.reports.attendance.api import bp as reports_attendance_api_bp
+- app.register_blueprint(reports_attendance_ui_bp, url_prefix="/reports/attendance")
+- app.register_blueprint(reports_attendance_api_bp, url_prefix="/api/reports/attendance")
+
+Create app/reports/attendance/routes.py:
+- Blueprint name: "reports_attendance_ui"
+- GET /daily-sheet → renders templates/reports/attendance/daily_sheet.html
+  Query params: project_id (uuid), date (YYYY-MM-DD). Both optional to open page; UI will fetch data via JS.
+- Protect with @login_required and @require_perm("reports:attendance:view")
+
+Create app/reports/attendance/api.py:
+- Blueprint name: "reports_attendance_api"
+- POST /run/daily-sheet → body {project_id, date} returns JSON contract:
+  {
+    "project_id": "...",
+    "date": "YYYY-MM-DD",
+    "day_name_ar": "...",
+    "groups": [
+      {"group_no":1,"rows":[{... as defined below ...}]},
+      {"group_no":2,"rows":[{...}]}
+    ],
+    "leaves":[{ seq_no, employee_name, leave_type, note }]
+  }
+- POST /export/pdf/daily-sheet → body {project_id, date} 
+  → Generates PDF to uploads/reports/YYYY/MM/, returns {"path": "uploads/reports/2025/08/daily_sheet_...pdf"}
+- All API routes require @login_required; /export requires @require_perm("reports:attendance:export").
+
+========================================
+E) DATA PROVIDER (services.py)
+========================================
+Implement function:
+  get_daily_sheet(project_id: UUID, date: date, user) -> dict (exact JSON contract)
+
+Rules:
+- If user is PROJECT_MANAGER, restrict to their assigned projects only.
+- Pull ProjectAttendance rows for that project/date.
+- Split into group_no=1 and group_no=2, ordered by seq_no ASC.
+- For group 1 rows, include "substitute_name" using substitute_employee_id; for group 2, omit it.
+- Map to:
+  group 1 row = {seq_no, employee_name, substitute_name, dog_name, check_in_time, check_in_signed:false, check_out_time, check_out_signed:false}
+  group 2 row = {seq_no, employee_or_substitute_name, dog_name, check_in_time, check_in_signed:false, check_out_time, check_out_signed:false}
+- Fetch AttendanceDayLeave for bottom table ordered by seq_no ASC.
+- Compute Arabic day name for the given date.
+
+Return exactly:
+{
+  "project_id": "<uuid>",
+  "date": "YYYY-MM-DD",
+  "day_name_ar": "الاثنين" | "الثلاثاء" | ...,
+  "groups": [{...},{...}],
+  "leaves": [{...}]
+}
+
+========================================
+F) EXPORT (exporters.py + utils/pdf_rtl.py)
+========================================
+- Use ReportLab + DejaVuSans + arabic_reshaper + python-bidi.
+- Implement export_daily_attendance_pdf(data: dict) -> str:
+  - Create folder uploads/reports/YYYY/MM/
+  - File name: daily_sheet_{project_code}_{YYYYMMDD}.pdf (project_code from DB; fallback to project_id).
+  - Draw Arabic headers EXACTLY as the DOCX:
+    - "اليوم: {day_name_ar}"   "التاريخ: {dd/mm/yyyy}"
+    - Two side-by-side blocks: Group 1 (8 columns), Group 2 (7 columns).
+    - Column headers (Arabic):
+      Group 1: ["م","اسم الموظف","اسم الموظف البديل","اسم الكلب","وقت الحضور","التوقيع","وقت الانصراف","التوقيع"]
+      Group 2: ["م","اسم الموظف / البديل","اسم الكلب","وقت الحضور","التوقيع","وقت الانصراف","التوقيع"]
+    - Bottom mini-table "أسماء المجازين ونوع الإجازة": columns ["#","اسم الفرد المأجز","نوع الإجازة","ملاحظة"]
+  - Signature cells are rendered as empty boxes.
+  - Return relative path string.
+
+Create app/utils/pdf_rtl.py:
+- helper `rtl(text: str) -> str` (arabic_reshaper + bidi)
+- load/register DejaVuSans if not already; fallback to Noto Sans Arabic if available.
+
+========================================
+G) TEMPLATE (daily_sheet.html) + JS
+========================================
+templates/reports/attendance/daily_sheet.html:
+- Extends base.html (RTL).
+- Title: "كشف التحضير اليومي"
+- Include _filters.html on top with:
+  - Project selector (projects the user can view),
+  - Date picker (default today).
+- Two-column table layout (CSS grid) to render Group 1 and Group 2 side-by-side using the JSON returned by API.
+- Button bar (right aligned):
+  - "تصدير PDF" → POST /api/reports/attendance/export/pdf/daily-sheet
+- Load static/js/reports_attendance_daily.js
+
+static/js/reports_attendance_daily.js:
+- On filter change, POST to /api/reports/attendance/run/daily-sheet and render both blocks + leave table.
+- On Export click, POST and then trigger a download/open the returned path.
+
+========================================
+H) NAVIGATION (add menu item)
+========================================
+In templates/base.html (or your nav partial), under "Reports":
+- Add a submenu "Attendance" → "Daily Sheet" linking to /reports/attendance/daily-sheet
+If your nav is dynamic, add an entry via your nav registry.
+
+========================================
+I) SEED (optional for quick demo)
+========================================
+In simple_seed.py add function seed_attendance_daily_demo():
+- Create one project (if none).
+- For today’s date:
+  - Insert 10 ProjectAttendance rows for group_no=1 (seq_no 1..10) including 3 rows with substitute_employee_id.
+  - Insert 8 rows for group_no=2 (seq_no 1..8).
+  - Insert 3 AttendanceDayLeave rows with leave_type variety.
+Call it from your existing seed pipeline or provide a CLI command.
+
+========================================
+J) TEST (basic)
+========================================
+tests/test_reports_attendance_daily.py:
+- Login as GENERAL_ADMIN (has permissions).
+- Seed minimal data.
+- Hit POST /api/reports/attendance/run/daily-sheet → assert JSON contract keys and lengths.
+- Hit POST /api/reports/attendance/export/pdf/daily-sheet → assert "path" and file exists.
+
+========================================
+K) STYLE & QUALITY
+========================================
+- Write docstrings on all public functions.
+- Use eager loading to avoid N+1 on names (employee, dog, project).
+- Sanitize/validate project_id and date.
+- Return 400 if missing required params; 403 if no permission; 404 if project not visible.
+- Keep Arabic labels exactly as specified above.
+
+Now implement EVERYTHING above.
