@@ -37,12 +37,12 @@ GROUP_2_HEADERS = [
     "التوقيع"               # Signature
 ]
 
-# Leave table headers - 4 columns
+# Leave table headers - 4 columns (RTL order)
 LEAVE_TABLE_HEADERS = [
-    "#",                    # Serial number
-    "اسم الفرد المأجز",     # Name of person on leave
+    "ملاحظة",                # Note
     "نوع الإجازة",          # Leave type
-    "ملاحظة"                # Note
+    "اسم الفرد المأجز",     # Name of person on leave
+    "#"                     # Serial number
 ]
 
 # Leave type Arabic mapping

@@ -265,14 +265,14 @@ def export_daily_attendance_pdf(data: Dict[str, Any]) -> str:
             [rtl(header) for header in LEAVE_TABLE_HEADERS]
         ]
         
-        # Add leave rows
+        # Add leave rows (RTL order)
         leaves = data.get("leaves", [])
         for leave in leaves:
             leave_row = [
-                str(leave.get("seq_no", "")),
-                rtl(leave.get("employee_name", "")),
+                rtl(leave.get("note", "")),
                 rtl(leave.get("leave_type", "")),
-                rtl(leave.get("note", ""))
+                rtl(leave.get("employee_name", "")),
+                str(leave.get("seq_no", ""))
             ]
             leave_table_data.append(leave_row)
         
@@ -281,10 +281,10 @@ def export_daily_attendance_pdf(data: Dict[str, Any]) -> str:
             leave_table_data.append(["", "", "", ""])
         
         leave_table = Table(leave_table_data, colWidths=[
-            0.5*inch,  # #
-            2.0*inch,  # اسم الفرد المأجز
+            2.5*inch,  # ملاحظة
             1.5*inch,  # نوع الإجازة
-            2.5*inch   # ملاحظة
+            2.0*inch,  # اسم الفرد المأجز
+            0.5*inch   # #
         ])
         
         leave_table.setStyle(TableStyle([
