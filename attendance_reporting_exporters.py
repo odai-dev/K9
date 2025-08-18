@@ -156,17 +156,17 @@ def export_daily_attendance_pdf(data: Dict[str, Any]) -> str:
             [rtl(header) for header in GROUP_1_HEADERS]
         ]
         
-        # Add Group 1 rows
+        # Add Group 1 rows (RTL column order)
         for row in group_1_data:
             table_row = [
-                str(row.get("seq_no", "")),
-                rtl(row.get("employee_name", "")),
-                rtl(row.get("substitute_name", "")),
-                rtl(row.get("dog_name", "")),
-                row.get("check_in_time", ""),
                 "",  # Signature box (empty)
                 row.get("check_out_time", ""),
-                ""   # Signature box (empty)
+                "",  # Signature box (empty)
+                row.get("check_in_time", ""),
+                rtl(row.get("dog_name", "")),
+                rtl(row.get("substitute_name", "")),
+                rtl(row.get("employee_name", "")),
+                str(row.get("seq_no", ""))
             ]
             group_1_table_data.append(table_row)
         
@@ -179,17 +179,17 @@ def export_daily_attendance_pdf(data: Dict[str, Any]) -> str:
             [rtl(header) for header in GROUP_1_HEADERS]  # Use same headers as Group 1
         ]
         
-        # Add Group 2 rows - adapt data to match Group 1 structure
+        # Add Group 2 rows - adapt data to match Group 1 RTL structure
         for row in group_2_data:
             table_row = [
-                str(row.get("seq_no", "")),
-                rtl(row.get("employee_or_substitute_name", "")),  # Map to employee_name column
-                "",  # Empty substitute column since Group 2 combines employee/substitute
-                rtl(row.get("dog_name", "")),
-                row.get("check_in_time", ""),
                 "",  # Signature box (empty)
                 row.get("check_out_time", ""),
-                ""   # Signature box (empty)
+                "",  # Signature box (empty)
+                row.get("check_in_time", ""),
+                rtl(row.get("dog_name", "")),
+                "",  # Empty substitute column since Group 2 combines employee/substitute
+                rtl(row.get("employee_or_substitute_name", "")),  # Map to employee_name column
+                str(row.get("seq_no", ""))
             ]
             group_2_table_data.append(table_row)
         
@@ -197,16 +197,16 @@ def export_daily_attendance_pdf(data: Dict[str, Any]) -> str:
         while len(group_2_table_data) < 9:  # 1 header + 8 data rows
             group_2_table_data.append(["", "", "", "", "", "", "", ""])
         
-        # Create Group 1 table (full width)
+        # Create Group 1 table (RTL column widths)
         group_1_table = Table(group_1_table_data, colWidths=[
-            0.4*inch,  # م
-            1.4*inch,  # اسم الموظف
-            1.4*inch,  # اسم الموظف البديل
-            1.2*inch,  # اسم الكلب
-            1.0*inch,  # وقت الحضور
             0.8*inch,  # التوقيع
             1.0*inch,  # وقت الانصراف
-            0.8*inch   # التوقيع
+            0.8*inch,  # التوقيع
+            1.0*inch,  # وقت الحضور
+            1.2*inch,  # اسم الكلب
+            1.4*inch,  # اسم الموظف البديل
+            1.4*inch,  # اسم الموظف
+            0.4*inch   # م
         ])
         
         group_1_table.setStyle(TableStyle([
@@ -219,16 +219,16 @@ def export_daily_attendance_pdf(data: Dict[str, Any]) -> str:
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightblue])
         ]))
         
-        # Create Group 2 table (same structure as Group 1)
+        # Create Group 2 table (same RTL structure as Group 1)
         group_2_table = Table(group_2_table_data, colWidths=[
-            0.4*inch,  # م
-            1.4*inch,  # اسم الموظف
-            1.4*inch,  # اسم الموظف البديل
-            1.2*inch,  # اسم الكلب
-            1.0*inch,  # وقت الحضور
             0.8*inch,  # التوقيع
             1.0*inch,  # وقت الانصراف
-            0.8*inch   # التوقيع
+            0.8*inch,  # التوقيع
+            1.0*inch,  # وقت الحضور
+            1.2*inch,  # اسم الكلب
+            1.4*inch,  # اسم الموظف البديل
+            1.4*inch,  # اسم الموظف
+            0.4*inch   # م
         ])
         
         group_2_table.setStyle(TableStyle([
