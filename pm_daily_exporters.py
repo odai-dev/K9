@@ -20,7 +20,7 @@ from dates_ar import format_arabic_date
 from pm_daily_services import get_pm_daily
 
 
-def export_pm_daily_pdf(project_id: str, date_str: str, user, project_code: str = None) -> Dict[str, str]:
+def export_pm_daily_pdf(project_id: str, date_str: str, user, project_code: str | None = None) -> Dict[str, str]:
     """
     Export PM Daily Report to PDF
     
@@ -74,10 +74,10 @@ def _generate_pdf(data: Dict[str, Any], file_path: str):
     register_arabic_fonts()
     font_name = get_arabic_font_name()
     
-    # Create document with landscape A4 to fit side-by-side blocks
+    # Create document with portrait A4 for vertical stacked tables
     doc = SimpleDocTemplate(
         file_path,
-        pagesize=landscape(A4),
+        pagesize=A4,
         rightMargin=20*mm,
         leftMargin=20*mm,
         topMargin=20*mm,
@@ -127,7 +127,7 @@ def _build_header(data: Dict[str, Any], font_name: str) -> List[Any]:
 
 
 def _build_main_table(data: Dict[str, Any], font_name: str) -> List[Any]:
-    """Build the main side-by-side groups table"""
+    """Build separate tables for each group stacked vertically"""
     story = []
     
     # Arabic column headers
@@ -144,65 +144,63 @@ def _build_main_table(data: Dict[str, Any], font_name: str) -> List[Any]:
     # Process RTL headers
     rtl_headers = [rtl(header) for header in headers]
     
-    # Build table data
-    table_data = []
-    
-    # Add headers row
-    table_data.append(rtl_headers)
-    
     # Process groups data
     groups = data.get('groups', [])
     
-    # Find max rows needed
-    max_rows = 0
-    if groups:
-        max_rows = max(len(group.get('rows', [])) for group in groups)
-    
-    # Build rows for both groups side by side
-    for row_idx in range(max_rows):
-        left_row_data = []
-        right_row_data = []
+    # Create a separate table for each group
+    for group in sorted(groups, key=lambda g: g.get('group_no', 0)):
+        group_no = group.get('group_no', 0)
         
-        # Group 1 (left side)
-        group_1 = next((g for g in groups if g['group_no'] == 1), None)
-        if group_1 and row_idx < len(group_1.get('rows', [])):
-            left_row_data = _build_row_data(group_1['rows'][row_idx])
-        else:
-            left_row_data = [''] * len(headers)
+        # Add group title/header
+        styles = getSampleStyleSheet()
+        group_title_style = styles['Normal'].clone('GroupTitleStyle')
+        group_title_style.fontName = font_name
+        group_title_style.fontSize = 12
+        group_title_style.alignment = TA_CENTER
         
-        # Group 2 (right side)
-        group_2 = next((g for g in groups if g['group_no'] == 2), None)
-        if group_2 and row_idx < len(group_2.get('rows', [])):
-            right_row_data = _build_row_data(group_2['rows'][row_idx])
-        else:
-            right_row_data = [''] * len(headers)
+        group_title = rtl(f"المجموعة {group_no}")
+        group_title_para = Paragraph(group_title, group_title_style)
+        story.append(group_title_para)
+        story.append(Spacer(1, 5*mm))
         
-        # Combine left and right (RTL: right group first, then left group)
-        combined_row = right_row_data + left_row_data
-        table_data.append(combined_row)
-    
-    # Create table with double width for side-by-side groups
-    if table_data:
-        table = Table(table_data)
+        # Build table data for this group
+        table_data = []
         
-        # Table styling
-        table_style = [
-            # Header row styling
-            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, -1), font_name),
-            ('FONTSIZE', (0, 0), (-1, 0), 8),
-            ('FONTSIZE', (0, 1), (-1, -1), 7),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        # Add headers row
+        table_data.append(rtl_headers)
+        
+        # Add data rows for this group
+        for row in group.get('rows', []):
+            row_data = _build_row_data(row)
+            table_data.append(row_data)
+        
+        # Add empty rows if group has no data
+        if not group.get('rows'):
+            empty_row = [''] * len(headers)
+            table_data.append(empty_row)
+        
+        # Create table for this group
+        if table_data:
+            table = Table(table_data)
             
-            # Group separation (vertical line between groups)
-            ('LINEAFTER', (len(headers)-1, 0), (len(headers)-1, -1), 2, colors.black),
-        ]
-        
-        table.setStyle(TableStyle(table_style))
-        story.append(table)
+            # Table styling
+            table_style = [
+                # Header row styling
+                ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, -1), font_name),
+                ('FONTSIZE', (0, 0), (-1, 0), 8),
+                ('FONTSIZE', (0, 1), (-1, -1), 7),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ]
+            
+            table.setStyle(TableStyle(table_style))
+            story.append(table)
+            
+            # Add space between groups
+            story.append(Spacer(1, 10*mm))
     
     return story
 
