@@ -181,28 +181,28 @@ def _build_main_table(data: Dict[str, Any], font_name: str) -> List[Any]:
         
         # Create table for this group
         if table_data:
-            # Optimize column widths for better fit
+            # Optimize column widths for better text fit
             col_widths = [
-                25*mm,  # اسم الموظف
-                25*mm,  # اسم الكلب
-                20*mm,  # موقع الدوام
-                15*mm,  # الفترة
-                8*mm,   # الزي
-                8*mm,   # البطاقة
-                8*mm,   # المظهر
-                8*mm,   # النظافة
-                10*mm,  # فحص الكلب
-                10*mm,  # تغذية الكلب
-                10*mm,  # سقاية الكلب
-                10*mm,  # التدريب: تنشيطي
-                10*mm,  # التدريب: أخرى
-                10*mm,  # نزول ميداني
-                12*mm,  # السائس
-                10*mm,  # الكلب
-                12*mm,  # المربي
-                10*mm,  # الصحي
-                12*mm,  # المدرب
-                20*mm,  # المخالفات
+                35*mm,  # اسم الموظف
+                35*mm,  # اسم الكلب
+                25*mm,  # موقع الدوام
+                20*mm,  # الفترة
+                12*mm,  # الزي
+                12*mm,  # البطاقة
+                12*mm,  # المظهر
+                12*mm,  # النظافة
+                15*mm,  # فحص الكلب
+                15*mm,  # تغذية الكلب
+                15*mm,  # سقاية الكلب
+                15*mm,  # التدريب: تنشيطي
+                15*mm,  # التدريب: أخرى
+                15*mm,  # نزول ميداني
+                18*mm,  # السائس
+                15*mm,  # الكلب
+                18*mm,  # المربي
+                15*mm,  # الصحي
+                18*mm,  # المدرب
+                30*mm,  # المخالفات
             ]
             
             table = Table(table_data, colWidths=col_widths)
@@ -213,13 +213,15 @@ def _build_main_table(data: Dict[str, Any], font_name: str) -> List[Any]:
                 ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                 ('FONTNAME', (0, 0), (-1, -1), font_name),
-                ('FONTSIZE', (0, 0), (-1, 0), 6),   # Smaller header font
-                ('FONTSIZE', (0, 1), (-1, -1), 5), # Smaller data font
+                ('FONTSIZE', (0, 0), (-1, 0), 7),   # Header font
+                ('FONTSIZE', (0, 1), (-1, -1), 6), # Data font
                 ('BOTTOMPADDING', (0, 0), (-1, 0), 3),
-                ('TOPPADDING', (0, 0), (-1, -1), 1),
-                ('BOTTOMPADDING', (0, 1), (-1, -1), 1),
+                ('TOPPADDING', (0, 0), (-1, -1), 2),
+                ('BOTTOMPADDING', (0, 1), (-1, -1), 2),
                 ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                ('WORDWRAP', (0, 0), (-1, -1), 'CJK'),  # Enable text wrapping
             ]
             
             table.setStyle(TableStyle(table_style))
