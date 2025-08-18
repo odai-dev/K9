@@ -29,8 +29,21 @@ def get_daily_sheet(project_id: str, target_date: date, user) -> Dict:
         Dictionary containing the daily sheet data in the specified JSON contract format
     """
     try:
-        # Keep as string but validate UUID format
-        project_uuid = UUID(project_id) if isinstance(project_id, str) else project_id
+        # Handle UUID compatibility - use string for SQLite
+        import os
+        database_url = os.environ.get("DATABASE_URL", "")
+        use_string_uuid = database_url.startswith("sqlite") or not database_url
+        
+        if use_string_uuid:
+            # For SQLite, keep as string and validate format
+            try:
+                UUID(project_id)  # Validate format
+                project_search_id = project_id
+            except:
+                raise ValueError("Invalid project ID format")
+        else:
+            # For PostgreSQL, convert to UUID
+            project_search_id = UUID(project_id) if isinstance(project_id, str) else project_id
         
         # Convert string to date if needed
         if isinstance(target_date, str):
@@ -44,14 +57,14 @@ def get_daily_sheet(project_id: str, target_date: date, user) -> Dict:
                 raise PermissionError("User does not have access to this project")
         
         # Get project information
-        project = Project.query.get(project_uuid)
+        project = Project.query.get(project_search_id)
         if not project:
             raise ValueError("Project not found")
         
         # Get attendance records for the date, split by groups
         group_1_query = ProjectAttendanceReporting.query.filter(
             and_(
-                ProjectAttendanceReporting.project_id == project_uuid,
+                ProjectAttendanceReporting.project_id == project_search_id,
                 ProjectAttendanceReporting.date == target_date,
                 ProjectAttendanceReporting.group_no == 1
             )
@@ -59,7 +72,7 @@ def get_daily_sheet(project_id: str, target_date: date, user) -> Dict:
         
         group_2_query = ProjectAttendanceReporting.query.filter(
             and_(
-                ProjectAttendanceReporting.project_id == project_uuid,
+                ProjectAttendanceReporting.project_id == project_search_id,
                 ProjectAttendanceReporting.date == target_date,
                 ProjectAttendanceReporting.group_no == 2
             )
@@ -104,7 +117,7 @@ def get_daily_sheet(project_id: str, target_date: date, user) -> Dict:
         # Get leave records for the bottom table
         leave_query = AttendanceDayLeave.query.filter(
             and_(
-                AttendanceDayLeave.project_id == project_uuid,
+                AttendanceDayLeave.project_id == project_search_id,
                 AttendanceDayLeave.date == target_date
             )
         ).order_by(AttendanceDayLeave.seq_no.asc())
@@ -168,7 +181,7 @@ def get_user_accessible_projects(user) -> List[Dict]:
             ).order_by(Project.name).all()
         else:
             # PROJECT_MANAGER can only see assigned projects
-            from utils import get_user_accessible_projects as get_accessible
+            from permission_utils import get_user_accessible_projects as get_accessible
             accessible_project_ids = get_accessible(user)
             
             if accessible_project_ids:
