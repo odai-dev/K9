@@ -29,9 +29,8 @@ def get_daily_sheet(project_id: str, target_date: date, user) -> Dict:
         Dictionary containing the daily sheet data in the specified JSON contract format
     """
     try:
-        # Convert string to UUID if needed
-        if isinstance(project_id, str):
-            project_id = UUID(project_id)
+        # Keep as string but validate UUID format
+        project_uuid = UUID(project_id) if isinstance(project_id, str) else project_id
         
         # Convert string to date if needed
         if isinstance(target_date, str):
@@ -41,30 +40,30 @@ def get_daily_sheet(project_id: str, target_date: date, user) -> Dict:
         
         # Check user permissions - PROJECT_MANAGER can only see assigned projects
         if user.role == UserRole.PROJECT_MANAGER:
-            if not check_project_access(user, str(project_id)):
+            if not check_project_access(user, project_id):
                 raise PermissionError("User does not have access to this project")
         
         # Get project information
-        project = Project.query.get(project_id)
+        project = Project.query.get(project_uuid)
         if not project:
             raise ValueError("Project not found")
         
         # Get attendance records for the date, split by groups
-        group_1_query = ProjectAttendance.query.filter(
+        group_1_query = ProjectAttendanceReporting.query.filter(
             and_(
-                ProjectAttendance.project_id == project_id,
-                ProjectAttendance.date == target_date,
-                ProjectAttendance.group_no == 1
+                ProjectAttendanceReporting.project_id == project_uuid,
+                ProjectAttendanceReporting.date == target_date,
+                ProjectAttendanceReporting.group_no == 1
             )
-        ).order_by(ProjectAttendance.seq_no.asc())
+        ).order_by(ProjectAttendanceReporting.seq_no.asc())
         
-        group_2_query = ProjectAttendance.query.filter(
+        group_2_query = ProjectAttendanceReporting.query.filter(
             and_(
-                ProjectAttendance.project_id == project_id,
-                ProjectAttendance.date == target_date,
-                ProjectAttendance.group_no == 2
+                ProjectAttendanceReporting.project_id == project_uuid,
+                ProjectAttendanceReporting.date == target_date,
+                ProjectAttendanceReporting.group_no == 2
             )
-        ).order_by(ProjectAttendance.seq_no.asc())
+        ).order_by(ProjectAttendanceReporting.seq_no.asc())
         
         # Process Group 1 records (with substitute employee)
         group_1_rows = []
@@ -105,7 +104,7 @@ def get_daily_sheet(project_id: str, target_date: date, user) -> Dict:
         # Get leave records for the bottom table
         leave_query = AttendanceDayLeave.query.filter(
             and_(
-                AttendanceDayLeave.project_id == project_id,
+                AttendanceDayLeave.project_id == project_uuid,
                 AttendanceDayLeave.date == target_date
             )
         ).order_by(AttendanceDayLeave.seq_no.asc())
@@ -125,7 +124,7 @@ def get_daily_sheet(project_id: str, target_date: date, user) -> Dict:
         
         # Build response according to JSON contract
         response = {
-            "project_id": str(project_id),
+            "project_id": project_id,
             "date": target_date.strftime("%Y-%m-%d"),
             "day_name_ar": day_name_ar,
             "groups": [
@@ -215,9 +214,8 @@ def validate_project_date_access(project_id: str, target_date: date, user) -> bo
         True if access is allowed, False otherwise
     """
     try:
-        # Convert string to UUID if needed
-        if isinstance(project_id, str):
-            project_id = UUID(project_id)
+        # Keep project_id as string for validation but create UUID for DB queries
+        project_uuid = UUID(project_id) if isinstance(project_id, str) else project_id
             
         # GENERAL_ADMIN always has access
         if user.role == UserRole.GENERAL_ADMIN:
@@ -225,7 +223,7 @@ def validate_project_date_access(project_id: str, target_date: date, user) -> bo
         
         # Check if PROJECT_MANAGER has access to this project
         if user.role == UserRole.PROJECT_MANAGER:
-            return check_project_access(user, str(project_id))
+            return check_project_access(user, project_id)
         
         return False
         
