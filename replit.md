@@ -6,7 +6,7 @@ This project is a comprehensive, web-based, and mobile-first K9 operations manag
 ## Recent Updates (August 2025)
 - **Migration to Replit Environment Complete**: Successfully migrated from Replit Agent to standard Replit environment with PostgreSQL database - August 18, 2025
 - **Attendance Reporting System Complete**: Implemented comprehensive attendance reporting module with RTL Arabic support - August 18, 2025
-- **PDF Generation Fixed**: Added Arabic RTL PDF generation with proper text rendering and Bootstrap 5 RTL templates - August 18, 2025
+- **PDF Generation Fixed**: Added Arabic RTL PDF generation with proper text rendering, Bootstrap 5 RTL templates, and vertical group layout - August 18, 2025
 - **Model Issues Resolved**: Fixed ProjectAttendance vs ProjectAttendanceReporting model references and UUID handling - August 18, 2025
 - **Sample Data Added**: Created comprehensive sample attendance data for testing daily sheet functionality - August 18, 2025
 - **Authentication Working**: Fixed audit logging parameters and API authentication for attendance reports - August 18, 2025

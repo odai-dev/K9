@@ -196,16 +196,16 @@ def export_daily_attendance_pdf(data: Dict[str, Any]) -> str:
         while len(group_2_table_data) < 9:  # 1 header + 8 data rows
             group_2_table_data.append(["", "", "", "", "", "", ""])
         
-        # Create Group 1 table
+        # Create Group 1 table (full width)
         group_1_table = Table(group_1_table_data, colWidths=[
-            0.3*inch,  # م
-            1.2*inch,  # اسم الموظف
-            1.2*inch,  # اسم الموظف البديل
-            1.0*inch,  # اسم الكلب
-            0.8*inch,  # وقت الحضور
-            0.6*inch,  # التوقيع
-            0.8*inch,  # وقت الانصراف
-            0.6*inch   # التوقيع
+            0.4*inch,  # م
+            1.4*inch,  # اسم الموظف
+            1.4*inch,  # اسم الموظف البديل
+            1.2*inch,  # اسم الكلب
+            1.0*inch,  # وقت الحضور
+            0.8*inch,  # التوقيع
+            1.0*inch,  # وقت الانصراف
+            0.8*inch   # التوقيع
         ])
         
         group_1_table.setStyle(TableStyle([
@@ -218,15 +218,15 @@ def export_daily_attendance_pdf(data: Dict[str, Any]) -> str:
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightblue])
         ]))
         
-        # Create Group 2 table
+        # Create Group 2 table (full width)
         group_2_table = Table(group_2_table_data, colWidths=[
-            0.3*inch,  # م
-            1.5*inch,  # اسم الموظف / البديل
-            1.0*inch,  # اسم الكلب
-            0.8*inch,  # وقت الحضور
-            0.6*inch,  # التوقيع
-            0.8*inch,  # وقت الانصراف
-            0.6*inch   # التوقيع
+            0.4*inch,  # م
+            2.0*inch,  # اسم الموظف / البديل
+            1.2*inch,  # اسم الكلب
+            1.0*inch,  # وقت الحضور
+            0.8*inch,  # التوقيع
+            1.0*inch,  # وقت الانصراف
+            0.8*inch   # التوقيع
         ])
         
         group_2_table.setStyle(TableStyle([
@@ -239,15 +239,18 @@ def export_daily_attendance_pdf(data: Dict[str, Any]) -> str:
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgreen])
         ]))
         
-        # Place both tables side by side
-        combined_table_data = [[group_1_table, group_2_table]]
-        combined_table = Table(combined_table_data, colWidths=[4*inch, 3.5*inch])
-        combined_table.setStyle(TableStyle([
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER')
-        ]))
+        # Add Group 1 title and table
+        group_1_title = Paragraph(rtl("المجموعة الأولى"), arabic_style)
+        story.append(group_1_title)
+        story.append(Spacer(1, 8))
+        story.append(group_1_table)
+        story.append(Spacer(1, 15))
         
-        story.append(combined_table)
+        # Add Group 2 title and table
+        group_2_title = Paragraph(rtl("المجموعة الثانية"), arabic_style)
+        story.append(group_2_title)
+        story.append(Spacer(1, 8))
+        story.append(group_2_table)
         story.append(Spacer(1, 20))
         
         # Add leave table at the bottom
