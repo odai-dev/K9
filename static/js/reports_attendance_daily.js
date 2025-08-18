@@ -58,8 +58,16 @@ class DailyAttendanceReport {
     }
 
     showError(message) {
-        document.getElementById('error-message').textContent = message;
+        const errorElement = document.getElementById('error-message');
         const errorAlert = document.getElementById('error-alert');
+        
+        if (!errorElement || !errorAlert) {
+            console.error('Error display elements not found');
+            alert(message); // Fallback
+            return;
+        }
+        
+        errorElement.textContent = message;
         errorAlert.style.display = 'block';
         errorAlert.classList.add('show');
         
@@ -295,33 +303,80 @@ class DailyAttendanceReport {
                 body: JSON.stringify(filters)
             });
 
-            const result = await response.json();
-
             if (!response.ok) {
-                throw new Error(result.error || 'فشل في تصدير PDF');
+                const errorText = await response.text();
+                console.error('Server error:', errorText);
+                throw new Error(`Server error: ${response.status}`);
             }
 
+            const result = await response.json();
+            console.log('PDF export result:', result);
+
             // Trigger download
-            this.downloadFile(result.path);
-            this.showSuccess('تم تصدير التقرير بنجاح');
+            if (result && result.path) {
+                this.downloadFile(result.path);
+                this.showSuccess('تم تصدير التقرير بنجاح');
+            } else {
+                throw new Error('No file path returned from server');
+            }
 
         } catch (error) {
             console.error('Error exporting PDF:', error);
-            this.showError(error.message);
+            console.error('Error stack:', error.stack);
+            this.showError(error.message || 'حدث خطأ في تصدير PDF');
         } finally {
             this.hideLoading();
         }
     }
 
     downloadFile(filePath) {
-        // Create a temporary download link
-        const link = document.createElement('a');
-        link.href = filePath.startsWith('/') ? filePath : '/' + filePath; // Ensure absolute path
-        link.download = filePath.split('/').pop(); // Get filename
-        link.target = '_blank'; // Open in new tab for better browser support
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        try {
+            console.log('Attempting to download file:', filePath);
+            
+            // Create a temporary download link
+            const link = document.createElement('a');
+            const fullPath = filePath.startsWith('/') ? filePath : '/' + filePath;
+            const fileName = filePath.split('/').pop();
+            
+            console.log('Full path:', fullPath);
+            console.log('File name:', fileName);
+            
+            link.href = fullPath;
+            link.download = fileName;
+            link.target = '_blank';
+            link.style.display = 'none';
+            
+            document.body.appendChild(link);
+            
+            // Alternative approach: Try both click events
+            if (link.click) {
+                link.click();
+            } else {
+                // Fallback for older browsers
+                const event = new MouseEvent('click');
+                link.dispatchEvent(event);
+            }
+            
+            // Clean up
+            setTimeout(() => {
+                if (document.body.contains(link)) {
+                    document.body.removeChild(link);
+                }
+            }, 100);
+            
+            console.log('Download triggered successfully');
+            
+        } catch (error) {
+            console.error('Error in downloadFile:', error);
+            // Fallback: open in new window
+            try {
+                const fullPath = filePath.startsWith('/') ? filePath : '/' + filePath;
+                window.open(fullPath, '_blank');
+            } catch (fallbackError) {
+                console.error('Fallback download also failed:', fallbackError);
+                this.showError('فشل في تحميل الملف. يرجى المحاولة مرة أخرى.');
+            }
+        }
     }
 
     showReportArea() {
