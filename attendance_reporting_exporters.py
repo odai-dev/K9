@@ -1,0 +1,305 @@
+"""
+PDF and Excel exporters for attendance reports
+Implements export functionality for daily sheet reports
+"""
+
+import os
+from datetime import datetime, date
+from typing import Dict, Any
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.units import inch
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+
+from utils_pdf_rtl import rtl, register_arabic_fonts, get_arabic_font_name, format_arabic_date
+from attendance_reporting_constants import (
+    GROUP_1_HEADERS, GROUP_2_HEADERS, LEAVE_TABLE_HEADERS, REPORT_LABELS
+)
+from models import Project
+
+
+def ensure_reports_directory() -> str:
+    """
+    Ensure the reports directory structure exists
+    Creates uploads/reports/YYYY/MM/ structure
+    
+    Returns:
+        Path to the current month's directory
+    """
+    now = datetime.now()
+    year_str = now.strftime("%Y")
+    month_str = now.strftime("%m")
+    
+    base_path = os.path.join("uploads", "reports", year_str, month_str)
+    os.makedirs(base_path, exist_ok=True)
+    
+    return base_path
+
+
+def get_project_code(project_id: str) -> str:
+    """
+    Get project code from database, fallback to project_id if not found
+    
+    Args:
+        project_id: UUID string of the project
+        
+    Returns:
+        Project code or project_id as fallback
+    """
+    try:
+        project = Project.query.get(project_id)
+        return project.code if project and project.code else str(project_id)[:8]
+    except Exception:
+        return str(project_id)[:8]
+
+
+def export_daily_attendance_pdf(data: Dict[str, Any]) -> str:
+    """
+    Export daily attendance data to PDF format
+    
+    Args:
+        data: Dictionary containing the attendance data in the JSON contract format
+        
+    Returns:
+        Relative path to the generated PDF file
+    """
+    try:
+        # Register Arabic fonts
+        register_arabic_fonts()
+        font_name = get_arabic_font_name()
+        
+        # Prepare file path
+        reports_dir = ensure_reports_directory()
+        project_code = get_project_code(data.get("project_id", "unknown"))
+        date_str = data.get("date", datetime.now().strftime("%Y%m%d")).replace("-", "")
+        filename = f"daily_sheet_{project_code}_{date_str}.pdf"
+        file_path = os.path.join(reports_dir, filename)
+        
+        # Create PDF document
+        doc = SimpleDocTemplate(
+            file_path,
+            pagesize=A4,
+            rightMargin=0.5*inch,
+            leftMargin=0.5*inch,
+            topMargin=0.5*inch,
+            bottomMargin=0.5*inch
+        )
+        
+        # Build story (content)
+        story = []
+        
+        # Create styles
+        styles = getSampleStyleSheet()
+        
+        # Arabic title style
+        title_style = ParagraphStyle(
+            'ArabicTitle',
+            parent=styles['Title'],
+            fontName=font_name,
+            fontSize=16,
+            alignment=TA_CENTER,
+            spaceAfter=12
+        )
+        
+        # Arabic normal style
+        arabic_style = ParagraphStyle(
+            'ArabicNormal',
+            parent=styles['Normal'],
+            fontName=font_name,
+            fontSize=10,
+            alignment=TA_RIGHT
+        )
+        
+        # Add main title
+        title = Paragraph(rtl(REPORT_LABELS["main_title"]), title_style)
+        story.append(title)
+        story.append(Spacer(1, 12))
+        
+        # Add date and day information
+        target_date = datetime.strptime(data.get("date"), "%Y-%m-%d").date()
+        formatted_date = format_arabic_date(target_date)
+        day_name = data.get("day_name_ar", "")
+        
+        date_info = [
+            [rtl(f"{REPORT_LABELS['day_label']} {day_name}"), rtl(f"{REPORT_LABELS['date_label']} {formatted_date}")]
+        ]
+        
+        date_table = Table(date_info, colWidths=[3*inch, 3*inch])
+        date_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, -1), font_name),
+            ('FONTSIZE', (0, 0), (-1, -1), 12),
+            ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('BACKGROUND', (0, 0), (-1, -1), colors.lightgrey)
+        ]))
+        
+        story.append(date_table)
+        story.append(Spacer(1, 20))
+        
+        # Process groups data
+        groups = data.get("groups", [])
+        group_1_data = []
+        group_2_data = []
+        
+        for group in groups:
+            if group.get("group_no") == 1:
+                group_1_data = group.get("rows", [])
+            elif group.get("group_no") == 2:
+                group_2_data = group.get("rows", [])
+        
+        # Create side-by-side tables for Group 1 and Group 2
+        # Group 1 Table (Left side with 8 columns)
+        group_1_table_data = [
+            [rtl(header) for header in GROUP_1_HEADERS]
+        ]
+        
+        # Add Group 1 rows
+        for row in group_1_data:
+            table_row = [
+                str(row.get("seq_no", "")),
+                rtl(row.get("employee_name", "")),
+                rtl(row.get("substitute_name", "")),
+                rtl(row.get("dog_name", "")),
+                row.get("check_in_time", ""),
+                "",  # Signature box (empty)
+                row.get("check_out_time", ""),
+                ""   # Signature box (empty)
+            ]
+            group_1_table_data.append(table_row)
+        
+        # Ensure minimum 10 rows for Group 1
+        while len(group_1_table_data) < 11:  # 1 header + 10 data rows
+            group_1_table_data.append(["", "", "", "", "", "", "", ""])
+        
+        # Group 2 Table (Right side with 7 columns)
+        group_2_table_data = [
+            [rtl(header) for header in GROUP_2_HEADERS]
+        ]
+        
+        # Add Group 2 rows
+        for row in group_2_data:
+            table_row = [
+                str(row.get("seq_no", "")),
+                rtl(row.get("employee_or_substitute_name", "")),
+                rtl(row.get("dog_name", "")),
+                row.get("check_in_time", ""),
+                "",  # Signature box (empty)
+                row.get("check_out_time", ""),
+                ""   # Signature box (empty)
+            ]
+            group_2_table_data.append(table_row)
+        
+        # Ensure minimum 8 rows for Group 2
+        while len(group_2_table_data) < 9:  # 1 header + 8 data rows
+            group_2_table_data.append(["", "", "", "", "", "", ""])
+        
+        # Create Group 1 table
+        group_1_table = Table(group_1_table_data, colWidths=[
+            0.3*inch,  # م
+            1.2*inch,  # اسم الموظف
+            1.2*inch,  # اسم الموظف البديل
+            1.0*inch,  # اسم الكلب
+            0.8*inch,  # وقت الحضور
+            0.6*inch,  # التوقيع
+            0.8*inch,  # وقت الانصراف
+            0.6*inch   # التوقيع
+        ])
+        
+        group_1_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, -1), font_name),
+            ('FONTSIZE', (0, 0), (-1, -1), 8),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),  # Header row
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightblue])
+        ]))
+        
+        # Create Group 2 table
+        group_2_table = Table(group_2_table_data, colWidths=[
+            0.3*inch,  # م
+            1.5*inch,  # اسم الموظف / البديل
+            1.0*inch,  # اسم الكلب
+            0.8*inch,  # وقت الحضور
+            0.6*inch,  # التوقيع
+            0.8*inch,  # وقت الانصراف
+            0.6*inch   # التوقيع
+        ])
+        
+        group_2_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, -1), font_name),
+            ('FONTSIZE', (0, 0), (-1, -1), 8),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),  # Header row
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgreen])
+        ]))
+        
+        # Place both tables side by side
+        combined_table_data = [[group_1_table, group_2_table]]
+        combined_table = Table(combined_table_data, colWidths=[4*inch, 3.5*inch])
+        combined_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER')
+        ]))
+        
+        story.append(combined_table)
+        story.append(Spacer(1, 20))
+        
+        # Add leave table at the bottom
+        leave_title = Paragraph(rtl(REPORT_LABELS["leave_section_title"]), arabic_style)
+        story.append(leave_title)
+        story.append(Spacer(1, 10))
+        
+        # Leave table
+        leave_table_data = [
+            [rtl(header) for header in LEAVE_TABLE_HEADERS]
+        ]
+        
+        # Add leave rows
+        leaves = data.get("leaves", [])
+        for leave in leaves:
+            leave_row = [
+                str(leave.get("seq_no", "")),
+                rtl(leave.get("employee_name", "")),
+                rtl(leave.get("leave_type", "")),
+                rtl(leave.get("note", ""))
+            ]
+            leave_table_data.append(leave_row)
+        
+        # Ensure minimum 3 rows for leaves
+        while len(leave_table_data) < 4:  # 1 header + 3 data rows
+            leave_table_data.append(["", "", "", ""])
+        
+        leave_table = Table(leave_table_data, colWidths=[
+            0.5*inch,  # #
+            2.0*inch,  # اسم الفرد المأجز
+            1.5*inch,  # نوع الإجازة
+            2.5*inch   # ملاحظة
+        ])
+        
+        leave_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, -1), font_name),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),  # Header row
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightyellow])
+        ]))
+        
+        story.append(leave_table)
+        
+        # Build PDF
+        doc.build(story)
+        
+        # Return relative path
+        return file_path
+        
+    except Exception as e:
+        print(f"Error exporting daily attendance PDF: {e}")
+        raise

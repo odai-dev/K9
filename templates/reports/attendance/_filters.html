@@ -1,0 +1,104 @@
+<!-- Reusable filter bar for attendance reports -->
+<div class="card mb-4" id="attendance-filters">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-filter me-2"></i>
+            المرشحات
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <!-- Project Selection -->
+            <div class="col-md-6">
+                <label for="project-select" class="form-label">المشروع</label>
+                <select class="form-select" id="project-select" name="project_id" required>
+                    <option value="">اختر المشروع...</option>
+                    {% for project in accessible_projects %}
+                    <option value="{{ project.id }}" 
+                            {% if project.id == selected_project_id %}selected{% endif %}>
+                        {{ project.name }} ({{ project.code }})
+                    </option>
+                    {% endfor %}
+                </select>
+                <div class="invalid-feedback">
+                    يرجى اختيار مشروع
+                </div>
+            </div>
+            
+            <!-- Date Selection -->
+            <div class="col-md-6">
+                <label for="date-select" class="form-label">التاريخ</label>
+                <input type="date" 
+                       class="form-control" 
+                       id="date-select" 
+                       name="date" 
+                       value="{{ selected_date }}"
+                       required>
+                <div class="invalid-feedback">
+                    يرجى اختيار تاريخ صحيح
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="d-flex gap-2 justify-content-end">
+                    <button type="button" 
+                            class="btn btn-primary" 
+                            id="load-report-btn"
+                            disabled>
+                        <i class="fas fa-chart-bar me-2"></i>
+                        عرض التقرير
+                    </button>
+                    
+                    <button type="button" 
+                            class="btn btn-success" 
+                            id="export-pdf-btn"
+                            disabled>
+                        <i class="fas fa-file-pdf me-2"></i>
+                        تصدير PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loading Indicator -->
+        <div class="row mt-2">
+            <div class="col-12">
+                <div class="text-center d-none" id="loading-indicator">
+                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                        <span class="visually-hidden">جاري التحميل...</span>
+                    </div>
+                    <span class="text-muted">جاري معالجة الطلب...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Enable/disable buttons based on form validity
+document.addEventListener('DOMContentLoaded', function() {
+    const projectSelect = document.getElementById('project-select');
+    const dateSelect = document.getElementById('date-select');
+    const loadBtn = document.getElementById('load-report-btn');
+    const exportBtn = document.getElementById('export-pdf-btn');
+    
+    function updateButtonStates() {
+        const hasProject = projectSelect.value.trim() !== '';
+        const hasDate = dateSelect.value.trim() !== '';
+        const isValid = hasProject && hasDate;
+        
+        loadBtn.disabled = !isValid;
+        exportBtn.disabled = !isValid;
+    }
+    
+    // Update button states on change
+    projectSelect.addEventListener('change', updateButtonStates);
+    dateSelect.addEventListener('change', updateButtonStates);
+    
+    // Initial check
+    updateButtonStates();
+});
+</script>
