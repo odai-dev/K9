@@ -54,8 +54,11 @@ function setupEventHandlers() {
 
 // Run the attendance matrix report
 function runReport() {
+    console.log('runReport function called');
     const dateFrom = document.getElementById('date_from').value;
     const dateTo = document.getElementById('date_to').value;
+    
+    console.log('Date from:', dateFrom, 'Date to:', dateTo);
     
     if (!dateFrom || !dateTo) {
         showMessage('يرجى تحديد نطاق التواريخ', 'error');
