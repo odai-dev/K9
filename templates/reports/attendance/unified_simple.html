@@ -117,15 +117,15 @@
             </h5>
             {% if show_results %}
             <div class="btn-group">
-                <a href="{{ url_for('reports_attendance_unified_ui.export_simple_report', format='pdf', **request.form) }}" 
+                <a href="{{ url_for('reports_attendance_unified_ui.export_simple_report', format='pdf', start_date=request.form.get('start_date'), end_date=request.form.get('end_date')) }}" 
                    class="btn btn-outline-danger btn-sm">
                     <i class="fas fa-file-pdf me-1"></i>
-                    PDF
+                    تصدير PDF
                 </a>
-                <a href="{{ url_for('reports_attendance_unified_ui.export_simple_report', format='excel', **request.form) }}" 
+                <a href="{{ url_for('reports_attendance_unified_ui.export_simple_report', format='excel', start_date=request.form.get('start_date'), end_date=request.form.get('end_date')) }}" 
                    class="btn btn-outline-success btn-sm">
                     <i class="fas fa-file-excel me-1"></i>
-                    Excel
+                    تصدير Excel
                 </a>
             </div>
             {% endif %}
