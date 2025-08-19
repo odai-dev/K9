@@ -68,7 +68,15 @@
                                         <option value="employees">تقرير الموظفين</option>
                                         <option value="training">تقرير التدريب</option>
                                         <option value="veterinary">تقرير الطبابة</option>
-                                        <option value="breeding">تقرير التكاثر</option>
+                                        <optgroup label="نظام الإنتاج">
+                                            <option value="breeding_maturity">البلوغ</option>
+                                            <option value="breeding_heat_cycles">الدورة</option>
+                                            <option value="breeding_mating">التزاوج</option>
+                                            <option value="breeding_pregnancy">الحمل</option>
+                                            <option value="breeding_delivery">الولادة</option>
+                                            <option value="breeding_puppies">الجراء</option>
+                                            <option value="breeding_puppy_training">تدريب الجراء</option>
+                                        </optgroup>
                                         <option value="projects">تقرير المشاريع</option>
                                     </select>
                                 </div>
@@ -607,9 +615,38 @@ function updateEntityFilters() {
     const entityFilters = document.getElementById('entitySpecificFilters');
     const allFilterSections = entityFilters.querySelectorAll('[class$="-filters"]');
     
-    // Special handling for breeding - redirect to main breeding management
-    if (reportType === 'breeding') {
-        window.location.href = "{{ url_for('main.breeding_list') }}";
+    // Special handling for breeding options - redirect to specific breeding management pages
+    if (reportType.startsWith('breeding_')) {
+        const breedingType = reportType.replace('breeding_', '');
+        let redirectUrl = '';
+        
+        switch(breedingType) {
+            case 'maturity':
+                redirectUrl = "{{ url_for('main.maturity_list') }}";
+                break;
+            case 'heat_cycles':
+                redirectUrl = "{{ url_for('main.heat_cycles_list') }}";
+                break;
+            case 'mating':
+                redirectUrl = "{{ url_for('main.mating_list') }}";
+                break;
+            case 'pregnancy':
+                redirectUrl = "{{ url_for('main.pregnancy_list') }}";
+                break;
+            case 'delivery':
+                redirectUrl = "{{ url_for('main.delivery_list') }}";
+                break;
+            case 'puppies':
+                redirectUrl = "{{ url_for('main.puppies_list') }}";
+                break;
+            case 'puppy_training':
+                redirectUrl = "{{ url_for('main.puppy_training_list') }}";
+                break;
+            default:
+                redirectUrl = "{{ url_for('main.breeding_list') }}";
+        }
+        
+        window.location.href = redirectUrl;
         return;
     }
     
