@@ -607,6 +607,12 @@ function updateEntityFilters() {
     const entityFilters = document.getElementById('entitySpecificFilters');
     const allFilterSections = entityFilters.querySelectorAll('[class$="-filters"]');
     
+    // Special handling for breeding - redirect to main breeding management
+    if (reportType === 'breeding') {
+        window.location.href = "{{ url_for('main.breeding_list') }}";
+        return;
+    }
+    
     // Hide all filter sections
     allFilterSections.forEach(section => section.style.display = 'none');
     
