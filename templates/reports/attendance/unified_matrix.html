@@ -134,15 +134,15 @@
                 نتائج المصفوفة
             </h5>
             <div class="btn-group" id="export-buttons" style="display: none;">
-                <button type="button" class="btn btn-outline-primary btn-sm" onclick="exportMatrix('pdf')">
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="window.exportMatrix('pdf')">
                     <i class="fas fa-file-pdf me-1"></i>
                     تصدير PDF
                 </button>
-                <button type="button" class="btn btn-outline-success btn-sm" onclick="exportMatrix('excel')">
+                <button type="button" class="btn btn-outline-success btn-sm" onclick="window.exportMatrix('excel')">
                     <i class="fas fa-file-excel me-1"></i>
                     تصدير Excel
                 </button>
-                <button type="button" class="btn btn-outline-info btn-sm" onclick="exportMatrix('csv')">
+                <button type="button" class="btn btn-outline-info btn-sm" onclick="window.exportMatrix('csv')">
                     <i class="fas fa-file-csv me-1"></i>
                     تصدير CSV
                 </button>
@@ -197,32 +197,20 @@
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/reports_attendance_unified.js') }}"></script>
 <script>
-    // Debug function loading
-    window.addEventListener('load', function() {
-        console.log('Page fully loaded');
-        console.log('runUnifiedMatrix function exists:', typeof runUnifiedMatrix === 'function');
-        console.log('initializeUnifiedMatrix function exists:', typeof initializeUnifiedMatrix === 'function');
-        console.log('Available functions:', Object.keys(window).filter(key => typeof window[key] === 'function' && key.includes('Matrix')));
-    });
-
-    // Initialize the unified matrix on page load
+    // Initialize after script loads
     document.addEventListener('DOMContentLoaded', function() {
         console.log('Reports page initialized');
         
-        // Check if functions are available
-        if (typeof initializeUnifiedMatrix === 'function') {
-            initializeUnifiedMatrix();
-        } else {
-            console.error('initializeUnifiedMatrix function not found');
-        }
-        
-        // Check runUnifiedMatrix function
-        if (typeof runUnifiedMatrix !== 'function') {
-            console.error('runUnifiedMatrix function not found - creating fallback');
-            window.runUnifiedMatrix = function() {
-                alert('JavaScript loading issue - please refresh the page');
-            };
-        }
+        // Wait a moment for script to fully load
+        setTimeout(function() {
+            console.log('runUnifiedMatrix available:', typeof window.runUnifiedMatrix === 'function');
+            
+            if (typeof window.initializeUnifiedMatrix === 'function') {
+                window.initializeUnifiedMatrix();
+            } else {
+                console.error('initializeUnifiedMatrix function not found');
+            }
+        }, 100);
     });
 </script>
 {% endblock %}
