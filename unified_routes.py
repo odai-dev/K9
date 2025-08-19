@@ -249,25 +249,32 @@ def export_to_pdf(matrix_data, start_date, end_date):
         fontName='Helvetica-Bold'
     )
     
-    # Add title
-    title = Paragraph(f"Unified Attendance Matrix - {start_date} to {end_date}", title_style)
+    # Add title in Arabic
+    title_text = f"المصفوفة الموحدة للحضور - من {start_date} إلى {end_date}"
+    title = Paragraph(title_text, title_style)
     elements.append(title)
-    elements.append(Spacer(1, 12))
+    elements.append(Spacer(1, 20))
     
     # Prepare table data
     table_data = []
     
-    # Header row
-    header = ['Employee']
+    # Header row - Arabic headers
+    header = ['الموظف / المنصب']
     for date_obj in matrix_data['dates']:
-        header.append(date_obj.strftime('%m/%d'))
+        header.append(date_obj.strftime('%Y-%m-%d'))
     table_data.append(header)
     
-    # Data rows
+    # Data rows with employee names and attendance status
     for emp_id, emp_data in matrix_data['employees'].items():
-        row = [f"{emp_data['name']}\n({emp_data['role']})"]
+        # Employee name and role in Arabic
+        employee_info = f"{emp_data['name']}\n{emp_data['role']}"
+        row = [employee_info]
+        
         for date_obj in matrix_data['dates']:
-            status = emp_data['attendance'].get(date_obj.strftime('%Y-%m-%d'), 'ABSENT')
+            date_str = date_obj.strftime('%Y-%m-%d')
+            status = emp_data['attendance'].get(date_str, 'ABSENT')
+            
+            # Convert status to Arabic text
             status_text = {
                 'PRESENT': 'حاضر',
                 'ABSENT': 'غائب', 
@@ -281,19 +288,53 @@ def export_to_pdf(matrix_data, start_date, end_date):
     # Create table
     table = Table(table_data)
     
-    # Add style to table
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+    # Add style to table with better formatting
+    style_commands = [
+        # Header row styling
+        ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('TOPPADDING', (0, 0), (-1, 0), 12),
+        
+        # Data cells styling
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 7),
+        ('ALIGN', (1, 1), (-1, -1), 'CENTER'),  # Center attendance status
+        ('ALIGN', (0, 1), (0, -1), 'RIGHT'),    # Right align employee names (Arabic)
+        
+        # Grid and borders
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('FONTSIZE', (0, 1), (-1, -1), 8),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-    ]))
+        
+        # Row padding
+        ('TOPPADDING', (0, 1), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+        ('LEFTPADDING', (0, 0), (-1, -1), 4),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+    ]
+    
+    # Add alternating row colors for better readability
+    for i in range(1, len(table_data)):
+        if i % 2 == 0:
+            style_commands.append(('BACKGROUND', (0, i), (-1, i), colors.lightgrey))
+    
+    # Add status-based coloring for attendance cells
+    for row_idx, (emp_id, emp_data) in enumerate(matrix_data['employees'].items(), 1):
+        for col_idx, date_obj in enumerate(matrix_data['dates'], 1):
+            status = emp_data['attendance'].get(date_obj.strftime('%Y-%m-%d'), 'ABSENT')
+            if status == 'PRESENT':
+                style_commands.append(('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), colors.lightgreen))
+            elif status == 'ABSENT':
+                style_commands.append(('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), colors.lightcoral))
+            elif status == 'LATE':
+                style_commands.append(('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), colors.lightyellow))
+            elif status == 'SICK':
+                style_commands.append(('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), colors.lightblue))
+    
+    table.setStyle(TableStyle(style_commands))
     
     elements.append(table)
     
