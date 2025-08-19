@@ -32,6 +32,13 @@ bp = Blueprint('reports_attendance_unified_ui', __name__)
 @login_required
 @require_perm('reports:attendance:unified:view')
 def unified_matrix():
+    """Display the new clean unified matrix page"""
+    return render_template('reports/attendance/unified_matrix_new.html')
+
+@bp.route('/unified_old')
+@login_required
+@require_perm('reports:attendance:unified:view')
+def unified_matrix_old():
     """
     Display unified attendance matrix page
     GET /reports/attendance/unified

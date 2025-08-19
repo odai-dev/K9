@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}المصفوفة الموحدة للحضور{% endblock %}
+
+{% block extra_css %}
+<style>
+    .matrix-table {
+        font-size: 12px;
+        overflow-x: auto;
+    }
+    
+    .matrix-table th,
+    .matrix-table td {
+        text-align: center;
+        vertical-align: middle;
+        min-width: 80px;
+        padding: 4px;
+    }
+    
+    .employee-name {
+        min-width: 150px;
+        text-align: right !important;
+        position: sticky;
+        right: 0;
+        background: white;
+        z-index: 10;
+    }
+    
+    .status-badge {
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 10px;
+        white-space: nowrap;
+    }
+    
+    .status-PRESENT { background-color: #d4edda; color: #155724; }
+    .status-ABSENT { background-color: #f8d7da; color: #721c24; }
+    .status-LATE { background-color: #fff3cd; color: #856404; }
+    .status-SICK { background-color: #d1ecf1; color: #0c5460; }
+    .status-LEAVE { background-color: #e2e3e5; color: #383d41; }
+    .status-REMOTE { background-color: #cce7ff; color: #004085; }
+    .status-OVERTIME { background-color: #e7f3ff; color: #004085; }
+    
+    .date-header {
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        min-width: 60px;
+        height: 100px;
+    }
+    
+    .table-container {
+        max-height: 600px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+    }
+    
+    .table-sticky {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 100;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>المصفوفة الموحدة للحضور</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('main.reports_index') }}">التقارير</a></li>
+                <li class="breadcrumb-item active" aria-current="page">المصفوفة الموحدة للحضور</li>
+            </ol>
+        </nav>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-filter me-2"></i>
+                عوامل التصفية
+            </h5>
+        </div>
+        <div class="card-body">
+            <form id="unified-filters-form">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label for="date_from" class="form-label">من تاريخ <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="date_from" name="date_from" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="date_to" class="form-label">إلى تاريخ <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="date_to" name="date_to" required>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="button" class="btn btn-primary me-2" id="start-report-btn">
+                            <i class="fas fa-play me-1"></i>
+                            تشغيل التقرير
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="reset-btn">
+                            <i class="fas fa-undo me-1"></i>
+                            إعادة تعيين
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Message Container -->
+    <div id="message-container" class="alert" style="display: none;"></div>
+
+    <!-- Loading -->
+    <div id="loading" class="text-center py-5" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">جاري التحميل...</span>
+        </div>
+        <p class="mt-2">جاري تحميل البيانات...</p>
+    </div>
+
+    <!-- Results Section -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-table me-2"></i>
+                نتائج المصفوفة
+            </h5>
+            <div class="btn-group" id="export-buttons" style="display: none;">
+                <button type="button" class="btn btn-outline-primary btn-sm export-btn" data-format="pdf">
+                    <i class="fas fa-file-pdf me-1"></i>
+                    تصدير PDF
+                </button>
+                <button type="button" class="btn btn-outline-success btn-sm export-btn" data-format="excel">
+                    <i class="fas fa-file-excel me-1"></i>
+                    تصدير Excel
+                </button>
+                <button type="button" class="btn btn-outline-info btn-sm export-btn" data-format="csv">
+                    <i class="fas fa-file-csv me-1"></i>
+                    تصدير CSV
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div id="results-container" style="display: none;">
+                <div class="table-container">
+                    <table class="table table-sm table-bordered matrix-table">
+                        <thead class="table-dark table-sticky">
+                            <tr id="header-row">
+                                <!-- Headers will be populated by JavaScript -->
+                            </tr>
+                        </thead>
+                        <tbody id="matrix-body">
+                            <!-- Data rows will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div id="no-data" class="text-center text-muted py-5">
+                <i class="fas fa-table fa-3x mb-3"></i>
+                <p>لا توجد بيانات للعرض</p>
+                <p class="small">يرجى تحديد عوامل التصفية وتشغيل التقرير</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/unified_matrix_new.js') }}"></script>
+{% endblock %}
