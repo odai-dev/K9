@@ -1603,7 +1603,9 @@ def reports_simple():
 def reports_advanced():
     """Advanced reports interface with live preview and filtering"""
     employees = Employee.query.filter_by(is_active=True).all()
-    return render_template('reports/advanced.html', employees=employees)
+    # Get optional type parameter for pre-filtering
+    report_type = request.args.get('type')
+    return render_template('reports/advanced.html', employees=employees, pre_selected_type=report_type)
 
 @main_bp.route('/reports/generate', methods=['POST'])
 @login_required

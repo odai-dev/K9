@@ -64,10 +64,10 @@
                                     <label class="form-label">نوع التقرير</label>
                                     <select class="form-select" id="filterReportType" name="report_type" onchange="updateEntityFilters()">
                                         <option value="">اختر نوع التقرير</option>
-                                        <option value="dogs">تقرير الكلاب</option>
-                                        <option value="employees">تقرير الموظفين</option>
-                                        <option value="training">تقرير التدريب</option>
-                                        <option value="veterinary">تقرير الطبابة</option>
+                                        <option value="dogs" {% if pre_selected_type == 'dogs' %}selected{% endif %}>تقرير الكلاب</option>
+                                        <option value="employees" {% if pre_selected_type == 'employees' %}selected{% endif %}>تقرير الموظفين</option>
+                                        <option value="training" {% if pre_selected_type == 'training' %}selected{% endif %}>تقرير التدريب</option>
+                                        <option value="veterinary" {% if pre_selected_type == 'veterinary' %}selected{% endif %}>تقرير الطبابة</option>
                                         <optgroup label="نظام الإنتاج">
                                             <option value="breeding_maturity">البلوغ</option>
                                             <option value="breeding_heat_cycles">الدورة</option>
@@ -77,7 +77,7 @@
                                             <option value="breeding_puppies">الجراء</option>
                                             <option value="breeding_puppy_training">تدريب الجراء</option>
                                         </optgroup>
-                                        <option value="projects">تقرير المشاريع</option>
+                                        <option value="projects" {% if pre_selected_type == 'projects' %}selected{% endif %}>تقرير المشاريع</option>
                                     </select>
                                 </div>
                                 
@@ -887,6 +887,15 @@ document.addEventListener('DOMContentLoaded', function() {
         select.style.height = 'auto';
         select.size = Math.min(select.options.length, 3);
     });
+    
+    // Check if a report type was pre-selected from navigation
+    const preSelectedType = '{{ pre_selected_type }}';
+    if (preSelectedType && preSelectedType !== 'None') {
+        // Trigger updateEntityFilters to show appropriate filters
+        updateEntityFilters();
+        // Auto-apply filters after a short delay
+        setTimeout(applyFilters, 300);
+    }
     
     // Auto-apply filters when report type changes
     document.getElementById('filterReportType').addEventListener('change', function() {
