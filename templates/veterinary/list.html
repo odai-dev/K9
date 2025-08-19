@@ -8,10 +8,16 @@
         <i class="fas fa-stethoscope me-2"></i>
         الزيارات البيطرية
     </h1>
-    <a href="{{ url_for('main.veterinary_add') }}" class="btn btn-primary">
-        <i class="fas fa-plus me-2"></i>
-        إضافة زيارة بيطرية
-    </a>
+    <div class="btn-group" role="group">
+        <a href="{{ url_for('main.reports_advanced', type='veterinary') }}" class="btn btn-success">
+            <i class="fas fa-chart-line me-2"></i>
+            التقارير
+        </a>
+        <a href="{{ url_for('main.veterinary_add') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>
+            إضافة زيارة بيطرية
+        </a>
+    </div>
 </div>
 
 {% if visits %}
