@@ -366,7 +366,7 @@ function renderPagination(pagination) {
     // Previous button
     const prevLi = document.createElement('li');
     prevLi.className = `page-item ${pagination.page <= 1 ? 'disabled' : ''}`;
-    prevLi.innerHTML = `<a class="page-link" href="#" onclick="runUnifiedMatrix(${pagination.page - 1})">السابق</a>`;
+    prevLi.innerHTML = `<a class="page-link" href="#" onclick="window.runUnifiedMatrix(${pagination.page - 1})">السابق</a>`;
     paginationUl.appendChild(prevLi);
     
     // Page numbers
@@ -376,14 +376,14 @@ function renderPagination(pagination) {
     for (let i = startPage; i <= endPage; i++) {
         const pageLi = document.createElement('li');
         pageLi.className = `page-item ${i === pagination.page ? 'active' : ''}`;
-        pageLi.innerHTML = `<a class="page-link" href="#" onclick="runUnifiedMatrix(${i})">${i}</a>`;
+        pageLi.innerHTML = `<a class="page-link" href="#" onclick="window.runUnifiedMatrix(${i})">${i}</a>`;
         paginationUl.appendChild(pageLi);
     }
     
     // Next button
     const nextLi = document.createElement('li');
     nextLi.className = `page-item ${pagination.page >= pagination.pages ? 'disabled' : ''}`;
-    nextLi.innerHTML = `<a class="page-link" href="#" onclick="runUnifiedMatrix(${pagination.page + 1})">التالي</a>`;
+    nextLi.innerHTML = `<a class="page-link" href="#" onclick="window.runUnifiedMatrix(${pagination.page + 1})">التالي</a>`;
     paginationUl.appendChild(nextLi);
     
     paginationNav.style.display = 'block';
@@ -500,10 +500,23 @@ function showExportButtons() {
     document.getElementById('export-buttons').style.display = 'block';
 }
 
+// Ensure all functions are globally accessible
+window.runUnifiedMatrix = runUnifiedMatrix;
+window.initializeUnifiedMatrix = initializeUnifiedMatrix;
+window.resetFilters = resetFilters;
+window.exportMatrix = exportMatrix;
+window.prefillFilters = prefillFilters;
+
 // Prevent default form submission
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('unified-filters-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        runUnifiedMatrix();
-    });
+    console.log('JavaScript file loaded successfully');
+    console.log('runUnifiedMatrix available:', typeof runUnifiedMatrix === 'function');
+    
+    const form = document.getElementById('unified-filters-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            runUnifiedMatrix();
+        });
+    }
 });
