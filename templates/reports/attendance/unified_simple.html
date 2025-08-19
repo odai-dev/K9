@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}المصفوفة الموحدة للحضور{% endblock %}
+
+{% block extra_css %}
+<style>
+    .attendance-matrix {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: bold;
+    }
+    
+    .status-present { background: #d4edda; color: #155724; }
+    .status-absent { background: #f8d7da; color: #721c24; }
+    .status-late { background: #fff3cd; color: #856404; }
+    .status-sick { background: #d1ecf1; color: #0c5460; }
+    .status-leave { background: #e2e3e5; color: #383d41; }
+    
+    .employee-name {
+        position: sticky;
+        right: 0;
+        background: white;
+        z-index: 10;
+        min-width: 150px;
+        border-left: 2px solid #dee2e6;
+    }
+    
+    .matrix-container {
+        max-height: 500px;
+        overflow: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+    }
+    
+    .date-header {
+        min-width: 80px;
+        font-size: 12px;
+        text-align: center;
+        padding: 8px 4px;
+    }
+    
+    .loading-spinner {
+        text-align: center;
+        padding: 40px;
+    }
+    
+    .no-data {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>المصفوفة الموحدة للحضور</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">الرئيسية</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('main.reports_index') }}">التقارير</a></li>
+                <li class="breadcrumb-item active">المصفوفة الموحدة للحضور</li>
+            </ol>
+        </nav>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-filter me-2"></i>
+                إعدادات التقرير
+            </h5>
+        </div>
+        <div class="card-body">
+            <form id="reportForm" method="POST" action="{{ url_for('reports_attendance_unified_ui.run_simple_report') }}">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label for="start_date" class="form-label">من تاريخ</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" required 
+                               value="{{ (date.today() - timedelta(days=7)).strftime('%Y-%m-%d') }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="end_date" class="form-label">إلى تاريخ</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" required 
+                               value="{{ date.today().strftime('%Y-%m-%d') }}">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="fas fa-play me-1"></i>
+                            تشغيل التقرير
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                            <i class="fas fa-undo me-1"></i>
+                            إعادة تعيين
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="card attendance-matrix">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-table me-2"></i>
+                نتائج المصفوفة
+            </h5>
+            {% if show_results %}
+            <div class="btn-group">
+                <a href="{{ url_for('reports_attendance_unified_ui.export_simple_report', format='pdf', **request.form) }}" 
+                   class="btn btn-outline-danger btn-sm">
+                    <i class="fas fa-file-pdf me-1"></i>
+                    PDF
+                </a>
+                <a href="{{ url_for('reports_attendance_unified_ui.export_simple_report', format='excel', **request.form) }}" 
+                   class="btn btn-outline-success btn-sm">
+                    <i class="fas fa-file-excel me-1"></i>
+                    Excel
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        <div class="card-body p-0">
+            {% if show_results %}
+                {% if matrix_data and matrix_data.employees %}
+                <div class="matrix-container">
+                    <table class="table table-sm table-bordered mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th class="employee-name">الموظف</th>
+                                {% for date in matrix_data.dates %}
+                                <th class="date-header">{{ date.strftime('%m/%d') }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for emp_id, emp_data in matrix_data.employees.items() %}
+                            <tr>
+                                <td class="employee-name">
+                                    <strong>{{ emp_data.name }}</strong><br>
+                                    <small class="text-muted">{{ emp_data.role }}</small>
+                                </td>
+                                {% for date in matrix_data.dates %}
+                                <td class="text-center">
+                                    {% set status = emp_data.attendance.get(date.strftime('%Y-%m-%d'), 'ABSENT') %}
+                                    <span class="status-badge status-{{ status.lower() }}">
+                                        {% if status == 'PRESENT' %}حاضر
+                                        {% elif status == 'ABSENT' %}غائب
+                                        {% elif status == 'LATE' %}متأخر
+                                        {% elif status == 'SICK' %}مريض
+                                        {% elif status == 'LEAVE' %}إجازة
+                                        {% else %}{{ status }}
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="no-data">
+                    <i class="fas fa-table fa-3x mb-3"></i>
+                    <h5>لا توجد بيانات حضور</h5>
+                    <p class="text-muted">لا توجد سجلات حضور في الفترة المحددة</p>
+                </div>
+                {% endif %}
+            {% else %}
+            <div class="no-data">
+                <i class="fas fa-chart-line fa-3x mb-3"></i>
+                <h5>مرحباً بك في المصفوفة الموحدة للحضور</h5>
+                <p class="text-muted">اختر نطاق التواريخ واضغط "تشغيل التقرير" لعرض البيانات</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function resetForm() {
+    document.getElementById('reportForm').reset();
+    // Set default dates
+    const today = new Date();
+    const weekAgo = new Date();
+    weekAgo.setDate(today.getDate() - 7);
+    
+    document.getElementById('end_date').value = today.toISOString().split('T')[0];
+    document.getElementById('start_date').value = weekAgo.toISOString().split('T')[0];
+}
+</script>
+{% endblock %}
