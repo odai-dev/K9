@@ -197,17 +197,32 @@
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/reports_attendance_unified.js') }}"></script>
 <script>
+    // Debug function loading
+    window.addEventListener('load', function() {
+        console.log('Page fully loaded');
+        console.log('runUnifiedMatrix function exists:', typeof runUnifiedMatrix === 'function');
+        console.log('initializeUnifiedMatrix function exists:', typeof initializeUnifiedMatrix === 'function');
+        console.log('Available functions:', Object.keys(window).filter(key => typeof window[key] === 'function' && key.includes('Matrix')));
+    });
+
     // Initialize the unified matrix on page load
     document.addEventListener('DOMContentLoaded', function() {
-        initializeUnifiedMatrix();
+        console.log('Reports page initialized');
         
-        // Pre-fill filters if provided
-        {% if prefill_data %}
-        const prefillData = {{ prefill_data | tojson | safe }};
-        if (prefillData) {
-            prefillFilters(prefillData);
+        // Check if functions are available
+        if (typeof initializeUnifiedMatrix === 'function') {
+            initializeUnifiedMatrix();
+        } else {
+            console.error('initializeUnifiedMatrix function not found');
         }
-        {% endif %}
+        
+        // Check runUnifiedMatrix function
+        if (typeof runUnifiedMatrix !== 'function') {
+            console.error('runUnifiedMatrix function not found - creating fallback');
+            window.runUnifiedMatrix = function() {
+                alert('JavaScript loading issue - please refresh the page');
+            };
+        }
     });
 </script>
 {% endblock %}
