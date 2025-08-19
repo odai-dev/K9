@@ -225,6 +225,7 @@ def export_to_pdf(matrix_data, start_date, end_date):
     from reportlab.lib.units import inch
     from flask import send_file
     import os
+    import io
     
     # Create a file-like buffer to receive PDF data
     buffer = io.BytesIO()
@@ -313,6 +314,7 @@ def export_to_pdf(matrix_data, start_date, end_date):
 
 def export_to_excel(matrix_data, start_date, end_date):
     """Export matrix to Excel"""
+    import io
     try:
         from openpyxl import Workbook
         from openpyxl.styles import Font, PatternFill, Alignment
