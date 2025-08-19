@@ -216,6 +216,7 @@ def export_simple_report(format):
 
 def export_to_pdf(matrix_data, start_date, end_date):
     """Export matrix to PDF"""
+    import io
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4, landscape
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
@@ -225,7 +226,6 @@ def export_to_pdf(matrix_data, start_date, end_date):
     from reportlab.lib.units import inch
     from flask import send_file
     import os
-    import io
     
     # Create a file-like buffer to receive PDF data
     buffer = io.BytesIO()
@@ -375,15 +375,17 @@ def export_to_excel(matrix_data, start_date, end_date):
         row_num += 1
     
     # Auto-adjust column widths
-    for column in ws.columns:
+    for col_idx in range(1, len(headers) + 1):
+        column_letter = chr(64 + col_idx)  # A, B, C, etc.
         max_length = 0
-        column_letter = column[0].column_letter
-        for cell in column:
-            try:
-                if len(str(cell.value)) > max_length:
-                    max_length = len(str(cell.value))
-            except:
-                pass
+        for row in ws.iter_rows(min_col=col_idx, max_col=col_idx):
+            for cell in row:
+                if hasattr(cell, 'value') and cell.value:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
         adjusted_width = min(max_length + 2, 20)
         ws.column_dimensions[column_letter].width = adjusted_width
     
