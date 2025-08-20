@@ -538,7 +538,7 @@ def maturity_list():
         assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
         maturity_records = DogMaturity.query.filter(DogMaturity.dog_id.in_(assigned_dog_ids)).order_by(DogMaturity.created_at.desc()).all()
     
-    return render_template('breeding/maturity_list.html', records=maturity_records)
+    return render_template('breeding/maturity_list.html', records=maturity_records, maturities=maturity_records)
 
 @main_bp.route('/breeding/maturity/add', methods=['GET', 'POST'])
 @login_required
@@ -593,7 +593,7 @@ def heat_cycles_list():
         assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
         heat_cycles = HeatCycle.query.filter(HeatCycle.dog_id.in_(assigned_dog_ids)).order_by(HeatCycle.created_at.desc()).all()
     
-    return render_template('breeding/heat_cycles_list.html', records=heat_cycles)
+    return render_template('breeding/heat_cycles_list.html', records=heat_cycles, heat_cycles=heat_cycles)
 
 @main_bp.route('/breeding/heat-cycles/add', methods=['GET', 'POST'])
 @login_required
@@ -658,7 +658,7 @@ def mating_list():
             db.or_(MatingRecord.female_id.in_(assigned_dog_ids), MatingRecord.male_id.in_(assigned_dog_ids))
         ).order_by(MatingRecord.created_at.desc()).all()
     
-    return render_template('breeding/mating_list.html', records=mating_records)
+    return render_template('breeding/mating_list.html', records=mating_records, matings=mating_records)
 
 @main_bp.route('/breeding/mating/add', methods=['GET', 'POST'])
 @login_required
@@ -732,7 +732,7 @@ def pregnancy_list():
         assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
         pregnancy_records = PregnancyRecord.query.filter(PregnancyRecord.dog_id.in_(assigned_dog_ids)).order_by(PregnancyRecord.created_at.desc()).all()
     
-    return render_template('breeding/pregnancy_list.html', pregnancies=pregnancy_records)
+    return render_template('breeding/pregnancy_list.html', pregnancies=pregnancy_records, records=pregnancy_records)
 
 @main_bp.route('/breeding/pregnancy/add', methods=['GET', 'POST'])
 @login_required
