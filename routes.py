@@ -543,10 +543,11 @@ def maturity_list():
 def maturity_add():
     if request.method == 'POST':
         try:
-            from models import DogMaturity
+            from models import DogMaturity, MaturityStatus
             maturity = DogMaturity()
             maturity.dog_id = request.form['dog_id']
             maturity.maturity_date = datetime.strptime(request.form['maturity_date'], '%Y-%m-%d').date()
+            maturity.maturity_status = MaturityStatus.MATURE  # Set default status
             if request.form.get('weight_at_maturity'):
                 maturity.weight_at_maturity = float(request.form['weight_at_maturity'])
             if request.form.get('height_at_maturity'):
@@ -555,10 +556,20 @@ def maturity_add():
             
             db.session.add(maturity)
             db.session.commit()
+            
+            # Log audit
+            from utils import log_audit
+            from models import AuditAction
+            log_audit(current_user.id, AuditAction.CREATE, 'DogMaturity', maturity.id, 
+                     f'تسجيل بلوغ جديد للكلب {maturity.dog.name}', None, {'maturity_date': str(maturity.maturity_date)})
+            
             flash('تم تسجيل البلوغ بنجاح', 'success')
             return redirect(url_for('main.maturity_list'))
         except Exception as e:
             db.session.rollback()
+            print(f'Maturity add error: {e}')
+            import traceback
+            traceback.print_exc()
             flash(f'حدث خطأ: {str(e)}', 'error')
     
     # Get available dogs for the form
@@ -587,7 +598,7 @@ def heat_cycles_list():
 def heat_cycles_add():
     if request.method == 'POST':
         try:
-            from models import HeatCycle
+            from models import HeatCycle, HeatStatus
             heat_cycle = HeatCycle()
             heat_cycle.dog_id = request.form['dog_id']
             # Auto-increment cycle number for this dog
@@ -596,6 +607,9 @@ def heat_cycles_add():
             heat_cycle.start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d').date()
             if request.form.get('end_date'):
                 heat_cycle.end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d').date()
+                heat_cycle.status = HeatStatus.COMPLETED
+            else:
+                heat_cycle.status = HeatStatus.IN_HEAT
             heat_cycle.behavioral_changes = request.form.get('behavioral_changes')
             heat_cycle.physical_signs = request.form.get('physical_signs')
             heat_cycle.appetite_changes = request.form.get('appetite_changes')
@@ -603,10 +617,20 @@ def heat_cycles_add():
             
             db.session.add(heat_cycle)
             db.session.commit()
+            
+            # Log audit
+            from utils import log_audit
+            from models import AuditAction
+            log_audit(current_user.id, AuditAction.CREATE, 'HeatCycle', heat_cycle.id, 
+                     f'تسجيل دورة حرارية جديدة للكلب {heat_cycle.dog.name}', None, {'cycle_number': heat_cycle.cycle_number})
+            
             flash('تم تسجيل الدورة الحرارية بنجاح', 'success')
             return redirect(url_for('main.heat_cycles_list'))
         except Exception as e:
             db.session.rollback()
+            print(f'Heat cycle add error: {e}')
+            import traceback
+            traceback.print_exc()
             flash(f'حدث خطأ: {str(e)}', 'error')
     
     # Get available female dogs for the form
@@ -639,7 +663,7 @@ def mating_list():
 def mating_add():
     if request.method == 'POST':
         try:
-            from models import MatingRecord
+            from models import MatingRecord, MatingResult
             mating = MatingRecord()
             mating.female_id = request.form['female_id']
             mating.male_id = request.form['male_id']
@@ -659,16 +683,27 @@ def mating_add():
                 mating.duration_minutes = int(request.form['duration_minutes'])
             if request.form.get('success_rate'):
                 mating.success_rate = int(request.form['success_rate'])
+            mating.result = MatingResult.UNKNOWN  # Set default result
             mating.behavior_observed = request.form.get('behavior_observed')
             mating.complications = request.form.get('complications')
             mating.notes = request.form.get('notes')
             
             db.session.add(mating)
             db.session.commit()
+            
+            # Log audit
+            from utils import log_audit
+            from models import AuditAction
+            log_audit(current_user.id, AuditAction.CREATE, 'MatingRecord', mating.id, 
+                     f'تسجيل تزاوج جديد: {mating.female.name} × {mating.male.name}', None, {'mating_date': str(mating.mating_date)})
+            
             flash('تم تسجيل التزاوج بنجاح', 'success')
             return redirect(url_for('main.mating_list'))
         except Exception as e:
             db.session.rollback()
+            print(f'Mating add error: {e}')
+            import traceback
+            traceback.print_exc()
             flash(f'حدث خطأ: {str(e)}', 'error')
     
     # Get available dogs and employees for the form
