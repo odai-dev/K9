@@ -722,39 +722,142 @@ def mating_add():
 @main_bp.route('/breeding/pregnancy')
 @login_required
 def pregnancy_list():
-    return render_template('breeding/pregnancy_list.html')
+    from models import PregnancyRecord
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        pregnancy_records = PregnancyRecord.query.order_by(PregnancyRecord.created_at.desc()).all()
+    else:
+        # Get assigned dogs and their pregnancy records
+        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
+        pregnancy_records = PregnancyRecord.query.filter(PregnancyRecord.dog_id.in_(assigned_dog_ids)).order_by(PregnancyRecord.created_at.desc()).all()
+    
+    return render_template('breeding/pregnancy_list.html', records=pregnancy_records)
 
 @main_bp.route('/breeding/pregnancy/add', methods=['GET', 'POST'])
 @login_required
 def pregnancy_add():
     if request.method == 'POST':
-        flash('تم تسجيل الحمل بنجاح', 'success')
-        return redirect(url_for('main.pregnancy_list'))
+        try:
+            from models import PregnancyRecord, PregnancyStatus
+            pregnancy = PregnancyRecord()
+            pregnancy.dog_id = request.form['female_id']
+            pregnancy.mating_record_id = request.form['mating_record_id']
+                
+            pregnancy.confirmed_date = datetime.strptime(request.form['conception_date'], '%Y-%m-%d').date()
+            pregnancy.expected_delivery_date = datetime.strptime(request.form['expected_delivery_date'], '%Y-%m-%d').date()
+            pregnancy.status = PregnancyStatus.PREGNANT
+            
+            pregnancy.special_diet = request.form.get('special_diet')
+            pregnancy.exercise_restrictions = request.form.get('exercise_restrictions')
+            pregnancy.notes = request.form.get('notes')
+            
+            db.session.add(pregnancy)
+            db.session.commit()
+            
+            # Log audit
+            from utils import log_audit
+            from models import AuditAction
+            log_audit(current_user.id, AuditAction.CREATE, 'PregnancyRecord', pregnancy.id, 
+                     f'تسجيل حمل جديد للكلبة {pregnancy.dog.name}', None, {'confirmed_date': str(pregnancy.confirmed_date)})
+            
+            flash('تم تسجيل الحمل بنجاح', 'success')
+            return redirect(url_for('main.pregnancy_list'))
+        except Exception as e:
+            db.session.rollback()
+            print(f'Pregnancy add error: {e}')
+            import traceback
+            traceback.print_exc()
+            flash(f'حدث خطأ: {str(e)}', 'error')
     
-    # Get available mating records for pregnancy - pregnancy template expects 'matings'
-    # For now, we'll simulate this data structure since we don't have BreedingCycle or Mating models yet
-    matings = []  # This would normally be Mating.query.all() when implemented
+    # Get available females and mating records for pregnancy
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        all_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+        mating_records = MatingRecord.query.order_by(MatingRecord.created_at.desc()).all()
+    else:
+        all_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+        assigned_dog_ids = [d.id for d in all_dogs]
+        mating_records = MatingRecord.query.filter(
+            db.or_(MatingRecord.female_id.in_(assigned_dog_ids), MatingRecord.male_id.in_(assigned_dog_ids))
+        ).order_by(MatingRecord.created_at.desc()).all()
     
-    return render_template('breeding/pregnancy_add.html', matings=matings)
+    females = [dog for dog in all_dogs if dog.gender == DogGender.FEMALE]
+    
+    return render_template('breeding/pregnancy_add.html', females=females, mating_records=mating_records)
 
 @main_bp.route('/breeding/delivery')
 @login_required
 def delivery_list():
-    return render_template('breeding/delivery_list.html')
+    from models import DeliveryRecord
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        delivery_records = DeliveryRecord.query.order_by(DeliveryRecord.created_at.desc()).all()
+    else:
+        # Get assigned dogs and their delivery records
+        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
+        delivery_records = DeliveryRecord.query.join(PregnancyRecord).filter(PregnancyRecord.dog_id.in_(assigned_dog_ids)).order_by(DeliveryRecord.created_at.desc()).all()
+    
+    return render_template('breeding/delivery_list.html', records=delivery_records)
 
 @main_bp.route('/breeding/delivery/add', methods=['GET', 'POST'])
 @login_required
 def delivery_add():
     if request.method == 'POST':
-        flash('تم تسجيل الولادة بنجاح', 'success')
-        return redirect(url_for('main.delivery_list'))
+        try:
+            from models import DeliveryRecord, PregnancyRecord, PregnancyStatus
+            delivery = DeliveryRecord()
+            delivery.pregnancy_record_id = request.form['pregnancy_id']
+            delivery.delivery_date = datetime.strptime(request.form['delivery_date'], '%Y-%m-%d').date()
+            
+            if request.form.get('delivery_start_time'):
+                delivery.delivery_start_time = datetime.strptime(request.form['delivery_start_time'], '%H:%M').time()
+            if request.form.get('delivery_end_time'):
+                delivery.delivery_end_time = datetime.strptime(request.form['delivery_end_time'], '%H:%M').time()
+                
+            if request.form.get('vet_present'):
+                delivery.vet_present = request.form['vet_present']
+            if request.form.get('handler_present'):
+                delivery.handler_present = request.form['handler_present']
+                
+            if request.form.get('total_puppies'):
+                delivery.total_puppies = int(request.form['total_puppies'])
+            if request.form.get('live_births'):
+                delivery.live_births = int(request.form['live_births'])
+            if request.form.get('stillbirths'):
+                delivery.stillbirths = int(request.form['stillbirths'])
+                
+            delivery.delivery_complications = request.form.get('delivery_complications')
+            delivery.mother_condition = request.form.get('mother_condition')
+            delivery.notes = request.form.get('notes')
+            
+            db.session.add(delivery)
+            
+            # Update pregnancy status to delivered
+            pregnancy = PregnancyRecord.query.get(request.form['pregnancy_id'])
+            if pregnancy:
+                pregnancy.status = PregnancyStatus.DELIVERED
+                
+            db.session.commit()
+            
+            # Log audit
+            from utils import log_audit
+            from models import AuditAction
+            log_audit(current_user.id, AuditAction.CREATE, 'DeliveryRecord', delivery.id, 
+                     f'تسجيل ولادة جديدة للكلبة {delivery.pregnancy_record.dog.name}', None, {'delivery_date': str(delivery.delivery_date)})
+            
+            flash('تم تسجيل الولادة بنجاح', 'success')
+            return redirect(url_for('main.delivery_list'))
+        except Exception as e:
+            db.session.rollback()
+            print(f'Delivery add error: {e}')
+            import traceback
+            traceback.print_exc()
+            flash(f'حدث خطأ: {str(e)}', 'error')
     
-    # Get available pregnancy records and employees for delivery
-    pregnancies = []  # This would be Pregnancy.query.all() when implemented
-    
+    # Get available pregnancies and employees for delivery
     if current_user.role == UserRole.GENERAL_ADMIN:
+        pregnancies = PregnancyRecord.query.filter_by(status=PregnancyStatus.PREGNANT).order_by(PregnancyRecord.expected_delivery_date.asc()).all()
         employees = Employee.query.filter_by(is_active=True).all()
     else:
+        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
+        pregnancies = PregnancyRecord.query.filter(PregnancyRecord.dog_id.in_(assigned_dog_ids), PregnancyRecord.status == PregnancyStatus.PREGNANT).order_by(PregnancyRecord.expected_delivery_date.asc()).all()
         employees = Employee.query.filter_by(assigned_to_user_id=current_user.id, is_active=True).all()
     
     return render_template('breeding/delivery_add.html', pregnancies=pregnancies, employees=employees)
