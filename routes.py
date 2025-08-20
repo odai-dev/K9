@@ -464,7 +464,9 @@ def breeding_list():
         all_dogs = Dog.query.all()
     else:
         assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
-        cycles = BreedingCycle.query.filter(BreedingCycle.dog_id.in_(assigned_dog_ids)).order_by(BreedingCycle.created_at.desc()).all()
+        cycles = BreedingCycle.query.filter(
+            db.or_(BreedingCycle.female_id.in_(assigned_dog_ids), BreedingCycle.male_id.in_(assigned_dog_ids))
+        ).order_by(BreedingCycle.created_at.desc()).all()
         all_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id).all()
     
     # Calculate breeding statistics
@@ -485,18 +487,25 @@ def breeding_add():
     if request.method == 'POST':
         try:
             cycle = BreedingCycle()
-            cycle.dog_id = request.form['dog_id']
+            cycle.female_id = request.form['female_id']
+            cycle.male_id = request.form['male_id']
             cycle.cycle_type = BreedingCycleType(request.form['cycle_type'])
-            cycle.start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d').date()
-            cycle.end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d').date() if request.form.get('end_date') else None
-            cycle.partner_dog_id = request.form.get('partner_dog_id') if request.form.get('partner_dog_id') else None
-            cycle.result = BreedingResult(request.form['result']) if request.form.get('result') else None
-            cycle.notes = request.form.get('notes')
+            cycle.mating_date = datetime.strptime(request.form['mating_date'], '%Y-%m-%d').date()
+            if request.form.get('heat_start_date'):
+                cycle.heat_start_date = datetime.strptime(request.form['heat_start_date'], '%Y-%m-%d').date()
+            if request.form.get('expected_delivery_date'):
+                cycle.expected_delivery_date = datetime.strptime(request.form['expected_delivery_date'], '%Y-%m-%d').date()
+            if request.form.get('actual_delivery_date'):
+                cycle.actual_delivery_date = datetime.strptime(request.form['actual_delivery_date'], '%Y-%m-%d').date()
+            cycle.result = BreedingResult(request.form['result']) if request.form.get('result') else BreedingResult.UNKNOWN
+            cycle.prenatal_care = request.form.get('prenatal_care')
+            cycle.delivery_notes = request.form.get('delivery_notes')
+            cycle.complications = request.form.get('complications')
             
             db.session.add(cycle)
             db.session.commit()
             
-            log_audit(current_user.id, AuditAction.CREATE, 'BreedingCycle', cycle.id, f'دورة تربية جديدة للكلب {cycle.dog.name}', None, {'cycle_type': cycle.cycle_type.value})
+            log_audit(current_user.id, AuditAction.CREATE, 'BreedingCycle', cycle.id, f'دورة تربية جديدة: {cycle.female.name} × {cycle.male.name}', None, {'cycle_type': cycle.cycle_type.value})
             flash('تم تسجيل دورة التربية بنجاح', 'success')
             return redirect(url_for('main.breeding_list'))
             
