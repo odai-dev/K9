@@ -70,7 +70,7 @@
                                     {% endif %}
                                 </td>
                                 <td>{{ mating.duration_minutes if mating.duration_minutes else '-' }} دقيقة</td>
-                                <td>{{ mating.supervised_by_employee.name if mating.supervised_by_employee else 'غير محدد' }}</td>
+                                <td>{{ mating.supervisor.name if mating.supervisor else 'غير محدد' }}</td>
                                 <td>
                                     <a href="#" class="btn btn-sm btn-outline-primary">عرض</a>
                                 </td>
