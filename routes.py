@@ -769,6 +769,7 @@ def pregnancy_add():
             flash(f'حدث خطأ: {str(e)}', 'error')
     
     # Get available females and mating records for pregnancy
+    from models import MatingRecord
     if current_user.role == UserRole.GENERAL_ADMIN:
         all_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
         mating_records = MatingRecord.query.order_by(MatingRecord.created_at.desc()).all()
