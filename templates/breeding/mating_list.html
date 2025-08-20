@@ -24,7 +24,7 @@
     </div>
 </div>
 
-{% if matings %}
+{% if records %}
 <div class="row">
     <div class="col-12">
         <div class="card">
@@ -44,7 +44,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for mating in matings %}
+                            {% for mating in records %}
                             <tr>
                                 <td>
                                     <strong>{{ mating.female.name }}</strong><br>
