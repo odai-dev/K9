@@ -830,7 +830,7 @@ class PuppyRecord(db.Model):
     
     # Health status
     alive_at_birth = db.Column(db.Boolean, default=True)
-    current_status = db.Column(db.String(50), default='جيد')  # جيد، ضعيف، متوفي
+    current_status = db.Column(db.String(50), default='صحي ونشط')  # صحي ونشط، ضعيف، متوفي، مريض
     
     # Physical characteristics
     color = db.Column(db.String(50))

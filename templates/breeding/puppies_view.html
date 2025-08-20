@@ -60,9 +60,9 @@
                             <tr>
                                 <td><strong>الحالة الحالية:</strong></td>
                                 <td>
-                                    {% if puppy.current_status == 'جيد' %}
+                                    {% if puppy.current_status in ['صحي ونشط', 'جيد', 'ممتاز'] %}
                                         <span class="badge bg-success">{{ puppy.current_status }}</span>
-                                    {% elif puppy.current_status == 'ضعيف' %}
+                                    {% elif puppy.current_status in ['ضعيف', 'مريض'] %}
                                         <span class="badge bg-warning">{{ puppy.current_status }}</span>
                                     {% else %}
                                         <span class="badge bg-danger">{{ puppy.current_status }}</span>

@@ -923,7 +923,7 @@ def puppies_add():
                 puppy.birth_order = int(request.form['birth_order'])
                 
             puppy.alive_at_birth = 'alive_at_birth' in request.form
-            puppy.current_status = request.form.get('current_status', 'جيد')
+            puppy.current_status = request.form.get('current_status', 'صحي ونشط')
             puppy.color = request.form.get('color')
             puppy.markings = request.form.get('markings')
             puppy.birth_defects = request.form.get('birth_defects')
