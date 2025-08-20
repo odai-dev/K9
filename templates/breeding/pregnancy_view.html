@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}عرض سجل الحمل{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-baby me-2"></i>
+                عرض سجل الحمل
+            </h1>
+            <div class="btn-group">
+                <a href="{{ url_for('main.pregnancy_list') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة للقائمة
+                </a>
+                <a href="{{ url_for('main.pregnancy_add') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    تسجيل حمل جديد
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">حمل الكلبة {{ pregnancy.dog.name }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>معلومات الأم</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>اسم الكلب:</strong></td>
+                                <td>{{ pregnancy.dog.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>رمز الكلب:</strong></td>
+                                <td>{{ pregnancy.dog.code }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>العمر:</strong></td>
+                                <td>{{ pregnancy.dog.age_months // 12 if pregnancy.dog.age_months else '-' }} سنة</td>
+                            </tr>
+                            <tr>
+                                <td><strong>الأب:</strong></td>
+                                <td>{{ pregnancy.mating_record.male.name if pregnancy.mating_record else '-' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>تفاصيل الحمل</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>تاريخ تأكيد الحمل:</strong></td>
+                                <td>{{ pregnancy.confirmed_date.strftime('%Y-%m-%d') }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>تاريخ الولادة المتوقع:</strong></td>
+                                <td>{{ pregnancy.expected_delivery_date.strftime('%Y-%m-%d') if pregnancy.expected_delivery_date else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>الحالة:</strong></td>
+                                <td>
+                                    {% if pregnancy.status.name == 'PREGNANT' %}
+                                        <span class="badge bg-warning">حامل</span>
+                                    {% elif pregnancy.status.name == 'DELIVERED' %}
+                                        <span class="badge bg-success">تمت الولادة</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">فقدان الحمل</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% if pregnancy.status.name == 'PREGNANT' and pregnancy.confirmed_date %}
+                            <tr>
+                                <td><strong>فترة الحمل:</strong></td>
+                                <td>
+                                    {% set days_pregnant = (moment().date() - pregnancy.confirmed_date).days %}
+                                    {{ days_pregnant }} يوم ({{ (days_pregnant / 7) | round(1) }} أسبوع)
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h6>النظام الغذائي الخاص</h6>
+                        <div class="bg-light p-2 rounded">
+                            {{ pregnancy.special_diet or 'لا يوجد نظام غذائي خاص' }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>قيود التمرين</h6>
+                        <div class="bg-light p-2 rounded">
+                            {{ pregnancy.exercise_restrictions or 'لا توجد قيود' }}
+                        </div>
+                    </div>
+                </div>
+                
+                {% if pregnancy.notes %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>الملاحظات</h6>
+                        <div class="bg-light p-3 rounded">
+                            {{ pregnancy.notes }}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if pregnancy.mating_record %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>معلومات التزاوج المرتبط</h6>
+                        <div class="card border-secondary">
+                            <div class="card-body">
+                                <p><strong>تاريخ التزاوج:</strong> {{ pregnancy.mating_record.mating_date.strftime('%Y-%m-%d') }}</p>
+                                <p><strong>الذكر:</strong> {{ pregnancy.mating_record.male.name }} ({{ pregnancy.mating_record.male.code }})</p>
+                                {% if pregnancy.mating_record.success_rate %}
+                                <p><strong>نسبة نجاح التزاوج:</strong> {{ pregnancy.mating_record.success_rate }}%</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <small class="text-muted">
+                            تم التسجيل: {{ pregnancy.created_at.strftime('%Y-%m-%d %H:%M') if pregnancy.created_at else '-' }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

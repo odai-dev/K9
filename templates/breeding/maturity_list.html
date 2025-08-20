@@ -55,7 +55,7 @@
                                     <span class="badge bg-success">{{ record.maturity_status.value }}</span>
                                 </td>
                                 <td>
-                                    <a href="#" class="btn btn-sm btn-outline-primary">عرض</a>
+                                    <a href="{{ url_for('main.maturity_view', id=record.id) }}" class="btn btn-sm btn-outline-primary">عرض</a>
                                 </td>
                             </tr>
                             {% endfor %}

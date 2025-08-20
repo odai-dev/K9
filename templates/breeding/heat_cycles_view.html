@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}عرض دورة الحرارة{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-thermometer-half me-2"></i>
+                عرض دورة الحرارة
+            </h1>
+            <div class="btn-group">
+                <a href="{{ url_for('main.heat_cycles_list') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة للقائمة
+                </a>
+                <a href="{{ url_for('main.heat_cycles_add') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    تسجيل دورة جديدة
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">الدورة #{{ heat_cycle.cycle_number }} - {{ heat_cycle.dog.name }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>معلومات الكلب</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>اسم الكلب:</strong></td>
+                                <td>{{ heat_cycle.dog.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>رمز الكلب:</strong></td>
+                                <td>{{ heat_cycle.dog.code }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>رقم الدورة:</strong></td>
+                                <td><span class="badge bg-info">#{{ heat_cycle.cycle_number }}</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>توقيت الدورة</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>تاريخ البداية:</strong></td>
+                                <td>{{ heat_cycle.start_date.strftime('%Y-%m-%d') }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>تاريخ النهاية:</strong></td>
+                                <td>{{ heat_cycle.end_date.strftime('%Y-%m-%d') if heat_cycle.end_date else 'لم تنته بعد' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>المدة:</strong></td>
+                                <td>{{ heat_cycle.duration_days if heat_cycle.duration_days else '-' }} يوم</td>
+                            </tr>
+                            <tr>
+                                <td><strong>الحالة:</strong></td>
+                                <td>
+                                    {% if heat_cycle.status %}
+                                        {% if heat_cycle.status.name == 'PRE_HEAT' %}
+                                            <span class="badge bg-warning">ما قبل الحرارة</span>
+                                        {% elif heat_cycle.status.name == 'IN_HEAT' %}
+                                            <span class="badge bg-danger">في الحرارة</span>
+                                        {% else %}
+                                            <span class="badge bg-success">بعد الحرارة</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary">غير محدد</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <h6>التغييرات السلوكية</h6>
+                        <div class="bg-light p-2 rounded">
+                            {{ heat_cycle.behavioral_changes or 'لا توجد ملاحظات' }}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>العلامات الجسدية</h6>
+                        <div class="bg-light p-2 rounded">
+                            {{ heat_cycle.physical_signs or 'لا توجد ملاحظات' }}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>تغييرات الشهية</h6>
+                        <div class="bg-light p-2 rounded">
+                            {{ heat_cycle.appetite_changes or 'لا توجد ملاحظات' }}
+                        </div>
+                    </div>
+                </div>
+                
+                {% if heat_cycle.notes %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>الملاحظات العامة</h6>
+                        <div class="bg-light p-3 rounded">
+                            {{ heat_cycle.notes }}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <small class="text-muted">
+                            تم التسجيل: {{ heat_cycle.created_at.strftime('%Y-%m-%d %H:%M') if heat_cycle.created_at else '-' }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

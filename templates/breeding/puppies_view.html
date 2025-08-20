@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}عرض بيانات الجرو{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-paw me-2"></i>
+                عرض بيانات الجرو
+            </h1>
+            <div class="btn-group">
+                <a href="{{ url_for('main.puppies_list') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة للقائمة
+                </a>
+                <a href="{{ url_for('main.puppies_add') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    تسجيل جرو جديد
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">{{ puppy.name or 'جرو رقم ' + puppy.puppy_number|string }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>معلومات أساسية</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>الاسم:</strong></td>
+                                <td>{{ puppy.name or 'بدون اسم' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>رقم الجرو:</strong></td>
+                                <td><span class="badge bg-info">#{{ puppy.puppy_number }}</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>الرقم المؤقت:</strong></td>
+                                <td>{{ puppy.temporary_id or 'بدون رقم مؤقت' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>الجنس:</strong></td>
+                                <td>
+                                    {% if puppy.gender.name == 'MALE' %}
+                                        <i class="fas fa-mars text-primary"></i> ذكر
+                                    {% else %}
+                                        <i class="fas fa-venus text-pink"></i> أنثى
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>الحالة الحالية:</strong></td>
+                                <td>
+                                    {% if puppy.current_status == 'جيد' %}
+                                        <span class="badge bg-success">{{ puppy.current_status }}</span>
+                                    {% elif puppy.current_status == 'ضعيف' %}
+                                        <span class="badge bg-warning">{{ puppy.current_status }}</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">{{ puppy.current_status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>معلومات الولادة</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>تاريخ الولادة:</strong></td>
+                                <td>{{ puppy.birth_date.strftime('%Y-%m-%d') if puppy.birth_date else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>وقت الولادة:</strong></td>
+                                <td>{{ puppy.birth_time.strftime('%H:%M') if puppy.birth_time else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>ترتيب الولادة:</strong></td>
+                                <td>{{ puppy.birth_order if puppy.birth_order else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>وزن الولادة:</strong></td>
+                                <td>{{ puppy.birth_weight if puppy.birth_weight else '-' }} كغ</td>
+                            </tr>
+                            <tr>
+                                <td><strong>حي عند الولادة:</strong></td>
+                                <td>
+                                    {% if puppy.alive_at_birth %}
+                                        <span class="badge bg-success">نعم</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">لا</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h6>معلومات الأم والأب</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>الأم:</strong></td>
+                                <td>{{ puppy.delivery_record.pregnancy_record.dog.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>الأب:</strong></td>
+                                <td>{{ puppy.delivery_record.pregnancy_record.mating_record.male.name if puppy.delivery_record.pregnancy_record.mating_record else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>تاريخ الولادة:</strong></td>
+                                <td>{{ puppy.delivery_record.delivery_date.strftime('%Y-%m-%d') if puppy.delivery_record else '-' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>الخصائص الجسدية</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>اللون:</strong></td>
+                                <td>{{ puppy.color or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>العلامات:</strong></td>
+                                <td>{{ puppy.markings or '-' }}</td>
+                            </tr>
+                            {% if puppy.birth_defects %}
+                            <tr>
+                                <td><strong>العيوب الخلقية:</strong></td>
+                                <td><span class="text-danger">{{ puppy.birth_defects }}</span></td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+                
+                {% if puppy.notes %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>الملاحظات</h6>
+                        <div class="bg-light p-3 rounded">
+                            {{ puppy.notes }}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <small class="text-muted">
+                            تم التسجيل: {{ puppy.created_at.strftime('%Y-%m-%d %H:%M') if puppy.created_at else '-' }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
