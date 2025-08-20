@@ -115,26 +115,25 @@ def dogs_add():
             assigned_to_user_id = current_user.id if current_user.role == UserRole.PROJECT_MANAGER else None
             
             # Create Dog instance using proper constructor
-            dog = Dog(
-                name=request.form['name'],
-                code=request.form['code'], 
-                breed=request.form['breed'],
-                family_line=request.form.get('family_line'),
-                gender=DogGender(request.form['gender']),
-                birth_date=datetime.strptime(request.form['birth_date'], '%Y-%m-%d').date() if request.form['birth_date'] else None,
-                color=request.form.get('color'),
-                weight=float(request.form['weight']) if request.form.get('weight') and request.form['weight'].strip() else None,
-                height=float(request.form['height']) if request.form.get('height') and request.form['height'].strip() else None,
-                microchip_id=request.form.get('microchip_id'),
-                location=request.form.get('location'),
-                specialization=request.form.get('specialization'),
-                current_status=DogStatus.ACTIVE,
-                photo=photo_filename,
-                birth_certificate=birth_cert_filename,
-                assigned_to_user_id=assigned_to_user_id,
-                father_id=request.form.get('father_id') if request.form.get('father_id') else None,
-                mother_id=request.form.get('mother_id') if request.form.get('mother_id') else None
-            )
+            dog = Dog()
+            dog.name = request.form['name']
+            dog.code = request.form['code']
+            dog.breed = request.form['breed']
+            dog.family_line = request.form.get('family_line')
+            dog.gender = DogGender(request.form['gender'])
+            dog.birth_date = datetime.strptime(request.form['birth_date'], '%Y-%m-%d').date() if request.form['birth_date'] else None
+            dog.color = request.form.get('color')
+            dog.weight = float(request.form['weight']) if request.form.get('weight') and request.form['weight'].strip() else None
+            dog.height = float(request.form['height']) if request.form.get('height') and request.form['height'].strip() else None
+            dog.microchip_id = request.form.get('microchip_id')
+            dog.location = request.form.get('location')
+            dog.specialization = request.form.get('specialization')
+            dog.current_status = DogStatus.ACTIVE
+            dog.photo = photo_filename
+            dog.birth_certificate = birth_cert_filename
+            dog.assigned_to_user_id = assigned_to_user_id
+            dog.father_id = request.form.get('father_id') if request.form.get('father_id') else None
+            dog.mother_id = request.form.get('mother_id') if request.form.get('mother_id') else None
             
             db.session.add(dog)
             db.session.commit()
@@ -203,7 +202,7 @@ def dogs_edit(dog_id):
                             os.remove(old_photo_path)
                     
                     # Save new photo
-                    photo_filename = f"{uuid.uuid4()}_{secure_filename(photo.filename)}"
+                    photo_filename = f"{uuid.uuid4()}_{secure_filename(photo.filename or 'image')}"
                     photo_path = os.path.join(current_app.config['UPLOAD_FOLDER'], photo_filename)
                     photo.save(photo_path)
                     dog.photo_path = photo_filename
@@ -497,7 +496,10 @@ def breeding_add():
                 cycle.expected_delivery_date = datetime.strptime(request.form['expected_delivery_date'], '%Y-%m-%d').date()
             if request.form.get('actual_delivery_date'):
                 cycle.actual_delivery_date = datetime.strptime(request.form['actual_delivery_date'], '%Y-%m-%d').date()
-            cycle.result = BreedingResult(request.form['result']) if request.form.get('result') else BreedingResult.UNKNOWN
+            if request.form.get('result'):
+                cycle.result = BreedingResult(request.form['result'])
+            else:
+                cycle.result = BreedingResult.UNKNOWN
             cycle.prenatal_care = request.form.get('prenatal_care')
             cycle.delivery_notes = request.form.get('delivery_notes')
             cycle.complications = request.form.get('complications')
@@ -873,11 +875,53 @@ def puppies_list():
 @login_required
 def puppies_add():
     if request.method == 'POST':
-        flash('تم تسجيل الجرو بنجاح', 'success')
-        return redirect(url_for('main.puppies_list'))
+        try:
+            from models import PuppyRecord, DeliveryRecord
+            puppy = PuppyRecord()
+            puppy.delivery_record_id = request.form['delivery_record_id']
+            puppy.puppy_number = int(request.form['puppy_number'])
+            puppy.name = request.form.get('name')
+            puppy.temporary_id = request.form.get('temporary_id')
+            puppy.gender = DogGender(request.form['gender'])
+            
+            if request.form.get('birth_weight'):
+                puppy.birth_weight = float(request.form['birth_weight'])
+            if request.form.get('birth_time'):
+                puppy.birth_time = datetime.strptime(request.form['birth_time'], '%H:%M').time()
+            if request.form.get('birth_order'):
+                puppy.birth_order = int(request.form['birth_order'])
+                
+            puppy.alive_at_birth = 'alive_at_birth' in request.form
+            puppy.current_status = request.form.get('current_status', 'جيد')
+            puppy.color = request.form.get('color')
+            puppy.markings = request.form.get('markings')
+            puppy.birth_defects = request.form.get('birth_defects')
+            puppy.notes = request.form.get('notes')
+            
+            db.session.add(puppy)
+            db.session.commit()
+            
+            # Log audit
+            log_audit(current_user.id, AuditAction.CREATE, 'PuppyRecord', puppy.id, 
+                     f'تسجيل جرو جديد: {puppy.name or "جرو رقم " + str(puppy.puppy_number)}', None, 
+                     {'delivery_record_id': str(puppy.delivery_record_id), 'puppy_number': puppy.puppy_number})
+            
+            flash('تم تسجيل الجرو بنجاح', 'success')
+            return redirect(url_for('main.puppies_list'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء تسجيل الجرو: {str(e)}', 'error')
     
-    # Get delivery records for puppies - puppies template expects 'deliveries'
-    deliveries = []  # This would be Delivery.query.all() when implemented
+    # Get delivery records for puppies dropdown
+    from models import DeliveryRecord, PregnancyRecord
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        deliveries = DeliveryRecord.query.order_by(DeliveryRecord.delivery_date.desc()).all()
+    else:
+        # Get assigned dogs and their delivery records
+        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
+        deliveries = DeliveryRecord.query.join(PregnancyRecord).filter(
+            PregnancyRecord.dog_id.in_(assigned_dog_ids)
+        ).order_by(DeliveryRecord.delivery_date.desc()).all()
     
     return render_template('breeding/puppies_add.html', deliveries=deliveries)
 
