@@ -739,10 +739,10 @@ def pregnancy_add():
         try:
             from models import PregnancyRecord, PregnancyStatus
             pregnancy = PregnancyRecord()
-            pregnancy.dog_id = request.form['female_id']
+            pregnancy.dog_id = request.form['dog_id']  # This comes from the hidden field updated by JavaScript
             pregnancy.mating_record_id = request.form['mating_record_id']
                 
-            pregnancy.confirmed_date = datetime.strptime(request.form['conception_date'], '%Y-%m-%d').date()
+            pregnancy.confirmed_date = datetime.strptime(request.form['confirmed_date'], '%Y-%m-%d').date()
             pregnancy.expected_delivery_date = datetime.strptime(request.form['expected_delivery_date'], '%Y-%m-%d').date()
             pregnancy.status = PregnancyStatus.PREGNANT
             
@@ -782,7 +782,7 @@ def pregnancy_add():
     
     females = [dog for dog in all_dogs if dog.gender == DogGender.FEMALE]
     
-    return render_template('breeding/pregnancy_add.html', females=females, mating_records=mating_records)
+    return render_template('breeding/pregnancy_add.html', females=females, matings=mating_records)
 
 @main_bp.route('/breeding/delivery')
 @login_required
