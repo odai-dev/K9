@@ -69,7 +69,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <a href="#" class="btn btn-sm btn-outline-primary">عرض</a>
+                                    <a href="{{ url_for('main.heat_cycles_view', id=cycle.id) }}" class="btn btn-sm btn-outline-primary">عرض</a>
                                 </td>
                             </tr>
                             {% endfor %}

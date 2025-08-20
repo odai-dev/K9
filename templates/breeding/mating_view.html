@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}عرض سجل التزاوج{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-heart me-2"></i>
+                عرض سجل التزاوج
+            </h1>
+            <div class="btn-group">
+                <a href="{{ url_for('main.mating_list') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة للقائمة
+                </a>
+                <a href="{{ url_for('main.mating_add') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    تسجيل تزاوج جديد
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">{{ mating.female.name }} × {{ mating.male.name }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>معلومات الأنثى</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>الاسم:</strong></td>
+                                <td>{{ mating.female.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>الرمز:</strong></td>
+                                <td>{{ mating.female.code }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>العمر:</strong></td>
+                                <td>{{ mating.female.age_months // 12 if mating.female.age_months else '-' }} سنة</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>معلومات الذكر</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>الاسم:</strong></td>
+                                <td>{{ mating.male.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>الرمز:</strong></td>
+                                <td>{{ mating.male.code }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>العمر:</strong></td>
+                                <td>{{ mating.male.age_months // 12 if mating.male.age_months else '-' }} سنة</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h6>تفاصيل التزاوج</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>تاريخ التزاوج:</strong></td>
+                                <td>{{ mating.mating_date.strftime('%Y-%m-%d') }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>وقت التزاوج:</strong></td>
+                                <td>{{ mating.mating_time.strftime('%H:%M') if mating.mating_time else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>المكان:</strong></td>
+                                <td>{{ mating.location or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>المشرف:</strong></td>
+                                <td>{{ mating.supervisor.name if mating.supervisor else 'غير محدد' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>نتائج التزاوج</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>المدة:</strong></td>
+                                <td>{{ mating.duration_minutes if mating.duration_minutes else '-' }} دقيقة</td>
+                            </tr>
+                            <tr>
+                                <td><strong>نسبة النجاح:</strong></td>
+                                <td>
+                                    {% if mating.success_rate %}
+                                        {% if mating.success_rate >= 80 %}
+                                            <span class="badge bg-success">{{ mating.success_rate }}%</span>
+                                        {% elif mating.success_rate >= 50 %}
+                                            <span class="badge bg-warning">{{ mating.success_rate }}%</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">{{ mating.success_rate }}%</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary">غير محدد</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% if mating.heat_cycle %}
+                            <tr>
+                                <td><strong>دورة الحرارة:</strong></td>
+                                <td>الدورة #{{ mating.heat_cycle.cycle_number }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+                
+                {% if mating.behavior_observed %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>السلوك الملاحظ</h6>
+                        <div class="bg-light p-3 rounded">
+                            {{ mating.behavior_observed }}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if mating.complications %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>المضاعفات</h6>
+                        <div class="bg-warning p-3 rounded">
+                            {{ mating.complications }}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if mating.notes %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>الملاحظات</h6>
+                        <div class="bg-light p-3 rounded">
+                            {{ mating.notes }}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <small class="text-muted">
+                            تم التسجيل: {{ mating.created_at.strftime('%Y-%m-%d %H:%M') if mating.created_at else '-' }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

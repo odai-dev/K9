@@ -70,7 +70,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <a href="#" class="btn btn-sm btn-outline-primary">عرض</a>
+                                    <a href="{{ url_for('main.pregnancy_view', id=pregnancy.id) }}" class="btn btn-sm btn-outline-primary">عرض</a>
                                 </td>
                             </tr>
                             {% endfor %}

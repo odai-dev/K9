@@ -72,7 +72,7 @@
                                 <td>{{ mating.duration_minutes if mating.duration_minutes else '-' }} دقيقة</td>
                                 <td>{{ mating.supervisor.name if mating.supervisor else 'غير محدد' }}</td>
                                 <td>
-                                    <a href="#" class="btn btn-sm btn-outline-primary">عرض</a>
+                                    <a href="{{ url_for('main.mating_view', id=mating.id) }}" class="btn btn-sm btn-outline-primary">عرض</a>
                                 </td>
                             </tr>
                             {% endfor %}

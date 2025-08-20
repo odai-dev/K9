@@ -71,7 +71,7 @@
                                 </td>
                                 <td>{{ puppy.delivery_record.pregnancy_record.dog.name }}</td>
                                 <td>
-                                    <a href="#" class="btn btn-sm btn-outline-primary">عرض</a>
+                                    <a href="{{ url_for('main.puppies_view', id=puppy.id) }}" class="btn btn-sm btn-outline-primary">عرض</a>
                                 </td>
                             </tr>
                             {% endfor %}

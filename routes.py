@@ -966,6 +966,97 @@ def puppies_add():
     
     return render_template('breeding/puppies_add.html', deliveries=deliveries)
 
+# View routes for all breeding sections
+@main_bp.route('/breeding/maturity/view/<id>')
+@login_required
+def maturity_view(id):
+    from models import DogMaturity
+    maturity = DogMaturity.query.get_or_404(id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        assigned_dogs = get_user_accessible_dogs(current_user)
+        assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
+        if maturity.dog_id not in assigned_dog_ids:
+            abort(403)
+    
+    return render_template('breeding/maturity_view.html', maturity=maturity)
+
+@main_bp.route('/breeding/heat-cycles/view/<id>')
+@login_required
+def heat_cycles_view(id):
+    from models import HeatCycle
+    heat_cycle = HeatCycle.query.get_or_404(id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        assigned_dogs = get_user_accessible_dogs(current_user)
+        assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
+        if heat_cycle.dog_id not in assigned_dog_ids:
+            abort(403)
+    
+    return render_template('breeding/heat_cycles_view.html', heat_cycle=heat_cycle)
+
+@main_bp.route('/breeding/mating/view/<id>')
+@login_required
+def mating_view(id):
+    from models import MatingRecord
+    mating = MatingRecord.query.get_or_404(id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        assigned_dogs = get_user_accessible_dogs(current_user)
+        assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
+        if mating.female_id not in assigned_dog_ids and mating.male_id not in assigned_dog_ids:
+            abort(403)
+    
+    return render_template('breeding/mating_view.html', mating=mating)
+
+@main_bp.route('/breeding/pregnancy/view/<id>')
+@login_required
+def pregnancy_view(id):
+    from models import PregnancyRecord
+    pregnancy = PregnancyRecord.query.get_or_404(id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        assigned_dogs = get_user_accessible_dogs(current_user)
+        assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
+        if pregnancy.dog_id not in assigned_dog_ids:
+            abort(403)
+    
+    return render_template('breeding/pregnancy_view.html', pregnancy=pregnancy)
+
+@main_bp.route('/breeding/delivery/view/<id>')
+@login_required
+def delivery_view(id):
+    from models import DeliveryRecord
+    delivery = DeliveryRecord.query.get_or_404(id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        assigned_dogs = get_user_accessible_dogs(current_user)
+        assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
+        if delivery.pregnancy_record.dog_id not in assigned_dog_ids:
+            abort(403)
+    
+    return render_template('breeding/delivery_view.html', delivery=delivery)
+
+@main_bp.route('/breeding/puppies/view/<id>')
+@login_required
+def puppies_view(id):
+    from models import PuppyRecord
+    puppy = PuppyRecord.query.get_or_404(id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        assigned_dogs = get_user_accessible_dogs(current_user)
+        assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
+        if puppy.delivery_record.pregnancy_record.dog_id not in assigned_dog_ids:
+            abort(403)
+    
+    return render_template('breeding/puppies_view.html', puppy=puppy)
+
 @main_bp.route('/breeding/puppy-training')
 @login_required
 def puppy_training_list():

@@ -75,7 +75,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <a href="#" class="btn btn-sm btn-outline-primary">عرض</a>
+                                    <a href="{{ url_for('main.delivery_view', id=delivery.id) }}" class="btn btn-sm btn-outline-primary">عرض</a>
                                 </td>
                             </tr>
                             {% endfor %}

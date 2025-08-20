@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}عرض بيانات البلوغ{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-calendar-check me-2"></i>
+                عرض بيانات البلوغ
+            </h1>
+            <div class="btn-group">
+                <a href="{{ url_for('main.maturity_list') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة للقائمة
+                </a>
+                <a href="{{ url_for('main.maturity_add') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    تسجيل بلوغ جديد
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">معلومات البلوغ - {{ maturity.dog.name }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>معلومات الكلب</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>اسم الكلب:</strong></td>
+                                <td>{{ maturity.dog.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>رمز الكلب:</strong></td>
+                                <td>{{ maturity.dog.code }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>الجنس:</strong></td>
+                                <td>{{ 'ذكر' if maturity.dog.gender.name == 'MALE' else 'أنثى' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>بيانات البلوغ</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>تاريخ البلوغ:</strong></td>
+                                <td>{{ maturity.maturity_date.strftime('%Y-%m-%d') if maturity.maturity_date else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>الوزن عند البلوغ:</strong></td>
+                                <td>{{ maturity.weight_at_maturity if maturity.weight_at_maturity else '-' }} كغ</td>
+                            </tr>
+                            <tr>
+                                <td><strong>الطول عند البلوغ:</strong></td>
+                                <td>{{ maturity.height_at_maturity if maturity.height_at_maturity else '-' }} سم</td>
+                            </tr>
+                            <tr>
+                                <td><strong>حالة البلوغ:</strong></td>
+                                <td><span class="badge bg-success">{{ maturity.maturity_status.value }}</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                {% if maturity.notes %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>الملاحظات</h6>
+                        <div class="bg-light p-3 rounded">
+                            {{ maturity.notes }}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <small class="text-muted">
+                            تم التسجيل: {{ maturity.created_at.strftime('%Y-%m-%d %H:%M') if maturity.created_at else '-' }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
