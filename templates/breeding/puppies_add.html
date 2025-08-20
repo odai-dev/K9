@@ -34,13 +34,27 @@
                             <label for="delivery_record_id" class="form-label">سجل الولادة <span class="text-danger">*</span></label>
                             <select class="form-select" id="delivery_record_id" name="delivery_record_id" required>
                                 <option value="">اختر سجل الولادة</option>
-                                {% for delivery in deliveries %}
-                                    <option value="{{ delivery.id }}">
-                                        {{ delivery.pregnancy_record.dog.name }} - {{ delivery.delivery_date.strftime('%Y-%m-%d') }}
-                                        ({{ delivery.live_births }} جرو حي)
-                                    </option>
-                                {% endfor %}
+                                {% if deliveries %}
+                                    {% for delivery in deliveries %}
+                                        <option value="{{ delivery.id }}">
+                                            {{ delivery.pregnancy_record.dog.name }} - {{ delivery.delivery_date.strftime('%Y-%m-%d') }}
+                                            ({{ delivery.live_births }} جرو حي)
+                                        </option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option value="" disabled>لا توجد سجلات ولادة متاحة</option>
+                                {% endif %}
                             </select>
+                            {% if not deliveries %}
+                                <div class="form-text text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    لإضافة جراء، يجب أولاً إنشاء سجلات الحمل والولادة من قسم التربية
+                                    <a href="{{ url_for('main.delivery_list') }}" class="text-decoration-none">
+                                        <i class="fas fa-arrow-left me-1"></i>
+                                        اذهب إلى سجلات الولادة
+                                    </a>
+                                </div>
+                            {% endif %}
                         </div>
                         <div class="col-md-6">
                             <label for="puppy_number" class="form-label">رقم الجرو <span class="text-danger">*</span></label>
