@@ -634,8 +634,12 @@ def mating_add():
             mating = MatingRecord()
             mating.female_id = request.form['female_id']
             mating.male_id = request.form['male_id']
-            # For now, we'll skip heat_cycle_id requirement or set it to null
-            # mating.heat_cycle_id = request.form.get('heat_cycle_id')  # Optional for now
+            # Set heat_cycle_id if provided, otherwise None (nullable field)
+            heat_cycle_id = request.form.get('heat_cycle_id')
+            if heat_cycle_id and heat_cycle_id.strip():
+                mating.heat_cycle_id = heat_cycle_id
+            else:
+                mating.heat_cycle_id = None
             mating.mating_date = datetime.strptime(request.form['mating_date'], '%Y-%m-%d').date()
             if request.form.get('mating_time'):
                 mating.mating_time = datetime.strptime(request.form['mating_time'], '%H:%M').time()
