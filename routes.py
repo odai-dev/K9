@@ -1096,8 +1096,11 @@ def puppy_training_add():
     
     # Get puppies and trainers for puppy training
     if current_user.role == UserRole.GENERAL_ADMIN:
-        # Get all available puppies
-        puppies = PuppyRecord.query.filter_by(alive_at_birth=True, current_status='جيد').order_by(PuppyRecord.created_at.desc()).all()
+        # Get all available puppies (alive and healthy)
+        puppies = PuppyRecord.query.filter(
+            PuppyRecord.alive_at_birth == True,
+            PuppyRecord.current_status.notin_(['متوفي', 'مريض', 'غير صالح'])
+        ).order_by(PuppyRecord.created_at.desc()).all()
         trainers = Employee.query.filter_by(role=EmployeeRole.TRAINER, is_active=True).all()
     else:
         # Get puppies from accessible dogs only
@@ -1107,7 +1110,7 @@ def puppy_training_add():
         puppies = PuppyRecord.query.join(DeliveryRecord).join(PregnancyRecord).filter(
             PregnancyRecord.dog_id.in_(assigned_dog_ids),
             PuppyRecord.alive_at_birth == True,
-            PuppyRecord.current_status == 'جيد'
+            PuppyRecord.current_status.notin_(['متوفي', 'مريض', 'غير صالح'])
         ).order_by(PuppyRecord.created_at.desc()).all()
         
         trainers = Employee.query.filter_by(assigned_to_user_id=current_user.id, role=EmployeeRole.TRAINER, is_active=True).all()
