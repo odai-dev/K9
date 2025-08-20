@@ -853,6 +853,7 @@ def delivery_add():
             flash(f'حدث خطأ: {str(e)}', 'error')
     
     # Get available pregnancies and employees for delivery
+    from models import PregnancyRecord, PregnancyStatus
     if current_user.role == UserRole.GENERAL_ADMIN:
         pregnancies = PregnancyRecord.query.filter_by(status=PregnancyStatus.PREGNANT).order_by(PregnancyRecord.expected_delivery_date.asc()).all()
         employees = Employee.query.filter_by(is_active=True).all()
