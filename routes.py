@@ -1077,6 +1077,20 @@ def puppy_training_list():
     
     return render_template('breeding/puppy_training_list.html', sessions=sessions)
 
+@main_bp.route('/breeding/puppy-training/view/<id>')
+@login_required
+def puppy_training_view(id):
+    session = PuppyTraining.query.get_or_404(id)
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        assigned_dogs = get_user_accessible_dogs(current_user)
+        assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
+        if session.puppy.delivery_record.pregnancy_record.dog_id not in assigned_dog_ids:
+            abort(403)
+    
+    return render_template('breeding/puppy_training_view.html', session=session)
+
 @main_bp.route('/breeding/puppy-training/add', methods=['GET', 'POST'])
 @login_required
 def puppy_training_add():

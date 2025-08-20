@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}عرض جلسة تدريب جرو{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-graduation-cap me-2"></i>
+                تفاصيل جلسة التدريب
+            </h1>
+            <a href="{{ url_for('main.puppy_training_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right me-2"></i>
+                العودة إلى القائمة
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    معلومات الجلسة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">معلومات التدريب</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>اسم التدريب:</strong></td>
+                                <td>{{ session.training_name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>نوع التدريب:</strong></td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        {% if session.training_type.name == 'OBEDIENCE' %}تدريب الطاعة
+                                        {% elif session.training_type.name == 'DETECTION' %}تدريب الكشف
+                                        {% elif session.training_type.name == 'AGILITY' %}تدريب الرشاقة
+                                        {% elif session.training_type.name == 'ATTACK' %}تدريب الهجوم
+                                        {% else %}تدريب اللياقة
+                                        {% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>تاريخ ووقت الجلسة:</strong></td>
+                                <td>{{ session.session_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>مدة الجلسة:</strong></td>
+                                <td>{{ session.duration }} دقيقة</td>
+                            </tr>
+                            <tr>
+                                <td><strong>تقييم النجاح:</strong></td>
+                                <td>
+                                    {% if session.success_rating >= 8 %}
+                                        <span class="badge bg-success">{{ session.success_rating }}/10 - ممتاز</span>
+                                    {% elif session.success_rating >= 6 %}
+                                        <span class="badge bg-warning">{{ session.success_rating }}/10 - جيد</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">{{ session.success_rating }}/10 - يحتاج تحسين</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-primary">معلومات المشاركين</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>اسم الجرو:</strong></td>
+                                <td>
+                                    <strong>{{ session.puppy.name or 'بدون اسم' }}</strong><br>
+                                    <small class="text-muted">#{{ session.puppy.puppy_number }}</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>عمر الجرو:</strong></td>
+                                <td>{{ session.puppy_age_weeks or '-' }} أسبوع</td>
+                            </tr>
+                            <tr>
+                                <td><strong>المرحلة التطويرية:</strong></td>
+                                <td>{{ session.developmental_stage or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>المدرب:</strong></td>
+                                <td>{{ session.trainer.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>الموقع:</strong></td>
+                                <td>{{ session.location or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>الظروف الجوية:</strong></td>
+                                <td>{{ session.weather_conditions or '-' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-dog me-2"></i>
+                    معلومات الجرو
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <h6><strong>{{ session.puppy.name or 'بدون اسم' }}</strong></h6>
+                    <span class="badge bg-info">#{{ session.puppy.puppy_number }}</span>
+                </div>
+                <table class="table table-borderless table-sm">
+                    <tr>
+                        <td><strong>الجنس:</strong></td>
+                        <td>
+                            {% if session.puppy.gender.name == 'MALE' %}
+                                <i class="fas fa-mars text-primary"></i> ذكر
+                            {% else %}
+                                <i class="fas fa-venus text-pink"></i> أنثى
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>الحالة:</strong></td>
+                        <td>
+                            {% if session.puppy.current_status in ['صحي ونشط', 'جيد', 'ممتاز'] %}
+                                <span class="badge bg-success">{{ session.puppy.current_status }}</span>
+                            {% else %}
+                                <span class="badge bg-warning">{{ session.puppy.current_status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>الأم:</strong></td>
+                        <td>{{ session.puppy.delivery_record.pregnancy_record.dog.name }}</td>
+                    </tr>
+                </table>
+                <div class="d-grid">
+                    <a href="{{ url_for('main.puppies_view', id=session.puppy.id) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-eye me-2"></i>
+                        عرض ملف الجرو
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if session.behavior_observations or session.areas_for_improvement or session.notes %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clipboard-list me-2"></i>
+                    ملاحظات الجلسة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if session.behavior_observations %}
+                    <div class="col-md-4">
+                        <h6 class="text-primary">ملاحظات السلوك</h6>
+                        <p class="text-muted">{{ session.behavior_observations }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if session.areas_for_improvement %}
+                    <div class="col-md-4">
+                        <h6 class="text-warning">مجالات التحسين</h6>
+                        <p class="text-muted">{{ session.areas_for_improvement }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if session.notes %}
+                    <div class="col-md-4">
+                        <h6 class="text-info">ملاحظات إضافية</h6>
+                        <p class="text-muted">{{ session.notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('main.puppy_training_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right me-2"></i>
+                العودة إلى القائمة
+            </a>
+            <a href="{{ url_for('main.puppy_training_add') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>
+                إضافة جلسة جديدة
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
