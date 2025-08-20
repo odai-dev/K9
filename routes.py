@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, current_app, abort
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app import db
@@ -10,6 +10,8 @@ from models import (Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCyc
                    Incident, Suspicion, PerformanceEvaluation, 
                    ElementType, PerformanceRating, TargetType,
                    project_employee_assignment, project_dog_assignment,
+                   # Breeding models
+                   HeatCycle, MatingRecord, MatingResult, PregnancyRecord, DeliveryRecord, PuppyRecord, PuppyTraining,
                    # New attendance models
                    ProjectShift, ProjectShiftAssignment, ProjectAttendance,
                    EntityType, AttendanceStatus, AbsenceReason, AttendanceDay,
@@ -1066,18 +1068,60 @@ def puppy_training_list():
 @login_required
 def puppy_training_add():
     if request.method == 'POST':
+        # Create new puppy training record
+        puppy_training = PuppyTraining()
+        puppy_training.puppy_id = request.form['puppy_id']
+        puppy_training.trainer_id = request.form['trainer_id']
+        puppy_training.training_name = request.form['training_name']
+        puppy_training.training_type = request.form['training_type']
+        puppy_training.session_date = datetime.strptime(request.form['session_date'], '%Y-%m-%dT%H:%M')
+        puppy_training.duration = int(request.form['duration'])
+        puppy_training.puppy_age_weeks = int(request.form['puppy_age_weeks']) if request.form.get('puppy_age_weeks') else None
+        puppy_training.developmental_stage = request.form.get('developmental_stage')
+        puppy_training.success_rating = int(request.form['success_rating'])
+        puppy_training.location = request.form.get('location')
+        puppy_training.weather_conditions = request.form.get('weather_conditions')
+        puppy_training.behavior_observations = request.form.get('behavior_observations')
+        puppy_training.areas_for_improvement = request.form.get('areas_for_improvement')
+        puppy_training.notes = request.form.get('notes')
+        
+        db.session.add(puppy_training)
+        db.session.commit()
+        
+        log_audit(current_user.id, AuditAction.CREATE, 'PuppyTraining', puppy_training.id, 
+                 f'إضافة جلسة تدريب جرو: {request.form["training_name"]}')
+        
         flash('تم تسجيل تدريب الجرو بنجاح', 'success')
         return redirect(url_for('main.puppy_training_list'))
     
     # Get puppies and trainers for puppy training
-    puppies = []  # This would be Puppy.query.all() when implemented
-    
     if current_user.role == UserRole.GENERAL_ADMIN:
+        # Get all available puppies
+        puppies = PuppyRecord.query.filter_by(alive_at_birth=True, current_status='جيد').order_by(PuppyRecord.created_at.desc()).all()
         trainers = Employee.query.filter_by(role=EmployeeRole.TRAINER, is_active=True).all()
     else:
+        # Get puppies from accessible dogs only
+        assigned_dogs = get_user_accessible_dogs(current_user)
+        assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
+        
+        puppies = PuppyRecord.query.join(DeliveryRecord).join(PregnancyRecord).filter(
+            PregnancyRecord.dog_id.in_(assigned_dog_ids),
+            PuppyRecord.alive_at_birth == True,
+            PuppyRecord.current_status == 'جيد'
+        ).order_by(PuppyRecord.created_at.desc()).all()
+        
         trainers = Employee.query.filter_by(assigned_to_user_id=current_user.id, role=EmployeeRole.TRAINER, is_active=True).all()
     
-    return render_template('breeding/puppy_training_add.html', puppies=puppies, trainers=trainers)
+    # Training categories for dropdown
+    categories = [
+        {'name': 'OBEDIENCE', 'value': 'تدريب الطاعة'},
+        {'name': 'DETECTION', 'value': 'تدريب الكشف'},
+        {'name': 'AGILITY', 'value': 'تدريب الرشاقة'},
+        {'name': 'ATTACK', 'value': 'تدريب الهجوم'},
+        {'name': 'FITNESS', 'value': 'تدريب اللياقة'}
+    ]
+    
+    return render_template('breeding/puppy_training_add.html', puppies=puppies, trainers=trainers, categories=categories)
 
 # Project routes (without attendance/assignment functionality)
 @main_bp.route('/projects')
