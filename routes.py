@@ -807,7 +807,7 @@ def delivery_list():
         print(f"Error fetching delivery records: {e}")
         delivery_records = []
     
-    return render_template('breeding/delivery_list.html', records=delivery_records)
+    return render_template('breeding/delivery_list.html', deliveries=delivery_records, records=delivery_records)
 
 @main_bp.route('/breeding/delivery/add', methods=['GET', 'POST'])
 @login_required

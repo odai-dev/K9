@@ -60,7 +60,7 @@
                                 <td>
                                     <span class="badge bg-danger">{{ delivery.stillbirths }}</span>
                                 </td>
-                                <td>{{ delivery.vet_present_employee.name if delivery.vet_present_employee else 'غير موجود' }}</td>
+                                <td>{{ delivery.vet.name if delivery.vet else 'غير موجود' }}</td>
                                 <td>
                                     {% if delivery.mother_condition %}
                                         {% if 'جيد' in delivery.mother_condition %}
