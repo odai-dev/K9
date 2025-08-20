@@ -914,14 +914,26 @@ def puppies_add():
     
     # Get delivery records for puppies dropdown
     from models import DeliveryRecord, PregnancyRecord
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        deliveries = DeliveryRecord.query.order_by(DeliveryRecord.delivery_date.desc()).all()
-    else:
-        # Get assigned dogs and their delivery records
-        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
-        deliveries = DeliveryRecord.query.join(PregnancyRecord).filter(
-            PregnancyRecord.dog_id.in_(assigned_dog_ids)
-        ).order_by(DeliveryRecord.delivery_date.desc()).all()
+    try:
+        if current_user.role == UserRole.GENERAL_ADMIN:
+            deliveries = DeliveryRecord.query.order_by(DeliveryRecord.delivery_date.desc()).all()
+        else:
+            # Get assigned dogs and their delivery records
+            assigned_dogs = get_user_accessible_dogs(current_user)
+            assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
+            if assigned_dog_ids:
+                deliveries = DeliveryRecord.query.join(PregnancyRecord).filter(
+                    PregnancyRecord.dog_id.in_(assigned_dog_ids)
+                ).order_by(DeliveryRecord.delivery_date.desc()).all()
+            else:
+                deliveries = []
+    except Exception as e:
+        print(f"Error fetching delivery records: {e}")
+        deliveries = []
+    
+    # Add helpful message if no delivery records exist
+    if not deliveries:
+        flash('لا توجد سجلات ولادة متاحة. يجب إنشاء سجلات الحمل والولادة أولاً من قسم التربية.', 'info')
     
     return render_template('breeding/puppies_add.html', deliveries=deliveries)
 
