@@ -790,12 +790,22 @@ def pregnancy_add():
 @login_required
 def delivery_list():
     from models import DeliveryRecord
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        delivery_records = DeliveryRecord.query.order_by(DeliveryRecord.created_at.desc()).all()
-    else:
-        # Get assigned dogs and their delivery records
-        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
-        delivery_records = DeliveryRecord.query.join(PregnancyRecord).filter(PregnancyRecord.dog_id.in_(assigned_dog_ids)).order_by(DeliveryRecord.created_at.desc()).all()
+    try:
+        if current_user.role == UserRole.GENERAL_ADMIN:
+            delivery_records = DeliveryRecord.query.order_by(DeliveryRecord.created_at.desc()).all()
+        else:
+            # Get accessible dogs for this user
+            assigned_dogs = get_user_accessible_dogs(current_user)
+            assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
+            if assigned_dog_ids:
+                delivery_records = DeliveryRecord.query.join(PregnancyRecord).filter(
+                    PregnancyRecord.dog_id.in_(assigned_dog_ids)
+                ).order_by(DeliveryRecord.created_at.desc()).all()
+            else:
+                delivery_records = []
+    except Exception as e:
+        print(f"Error fetching delivery records: {e}")
+        delivery_records = []
     
     return render_template('breeding/delivery_list.html', records=delivery_records)
 
@@ -806,7 +816,7 @@ def delivery_add():
         try:
             from models import DeliveryRecord, PregnancyRecord, PregnancyStatus
             delivery = DeliveryRecord()
-            delivery.pregnancy_record_id = request.form['pregnancy_id']
+            delivery.pregnancy_record_id = request.form.get('pregnancy_record_id') or request.form.get('pregnancy_id')
             delivery.delivery_date = datetime.strptime(request.form['delivery_date'], '%Y-%m-%d').date()
             
             if request.form.get('delivery_start_time'):
@@ -833,7 +843,8 @@ def delivery_add():
             db.session.add(delivery)
             
             # Update pregnancy status to delivered
-            pregnancy = PregnancyRecord.query.get(request.form['pregnancy_id'])
+            pregnancy_id = request.form.get('pregnancy_record_id') or request.form.get('pregnancy_id')
+            pregnancy = PregnancyRecord.query.get(pregnancy_id)
             if pregnancy:
                 pregnancy.status = PregnancyStatus.DELIVERED
                 
