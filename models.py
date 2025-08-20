@@ -75,6 +75,19 @@ class HeatStatus(Enum):
     NOT_IN_HEAT = "لا توجد دورة"
     IN_HEAT = "في الدورة"
     POST_HEAT = "بعد الدورة"
+    COMPLETED = "مكتملة"
+    PRE_HEAT = "ما قبل الحرارة"
+
+class MatingResult(Enum):
+    SUCCESSFUL = "نجح"
+    FAILED = "فشل"
+    UNKNOWN = "غير معروف"
+
+class DeliveryStatus(Enum):
+    EXPECTED = "متوقع"
+    IN_PROGRESS = "جاري"
+    COMPLETED = "مكتمل"
+    COMPLICATIONS = "مضاعفات"
 
 class PregnancyStatus(Enum):
     NOT_PREGNANT = "غير حامل"
