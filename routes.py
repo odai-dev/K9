@@ -880,7 +880,25 @@ def delivery_add():
 @main_bp.route('/breeding/puppies')
 @login_required
 def puppies_list():
-    return render_template('breeding/puppies_list.html')
+    from models import PuppyRecord, DeliveryRecord
+    try:
+        if current_user.role == UserRole.GENERAL_ADMIN:
+            puppies = PuppyRecord.query.order_by(PuppyRecord.created_at.desc()).all()
+        else:
+            # Get accessible dogs for this user
+            assigned_dogs = get_user_accessible_dogs(current_user)
+            assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
+            if assigned_dog_ids:
+                puppies = PuppyRecord.query.join(DeliveryRecord).join(PregnancyRecord).filter(
+                    PregnancyRecord.dog_id.in_(assigned_dog_ids)
+                ).order_by(PuppyRecord.created_at.desc()).all()
+            else:
+                puppies = []
+    except Exception as e:
+        print(f"Error fetching puppy records: {e}")
+        puppies = []
+    
+    return render_template('breeding/puppies_list.html', puppies=puppies)
 
 @main_bp.route('/breeding/puppies/add', methods=['GET', 'POST'])
 @login_required
