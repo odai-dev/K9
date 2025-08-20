@@ -730,7 +730,7 @@ def pregnancy_list():
         assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
         pregnancy_records = PregnancyRecord.query.filter(PregnancyRecord.dog_id.in_(assigned_dog_ids)).order_by(PregnancyRecord.created_at.desc()).all()
     
-    return render_template('breeding/pregnancy_list.html', records=pregnancy_records)
+    return render_template('breeding/pregnancy_list.html', pregnancies=pregnancy_records)
 
 @main_bp.route('/breeding/pregnancy/add', methods=['GET', 'POST'])
 @login_required
