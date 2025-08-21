@@ -1132,8 +1132,9 @@ def validate_project_status_change(project, new_status, current_user=None):
     # If changing to ACTIVE or PLANNED status, validate project manager
     if new_status in [ProjectStatus.ACTIVE, ProjectStatus.PLANNED] and project.project_manager_id:
         # Get the project manager user
-        from models import User
-        manager = User.query.get(project.project_manager_id)
+        from models import User, Employee
+        employee = Employee.query.get(project.project_manager_id)
+        manager = User.query.get(employee.user_account_id) if employee else None
         
         if manager and manager.role == UserRole.PROJECT_MANAGER:
             # Temporarily set the new status for validation
