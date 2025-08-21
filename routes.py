@@ -1380,7 +1380,8 @@ def project_status_change(project_id):
         
         # If changing to ACTIVE or PLANNED, validate project manager constraints
         if new_project_status in [ProjectStatus.ACTIVE, ProjectStatus.PLANNED] and project.project_manager_id:
-            manager = User.query.get(project.project_manager_id)
+            employee = Employee.query.get(project.project_manager_id)
+            manager = User.query.get(employee.user_account_id) if employee else None
             if manager and manager.role == UserRole.PROJECT_MANAGER:
                 # Temporarily set the new status for validation
                 original_status = project.status
