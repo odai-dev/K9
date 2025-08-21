@@ -34,6 +34,7 @@ class EmployeeRole(Enum):
     BREEDER = "مربي"
     VET = "طبيب"
     PROJECT_MANAGER = "مسؤول مشروع"
+    BEHAVIOR_IMPROVEMENT = "تحسين سلوك"
 
 class DogStatus(Enum):
     ACTIVE = "ACTIVE"
