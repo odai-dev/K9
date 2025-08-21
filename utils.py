@@ -944,9 +944,8 @@ def get_user_projects(user):
     if user.role == UserRole.GENERAL_ADMIN:
         return Project.query.all()
     elif user.role == UserRole.PROJECT_MANAGER:
-        # Get projects where this user is the manager
-        # First try by direct user assignment
-        direct_projects = Project.query.filter_by(project_manager_id=user.id).all()
+        # Get projects where this user is the manager through employee profile
+        direct_projects = []
         
         # Also check through employee profile assignment
         employee = Employee.query.filter_by(user_account_id=user.id, role=EmployeeRole.PROJECT_MANAGER).first()
@@ -968,7 +967,9 @@ def check_project_access(user, project_id):
         return True
     elif user.role == UserRole.PROJECT_MANAGER:
         project = Project.query.get(project_id)
-        return project and project.project_manager_id == user.id
+        # Check through employee profile
+        employee = Employee.query.filter_by(user_account_id=user.id).first()
+        return project and employee and project.project_manager_id == employee.id
     
     return False
 
@@ -1044,11 +1045,8 @@ def get_user_active_projects(user):
     if user.role == UserRole.GENERAL_ADMIN:
         return Project.query.filter_by(status=ProjectStatus.ACTIVE).all()
     elif user.role == UserRole.PROJECT_MANAGER:
-        # Get active projects where this user is the manager
-        active_projects = Project.query.filter_by(
-            project_manager_id=user.id, 
-            status=ProjectStatus.ACTIVE
-        ).all()
+        # Get active projects where this user is the manager through employee profile
+        active_projects = []
         
         # Also check through employee profile assignment for active projects
         employee = Employee.query.filter_by(user_account_id=user.id, role=EmployeeRole.PROJECT_MANAGER).first()
@@ -1069,8 +1067,8 @@ def get_user_all_projects(user):
     if user.role == UserRole.GENERAL_ADMIN:
         return Project.query.all()
     elif user.role == UserRole.PROJECT_MANAGER:
-        # Get all projects where this user is the manager
-        manager_projects = Project.query.filter_by(project_manager_id=user.id).all()
+        # Get all projects where this user is the manager through employee profile
+        manager_projects = []
         
         # Also check through employee profile assignment
         employee = Employee.query.filter_by(user_account_id=user.id, role=EmployeeRole.PROJECT_MANAGER).first()
