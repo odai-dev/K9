@@ -171,7 +171,9 @@ def dogs_view(dog_id):
     # Get related data
     training_sessions = TrainingSession.query.filter_by(dog_id=dog.id).order_by(TrainingSession.created_at.desc()).all()
     vet_visits = VeterinaryVisit.query.filter_by(dog_id=dog.id).order_by(VeterinaryVisit.created_at.desc()).all()
-    breeding_cycles = BreedingCycle.query.filter_by(dog_id=dog.id).order_by(BreedingCycle.created_at.desc()).all()
+    breeding_cycles = BreedingCycle.query.filter(
+        (BreedingCycle.female_id == dog.id) | (BreedingCycle.male_id == dog.id)
+    ).order_by(BreedingCycle.created_at.desc()).all()
     
     return render_template('dogs/view.html', dog=dog, training_sessions=training_sessions, 
                          vet_visits=vet_visits, breeding_cycles=breeding_cycles)
