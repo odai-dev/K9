@@ -1530,7 +1530,7 @@ def project_manager_update(project_id):
             manager = Employee.query.get(project_manager_id)
             if manager and manager.role == EmployeeRole.PROJECT_MANAGER:
                 # Get the user account for this employee
-                user = User.query.filter_by(id=manager.user_account_id).first()
+                user = User.query.get(manager.user_account_id)
                 if user:
                     # Validate project manager assignment constraints
                     can_assign, error_msg = validate_project_manager_assignment(user, project)
@@ -1718,7 +1718,7 @@ def project_assignment_add(project_id):
                 manager = Employee.query.get(project_manager_id)
                 if manager and manager.role == EmployeeRole.PROJECT_MANAGER:
                     # Get the user account for this employee
-                    user = User.query.filter_by(id=manager.user_account_id).first()
+                    user = User.query.get(manager.user_account_id)
                     if user:
                         # Validate project manager assignment constraints
                         can_assign, error_msg = validate_project_manager_assignment(user, project)
