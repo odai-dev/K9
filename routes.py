@@ -1234,7 +1234,14 @@ def project_add():
                     if not can_assign:
                         flash(error_msg, 'error')
                         raise Exception("Project manager assignment validation failed")
-                    project.project_manager_id = manager_id
+                    
+                    # Find the employee profile linked to this user account
+                    employee = Employee.query.filter_by(user_account_id=manager_id).first()
+                    if employee:
+                        project.project_manager_id = employee.id
+                    else:
+                        flash('هذا المستخدم ليس له ملف موظف مرتبط', 'error')
+                        raise Exception("Manager has no employee profile")
             
             db.session.add(project)
             db.session.commit()
@@ -1267,7 +1274,13 @@ def project_dashboard(project_id):
         return redirect(url_for('main.projects'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
+    # Check project access - for project managers, check if they have an employee profile linked to this project
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
@@ -1350,7 +1363,13 @@ def project_status_change(project_id):
         return redirect(url_for('main.projects'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
+    # Check project access - for project managers, check if they have an employee profile linked to this project
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
         flash('غير مسموح لك بتعديل حالة هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
@@ -1457,7 +1476,13 @@ def project_dog_add(project_id):
         return redirect(url_for('main.projects'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
+    # Check project access - for project managers, check if they have an employee profile linked to this project
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
         flash('غير مسموح لك بإضافة كلاب لهذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
@@ -1556,7 +1581,13 @@ def project_assignments(project_id):
         return redirect(url_for('main.projects'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
+    # Check project access - for project managers, check if they have an employee profile linked to this project
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
@@ -1606,7 +1637,13 @@ def project_assignment_add(project_id):
         return redirect(url_for('main.projects'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
+    # Check project access - for project managers, check if they have an employee profile linked to this project
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
         flash('غير مسموح لك بإضافة تعيينات لهذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
@@ -1721,7 +1758,13 @@ def project_assignment_remove(project_id, assignment_id):
         return redirect(url_for('main.projects'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
+    # Check project access - for project managers, check if they have an employee profile linked to this project
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
         flash('غير مسموح لك بإزالة التعيينات من هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
@@ -1752,7 +1795,13 @@ def project_assignment_edit(project_id, assignment_id):
         return redirect(url_for('main.projects'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
+    # Check project access - for project managers, check if they have an employee profile linked to this project
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
         flash('غير مسموح لك بتعديل التعيينات في هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
@@ -1781,7 +1830,13 @@ def project_incidents(project_id):
         return redirect(url_for('main.projects'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
+    # Check project access - for project managers, check if they have an employee profile linked to this project
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
@@ -1800,7 +1855,13 @@ def project_incident_add(project_id):
         return redirect(url_for('main.projects'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
+    # Check project access - for project managers, check if they have an employee profile linked to this project
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
@@ -1845,7 +1906,13 @@ def project_suspicions(project_id):
         return redirect(url_for('main.projects'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
+    # Check project access - for project managers, check if they have an employee profile linked to this project
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
@@ -1864,7 +1931,13 @@ def project_suspicion_add(project_id):
         return redirect(url_for('main.projects'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
+    # Check project access - for project managers, check if they have an employee profile linked to this project
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
@@ -1910,7 +1983,13 @@ def project_evaluations(project_id):
         return redirect(url_for('main.projects'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
+    # Check project access - for project managers, check if they have an employee profile linked to this project
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
@@ -1929,7 +2008,13 @@ def project_evaluation_add(project_id):
         return redirect(url_for('main.projects'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and project.project_manager_id != current_user.id:
+    # Check project access - for project managers, check if they have an employee profile linked to this project
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
         flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
