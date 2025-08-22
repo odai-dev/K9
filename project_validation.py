@@ -4,51 +4,34 @@ Project validation utilities for enforcing business rules
 from models import Project, Employee, ProjectStatus
 
 
-def validate_project_manager_assignment(user, project=None):
+def validate_project_manager_assignment(employee_id, project=None):
     """
     Validate that a project manager can be assigned to a project.
     Enforces the rule: One project manager can only have one active/planned project at a time.
     
     Args:
-        user: User object to validate
+        employee_id: Employee ID to validate
         project: Optional Project object (for updates)
     
     Returns:
         tuple: (can_assign: bool, error_message: str)
     """
-    # Check by direct user manager_id
-    existing_project_by_user = Project.query.filter(
-        Project.manager_id == user.id,
+    # Check if this employee has any existing active/planned projects
+    existing_projects_query = Project.query.filter(
+        Project.project_manager_id == employee_id,
         Project.status.in_([ProjectStatus.PLANNED, ProjectStatus.ACTIVE])
     )
     
     # Exclude current project if we're updating
     if project:
-        existing_project_by_user = existing_project_by_user.filter(Project.id != project.id)
+        existing_projects_query = existing_projects_query.filter(Project.id != project.id)
     
-    existing_project_by_user = existing_project_by_user.first()
-    
-    # Check by employee relationship
-    employee = Employee.query.filter_by(user_account_id=user.id).first()
-    existing_project_by_employee = None
-    
-    if employee:
-        existing_project_by_employee = Project.query.filter(
-            Project.project_manager_id == employee.id,
-            Project.status.in_([ProjectStatus.PLANNED, ProjectStatus.ACTIVE])
-        )
-        
-        # Exclude current project if we're updating
-        if project:
-            existing_project_by_employee = existing_project_by_employee.filter(Project.id != project.id)
-            
-        existing_project_by_employee = existing_project_by_employee.first()
-    
-    # Check if user has any existing active project
-    existing_project = existing_project_by_user or existing_project_by_employee
+    existing_project = existing_projects_query.first()
     
     if existing_project:
-        return False, f'هذا المدير لديه مشروع نشط بالفعل: {existing_project.name}. لا يمكن تعيين أكثر من مشروع واحد في نفس الوقت.'
+        employee = Employee.query.get(employee_id)
+        employee_name = employee.name if employee else "غير معروف"
+        return False, f'مسؤول المشروع {employee_name} لديه مشروع نشط بالفعل: {existing_project.name}. لا يمكن تعيين أكثر من مشروع واحد في نفس الوقت.'
     
     return True, ""
 

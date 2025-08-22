@@ -1228,20 +1228,19 @@ def project_add():
             
             # Validate project manager assignment if provided
             if manager_id:
-                manager = User.query.get(manager_id)
-                if manager:
-                    can_assign, error_msg = validate_project_manager_assignment(manager, project)
+                # Find the employee profile for project manager
+                employee = Employee.query.get(manager_id)
+                if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
+                    # Validate one-project-per-manager constraint
+                    can_assign, error_msg = validate_project_manager_assignment(employee.id, project)
                     if not can_assign:
                         flash(error_msg, 'error')
                         raise Exception("Project manager assignment validation failed")
                     
-                    # Find the employee profile linked to this user account
-                    employee = Employee.query.filter_by(user_account_id=manager_id).first()
-                    if employee:
-                        project.project_manager_id = employee.id
-                    else:
-                        flash('هذا المستخدم ليس له ملف موظف مرتبط', 'error')
-                        raise Exception("Manager has no employee profile")
+                    project.project_manager_id = employee.id
+                else:
+                    flash('الموظف المحدد ليس مدير مشروع صالح', 'error')
+                    raise Exception("Invalid project manager")
             
             db.session.add(project)
             db.session.commit()
@@ -1256,7 +1255,7 @@ def project_add():
     
     # Get available data for the form
     if current_user.role == UserRole.GENERAL_ADMIN:
-        managers = User.query.filter_by(role=UserRole.PROJECT_MANAGER, active=True).all()
+        managers = Employee.query.filter_by(role=EmployeeRole.PROJECT_MANAGER, active=True).all()
     else:
         managers = []  # PROJECT_MANAGER users can only assign to themselves
     
@@ -1381,13 +1380,12 @@ def project_status_change(project_id):
         # If changing to ACTIVE or PLANNED, validate project manager constraints
         if new_project_status in [ProjectStatus.ACTIVE, ProjectStatus.PLANNED] and project.project_manager_id:
             employee = Employee.query.get(project.project_manager_id)
-            manager = User.query.get(employee.user_account_id) if employee else None
-            if manager and manager.role == UserRole.PROJECT_MANAGER:
+            if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
                 # Temporarily set the new status for validation
                 original_status = project.status
                 project.status = new_project_status
                 
-                can_assign, error_msg = validate_project_manager_assignment(manager, project)
+                can_assign, error_msg = validate_project_manager_assignment(employee.id, project)
                 
                 # Restore original status
                 project.status = original_status
@@ -1530,14 +1528,11 @@ def project_manager_update(project_id):
             # Verify it's actually a project manager
             manager = Employee.query.get(project_manager_id)
             if manager and manager.role == EmployeeRole.PROJECT_MANAGER:
-                # Get the user account for this employee
-                user = User.query.get(manager.user_account_id)
-                if user:
-                    # Validate project manager assignment constraints
-                    can_assign, error_msg = validate_project_manager_assignment(user, project)
-                    if not can_assign:
-                        flash(error_msg, 'error')
-                        return redirect(url_for('main.project_dashboard', project_id=project_id))
+                # Validate project manager assignment constraints
+                can_assign, error_msg = validate_project_manager_assignment(manager.id, project)
+                if not can_assign:
+                    flash(error_msg, 'error')
+                    return redirect(url_for('main.project_dashboard', project_id=project_id))
                 
                 old_manager = project.project_manager.name if project.project_manager else 'غير معين'
                 project.project_manager_id = project_manager_id
@@ -1718,14 +1713,11 @@ def project_assignment_add(project_id):
                 # Verify it's actually a project manager
                 manager = Employee.query.get(project_manager_id)
                 if manager and manager.role == EmployeeRole.PROJECT_MANAGER:
-                    # Get the user account for this employee
-                    user = User.query.get(manager.user_account_id)
-                    if user:
-                        # Validate project manager assignment constraints
-                        can_assign, error_msg = validate_project_manager_assignment(user, project)
-                        if not can_assign:
-                            flash(error_msg, 'error')
-                            return redirect(url_for('main.project_assignments', project_id=project_id))
+                    # Validate project manager assignment constraints
+                    can_assign, error_msg = validate_project_manager_assignment(manager.id, project)
+                    if not can_assign:
+                        flash(error_msg, 'error')
+                        return redirect(url_for('main.project_assignments', project_id=project_id))
                     
                     project.project_manager_id = project_manager_id
                     flash('تم تحديث مسؤول المشروع بنجاح', 'success')
