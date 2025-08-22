@@ -1082,40 +1082,36 @@ def get_user_all_projects(user):
     
     return []
 
-def validate_project_manager_assignment(user, project):
+def validate_project_manager_assignment(employee_id, project):
     """
-    Validate if a project manager can be assigned to a project.
+    Validate that a project manager can be assigned to a project.
+    Enforces the rule: One project manager can only have one active/planned project at a time.
     
-    Enhanced Rules:
-    - GENERAL_ADMIN can be assigned to any project
-    - PROJECT_MANAGER can only manage ONE project at a time regardless of status
-    - PROJECT_MANAGER cannot be assigned to any project if they manage another ongoing project
-    - PROJECT_MANAGER can be reassigned to the same project they're already managing
+    Args:
+        employee_id: Employee ID to validate
+        project: Project object (for updates - to exclude current project)
+    
+    Returns:
+        tuple: (can_assign: bool, error_message: str)
     """
-    from models import ProjectStatus, UserRole
+    from models import Project, Employee, ProjectStatus
     
-    # Skip validation for GENERAL_ADMIN
-    if user.role == UserRole.GENERAL_ADMIN:
-        return True, None
+    # Check if this employee has any existing active/planned projects
+    existing_projects_query = Project.query.filter(
+        Project.project_manager_id == employee_id,
+        Project.status.in_([ProjectStatus.PLANNED, ProjectStatus.ACTIVE])
+    )
     
-    # For PROJECT_MANAGER role, enforce strict one-project rule
-    if user.role == UserRole.PROJECT_MANAGER:
-        # Get ALL projects (not just active) for this manager
-        all_projects = get_user_all_projects(user)
-        
-        # Only consider ongoing projects (ACTIVE or PLANNED)
-        ongoing_projects = [p for p in all_projects if p.status in [ProjectStatus.ACTIVE, ProjectStatus.PLANNED]]
-        
-        # Check if they already manage any other ongoing projects
-        other_ongoing_projects = [p for p in ongoing_projects if p.id != project.id]
-        
-        if other_ongoing_projects:
-            project_names = []
-            for p in other_ongoing_projects:
-                status_text = "نشط" if p.status == ProjectStatus.ACTIVE else "مخطط"
-                project_names.append(f"{p.name} ({status_text})")
-            
-            return False, f"المدير {user.username} يدير بالفعل المشروع: {', '.join(project_names)}. يجب إنهاء أو إلغاء المشروع الحالي قبل تعيين مشروع جديد."
+    # Exclude current project if we're updating
+    if project:
+        existing_projects_query = existing_projects_query.filter(Project.id != project.id)
+    
+    existing_project = existing_projects_query.first()
+    
+    if existing_project:
+        employee = Employee.query.get(employee_id)
+        employee_name = employee.name if employee else "غير معروف"
+        return False, f'مسؤول المشروع {employee_name} لديه مشروع نشط بالفعل: {existing_project.name}. لا يمكن تعيين أكثر من مشروع واحد في نفس الوقت.'
     
     return True, None
 
@@ -1132,16 +1128,15 @@ def validate_project_status_change(project, new_status, current_user=None):
     # If changing to ACTIVE or PLANNED status, validate project manager
     if new_status in [ProjectStatus.ACTIVE, ProjectStatus.PLANNED] and project.project_manager_id:
         # Get the project manager user
-        from models import User, Employee
+        from models import Employee, EmployeeRole
         employee = Employee.query.get(project.project_manager_id)
-        manager = User.query.get(employee.user_account_id) if employee else None
         
-        if manager and manager.role == UserRole.PROJECT_MANAGER:
+        if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
             # Temporarily set the new status for validation
             original_status = project.status
             project.status = new_status
             
-            can_assign, error_msg = validate_project_manager_assignment(manager, project)
+            can_assign, error_msg = validate_project_manager_assignment(employee.id, project)
             
             # Restore original status
             project.status = original_status
