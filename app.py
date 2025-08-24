@@ -130,10 +130,8 @@ with app.app_context():
     
     # Register Veterinary Report blueprints
     try:
-        import sys
-        sys.path.append(os.path.join(os.path.dirname(__file__), 'app', 'reports', 'veterinary'))
-        from daily_routes import bp as vet_daily_ui_bp
-        from daily_api import bp as vet_daily_api_bp
+        from veterinary_daily_routes import bp as vet_daily_ui_bp
+        from veterinary_daily_api import bp as vet_daily_api_bp
         
         app.register_blueprint(vet_daily_ui_bp, url_prefix='/reports/veterinary')
         app.register_blueprint(vet_daily_api_bp, url_prefix='/api/reports/veterinary')
