@@ -113,9 +113,18 @@ with app.app_context():
     app.register_blueprint(pm_daily_ui_bp, url_prefix='/reports/attendance')
     app.register_blueprint(pm_daily_api_bp, url_prefix='/api/reports/attendance')
     
-    # Register Training Report blueprints (temporarily disabled due to import issues)
-    # TODO: Fix import issues and enable training reports
-    # The training report functionality has been implemented but needs import path fixes
+    # Register Training Report blueprints
+    try:
+        from trainer_daily_routes import bp as training_trainer_daily_ui_bp
+        from trainer_daily_api import bp as training_trainer_daily_api_bp
+        
+        app.register_blueprint(training_trainer_daily_ui_bp, url_prefix='/reports/training')
+        app.register_blueprint(training_trainer_daily_api_bp, url_prefix='/api/reports/training')
+        print("✓ Training reports registered successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Could not register training reports: {e}")
+        # Continue without training reports for now
     
     
     # Add route to serve uploaded files
