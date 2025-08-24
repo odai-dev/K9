@@ -138,6 +138,9 @@
                             <i class="fas fa-chart-bar me-1"></i>التقارير
                         </a>
                         <ul class="dropdown-menu shadow">
+                            <li><h6 class="dropdown-header">تقارير التدريب</h6></li>
+                            <li><a class="dropdown-item" href="/reports/training/trainer-daily"><i class="fas fa-dumbbell me-2"></i>التقرير اليومي للمدرب</a></li>
+                            <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header">تقارير الحضور</h6></li>
                             <li><a class="dropdown-item" href="{{ url_for('reports_attendance_ui.daily_sheet') }}"><i class="fas fa-calendar-check me-2"></i>كشف التحضير اليومي</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('reports_attendance_pm_daily_ui.pm_daily') }}"><i class="fas fa-file-alt me-2"></i>التقرير اليومي لمسؤول المشروع</a></li>

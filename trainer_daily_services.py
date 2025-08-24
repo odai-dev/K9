@@ -9,23 +9,9 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy import func, and_
 from models import TrainingSession, Employee, Dog, Project, TrainingCategory
 from app import db
-# Import utils and constants using importlib
-import importlib.util
-import sys
 
-# Import dates_ar
-spec = importlib.util.spec_from_file_location("dates_ar", "app/utils/dates_ar.py")
-dates_ar = importlib.util.module_from_spec(spec)
-sys.modules["dates_ar"] = dates_ar
-spec.loader.exec_module(dates_ar)
-get_arabic_day_name = dates_ar.get_arabic_day_name
-
-# Import constants
-spec = importlib.util.spec_from_file_location("constants", "app/reports/training/constants.py")
-constants = importlib.util.module_from_spec(spec)
-sys.modules["training_constants"] = constants
-spec.loader.exec_module(constants)
-CATEGORY_LABELS_AR = constants.CATEGORY_LABELS_AR
+from app.utils.dates_ar import get_arabic_day_name
+from trainer_daily_constants import CATEGORY_LABELS_AR
 
 
 def get_trainer_daily(

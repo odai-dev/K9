@@ -7,23 +7,8 @@ from datetime import datetime, date
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from permission_decorators import admin_required
-# Import services and exporters using importlib
-import importlib.util
-import sys
-
-# Import trainer_daily_services
-spec = importlib.util.spec_from_file_location("trainer_daily_services", "app/reports/training/trainer_daily_services.py")
-trainer_daily_services = importlib.util.module_from_spec(spec)
-sys.modules["trainer_daily_services"] = trainer_daily_services
-spec.loader.exec_module(trainer_daily_services)
-get_trainer_daily = trainer_daily_services.get_trainer_daily
-
-# Import trainer_daily_exporters
-spec = importlib.util.spec_from_file_location("trainer_daily_exporters", "app/reports/training/trainer_daily_exporters.py")
-trainer_daily_exporters = importlib.util.module_from_spec(spec)
-sys.modules["trainer_daily_exporters"] = trainer_daily_exporters
-spec.loader.exec_module(trainer_daily_exporters)
-export_trainer_daily_pdf = trainer_daily_exporters.export_trainer_daily_pdf
+from trainer_daily_services import get_trainer_daily
+from trainer_daily_exporters import export_trainer_daily_pdf
 
 bp = Blueprint('reports_training_trainer_daily_api', __name__)
 

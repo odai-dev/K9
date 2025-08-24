@@ -12,26 +12,8 @@ from reportlab.lib.units import inch, cm
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 
-# Import utils and constants using importlib
-import importlib.util
-import sys
-
-# Import pdf_rtl
-spec = importlib.util.spec_from_file_location("pdf_rtl", "app/utils/pdf_rtl.py")
-pdf_rtl = importlib.util.module_from_spec(spec)
-sys.modules["pdf_rtl"] = pdf_rtl
-spec.loader.exec_module(pdf_rtl)
-register_arabic_fonts = pdf_rtl.register_arabic_fonts
-rtl = pdf_rtl.rtl
-get_arabic_font = pdf_rtl.get_arabic_font
-
-# Import constants
-spec = importlib.util.spec_from_file_location("exporter_constants", "app/reports/training/constants.py")
-exporter_constants = importlib.util.module_from_spec(spec)
-sys.modules["exporter_constants"] = exporter_constants
-spec.loader.exec_module(exporter_constants)
-TRAINER_DAILY_HEADERS = exporter_constants.TRAINER_DAILY_HEADERS
-SUMMARY_HEADERS = exporter_constants.SUMMARY_HEADERS
+from app.utils.pdf_rtl import register_arabic_fonts, rtl, get_arabic_font
+from trainer_daily_constants import TRAINER_DAILY_HEADERS, SUMMARY_HEADERS
 
 
 def export_trainer_daily_pdf(report_data: Dict[str, Any]) -> str:
