@@ -128,6 +128,21 @@ with app.app_context():
         print(f"⚠ Warning: Could not register training reports: {e}")
         # Continue without training reports for now
     
+    # Register Veterinary Report blueprints
+    try:
+        import sys
+        sys.path.append(os.path.join(os.path.dirname(__file__), 'app', 'reports', 'veterinary'))
+        from daily_routes import bp as vet_daily_ui_bp
+        from daily_api import bp as vet_daily_api_bp
+        
+        app.register_blueprint(vet_daily_ui_bp, url_prefix='/reports/veterinary')
+        app.register_blueprint(vet_daily_api_bp, url_prefix='/api/reports/veterinary')
+        print("✓ Veterinary reports registered successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Could not register veterinary reports: {e}")
+        # Continue without veterinary reports for now
+    
     
     # Add route to serve uploaded files
     from flask import send_from_directory

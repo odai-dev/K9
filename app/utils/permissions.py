@@ -8,14 +8,23 @@ TRAINING_PERMISSIONS = {
     "reports:training:trainer_daily:export": "Export trainer daily reports to PDF"
 }
 
+# Veterinary report permissions
+VETERINARY_PERMISSIONS = {
+    "reports:veterinary:daily:view": "View veterinary daily reports",
+    "reports:veterinary:daily:export": "Export veterinary daily reports to PDF"
+}
+
 # Default permissions for roles
 DEFAULT_PERMISSIONS = {
     "GENERAL_ADMIN": [
         "reports:training:trainer_daily:view",
-        "reports:training:trainer_daily:export"
+        "reports:training:trainer_daily:export",
+        "reports:veterinary:daily:view",
+        "reports:veterinary:daily:export"
     ],
     "PROJECT_MANAGER": [
-        "reports:training:trainer_daily:view"
+        "reports:training:trainer_daily:view",
+        "reports:veterinary:daily:view"
         # export permission granted explicitly if needed
     ]
 }

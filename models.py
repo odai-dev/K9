@@ -363,6 +363,11 @@ class VeterinaryVisit(db.Model):
     notes = db.Column(Text)
     cost = db.Column(db.Float)
     
+    # Additional fields for daily reports
+    location = db.Column(db.String(120))  # Location of examination
+    weather = db.Column(db.String(80))    # Weather conditions
+    vital_signs = db.Column(JSON, default=dict)  # Consolidated vital signs
+    
     # Relationships
     dog = db.relationship('Dog', backref='veterinary_visits')
     vet = db.relationship('Employee', backref='veterinary_visits')
