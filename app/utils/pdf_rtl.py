@@ -15,8 +15,10 @@ try:
     from bidi.algorithm import get_display
     ARABIC_SUPPORT = True
 except ImportError:
-    print("Warning: arabic_reshaper or python-bidi not available. Arabic text may not display correctly.")
+    arabic_reshaper = None
+    get_display = None
     ARABIC_SUPPORT = False
+    print("Warning: arabic_reshaper or python-bidi not available. Arabic text may not display correctly.")
 
 # Font registration status
 _FONTS_REGISTERED = False
@@ -71,7 +73,7 @@ def rtl(text: str) -> str:
     Returns:
         Processed text ready for RTL display
     """
-    if not text or not ARABIC_SUPPORT:
+    if not text or not ARABIC_SUPPORT or not arabic_reshaper or not get_display:
         return text or ""
     
     try:
@@ -81,7 +83,7 @@ def rtl(text: str) -> str:
         # Apply bidirectional algorithm for RTL display
         bidi_text = get_display(reshaped_text)
         
-        return bidi_text
+        return str(bidi_text)
     except Exception as e:
         print(f"Error processing RTL text '{text}': {e}")
         return text or ""

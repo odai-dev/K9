@@ -1,0 +1,247 @@
+You are updating a Flask + SQLAlchemy + PostgreSQL app with Bootstrap 5 RTL (Arabic).
+Implement ONE report end-to-end: **Reports → Training → Trainer Daily Report** (Arabic RTL) that summarizes all training sessions for a given project/date (or date range day-by-day), suitable for printing and archiving.
+
+GOALS
+- Exact Arabic RTL layout and headers suitable for daily trainer paperwork.
+- Filters: project, date (single day), optional trainer, dog, category.
+- Two views on the same page:
+  1) **Sessions Table** (all sessions that day)
+  2) **Per-Dog Summary** (aggregated metrics for that day)
+- PDF exporter (Arabic RTL), same columns as the table.
+- RBAC: GENERAL_ADMIN sees all; PROJECT_MANAGER only their assigned projects.
+- Uses existing `TrainingSession` model where possible; minimal extensions only if needed.
+
+========================================
+A) FILES TO CREATE / UPDATE (exact paths)
+========================================
+
+1) Package: app/reports/training/
+   - app/reports/training/__init__.py
+   - app/reports/training/trainer_daily_routes.py     # UI routes (HTML page)
+   - app/reports/training/trainer_daily_api.py        # JSON API for run/export
+   - app/reports/training/trainer_daily_services.py   # data provider (queries, shaping JSON)
+   - app/reports/training/trainer_daily_exporters.py  # PDF exporter (Arabic RTL)
+   - app/reports/training/constants.py                # Arabic labels, enums mapping
+
+2) Templates (Jinja):
+   - templates/reports/training/trainer_daily.html
+   - templates/reports/training/_filters.html         # reusable filter bar for training
+
+3) Static:
+   - static/js/reports_training_trainer_daily.js
+
+4) Utilities (reuse if already present):
+   - app/utils/pdf_rtl.py      # rtl(text) helper: arabic_reshaper + python-bidi + DejaVuSans/NotoSansArabic
+   - app/utils/permissions.py  # add permission keys here
+   - app/utils/dates_ar.py     # Arabic day name for a date
+
+5) Tests:
+   - tests/test_reports_training_trainer_daily.py
+
+========================================
+B) PERMISSIONS
+========================================
+Add two granular permission keys:
+- "reports:training:trainer_daily:view"
+- "reports:training:trainer_daily:export"
+
+Decorators:
+- @require_perm("reports:training:trainer_daily:view") on UI page and /run API
+- @require_perm("reports:training:trainer_daily:export") on /export API
+
+GENERAL_ADMIN: grant both by default.
+PROJECT_MANAGER: grant view by default; export only if explicitly enabled.
+
+========================================
+C) DATABASE (minimal additions only if needed)
+========================================
+Use the existing TrainingSession model with (typical) fields:
+- id, dog_id, trainer_id (employee), project_id (nullable), category (enum), subject, session_date (DateTime),
+  duration (minutes), success_rating (0..10), location, weather, equipment (JSON or text), notes/observations (Text).
+
+If any of these fields are missing, add them via migration, but keep new fields minimal.
+
+Indexes for performance (create if missing):
+- ix_training_session_project_date on (project_id, session_date)
+- ix_training_session_dog_date on (dog_id, session_date)
+- ix_training_session_trainer_date on (trainer_id, session_date)
+- ix_training_session_category_date on (category, session_date)
+
+Migration file name suggestion:
+- migrations/versions/xxxx_trainer_daily_indexes.py
+
+========================================
+D) BLUEPRINTS & ROUTES (exact)
+========================================
+Register in app/app.py (or your central factory):
+- from app.reports.training.trainer_daily_routes import bp as training_trainer_daily_ui_bp
+- from app.reports.training.trainer_daily_api import bp as training_trainer_daily_api_bp
+- app.register_blueprint(training_trainer_daily_ui_bp, url_prefix="/reports/training")
+- app.register_blueprint(training_trainer_daily_api_bp, url_prefix="/api/reports/training")
+
+UI Blueprint (trainer_daily_routes.py):
+- name: "reports_training_trainer_daily_ui"
+- GET /trainer-daily → renders templates/reports/training/trainer_daily.html
+  - Optional query params to prefill: project_id (uuid), date (YYYY-MM-DD), trainer_id, dog_id, category
+  - Protected: @login_required + @require_perm("reports:training:trainer_daily:view")
+
+API Blueprint (trainer_daily_api.py):
+- name: "reports_training_trainer_daily_api"
+
+Endpoints:
+1) POST /run/trainer-daily
+   Body:
+   {
+     "project_id": "<uuid>",          // required for PROJECT_MANAGER; optional for ADMIN
+     "date": "YYYY-MM-DD",            // required (single day report)
+     "trainer_id": "<uuid|null>",
+     "dog_id": "<uuid|null>",
+     "category": "OBEDIENCE|DETECTION|AGILITY|ATTACK|FITNESS|null"
+   }
+
+   Returns JSON contract EXACTLY:
+   {
+     "project_id": "...",
+     "date": "YYYY-MM-DD",
+     "day_name_ar": "الاثنين" | "...",
+     "filters_applied": { ...echo validated filters... },
+
+     "sessions": [
+       {
+         "time": "HH:MM",                       // from session_date
+         "trainer_name": "…",
+         "dog_name": "…",
+         "category_ar": "الطاعة|الكشف|اللياقة|الهجوم|الرشاقة", // Arabic label
+         "subject": "…",
+         "duration_min": 45,
+         "success_rating": 8,
+         "location": "…",
+         "weather": "…",
+         "equipment": "…",                      // flatten equipment list if JSON
+         "notes": "…"
+       }
+     ],
+
+     "summary_by_dog": [
+       {
+         "dog_name": "…",
+         "sessions_count": 2,
+         "total_duration_min": 90,
+         "avg_success_rating": 7.5,
+         "categories_breakdown": {
+           "الطاعة": 1, "الكشف": 1, "الهجوم": 0, "الرشاقة": 0, "اللياقة": 0
+         }
+       }
+     ],
+
+     "kpis": {
+       "total_sessions": 10,
+       "unique_dogs": 6,
+       "unique_trainers": 3,
+       "total_duration_min": 420,
+       "avg_success_rating": 7.8
+     }
+   }
+
+2) POST /export/pdf/trainer-daily
+   Body: same as /run
+   Behavior:
+   - Calls data provider to get the JSON contract above.
+   - Renders Arabic PDF (A4 portrait) with the same columns as the HTML table:
+     Header line: "اليوم: {day_name_ar}"  "التاريخ: {DD/MM/YYYY}"  "المشروع: {project_name_or_code}"
+     Section 1: جدول "جلسات التدريب" with headers:
+       ["الوقت","اسم المدرب","اسم الكلب","الفئة","الموضوع","المدة (دقائق)","تقييم النجاح /10","الموقع","الطقس","المعدات","الملاحظات"]
+     Section 2: جدول "ملخص حسب الكلب" with headers:
+       ["اسم الكلب","عدد الجلسات","إجمالي المدة (دقائق)","متوسط التقييم","تفصيل الفئات"]
+     - Save under uploads/reports/YYYY/MM/
+     - Return JSON: {"path": "uploads/reports/2025/08/trainer_daily_{project_code_or_id}_{YYYYMMDD}.pdf"}
+
+All endpoints protected:
+- @login_required
+- /run → @require_perm("reports:training:trainer_daily:view")
+- /export → @require_perm("reports:training:trainer_daily:export")
+
+========================================
+E) DATA PROVIDER (trainer_daily_services.py)
+========================================
+Function: get_trainer_daily(project_id: UUID|None, date: date, trainer_id: UUID|None, dog_id: UUID|None, category: str|None, user) -> dict
+
+Steps:
+- Validate permissions and scope:
+  - GENERAL_ADMIN: project optional, but if provided, restrict to that project.
+  - PROJECT_MANAGER: project_id is required and must be in user.assigned_project_ids().
+- Fetch all TrainingSession rows for the given date (00:00..23:59) and filters (project_id, trainer_id, dog_id, category).
+- Eager load joins to Employee (trainer), Dog, Project to avoid N+1.
+- Build "sessions" list in time ascending order. Map category enum to Arabic label:
+  OBEDIENCE→"الطاعة", DETECTION→"الكشف", AGILITY→"الرشاقة", ATTACK→"الهجوم", FITNESS→"اللياقة".
+- Build "summary_by_dog":
+  - group sessions by dog_id
+  - compute sessions_count, total_duration_min, avg_success_rating
+  - compute categories_breakdown (counts per Arabic category)
+- KPIs:
+  - total_sessions, unique_dogs, unique_trainers, total_duration_min, avg_success_rating
+- Compute Arabic day name (use utils/dates_ar.py).
+- Return JSON exactly as specified above.
+
+========================================
+F) PDF EXPORT (trainer_daily_exporters.py)
+========================================
+- Use ReportLab A4 portrait; register Arabic font and use rtl() helper from app/utils/pdf_rtl.py.
+- Top header line in Arabic: "اليوم: {day}"   "التاريخ: {DD/MM/YYYY}"   "المشروع: {project}"
+- Render Sessions table with Arabic headers EXACTLY:
+  ["الوقت","اسم المدرب","اسم الكلب","الفئة","الموضوع","المدة (دقائق)","تقييم النجاح /10","الموقع","الطقس","المعدات","الملاحظات"]
+- Render a small spacer, then Summary-by-Dog table with headers:
+  ["اسم الكلب","عدد الجلسات","إجمالي المدة (دقائق)","متوسط التقييم","تفصيل الفئات"]
+- Wrap/clip long text; paginate if needed.
+- Return relative path.
+
+========================================
+G) TEMPLATE + JS
+========================================
+templates/reports/training/trainer_daily.html:
+- Extends base.html (RTL).
+- Title: "تقرير يومي للمدرب".
+- Filter bar (_filters.html) with:
+  - Project selector (limited by RBAC).
+  - Date picker (default today).
+  - Trainer select (optional).
+  - Dog select (optional).
+  - Category select: ["الطاعة","الكشف","الرشاقة","الهجوم","اللياقة"].
+- KPIs row with small badges (total sessions, unique dogs/trainers, total minutes, avg rating).
+- Two sections:
+  1) Sessions table (headers listed above) — server-side data via /run API.
+  2) Summary-by-Dog table (headers listed above) — rendered below sessions.
+- Buttons:
+  - "تحديث" → calls /api/reports/training/run/trainer-daily
+  - "تصدير PDF" → calls /api/reports/training/export/pdf/trainer-daily
+- Make the tables responsive. Ensure **RTL column alignment** and numeric alignment for durations/ratings.
+
+static/js/reports_training_trainer_daily.js:
+- On load or filter change, POST to /api/reports/training/run/trainer-daily, then render both tables + KPIs.
+- On Export, POST to export endpoint; open/download returned path.
+
+========================================
+H) NAVIGATION
+========================================
+Add a new menu item under Reports → Training:
+- "Trainer Daily Report" → /reports/training/trainer-daily
+
+========================================
+I) TESTS
+========================================
+tests/test_reports_training_trainer_daily.py:
+- Login as GENERAL_ADMIN.
+- Seed a project, trainers (employees), dogs, and a handful of TrainingSession rows for one day across multiple categories.
+- POST /api/reports/training/run/trainer-daily → assert JSON shape, KPIs checks, aggregates correct.
+- POST /api/reports/training/export/pdf/trainer-daily → assert "path" returned and file exists.
+
+========================================
+J) QUALITY & NOTES
+========================================
+- Use eager loading to avoid N+1 (joinedload for trainer, dog, project).
+- Input validation: 400 if missing required date; 403 if no permission; 404 if project not visible to PM.
+- Arabic labels must match EXACT strings above.
+- Save PDFs under uploads/reports/YYYY/MM/.
+- Keep code modular with docstrings and type hints.
+- **IMPORTANT RTL NOTE**: In both HTML and PDF, lay out table columns **from right to left**. Reverse the columns order in the HTML templates and in the PDF drawing logic so the first header ("الوقت") appears at the table’s right edge and the last header ("الملاحظات") at the left edge, to better match Arabic reading direction.
+Now implement EVERYTHING above.
