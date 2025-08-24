@@ -1,20 +1,16 @@
 """
-Arabic date utilities for PM Daily Report system
-Provides Arabic day names and date formatting
+Arabic date utilities
 """
-
 from datetime import date
-from typing import Dict
 
-# Arabic day names mapping
-ARABIC_DAY_NAMES: Dict[int, str] = {
-    0: "الاثنين",      # Monday
-    1: "الثلاثاء",     # Tuesday  
-    2: "الأربعاء",     # Wednesday
-    3: "الخميس",      # Thursday
-    4: "الجمعة",       # Friday
-    5: "السبت",        # Saturday
-    6: "الأحد"         # Sunday
+DAY_NAMES_AR = {
+    0: "الاثنين",
+    1: "الثلاثاء", 
+    2: "الأربعاء",
+    3: "الخميس",
+    4: "الجمعة",
+    5: "السبت",
+    6: "الأحد"
 }
 
 def get_arabic_day_name(date_obj: date) -> str:
@@ -25,19 +21,30 @@ def get_arabic_day_name(date_obj: date) -> str:
         date_obj: Date object
         
     Returns:
-        Arabic day name string
+        Arabic day name
     """
-    weekday = date_obj.weekday()
-    return ARABIC_DAY_NAMES.get(weekday, "غير محدد")
+    return DAY_NAMES_AR.get(date_obj.weekday(), "")
 
-def format_arabic_date(date_obj: date) -> str:
+def format_arabic_date(date_obj) -> str:
     """
-    Format date in Arabic style (DD/MM/YYYY)
+    Format a date object into Arabic numerals and format
     
     Args:
-        date_obj: Date object
+        date_obj: Python date object
         
     Returns:
-        Formatted date string in Arabic style
+        Formatted date string in Arabic style (dd/mm/yyyy)
     """
-    return date_obj.strftime("%d/%m/%Y")
+    if not date_obj:
+        return ""
+    
+    # Convert to Arabic numerals
+    arabic_numerals = str.maketrans('0123456789', '٠١٢٣٤٥٦٧٨٩')
+    
+    # Format as dd/mm/yyyy
+    formatted_date = date_obj.strftime("%d/%m/%Y")
+    
+    # Convert to Arabic numerals
+    arabic_date = formatted_date.translate(arabic_numerals)
+    
+    return arabic_date

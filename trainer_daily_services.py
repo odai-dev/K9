@@ -10,7 +10,7 @@ from sqlalchemy import func, and_
 from models import TrainingSession, Employee, Dog, Project, TrainingCategory
 from app import db
 
-from app.utils.dates_ar import get_arabic_day_name
+from dates_ar import get_arabic_day_name
 from trainer_daily_constants import CATEGORY_LABELS_AR
 
 
