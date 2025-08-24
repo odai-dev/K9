@@ -8,7 +8,7 @@ from sqlalchemy.orm import joinedload
 
 from models import VeterinaryVisit, Dog, Employee, Project, EmployeeRole, VisitType
 from app import db
-from utils_dates_ar import get_arabic_day_name
+from dates_ar import get_arabic_day_name
 from utils_pdf_rtl import format_arabic_date
 from veterinary_daily_constants import VISIT_TYPE_LABELS
 

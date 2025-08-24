@@ -9,9 +9,13 @@
         الزيارات البيطرية
     </h1>
     <div class="btn-group" role="group">
-        <a href="{{ url_for('main.reports_advanced') }}" class="btn btn-success">
+        <a href="{{ url_for('veterinary_daily_ui.daily_report') }}" class="btn btn-success">
+            <i class="fas fa-file-medical me-2"></i>
+            التقرير اليومي الصحي
+        </a>
+        <a href="{{ url_for('main.reports_advanced') }}" class="btn btn-outline-success">
             <i class="fas fa-chart-line me-2"></i>
-            التقارير
+            التقارير المتقدمة
         </a>
         <a href="{{ url_for('main.veterinary_add') }}" class="btn btn-primary">
             <i class="fas fa-plus me-2"></i>
