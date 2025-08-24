@@ -44,9 +44,9 @@ def get_trainer_daily(
     
     # Build query for training sessions
     query = db.session.query(TrainingSession).options(
-        joinedload('trainer'),
-        joinedload('dog'), 
-        joinedload('project')
+        joinedload(TrainingSession.trainer),
+        joinedload(TrainingSession.dog), 
+        joinedload(TrainingSession.project)
     )
     
     # Filter by date range (start of day to end of day)
@@ -80,7 +80,7 @@ def get_trainer_daily(
         
         sessions_data.append({
             "time": session.session_date.strftime("%H:%M"),
-            "trainer_name": session.trainer.full_name if session.trainer else "",
+            "trainer_name": session.trainer.name if session.trainer else "",
             "dog_name": session.dog.name if session.dog else "",
             "category_ar": CATEGORY_LABELS_AR.get(session.category.value, session.category.value),
             "subject": session.subject,
