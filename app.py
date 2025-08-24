@@ -113,11 +113,6 @@ with app.app_context():
     app.register_blueprint(pm_daily_ui_bp, url_prefix='/reports/attendance')
     app.register_blueprint(pm_daily_api_bp, url_prefix='/api/reports/attendance')
     
-    # Register Unified Matrix blueprints
-    from unified_routes import bp as unified_ui_bp
-    from unified_api import bp as unified_api_bp
-    app.register_blueprint(unified_ui_bp, url_prefix='/reports/attendance')
-    app.register_blueprint(unified_api_bp, url_prefix='/api/reports/attendance')
     
     # Add route to serve uploaded files
     from flask import send_from_directory
