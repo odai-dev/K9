@@ -1,0 +1,73 @@
+<!-- Training report filters reusable component -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-filter me-2"></i>
+            المرشحات
+        </h5>
+    </div>
+    <div class="card-body">
+        <form id="filterForm">
+            <div class="row g-3">
+                <!-- Project Filter -->
+                <div class="col-md-3">
+                    <label for="project_id" class="form-label">المشروع</label>
+                    <select class="form-select" id="project_id" name="project_id">
+                        <option value="">جميع المشاريع</option>
+                        <!-- Populated by JavaScript -->
+                    </select>
+                </div>
+                
+                <!-- Date Filter -->
+                <div class="col-md-3">
+                    <label for="date" class="form-label">التاريخ *</label>
+                    <input type="date" class="form-control" id="date" name="date" required>
+                </div>
+                
+                <!-- Trainer Filter -->
+                <div class="col-md-2">
+                    <label for="trainer_id" class="form-label">المدرب</label>
+                    <select class="form-select" id="trainer_id" name="trainer_id">
+                        <option value="">جميع المدربين</option>
+                        <!-- Populated by JavaScript -->
+                    </select>
+                </div>
+                
+                <!-- Dog Filter -->
+                <div class="col-md-2">
+                    <label for="dog_id" class="form-label">الكلب</label>
+                    <select class="form-select" id="dog_id" name="dog_id">
+                        <option value="">جميع الكلاب</option>
+                        <!-- Populated by JavaScript -->
+                    </select>
+                </div>
+                
+                <!-- Category Filter -->
+                <div class="col-md-2">
+                    <label for="category" class="form-label">الفئة</label>
+                    <select class="form-select" id="category" name="category">
+                        <option value="">جميع الفئات</option>
+                        <option value="OBEDIENCE">الطاعة</option>
+                        <option value="DETECTION">الكشف</option>
+                        <option value="AGILITY">الرشاقة</option>
+                        <option value="ATTACK">الهجوم</option>
+                        <option value="FITNESS">اللياقة</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-12">
+                    <button type="button" class="btn btn-primary me-2" id="updateReport">
+                        <i class="fas fa-sync-alt me-1"></i>
+                        تحديث
+                    </button>
+                    <button type="button" class="btn btn-success" id="exportPdf">
+                        <i class="fas fa-file-pdf me-1"></i>
+                        تصدير PDF
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
