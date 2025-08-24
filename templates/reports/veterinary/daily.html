@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}التقرير اليومي الصحي{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 mb-0">التقرير اليومي الصحي</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">لوحة التحكم</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('main.reports') }}">التقارير</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">التقرير اليومي الصحي</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">المرشحات</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="projectSelect" class="form-label">المشروع</label>
+                    <select class="form-select" id="projectSelect" required>
+                        <option value="">اختر المشروع</option>
+                        {% for project in projects %}
+                        <option value="{{ project.id }}">{{ project.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="dateInput" class="form-label">التاريخ</label>
+                    <input type="date" class="form-control" id="dateInput" required>
+                </div>
+                <div class="col-md-2">
+                    <label for="vetSelect" class="form-label">الطبيب</label>
+                    <select class="form-select" id="vetSelect">
+                        <option value="">جميع الأطباء</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="dogSelect" class="form-label">الكلب</label>
+                    <select class="form-select" id="dogSelect">
+                        <option value="">جميع الكلاب</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="visitTypeSelect" class="form-label">نوع الزيارة</label>
+                    <select class="form-select" id="visitTypeSelect">
+                        <option value="">جميع الأنواع</option>
+                        <option value="ROUTINE">روتينية</option>
+                        <option value="EMERGENCY">طارئة</option>
+                        <option value="VACCINATION">تحصين</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <button type="button" class="btn btn-primary" id="updateBtn">
+                        <i class="fas fa-sync-alt"></i> تحديث
+                    </button>
+                    <button type="button" class="btn btn-success" id="exportBtn" disabled>
+                        <i class="fas fa-file-pdf"></i> تصدير PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row mb-4" id="kpisRow" style="display: none;">
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-primary" id="totalVisits">0</h5>
+                    <p class="card-text">إجمالي الزيارات</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-info" id="uniqueDogs">0</h5>
+                    <p class="card-text">عدد الكلاب</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-success" id="totalCost">0</h5>
+                    <p class="card-text">التكلفة الإجمالية</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-warning" id="emergencies">0</h5>
+                    <p class="card-text">الحالات الطارئة</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary" id="vaccinations">0</h5>
+                    <p class="card-text">التحصينات</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0" id="reportTitle">الزيارات البيطرية اليومية</h5>
+            <div id="reportInfo" class="small text-muted"></div>
+        </div>
+        <div class="card-body">
+            <div id="loadingSpinner" class="text-center py-4" style="display: none;">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">تحميل...</span>
+                </div>
+                <p class="mt-2">جاري تحميل البيانات...</p>
+            </div>
+            
+            <div id="noDataMessage" class="text-center py-4" style="display: none;">
+                <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                <p class="text-muted">يرجى اختيار المشروع والتاريخ لعرض التقرير</p>
+            </div>
+
+            <div class="table-responsive" id="reportTable" style="display: none;">
+                <table class="table table-bordered table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>الوقت</th>
+                            <th>اسم الكلب</th>
+                            <th>السلالة</th>
+                            <th>الطبيب</th>
+                            <th>نوع الزيارة</th>
+                            <th>التشخيص</th>
+                            <th>العلاج</th>
+                            <th>الأدوية</th>
+                            <th>التكلفة</th>
+                            <th>الموقع</th>
+                            <th>الطقس</th>
+                            <th>العلامات الحيوية</th>
+                            <th>ملاحظات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="emptyDataMessage" class="text-center py-4" style="display: none;">
+                <i class="fas fa-clipboard fa-3x text-muted mb-3"></i>
+                <p class="text-muted">لا توجد زيارات بيطرية في هذا التاريخ</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/reports_veterinary_daily.js') }}"></script>
+{% endblock %}
