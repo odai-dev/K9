@@ -117,9 +117,11 @@ with app.app_context():
     try:
         from trainer_daily_routes import bp as training_trainer_daily_ui_bp
         from trainer_daily_api import bp as training_trainer_daily_api_bp
+        from trainer_daily_data_api import bp as training_data_api_bp
         
         app.register_blueprint(training_trainer_daily_ui_bp, url_prefix='/reports/training')
         app.register_blueprint(training_trainer_daily_api_bp, url_prefix='/api/reports/training')
+        app.register_blueprint(training_data_api_bp)  # Root level for /api/projects etc
         print("✓ Training reports registered successfully")
         
     except Exception as e:
