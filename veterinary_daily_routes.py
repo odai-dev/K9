@@ -4,7 +4,7 @@ Veterinary daily report UI routes
 from flask import Blueprint, render_template, request
 from flask_login import login_required, current_user
 
-from app.utils.permissions import has_permission
+from permission_decorators import admin_required
 from models import Project
 
 bp = Blueprint('veterinary_daily_ui', __name__)
@@ -12,14 +12,11 @@ bp = Blueprint('veterinary_daily_ui', __name__)
 
 @bp.route('/daily')
 @login_required
+@admin_required
 def daily_report():
     """
     Veterinary daily report page
     """
-    # Check permission
-    if not has_permission(current_user, "reports:veterinary:daily:view"):
-        from flask import abort
-        abort(403)
     # Get available projects based on user role
     if current_user.role.value == "GENERAL_ADMIN":
         projects = Project.query.filter(

@@ -6,22 +6,20 @@ from flask_login import login_required, current_user
 from datetime import datetime, date
 import os
 
-from app.utils.permissions import has_permission
-from .daily_services import get_vet_daily, get_available_vets, get_available_dogs
-from .daily_exporters import export_vet_daily_pdf
+from permission_decorators import admin_required
+from veterinary_daily_services import get_vet_daily, get_available_vets, get_available_dogs
+from veterinary_daily_exporters import export_vet_daily_pdf
 
 bp = Blueprint('veterinary_daily_api', __name__)
 
 
 @bp.route('/run/daily', methods=['POST'])
 @login_required
+@admin_required
 def run_daily_report():
     """
     Generate veterinary daily report data
     """
-    # Check permission
-    if not has_permission(current_user, "reports:veterinary:daily:view"):
-        return jsonify({"error": "Access denied"}), 403
         
     try:
         data = request.get_json()
