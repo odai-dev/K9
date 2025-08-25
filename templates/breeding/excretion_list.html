@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}البراز / البول / القيء - نظام إدارة العمليات K9{% endblock %}
+
+{% block head %}
+<style>
+    .rtl-table th {
+        text-align: right;
+    }
+    .kpi-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    .kpi-card h6 {
+        color: rgba(255,255,255,0.8);
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+    }
+    .kpi-card .value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        margin-bottom: 0;
+    }
+    .filter-card {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .btn-outline-danger:hover {
+        color: white;
+    }
+    .text-end {
+        text-align: right;
+    }
+    .badge-stool { background-color: #8B4513; }
+    .badge-urine { background-color: #FFD700; color: #333; }
+    .badge-vomit { background-color: #DC143C; }
+    .badge-constipation { background-color: #FF4500; }
+    .badge-normal { background-color: #28a745; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid" dir="rtl">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="fas fa-clipboard-list me-2"></i>
+                    البراز / البول / القيء
+                </h2>
+                <a href="{{ url_for('main.breeding_excretion_new') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    إضافة سجل
+                </a>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="row" id="kpiCards">
+                <!-- KPI cards will be populated by JavaScript -->
+            </div>
+
+            <!-- Filters -->
+            <div class="filter-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-filter me-2"></i>
+                    تصفية النتائج
+                </h5>
+                <form id="filterForm">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="projectFilter" class="form-label">المشروع</label>
+                            <select class="form-select" id="projectFilter" name="project_id">
+                                <option value="">جميع المشاريع</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="dogFilter" class="form-label">الكلب</label>
+                            <select class="form-select" id="dogFilter" name="dog_id">
+                                <option value="">جميع الكلاب</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="dateFrom" class="form-label">من تاريخ</label>
+                            <input type="date" class="form-control" id="dateFrom" name="date_from">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="dateTo" class="form-label">إلى تاريخ</label>
+                            <input type="date" class="form-control" id="dateTo" name="date_to">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="button" class="btn btn-outline-secondary w-100" id="clearFilters">
+                                <i class="fas fa-times me-2"></i>
+                                مسح التصفية
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Loading spinner -->
+            <div id="loadingSpinner" class="text-center d-none">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">جاري التحميل...</span>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 rtl-table">
+                            <thead class="table-dark">
+                                <tr>
+                                    <!-- Reversed order for RTL -->
+                                    <th>إجراءات</th>
+                                    <th>المشروع</th>
+                                    <th>الكلب</th>
+                                    <th>ملاحظات (قيء)</th>
+                                    <th>عدد مرات القيء</th>
+                                    <th>لون القيء</th>
+                                    <th>ملاحظات (بول)</th>
+                                    <th>لون البول</th>
+                                    <th>ملاحظات (براز)</th>
+                                    <th>مكان التبرز</th>
+                                    <th>إمساك</th>
+                                    <th>محتوى البراز</th>
+                                    <th>قوام البراز</th>
+                                    <th>لون البراز</th>
+                                    <th>الوقت</th>
+                                    <th>التاريخ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dataTableBody">
+                                <!-- Data will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <nav aria-label="تصفح الصفحات" class="mt-4">
+                <ul class="pagination justify-content-center" id="pagination">
+                    <!-- Pagination will be populated by JavaScript -->
+                </ul>
+            </nav>
+
+            <!-- No data message -->
+            <div id="noDataMessage" class="text-center py-5 d-none">
+                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">لا توجد سجلات</h4>
+                <p class="text-muted">لم يتم العثور على سجلات إفراز تطابق المعايير المحددة</p>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">تأكيد الحذف</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body" dir="rtl">
+                هل أنت متأكد من رغبتك في حذف هذا السجل؟ لا يمكن التراجع عن هذا الإجراء.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">حذف</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/excretion.js') }}"></script>
+<script>
+    // Initialize excretion list page
+    document.addEventListener('DOMContentLoaded', function() {
+        ExcretionManager.initList();
+    });
+</script>
+{% endblock %}

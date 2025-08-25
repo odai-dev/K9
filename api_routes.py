@@ -3,7 +3,8 @@ from flask_login import login_required, current_user
 from datetime import datetime, date
 from models import (
     db, Project, Employee, Dog, UserRole, AttendanceStatus,
-    FeedingLog, PrepMethod, BodyConditionScale, DailyCheckupLog, PermissionType, DogStatus
+    FeedingLog, PrepMethod, BodyConditionScale, DailyCheckupLog, PermissionType, DogStatus,
+    ExcretionLog, StoolColor, StoolConsistency, StoolContent, UrineColor, VomitColor, ExcretionPlace
 )
 from utils import get_user_permissions, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
 from permission_decorators import require_sub_permission
@@ -783,3 +784,340 @@ def api_checkup_delete(id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+# Excretion API Routes
+@api_bp.route('/breeding/excretion/list', methods=['GET'])
+@login_required
+@require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.VIEW)
+def excretion_list():
+    """Get excretion log entries with filters and pagination"""
+    try:
+        # Get parameters
+        project_id = request.args.get('project_id')
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        dog_id = request.args.get('dog_id')
+        page = int(request.args.get('page', 1))
+        per_page = min(int(request.args.get('per_page', 50)), 100)
+        
+        # Build base query with eager loading
+        query = ExcretionLog.query.options(
+            db.joinedload(ExcretionLog.project),
+            db.joinedload(ExcretionLog.dog),
+            db.joinedload(ExcretionLog.recorder_employee)
+        )
+        
+        # Apply PROJECT_MANAGER scoping
+        if current_user.role == UserRole.PROJECT_MANAGER:
+            assigned_projects = get_user_assigned_projects(current_user)
+            project_ids = [p.id for p in assigned_projects]
+            if not project_ids:
+                return jsonify({'items': [], 'pagination': {}, 'kpis': {}})
+            query = query.filter(ExcretionLog.project_id.in_(project_ids))
+        
+        # Apply filters
+        if project_id:
+            query = query.filter(ExcretionLog.project_id == project_id)
+        if date_from:
+            query = query.filter(ExcretionLog.date >= datetime.strptime(date_from, '%Y-%m-%d').date())
+        if date_to:
+            query = query.filter(ExcretionLog.date <= datetime.strptime(date_to, '%Y-%m-%d').date())
+        if dog_id:
+            query = query.filter(ExcretionLog.dog_id == dog_id)
+        
+        # Get total count for pagination
+        total = query.count()
+        
+        # Apply pagination and ordering
+        items = query.order_by(ExcretionLog.date.desc(), ExcretionLog.time.desc())\
+                    .offset((page - 1) * per_page)\
+                    .limit(per_page)\
+                    .all()
+        
+        # Calculate KPIs
+        all_items = query.all()
+        
+        stool_abnormal_consistency_count = len([
+            i for i in all_items 
+            if i.stool_consistency in ["سائل", "لين", "شديد الصلابة"]
+        ])
+        
+        constipation_count = len([i for i in all_items if i.constipation])
+        
+        urine_abnormal_color_count = len([
+            i for i in all_items 
+            if i.urine_color in ["أصفر غامق", "بني مصفر", "وردي/دموي"]
+        ])
+        
+        total_vomit_events = sum([i.vomit_count or 0 for i in all_items])
+        
+        # Count stool consistency distribution
+        stool_consistency_counts = {}
+        for consistency in StoolConsistency:
+            stool_consistency_counts[consistency.value] = len([
+                i for i in all_items if i.stool_consistency == consistency.value
+            ])
+        
+        kpis = {
+            'total': total,
+            'stool': {
+                'abnormal_consistency': stool_abnormal_consistency_count,
+                'constipation': constipation_count,
+                'by_consistency': stool_consistency_counts
+            },
+            'urine': {
+                'abnormal_color': urine_abnormal_color_count
+            },
+            'vomit': {
+                'total_events': total_vomit_events
+            }
+        }
+        
+        # Serialize items
+        items_data = []
+        for item in items:
+            items_data.append({
+                'id': str(item.id),
+                'date': item.date.strftime('%Y-%m-%d'),
+                'time': item.time.strftime('%H:%M:%S'),
+                'dog_name': item.dog.name if item.dog else None,
+                'dog_code': item.dog.code if item.dog else None,
+                'project_name': item.project.name if item.project else None,
+                'recorder_name': item.recorder_employee.name if item.recorder_employee else None,
+                'stool_color': item.stool_color,
+                'stool_consistency': item.stool_consistency,
+                'stool_content': item.stool_content,
+                'constipation': item.constipation,
+                'stool_place': item.stool_place,
+                'stool_notes': item.stool_notes,
+                'urine_color': item.urine_color,
+                'urine_notes': item.urine_notes,
+                'vomit_color': item.vomit_color,
+                'vomit_count': item.vomit_count,
+                'vomit_notes': item.vomit_notes,
+                'created_at': item.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'updated_at': item.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+            })
+        
+        return jsonify({
+            'items': items_data,
+            'pagination': {
+                'total': total,
+                'page': page,
+                'per_page': per_page,
+                'pages': (total + per_page - 1) // per_page
+            },
+            'kpis': kpis
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error in excretion_list API: {e}")
+        return jsonify({'error': 'خطأ في جلب سجلات الإفراز'}), 500
+
+
+@api_bp.route('/breeding/excretion', methods=['POST'])
+@login_required
+@require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.CREATE)
+def excretion_create():
+    """Create new excretion log entry"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'لم يتم تقديم بيانات'}), 400
+        
+        # Validate required fields
+        required_fields = ['project_id', 'date', 'time', 'dog_id']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({'error': f'الحقل {field} مطلوب'}), 400
+        
+        # Check PROJECT_MANAGER access
+        if current_user.role == UserRole.PROJECT_MANAGER:
+            assigned_projects = get_user_assigned_projects(current_user)
+            project_ids = [p.id for p in assigned_projects]
+            if data['project_id'] not in project_ids:
+                return jsonify({'error': 'ليس لديك صلاحية لهذا المشروع'}), 403
+        
+        # Validate at least one observation type has data
+        has_stool = any([
+            data.get('stool_color'), data.get('stool_consistency'), 
+            data.get('stool_content'), data.get('stool_notes'),
+            data.get('constipation', False), data.get('stool_place')
+        ])
+        has_urine = any([data.get('urine_color'), data.get('urine_notes')])
+        has_vomit = any([
+            data.get('vomit_color'), data.get('vomit_count'), data.get('vomit_notes')
+        ])
+        
+        if not (has_stool or has_urine or has_vomit):
+            return jsonify({'error': 'يجب تسجيل ملاحظة واحدة على الأقل (براز أو بول أو قيء)'}), 400
+        
+        # Parse date and time
+        try:
+            parsed_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'error': 'صيغة التاريخ غير صحيحة، استخدم YYYY-MM-DD'}), 400
+        
+        try:
+            # Handle both HH:MM and HH:MM:SS formats
+            time_str = data['time']
+            if len(time_str.split(':')) == 2:
+                time_str += ':00'
+            parsed_time = datetime.strptime(time_str, '%H:%M:%S').time()
+        except ValueError:
+            return jsonify({'error': 'صيغة الوقت غير صحيحة، استخدم HH:MM أو HH:MM:SS'}), 400
+        
+        # Create excretion log
+        excretion_log = ExcretionLog()
+        excretion_log.project_id = data['project_id']
+        excretion_log.date = parsed_date
+        excretion_log.time = parsed_time
+        excretion_log.dog_id = data['dog_id']
+        excretion_log.recorder_employee_id = data.get('recorder_employee_id')
+        
+        # Stool fields
+        excretion_log.stool_color = data.get('stool_color')
+        excretion_log.stool_consistency = data.get('stool_consistency')
+        excretion_log.stool_content = data.get('stool_content')
+        excretion_log.constipation = data.get('constipation', False)
+        excretion_log.stool_place = data.get('stool_place')
+        excretion_log.stool_notes = data.get('stool_notes')
+        
+        # Urine fields
+        excretion_log.urine_color = data.get('urine_color')
+        excretion_log.urine_notes = data.get('urine_notes')
+        
+        # Vomit fields
+        excretion_log.vomit_color = data.get('vomit_color')
+        excretion_log.vomit_count = data.get('vomit_count')
+        excretion_log.vomit_notes = data.get('vomit_notes')
+        
+        # Audit fields
+        excretion_log.created_by_user_id = current_user.id
+        
+        db.session.add(excretion_log)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'تم حفظ سجل الإفراز بنجاح',
+            'id': str(excretion_log.id)
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error creating excretion log: {e}")
+        return jsonify({'error': 'خطأ في حفظ سجل الإفراز'}), 500
+
+
+@api_bp.route('/breeding/excretion/<id>', methods=['PUT'])
+@login_required
+@require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.EDIT)
+def excretion_update(id):
+    """Update excretion log entry"""
+    try:
+        excretion_log = ExcretionLog.query.get_or_404(id)
+        
+        # Check PROJECT_MANAGER access
+        if current_user.role == UserRole.PROJECT_MANAGER:
+            assigned_projects = get_user_assigned_projects(current_user)
+            project_ids = [p.id for p in assigned_projects]
+            if excretion_log.project_id not in project_ids:
+                return jsonify({'error': 'ليس لديك صلاحية لهذا المشروع'}), 403
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'لم يتم تقديم بيانات'}), 400
+        
+        # Update fields if provided
+        if 'date' in data:
+            try:
+                excretion_log.date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({'error': 'صيغة التاريخ غير صحيحة'}), 400
+        
+        if 'time' in data:
+            try:
+                time_str = data['time']
+                if len(time_str.split(':')) == 2:
+                    time_str += ':00'
+                excretion_log.time = datetime.strptime(time_str, '%H:%M:%S').time()
+            except ValueError:
+                return jsonify({'error': 'صيغة الوقت غير صحيحة'}), 400
+        
+        if 'dog_id' in data:
+            excretion_log.dog_id = data['dog_id']
+        if 'recorder_employee_id' in data:
+            excretion_log.recorder_employee_id = data['recorder_employee_id']
+        
+        # Update stool fields
+        if 'stool_color' in data:
+            excretion_log.stool_color = data['stool_color']
+        if 'stool_consistency' in data:
+            excretion_log.stool_consistency = data['stool_consistency']
+        if 'stool_content' in data:
+            excretion_log.stool_content = data['stool_content']
+        if 'constipation' in data:
+            excretion_log.constipation = data['constipation']
+        if 'stool_place' in data:
+            excretion_log.stool_place = data['stool_place']
+        if 'stool_notes' in data:
+            excretion_log.stool_notes = data['stool_notes']
+        
+        # Update urine fields
+        if 'urine_color' in data:
+            excretion_log.urine_color = data['urine_color']
+        if 'urine_notes' in data:
+            excretion_log.urine_notes = data['urine_notes']
+        
+        # Update vomit fields
+        if 'vomit_color' in data:
+            excretion_log.vomit_color = data['vomit_color']
+        if 'vomit_count' in data:
+            excretion_log.vomit_count = data['vomit_count']
+        if 'vomit_notes' in data:
+            excretion_log.vomit_notes = data['vomit_notes']
+        
+        excretion_log.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'تم تحديث سجل الإفراز بنجاح'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error updating excretion log: {e}")
+        return jsonify({'error': 'خطأ في تحديث سجل الإفراز'}), 500
+
+
+@api_bp.route('/breeding/excretion/<id>', methods=['DELETE'])
+@login_required
+@require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.DELETE)
+def excretion_delete(id):
+    """Delete excretion log entry"""
+    try:
+        excretion_log = ExcretionLog.query.get_or_404(id)
+        
+        # Check PROJECT_MANAGER access
+        if current_user.role == UserRole.PROJECT_MANAGER:
+            assigned_projects = get_user_assigned_projects(current_user)
+            project_ids = [p.id for p in assigned_projects]
+            if excretion_log.project_id not in project_ids:
+                return jsonify({'error': 'ليس لديك صلاحية لهذا المشروع'}), 403
+        
+        db.session.delete(excretion_log)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'تم حذف سجل الإفراز بنجاح'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error deleting excretion log: {e}")
+        return jsonify({'error': 'خطأ في حذف سجل الإفراز'}), 500
