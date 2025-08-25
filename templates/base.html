@@ -67,12 +67,24 @@
                     
                     {% if permissions.training %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="trainingDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-dumbbell me-1"></i>التدريب
+                        <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="breedingDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-leaf me-1"></i>التربية
                         </a>
                         <ul class="dropdown-menu shadow">
+                            <li><h6 class="dropdown-header">التدريب</h6></li>
                             <li><a class="dropdown-item" href="{{ url_for('main.training_list') }}"><i class="fas fa-clipboard me-2"></i>جلسات التدريب</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('main.training_add') }}"><i class="fas fa-plus me-2"></i>إضافة جلسة</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">الرعاية اليومية</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_feeding_log') }}"><i class="fas fa-utensils me-2"></i>التغذية — السجل اليومي</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_checkup') }}"><i class="fas fa-stethoscope me-2"></i>الفحص الظاهري اليومي</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_excretion') }}"><i class="fas fa-tint me-2"></i>البراز / البول / القيء</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">الرعاية والتدريب</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_grooming') }}"><i class="fas fa-cut me-2"></i>العناية (الاستحمام والصيانة)</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_deworming') }}"><i class="fas fa-capsules me-2"></i>جرعة الديدان</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_training_activity') }}"><i class="fas fa-running me-2"></i>تدريب — أنشطة يومية</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_cleaning') }}"><i class="fas fa-broom me-2"></i>النظافة (البيئة/القفص)</a></li>
                         </ul>
                     </li>
                     {% endif %}
@@ -124,30 +136,6 @@
                     </li>
                     {% endif %}
                     
-                    <!-- Breeding Menu -->
-                    {% set has_breeding_access = permissions.get('Breeding', {}).get('الوصول لقائمة التربية', {}).get('VIEW', False) or 
-                                                 permissions.get('Breeding', {}).get('التغذية - السجل اليومي', {}).get('VIEW', False) %}
-                    {% if has_breeding_access %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="breedingDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-leaf me-1"></i>التربية
-                        </a>
-                        <ul class="dropdown-menu shadow">
-                            <li><h6 class="dropdown-header">الرعاية اليومية</h6></li>
-                            {% if permissions.get('Breeding', {}).get('التغذية - السجل اليومي', {}).get('VIEW', False) %}
-                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_feeding_log') }}"><i class="fas fa-utensils me-2"></i>التغذية — السجل اليومي</a></li>
-                            {% endif %}
-                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_checkup') }}"><i class="fas fa-stethoscope me-2"></i>الفحص الظاهري اليومي</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_excretion') }}"><i class="fas fa-tint me-2"></i>البراز / البول / القيء</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><h6 class="dropdown-header">الرعاية والتدريب</h6></li>
-                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_grooming') }}"><i class="fas fa-cut me-2"></i>العناية (الاستحمام والصيانة)</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_deworming') }}"><i class="fas fa-capsules me-2"></i>جرعة الديدان</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_training_activity') }}"><i class="fas fa-running me-2"></i>تدريب — أنشطة يومية</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_cleaning') }}"><i class="fas fa-broom me-2"></i>النظافة (البيئة/القفص)</a></li>
-                        </ul>
-                    </li>
-                    {% endif %}
                     
                     {% if current_user.role.value == 'GENERAL_ADMIN' %}
                     <li class="nav-item">
