@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+{% block title %}جرعة الديدان - التربية{% endblock %}
+
+{% block content %}
+<div class="breeding-deworming-list" dir="rtl">
+    <div class="header-section mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2>جرعة الديدان</h2>
+                <p class="text-muted">سجلات علاج وقائي ضد الديدان للكلاب</p>
+            </div>
+            <div>
+                <a href="{{ url_for('main.breeding_deworming_new') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> إضافة جرعة جديدة
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filters-section mb-4">
+        <div class="card">
+            <div class="card-body">
+                <form id="filters-form" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">المشروع</label>
+                        <select class="form-select" id="project_filter">
+                            <option value="">جميع المشاريع</option>
+                            {% for project in assigned_projects %}
+                            <option value="{{ project.id }}">{{ project.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">من تاريخ</label>
+                        <input type="date" class="form-control" id="date_from">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">إلى تاريخ</label>
+                        <input type="date" class="form-control" id="date_to">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">الكلب</label>
+                        <select class="form-select" id="dog_filter">
+                            <option value="">جميع الكلاب</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-outline-primary" onclick="applyFilters()">
+                                <i class="fas fa-search"></i> بحث
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs Section -->
+    <div class="kpis-section mb-4">
+        <div class="row" id="kpis-container">
+            <div class="col-md-2">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary" id="total-count">0</h5>
+                        <p class="card-text">المجموع</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-success" id="avg-mg-per-kg">0</h5>
+                        <p class="card-text">متوسط الجرعة (ملغ/كغ)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title text-info" id="with-next-due">0</h5>
+                        <p class="card-text">الجرعة التالية محددة</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">توزيع طرق الإعطاء</h6>
+                        <div id="route-distribution"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-section">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="deworming-table">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>التاريخ والوقت</th>
+                                <th>المشروع</th>
+                                <th>الكلب</th>
+                                <th>الوزن (كغ)</th>
+                                <th>اسم المنتج</th>
+                                <th>المادة الفعالة</th>
+                                <th>الجرعة المحسوبة (ملغ)</th>
+                                <th>الكمية المعطاة</th>
+                                <th>طريقة الإعطاء</th>
+                                <th>الأعراض الجانبية</th>
+                                <th>الجرعة التالية</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="deworming-table-body">
+                            <!-- Will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <nav aria-label="Page navigation" id="pagination-nav" style="display: none;">
+                    <ul class="pagination justify-content-center" id="pagination-container">
+                        <!-- Will be populated by JavaScript -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Spinner -->
+<div id="loading-spinner" class="text-center py-5" style="display: none;">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">جاري التحميل...</span>
+    </div>
+</div>
+
+<script>
+// Global variables
+let currentPage = 1;
+let currentFilters = {};
+let routeChoices = {{ route_choices | tojson }};
+let unitChoices = {{ unit_choices | tojson }};
+let reactionChoices = {{ reaction_choices | tojson }};
+
+// Route name mappings in Arabic
+const routeLabels = {
+    'ORAL': 'فموي',
+    'INJECTABLE': 'حقن',
+    'TOPICAL': 'موضعي'
+};
+
+const unitLabels = {
+    'ML': 'مل',
+    'MG': 'ملغ',
+    'TABLET': 'قرص'
+};
+
+const reactionLabels = {
+    'NONE': 'لا يوجد',
+    'MILD': 'خفيف',
+    'MODERATE': 'متوسط',
+    'SEVERE': 'شديد'
+};
+
+// Load data when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadDewormingData();
+});
+
+function showLoading() {
+    document.getElementById('loading-spinner').style.display = 'block';
+    document.getElementById('deworming-table').style.display = 'none';
+    document.getElementById('pagination-nav').style.display = 'none';
+}
+
+function hideLoading() {
+    document.getElementById('loading-spinner').style.display = 'none';
+    document.getElementById('deworming-table').style.display = 'table';
+}
+
+function applyFilters() {
+    currentPage = 1;
+    currentFilters = {
+        project_id: document.getElementById('project_filter').value,
+        date_from: document.getElementById('date_from').value,
+        date_to: document.getElementById('date_to').value,
+        dog_id: document.getElementById('dog_filter').value
+    };
+    loadDewormingData();
+}
+
+function loadDewormingData(page = 1) {
+    showLoading();
+    
+    const params = new URLSearchParams({
+        page: page,
+        per_page: 50,
+        ...currentFilters
+    });
+    
+    fetch(`/api/breeding/deworming/list?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            updateTable(data.items);
+            updatePagination(data.pagination);
+            updateKPIs(data.kpis);
+            hideLoading();
+        })
+        .catch(error => {
+            console.error('Error loading deworming data:', error);
+            hideLoading();
+            alert('خطأ في تحميل البيانات: ' + error.message);
+        });
+}
+
+function updateTable(items) {
+    const tbody = document.getElementById('deworming-table-body');
+    tbody.innerHTML = '';
+    
+    if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="12" class="text-center text-muted">لا توجد بيانات متاحة</td></tr>';
+        return;
+    }
+    
+    items.forEach(item => {
+        const row = document.createElement('tr');
+        
+        const dateTime = `${item.date} ${item.time}`;
+        const weightDisplay = item.dog_weight_kg ? `${item.dog_weight_kg} كغ` : '-';
+        const doseDisplay = item.calculated_dose_mg ? `${item.calculated_dose_mg} ملغ` : '-';
+        const amountDisplay = item.administered_amount && item.amount_unit ? 
+            `${item.administered_amount} ${unitLabels[item.amount_unit] || item.amount_unit}` : '-';
+        const routeDisplay = item.administration_route ? 
+            (routeLabels[item.administration_route] || item.administration_route) : '-';
+        const reactionDisplay = item.adverse_reaction ? 
+            (reactionLabels[item.adverse_reaction] || item.adverse_reaction) : '-';
+        const nextDueDisplay = item.next_due_date || '-';
+        
+        row.innerHTML = `
+            <td>${dateTime}</td>
+            <td>${item.project_name}</td>
+            <td>${item.dog_name} (${item.dog_code})</td>
+            <td>${weightDisplay}</td>
+            <td>${item.product_name || '-'}</td>
+            <td>${item.active_ingredient || '-'}</td>
+            <td>${doseDisplay}</td>
+            <td>${amountDisplay}</td>
+            <td>${routeDisplay}</td>
+            <td>${reactionDisplay}</td>
+            <td>${nextDueDisplay}</td>
+            <td>
+                <div class="btn-group" role="group">
+                    <a href="/breeding/deworming/${item.id}/edit" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteDeworming('${item.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+}
+
+function updatePagination(pagination) {
+    if (pagination.pages <= 1) {
+        document.getElementById('pagination-nav').style.display = 'none';
+        return;
+    }
+    
+    document.getElementById('pagination-nav').style.display = 'block';
+    const container = document.getElementById('pagination-container');
+    container.innerHTML = '';
+    
+    // Previous button
+    if (pagination.has_prev) {
+        const prevLi = document.createElement('li');
+        prevLi.className = 'page-item';
+        prevLi.innerHTML = `<a class="page-link" href="#" onclick="loadDewormingData(${pagination.prev_num})">السابق</a>`;
+        container.appendChild(prevLi);
+    }
+    
+    // Page numbers
+    for (let i = 1; i <= pagination.pages; i++) {
+        const li = document.createElement('li');
+        li.className = `page-item ${i === pagination.page ? 'active' : ''}`;
+        li.innerHTML = `<a class="page-link" href="#" onclick="loadDewormingData(${i})">${i}</a>`;
+        container.appendChild(li);
+    }
+    
+    // Next button
+    if (pagination.has_next) {
+        const nextLi = document.createElement('li');
+        nextLi.className = 'page-item';
+        nextLi.innerHTML = `<a class="page-link" href="#" onclick="loadDewormingData(${pagination.next_num})">التالي</a>`;
+        container.appendChild(nextLi);
+    }
+}
+
+function updateKPIs(kpis) {
+    document.getElementById('total-count').textContent = kpis.total || 0;
+    document.getElementById('avg-mg-per-kg').textContent = kpis.avg_mg_per_kg || '0';
+    document.getElementById('with-next-due').textContent = kpis.with_next_due || 0;
+    
+    // Update route distribution
+    const routeContainer = document.getElementById('route-distribution');
+    routeContainer.innerHTML = '';
+    
+    if (kpis.by_route && Object.keys(kpis.by_route).length > 0) {
+        Object.entries(kpis.by_route).forEach(([route, count]) => {
+            const routeLabel = routeLabels[route] || route;
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-secondary me-2 mb-1';
+            badge.textContent = `${routeLabel}: ${count}`;
+            routeContainer.appendChild(badge);
+        });
+    } else {
+        routeContainer.innerHTML = '<small class="text-muted">لا توجد بيانات</small>';
+    }
+}
+
+function deleteDeworming(id) {
+    if (!confirm('هل أنت متأكد من حذف هذا السجل؟')) {
+        return;
+    }
+    
+    fetch(`/api/breeding/deworming/${id}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        alert('تم حذف السجل بنجاح');
+        loadDewormingData(currentPage);
+    })
+    .catch(error => {
+        console.error('Error deleting deworming:', error);
+        alert('خطأ في حذف السجل: ' + error.message);
+    });
+}
+</script>
+{% endblock %}

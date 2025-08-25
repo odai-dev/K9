@@ -1434,7 +1434,7 @@ def api_deworming_list():
     # Check permissions
     from utils import get_user_permissions
     permissions = get_user_permissions(current_user)
-    if not permissions.breeding:
+    if not permissions['training']:
         return jsonify({'error': 'Insufficient permissions'}), 403
     
     try:
@@ -1604,7 +1604,7 @@ def api_deworming_create():
     # Check permissions
     from utils import get_user_permissions
     permissions = get_user_permissions(current_user)
-    if not permissions.breeding:
+    if not permissions['training']:
         return jsonify({'error': 'Insufficient permissions'}), 403
     
     try:
@@ -1680,27 +1680,26 @@ def api_deworming_create():
             calculated_dose_mg = round(dog_weight_kg * standard_dose_mg_per_kg, 1)
         
         # Create new deworming log
-        new_log = DewormingLog(
-            project_id=data['project_id'],
-            date=log_date,
-            time=log_time,
-            dog_id=data['dog_id'],
-            specialist_employee_id=data.get('specialist_employee_id'),
-            dog_weight_kg=dog_weight_kg,
-            product_name=data.get('product_name'),
-            active_ingredient=data.get('active_ingredient'),
-            standard_dose_mg_per_kg=standard_dose_mg_per_kg,
-            calculated_dose_mg=calculated_dose_mg,
-            administered_amount=data.get('administered_amount'),
-            amount_unit=data.get('amount_unit'),
-            administration_route=data.get('administration_route'),
-            batch_number=data.get('batch_number'),
-            expiry_date=datetime.strptime(data['expiry_date'], '%Y-%m-%d').date() if data.get('expiry_date') else None,
-            adverse_reaction=data.get('adverse_reaction'),
-            notes=data.get('notes'),
-            next_due_date=datetime.strptime(data['next_due_date'], '%Y-%m-%d').date() if data.get('next_due_date') else None,
-            created_by_user_id=current_user.id
-        )
+        new_log = DewormingLog()
+        new_log.project_id = data['project_id']
+        new_log.date = log_date
+        new_log.time = log_time
+        new_log.dog_id = data['dog_id']
+        new_log.specialist_employee_id = data.get('specialist_employee_id')
+        new_log.dog_weight_kg = dog_weight_kg
+        new_log.product_name = data.get('product_name')
+        new_log.active_ingredient = data.get('active_ingredient')
+        new_log.standard_dose_mg_per_kg = standard_dose_mg_per_kg
+        new_log.calculated_dose_mg = calculated_dose_mg
+        new_log.administered_amount = data.get('administered_amount')
+        new_log.amount_unit = data.get('amount_unit')
+        new_log.administration_route = data.get('administration_route')
+        new_log.batch_number = data.get('batch_number')
+        new_log.expiry_date = datetime.strptime(data['expiry_date'], '%Y-%m-%d').date() if data.get('expiry_date') else None
+        new_log.adverse_reaction = data.get('adverse_reaction')
+        new_log.notes = data.get('notes')
+        new_log.next_due_date = datetime.strptime(data['next_due_date'], '%Y-%m-%d').date() if data.get('next_due_date') else None
+        new_log.created_by_user_id = current_user.id
         
         db.session.add(new_log)
         db.session.commit()
@@ -1718,7 +1717,7 @@ def api_deworming_update(id):
     # Check permissions
     from utils import get_user_permissions
     permissions = get_user_permissions(current_user)
-    if not permissions.breeding:
+    if not permissions['training']:
         return jsonify({'error': 'Insufficient permissions'}), 403
     
     try:
@@ -1781,7 +1780,7 @@ def api_deworming_delete(id):
     # Check permissions
     from utils import get_user_permissions
     permissions = get_user_permissions(current_user)
-    if not permissions.breeding:
+    if not permissions['training']:
         return jsonify({'error': 'Insufficient permissions'}), 403
     
     try:

@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% block title %}{% if mode == 'edit' %}تعديل جرعة الديدان{% else %}إضافة جرعة ديدان جديدة{% endif %} - التربية{% endblock %}
+
+{% block content %}
+<div class="breeding-deworming-form" dir="rtl">
+    <div class="header-section mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2>{% if mode == 'edit' %}تعديل جرعة الديدان{% else %}إضافة جرعة ديدان جديدة{% endif %}</h2>
+                <p class="text-muted">علاج وقائي ضد الديدان للكلاب</p>
+            </div>
+            <div>
+                <a href="{{ url_for('main.breeding_deworming') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right"></i> العودة للقائمة
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <form id="deworming-form">
+                        {% if mode == 'edit' and log %}
+                        <input type="hidden" id="log_id" value="{{ log.id }}">
+                        {% endif %}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="project_id" class="form-label">المشروع <span class="text-danger">*</span></label>
+                                <select class="form-select" id="project_id" name="project_id" required>
+                                    <option value="">اختر المشروع</option>
+                                    {% for project in assigned_projects %}
+                                    <option value="{{ project.id }}" {% if mode == 'edit' and log and log.project_id == project.id %}selected{% endif %}>
+                                        {{ project.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="dog_id" class="form-label">الكلب <span class="text-danger">*</span></label>
+                                <select class="form-select" id="dog_id" name="dog_id" required>
+                                    <option value="">اختر الكلب</option>
+                                    {% for dog in assigned_dogs %}
+                                    <option value="{{ dog.id }}" {% if mode == 'edit' and log and log.dog_id == dog.id %}selected{% endif %}>
+                                        {{ dog.name }} ({{ dog.code }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="date" class="form-label">التاريخ <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="date" name="date" required
+                                       {% if mode == 'edit' and log %}value="{{ log.date.strftime('%Y-%m-%d') }}"{% endif %}>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="time" class="form-label">الوقت <span class="text-danger">*</span></label>
+                                <input type="time" class="form-control" id="time" name="time" required
+                                       {% if mode == 'edit' and log %}value="{{ log.time.strftime('%H:%M') }}"{% endif %}>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="specialist_employee_id" class="form-label">الطبيب المختص</label>
+                                <select class="form-select" id="specialist_employee_id" name="specialist_employee_id">
+                                    <option value="">لا يوجد</option>
+                                    {% for employee in employees %}
+                                    <option value="{{ employee.id }}" {% if mode == 'edit' and log and log.specialist_employee_id == employee.id %}selected{% endif %}>
+                                        {{ employee.full_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="dog_weight_kg" class="form-label">وزن الكلب (كيلوغرام)</label>
+                                <input type="number" step="0.1" min="0" class="form-control" id="dog_weight_kg" name="dog_weight_kg"
+                                       {% if mode == 'edit' and log and log.dog_weight_kg %}value="{{ log.dog_weight_kg }}"{% endif %}>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="product_name" class="form-label">اسم المنتج</label>
+                                <input type="text" class="form-control" id="product_name" name="product_name" maxlength="120"
+                                       {% if mode == 'edit' and log %}value="{{ log.product_name or '' }}"{% endif %}>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="active_ingredient" class="form-label">المادة الفعالة</label>
+                                <input type="text" class="form-control" id="active_ingredient" name="active_ingredient" maxlength="120"
+                                       {% if mode == 'edit' and log %}value="{{ log.active_ingredient or '' }}"{% endif %}>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="standard_dose_mg_per_kg" class="form-label">الجرعة القياسية (ملغ/كغ)</label>
+                                <input type="number" step="0.1" min="0" class="form-control" id="standard_dose_mg_per_kg" name="standard_dose_mg_per_kg"
+                                       {% if mode == 'edit' and log and log.standard_dose_mg_per_kg %}value="{{ log.standard_dose_mg_per_kg }}"{% endif %}>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="calculated_dose_mg" class="form-label">الجرعة المحسوبة (ملغ)</label>
+                                <input type="number" step="0.1" min="0" class="form-control" id="calculated_dose_mg" name="calculated_dose_mg" readonly
+                                       {% if mode == 'edit' and log and log.calculated_dose_mg %}value="{{ log.calculated_dose_mg }}"{% endif %}>
+                                <small class="form-text text-muted">تحسب تلقائياً من الوزن والجرعة القياسية</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="administered_amount" class="form-label">الكمية المعطاة</label>
+                                <input type="number" step="0.1" min="0" class="form-control" id="administered_amount" name="administered_amount"
+                                       {% if mode == 'edit' and log and log.administered_amount %}value="{{ log.administered_amount }}"{% endif %}>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="amount_unit" class="form-label">وحدة الكمية</label>
+                                <select class="form-select" id="amount_unit" name="amount_unit">
+                                    <option value="">اختر الوحدة</option>
+                                    {% for choice in unit_choices %}
+                                    <option value="{{ choice.value }}" {% if mode == 'edit' and log and log.amount_unit == choice.value %}selected{% endif %}>
+                                        {% if choice.value == 'ML' %}مل{% elif choice.value == 'MG' %}ملغ{% elif choice.value == 'TABLET' %}قرص{% else %}{{ choice.value }}{% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="administration_route" class="form-label">طريقة الإعطاء</label>
+                                <select class="form-select" id="administration_route" name="administration_route">
+                                    <option value="">اختر الطريقة</option>
+                                    {% for choice in route_choices %}
+                                    <option value="{{ choice.value }}" {% if mode == 'edit' and log and log.administration_route == choice.value %}selected{% endif %}>
+                                        {% if choice.value == 'ORAL' %}فموي{% elif choice.value == 'INJECTABLE' %}حقن{% elif choice.value == 'TOPICAL' %}موضعي{% else %}{{ choice.value }}{% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="batch_number" class="form-label">رقم الدفعة</label>
+                                <input type="text" class="form-control" id="batch_number" name="batch_number" maxlength="60"
+                                       {% if mode == 'edit' and log %}value="{{ log.batch_number or '' }}"{% endif %}>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="expiry_date" class="form-label">تاريخ انتهاء الصلاحية</label>
+                                <input type="date" class="form-control" id="expiry_date" name="expiry_date"
+                                       {% if mode == 'edit' and log and log.expiry_date %}value="{{ log.expiry_date.strftime('%Y-%m-%d') }}"{% endif %}>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="adverse_reaction" class="form-label">الأعراض الجانبية</label>
+                                <select class="form-select" id="adverse_reaction" name="adverse_reaction">
+                                    <option value="">لا يوجد</option>
+                                    {% for choice in reaction_choices %}
+                                    <option value="{{ choice.value }}" {% if mode == 'edit' and log and log.adverse_reaction == choice.value %}selected{% endif %}>
+                                        {% if choice.value == 'NONE' %}لا يوجد{% elif choice.value == 'MILD' %}خفيف{% elif choice.value == 'MODERATE' %}متوسط{% elif choice.value == 'SEVERE' %}شديد{% else %}{{ choice.value }}{% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="next_due_date" class="form-label">تاريخ الجرعة التالية</label>
+                                <input type="date" class="form-control" id="next_due_date" name="next_due_date"
+                                       {% if mode == 'edit' and log and log.next_due_date %}value="{{ log.next_due_date.strftime('%Y-%m-%d') }}"{% endif %}>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">ملاحظات</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3">{% if mode == 'edit' and log %}{{ log.notes or '' }}{% endif %}</textarea>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ url_for('main.breeding_deworming') }}'">
+                                إلغاء
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {% if mode == 'edit' %}تحديث{% else %}حفظ{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">إرشادات</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-info-circle text-info me-2"></i>الحقول المميزة بـ <span class="text-danger">*</span> مطلوبة</li>
+                        <li><i class="fas fa-calculator text-primary me-2"></i>الجرعة المحسوبة تحسب تلقائياً من الوزن والجرعة القياسية</li>
+                        <li><i class="fas fa-exclamation-triangle text-warning me-2"></i>تأكد من صحة الوزن والجرعة</li>
+                        <li><i class="fas fa-calendar text-success me-2"></i>حدد تاريخ الجرعة التالية لتذكير المراقبة</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-calculate dose when weight or standard dose changes
+    const weightInput = document.getElementById('dog_weight_kg');
+    const standardDoseInput = document.getElementById('standard_dose_mg_per_kg');
+    const calculatedDoseInput = document.getElementById('calculated_dose_mg');
+    
+    function calculateDose() {
+        const weight = parseFloat(weightInput.value) || 0;
+        const standardDose = parseFloat(standardDoseInput.value) || 0;
+        
+        if (weight > 0 && standardDose > 0) {
+            const calculatedDose = (weight * standardDose).toFixed(1);
+            calculatedDoseInput.value = calculatedDose;
+        } else {
+            calculatedDoseInput.value = '';
+        }
+    }
+    
+    weightInput.addEventListener('input', calculateDose);
+    standardDoseInput.addEventListener('input', calculateDose);
+    
+    // Form submission
+    document.getElementById('deworming-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Convert empty strings to null for optional fields
+        Object.keys(data).forEach(key => {
+            if (data[key] === '') {
+                data[key] = null;
+            }
+        });
+        
+        const isEdit = document.getElementById('log_id');
+        const url = isEdit ? `/api/breeding/deworming/${isEdit.value}` : '/api/breeding/deworming';
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                throw new Error(result.error);
+            }
+            
+            alert(isEdit ? 'تم تحديث السجل بنجاح' : 'تم إضافة السجل بنجاح');
+            window.location.href = '{{ url_for("main.breeding_deworming") }}';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('خطأ في حفظ البيانات: ' + error.message);
+        });
+    });
+});
+</script>
+{% endblock %}
