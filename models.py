@@ -166,6 +166,18 @@ class Severity(Enum):
     MODERATE = "متوسط"
     SEVERE = "شديد"
 
+# Grooming enums - Using English values for database, Arabic display in UI
+class GroomingYesNo(Enum):
+    YES = "YES"
+    NO = "NO"
+
+class GroomingCleanlinessScore(Enum):  # 1..5 stars/levels
+    SCORE_1 = "1"
+    SCORE_2 = "2"
+    SCORE_3 = "3"
+    SCORE_4 = "4"
+    SCORE_5 = "5"
+
 # Association table for many-to-many relationship between employees and dogs
 employee_dog_assignment = db.Table('employee_dog_assignment',
     db.Column('employee_id', get_uuid_column(), db.ForeignKey('employee.id'), primary_key=True),
@@ -1600,5 +1612,50 @@ class ExcretionLog(db.Model):
 
     def __repr__(self):
         return f'<ExcretionLog {self.id}: {self.dog_id} on {self.date} at {self.time}>'
+
+
+# ---------- GroomingLog table (per grooming action/event) ----------
+class GroomingLog(db.Model):
+    __tablename__ = "grooming_log"
+
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+
+    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    time = db.Column(db.Time, nullable=False)
+
+    dog_id = db.Column(get_uuid_column(), db.ForeignKey("dog.id", ondelete="CASCADE"), nullable=False)
+    recorder_employee_id = db.Column(get_uuid_column(), db.ForeignKey("employee.id", ondelete="SET NULL"), nullable=True)
+
+    # Actions - using English enum values, Arabic display handled in UI
+    washed_bathed = db.Column(db.Enum(GroomingYesNo), nullable=True)             # غسل الكلب
+    shampoo_type = db.Column(db.String(120), nullable=True)                      # نوع الشامبو
+    brushing = db.Column(db.Enum(GroomingYesNo), nullable=True)                  # تمشيط
+    nail_trimming = db.Column(db.Enum(GroomingYesNo), nullable=True)             # قص الأظافر
+    teeth_brushing = db.Column(db.Enum(GroomingYesNo), nullable=True)            # فرش الأسنان
+    ear_cleaning = db.Column(db.Enum(GroomingYesNo), nullable=True)              # تنظيف الأذن
+    eye_cleaning = db.Column(db.Enum(GroomingYesNo), nullable=True)              # تنظيف العين
+
+    cleanliness_score = db.Column(db.Enum(GroomingCleanlinessScore), nullable=True) # نظافة عامة 1-5
+    notes = db.Column(db.Text, nullable=True)                                    # ملاحظات
+
+    created_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    project = db.relationship('Project', backref='grooming_logs')
+    dog = db.relationship('Dog', backref='grooming_logs')
+    recorder_employee = db.relationship('Employee', backref='grooming_logs')
+    created_by_user = db.relationship('User', backref='grooming_logs')
+
+    __table_args__ = (
+        db.Index("ix_grooming_project_date", "project_id", "date"),
+        db.Index("ix_grooming_dog_datetime", "dog_id", "date", "time"),
+        db.UniqueConstraint("project_id","dog_id","date","time", name="uq_grooming_project_dog_dt"),
+    )
+
+    def __repr__(self):
+        return f'<GroomingLog {self.id}: {self.dog_id} on {self.date} at {self.time}>'
 
 

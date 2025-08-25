@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}العناية (الاستحمام) - نظام إدارة عمليات الكلاب{% endblock %}
+
+{% block head %}
+<style>
+    .kpi-badge {
+        font-size: 0.875rem;
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin: 4px;
+        display: inline-block;
+    }
+    .kpi-washed { background-color: #e3f2fd; color: #1976d2; }
+    .kpi-brushed { background-color: #f3e5f5; color: #7b1fa2; }
+    .kpi-nails { background-color: #e8f5e8; color: #388e3c; }
+    .kpi-teeth { background-color: #fff3e0; color: #f57c00; }
+    .kpi-ear { background-color: #fce4ec; color: #c2185b; }
+    .kpi-eye { background-color: #e1f5fe; color: #0097a7; }
+    .kpi-cleanliness { background-color: #f1f8e9; color: #689f38; }
+    
+    .table-responsive {
+        overflow-x: auto;
+    }
+    
+    .table th, .table td {
+        white-space: nowrap;
+        text-align: center;
+        vertical-align: middle;
+    }
+    
+    .notes-cell {
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-spa me-2"></i>
+                        العناية (الاستحمام)
+                    </h4>
+                    <a href="{{ url_for('main.breeding_grooming_new') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>
+                        إضافة عناية
+                    </a>
+                </div>
+
+                <!-- Filters Section -->
+                <div class="card-body border-bottom">
+                    <form id="filtersForm" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="projectFilter" class="form-label">المشروع</label>
+                            <select id="projectFilter" class="form-select">
+                                <option value="">جميع المشاريع</option>
+                                {% for project in projects %}
+                                <option value="{{ project.id }}">{{ project.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="dateFromFilter" class="form-label">من تاريخ</label>
+                            <input type="date" id="dateFromFilter" class="form-control">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="dateToFilter" class="form-label">إلى تاريخ</label>
+                            <input type="date" id="dateToFilter" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="dogFilter" class="form-label">الكلب</label>
+                            <select id="dogFilter" class="form-select">
+                                <option value="">جميع الكلاب</option>
+                                {% for dog in dogs %}
+                                <option value="{{ dog.id }}">{{ dog.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-outline-primary me-2">تطبيق</button>
+                            <button type="button" id="clearFilters" class="btn btn-outline-secondary">مسح</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- KPIs Section -->
+                <div class="card-body border-bottom">
+                    <div id="kpisContainer" class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">جاري التحميل...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Section -->
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <!-- RTL order: rightmost column appears first -->
+                                    <th>إجراءات</th>
+                                    <th>المشروع</th>
+                                    <th>الكلب</th>
+                                    <th>ملاحظات</th>
+                                    <th>نظافة عامة (1–5)</th>
+                                    <th>تنظيف العين</th>
+                                    <th>تنظيف الأذن</th>
+                                    <th>فرش الأسنان</th>
+                                    <th>قص الأظافر</th>
+                                    <th>تمشيط</th>
+                                    <th>نوع الشامبو</th>
+                                    <th>غسل الكلب</th>
+                                    <th>الوقت</th>
+                                    <th>التاريخ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="groomingTableBody">
+                                <tr>
+                                    <td colspan="14" class="text-center">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">جاري التحميل...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <nav aria-label="pagination" id="paginationContainer" style="display: none;">
+                        <ul class="pagination justify-content-center" id="paginationList">
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تأكيد الحذف</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                هل أنت متأكد من حذف سجل العناية هذا؟
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">حذف</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/grooming.js') }}"></script>
+{% endblock %}
