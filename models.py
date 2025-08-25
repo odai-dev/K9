@@ -178,6 +178,25 @@ class GroomingCleanlinessScore(Enum):  # 1..5 stars/levels
     SCORE_4 = "4"
     SCORE_5 = "5"
 
+# ---------- Arabic enums for Deworming (stored values are Arabic) ----------
+class Route(Enum):
+    ORAL = "فموي"        # فموي
+    TOPICAL = "موضعي"    # موضعي  
+    INJECTION = "حقن"     # حقن
+
+class Unit(Enum):
+    ML = "مل"            # مل
+    MG = "ملغم"          # ملغم
+    TABLET = "قرص"       # قرص
+
+class Reaction(Enum):
+    NONE = "لا يوجد"             # لا يوجد
+    VOMITING = "قيء"             # قيء
+    DIARRHEA = "إسهال"           # إسهال
+    LETHARGY = "خمول"            # خمول
+    SKIN_ALLERGY = "تحسس جلدي"   # تحسس جلدي
+    OTHER = "أخرى"              # أخرى
+
 # Association table for many-to-many relationship between employees and dogs
 employee_dog_assignment = db.Table('employee_dog_assignment',
     db.Column('employee_id', get_uuid_column(), db.ForeignKey('employee.id'), primary_key=True),
@@ -1657,5 +1676,56 @@ class GroomingLog(db.Model):
 
     def __repr__(self):
         return f'<GroomingLog {self.id}: {self.dog_id} on {self.date} at {self.time}>'
+
+
+# ---------- DewormingLog (per administration) ----------
+class DewormingLog(db.Model):
+    __tablename__ = "deworming_log"
+
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+
+    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    time = db.Column(db.Time, nullable=False)
+
+    dog_id = db.Column(get_uuid_column(), db.ForeignKey("dog.id", ondelete="CASCADE"), nullable=False)
+    specialist_employee_id = db.Column(get_uuid_column(), db.ForeignKey("employee.id", ondelete="SET NULL"), nullable=True)
+
+    dog_weight_kg = db.Column(db.Float, nullable=True)                        # وزن الكلب كغم - > 0 if provided
+    product_name = db.Column(db.String(120), nullable=True)                   # اسم المنتج - e.g., Drontal
+    active_ingredient = db.Column(db.String(120), nullable=True)              # المادة الفعالة - e.g., praziquantel
+    standard_dose_mg_per_kg = db.Column(db.Float, nullable=True)              # جرعة قياسية ملغم لكل كغم - mg/kg rule (optional)
+    calculated_dose_mg = db.Column(db.Float, nullable=True)                   # جرعة محسوبة ملغم - auto-calc if weight & rule present
+
+    administered_amount = db.Column(db.Float, nullable=True)                  # كمية معطاة - numeric amount actually given
+    amount_unit = db.Column(db.String(20), nullable=True)                     # وحدة الكمية - مل | ملغم | قرص
+    administration_route = db.Column(db.String(20), nullable=True)            # طريقة الإعطاء - فموي | موضعي | حقن
+
+    batch_number = db.Column(db.String(60), nullable=True)                    # رقم التشغيلة - batch/lot
+    expiry_date = db.Column(db.Date, nullable=True)                           # تاريخ الانتهاء - expiry date
+
+    adverse_reaction = db.Column(db.String(20), nullable=True)                # تفاعل سلبي - adverse reaction category
+    notes = db.Column(db.Text, nullable=True)                                 # ملاحظات
+
+    next_due_date = db.Column(db.Date, nullable=True)                         # تاريخ الجرعة القادمة - next due date (optional)
+
+    created_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    project = db.relationship('Project', backref='deworming_logs')
+    dog = db.relationship('Dog', backref='deworming_logs')
+    specialist_employee = db.relationship('Employee', backref='deworming_logs')
+    created_by_user = db.relationship('User', backref='deworming_logs')
+
+    __table_args__ = (
+        db.Index("ix_deworming_project_date", "project_id", "date"),
+        db.Index("ix_deworming_dog_datetime", "dog_id", "date", "time"),
+        db.UniqueConstraint("project_id","dog_id","date","time", name="uq_deworming_project_dog_dt"),
+    )
+
+    def __repr__(self):
+        return f'<DewormingLog {self.id}: {self.dog_id} on {self.date} at {self.time}>'
 
 

@@ -4344,10 +4344,110 @@ def breeding_grooming_edit(id):
 @main_bp.route('/breeding/deworming')
 @login_required
 def breeding_deworming():
-    """Deworming management placeholder page"""
-    return render_template('breeding/_placeholder.html',
-                         title="جرعة الديدان",
-                         fields=["نوع الدواء", "الجرعة", "طريقة الإعطاء", "تاريخ الجرعة التالية", "الوزن عند الإعطاء", "أعراض جانبية", "استجابة الكلب", "ملاحظات"])
+    """List deworming logs"""
+    # Check permissions
+    from utils import get_user_permissions
+    permissions = get_user_permissions(current_user)
+    if not permissions.breeding:
+        abort(403)
+    
+    from utils import get_user_assigned_projects
+    assigned_projects = get_user_assigned_projects(current_user)
+    
+    from models import Route, Unit, Reaction
+    # Convert enums to list of dictionaries for JavaScript
+    route_choices = [{"value": choice.value, "text": choice.value} for choice in Route]
+    unit_choices = [{"value": choice.value, "text": choice.value} for choice in Unit]
+    reaction_choices = [{"value": choice.value, "text": choice.value} for choice in Reaction]
+    
+    return render_template('breeding/deworming_list.html',
+                          route_choices=route_choices,
+                          unit_choices=unit_choices,
+                          reaction_choices=reaction_choices,
+                          assigned_projects=assigned_projects)
+
+@main_bp.route('/breeding/deworming/new')
+@login_required
+def breeding_deworming_new():
+    """Add new deworming log"""
+    # Check permissions  
+    from utils import get_user_permissions
+    permissions = get_user_permissions(current_user)
+    if not permissions.breeding:
+        abort(403)
+        
+    from utils import get_user_assigned_projects
+    assigned_projects = get_user_assigned_projects(current_user)
+    assigned_dogs = []
+    if assigned_projects:
+        from models import Dog
+        assigned_dogs = Dog.query.join(models.project_dog_assignment).filter(
+            models.project_dog_assignment.c.project_id.in_([p.id for p in assigned_projects])
+        ).all()
+    
+    from models import Employee, Route, Unit, Reaction
+    employees = Employee.query.filter_by(active=True).all()
+    
+    # Convert enums to list of dictionaries for JavaScript
+    route_choices = [{"value": choice.value, "text": choice.value} for choice in Route]
+    unit_choices = [{"value": choice.value, "text": choice.value} for choice in Unit]
+    reaction_choices = [{"value": choice.value, "text": choice.value} for choice in Reaction]
+    
+    return render_template('breeding/deworming_form.html',
+                          assigned_projects=assigned_projects,
+                          assigned_dogs=assigned_dogs,
+                          employees=employees,
+                          route_choices=route_choices,
+                          unit_choices=unit_choices,
+                          reaction_choices=reaction_choices,
+                          mode='create')
+
+@main_bp.route('/breeding/deworming/<id>/edit')
+@login_required
+def breeding_deworming_edit(id):
+    """Edit deworming log"""
+    from models import DewormingLog, Employee, Dog, Route, Unit, Reaction
+    
+    # Check permissions
+    from utils import get_user_permissions
+    permissions = get_user_permissions(current_user)
+    if not permissions.breeding:
+        abort(403)
+    
+    log = DewormingLog.query.get_or_404(id)
+    
+    # Check project access for project managers
+    if current_user.role.value == "PROJECT_MANAGER":
+        from utils import get_user_assigned_projects
+        assigned_projects = get_user_assigned_projects(current_user)
+        assigned_project_ids = [p.id for p in assigned_projects]
+        if log.project_id not in assigned_project_ids:
+            abort(403)
+    
+    from utils import get_user_assigned_projects
+    assigned_projects = get_user_assigned_projects(current_user)
+    assigned_dogs = []
+    if assigned_projects:
+        assigned_dogs = Dog.query.join(models.project_dog_assignment).filter(
+            models.project_dog_assignment.c.project_id.in_([p.id for p in assigned_projects])
+        ).all()
+    
+    employees = Employee.query.filter_by(active=True).all()
+    
+    # Convert enums to list of dictionaries for JavaScript
+    route_choices = [{"value": choice.value, "text": choice.value} for choice in Route]
+    unit_choices = [{"value": choice.value, "text": choice.value} for choice in Unit]
+    reaction_choices = [{"value": choice.value, "text": choice.value} for choice in Reaction]
+    
+    return render_template('breeding/deworming_form.html',
+                          log=log,
+                          assigned_projects=assigned_projects,
+                          assigned_dogs=assigned_dogs,
+                          employees=employees,
+                          route_choices=route_choices,
+                          unit_choices=unit_choices,
+                          reaction_choices=reaction_choices,
+                          mode='edit')
 
 @main_bp.route('/breeding/training-activity')
 @login_required
