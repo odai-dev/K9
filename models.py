@@ -58,11 +58,11 @@ class VisitType(Enum):
     EMERGENCY = "EMERGENCY"
     VACCINATION = "VACCINATION"
 
-class BreedingCycleType(Enum):
+class ProductionCycleType(Enum):
     NATURAL = "NATURAL"
     ARTIFICIAL = "ARTIFICIAL"
 
-class BreedingResult(Enum):
+class ProductionResult(Enum):
     SUCCESSFUL = "SUCCESSFUL"
     FAILED = "FAILED"
     UNKNOWN = "UNKNOWN"
@@ -378,11 +378,11 @@ class VeterinaryVisit(db.Model):
     def __repr__(self):
         return f'<VeterinaryVisit {self.visit_type.value} - {self.dog.name}>'
 
-class BreedingCycle(db.Model):
+class ProductionCycle(db.Model):
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     female_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     male_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
-    cycle_type = db.Column(db.Enum(BreedingCycleType), nullable=False)
+    cycle_type = db.Column(db.Enum(ProductionCycleType), nullable=False)
     
     # Cycle dates
     heat_start_date = db.Column(db.Date)
@@ -391,7 +391,7 @@ class BreedingCycle(db.Model):
     actual_delivery_date = db.Column(db.Date)
     
     # Results
-    result = db.Column(db.Enum(BreedingResult), default=BreedingResult.UNKNOWN)
+    result = db.Column(db.Enum(ProductionResult), default=ProductionResult.UNKNOWN)
     number_of_puppies = db.Column(db.Integer, default=0)
     puppies_survived = db.Column(db.Integer, default=0)
     puppies_info = db.Column(JSON, default=list)  # [{name, gender, chip_id, birth_weight}]
@@ -402,14 +402,14 @@ class BreedingCycle(db.Model):
     complications = db.Column(Text)
     
     # Relationships
-    female = db.relationship('Dog', foreign_keys=[female_id], backref='breeding_as_female')
-    male = db.relationship('Dog', foreign_keys=[male_id], backref='breeding_as_male')
+    female = db.relationship('Dog', foreign_keys=[female_id], backref='production_as_female')
+    male = db.relationship('Dog', foreign_keys=[male_id], backref='production_as_male')
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def __repr__(self):
-        return f'<BreedingCycle {self.female.name} x {self.male.name}>'
+        return f'<ProductionCycle {self.female.name} x {self.male.name}>'
 
 class Project(db.Model):
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)

@@ -31,13 +31,13 @@ PERMISSION_STRUCTURE = {
         "تتبع الشهادات": ["VIEW", "EDIT"],
         "تصدير بيانات الموظفين": ["EXPORT"],
     },
-    "Breeding": {
+    "Production": {
         "الوصول لدورات الحرارة": ["VIEW", "EDIT"],
         "سجلات التزاوج": ["VIEW", "CREATE", "EDIT"],
         "متتبع الحمل": ["VIEW", "CREATE", "EDIT"],
         "إدارة الجراء": ["VIEW", "CREATE", "EDIT"],
         "تعيين الجراء للتدريب": ["ASSIGN"],
-        "تصدير سجلات التربية": ["EXPORT"],
+        "تصدير سجلات الإنتاج": ["EXPORT"],
     },
     "Projects": {
         "إنشاء مشروع": ["CREATE"],

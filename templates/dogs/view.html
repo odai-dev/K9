@@ -350,17 +350,17 @@
             </div>
         </div>
 
-        <!-- Breeding Cycles -->
-        {% if breeding_cycles %}
+        <!-- Production Cycles -->
+        {% if production_cycles %}
         <div class="card mb-4">
             <div class="card-header">
                 <h5 class="mb-0">
                     <i class="fas fa-heart me-2"></i>
-                    دورات التكاثر
+                    دورات الإنتاج
                 </h5>
             </div>
             <div class="card-body">
-                {% for cycle in breeding_cycles %}
+                {% for cycle in production_cycles %}
                 <div class="border-bottom pb-2 mb-2">
                     <small class="text-muted">{{ cycle.mating_date.strftime('%Y-%m-%d') }}</small>
                     <br>

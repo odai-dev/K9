@@ -65,7 +65,7 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
     :param filters: optional dict with keys appropriate to report_type
     :return: filename of generated PDF
     """
-    from models import Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCycle, Project
+    from models import Dog, Employee, TrainingSession, VeterinaryVisit, ProductionCycle, Project
     filters = filters or {}
 
     # Try to register an Arabic-capable font, fall back to default if not available
@@ -429,15 +429,15 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
                 v.diagnosis or '', v.treatment or ''
             ])
         story.append(build_table(data, colors.HexColor('#008080')))  # teal header
-    elif report_type == 'breeding':
+    elif report_type == 'production':
         story.append(Paragraph(safe_arabic_text("تقرير التكاثر"), title_style))
-        cycles = BreedingCycle.query
+        cycles = ProductionCycle.query
         if start_date and end_date:
-            cycles = cycles.filter(BreedingCycle.mating_date >= start_date,
-                                   BreedingCycle.mating_date <= end_date)
+            cycles = cycles.filter(ProductionCycle.mating_date >= start_date,
+                                   ProductionCycle.mating_date <= end_date)
         cycle_type_filter = filters.get('cycle_type')
         if cycle_type_filter:
-            cycles = cycles.filter(BreedingCycle.cycle_type == cycle_type_filter)
+            cycles = cycles.filter(ProductionCycle.cycle_type == cycle_type_filter)
         cycles = cycles.all()
         data = [['الأم', 'الأب', 'نوع الدورة', 'تاريخ التزاوج',
                  'تاريخ الولادة المتوقع', 'تاريخ الولادة', 'النتيجة',
@@ -519,7 +519,7 @@ def generate_excel_report(report_type, start_date, end_date, user, filters=None)
     :param filters: optional dict with keys appropriate to report_type
     :return: filename of generated Excel file
     """
-    from models import Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCycle, Project
+    from models import Dog, Employee, TrainingSession, VeterinaryVisit, ProductionCycle, Project
     from openpyxl import Workbook
     from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
     from openpyxl.utils import get_column_letter
@@ -721,7 +721,7 @@ def get_user_permissions(user):
             'employees': True,
             'training': True,
             'veterinary': True,
-            'breeding': True,
+            'production': True,
             'projects': True,
             'attendance': True,
             'reports': True,
@@ -730,7 +730,7 @@ def get_user_permissions(user):
     else:  # PROJECT_MANAGER
         # Load permissions from SubPermission table for PROJECT_MANAGER
         from models import SubPermission, Project
-        permissions = {section: False for section in ['dogs', 'employees', 'training', 'veterinary', 'breeding', 'projects', 'attendance', 'reports', 'admin']}
+        permissions = {section: False for section in ['dogs', 'employees', 'training', 'veterinary', 'production', 'projects', 'attendance', 'reports', 'admin']}
         
         # Check if user has any granted permissions in SubPermission table
         user_permissions = SubPermission.query.filter_by(user_id=user.id, is_granted=True).all()
@@ -741,7 +741,7 @@ def get_user_permissions(user):
             'Employees': 'employees', 
             'Training': 'training',
             'Veterinary': 'veterinary',
-            'Breeding': 'breeding',
+            'Production': 'production',
             'Projects': 'projects',
             'Attendance': 'attendance',
             'Reports': 'reports',
@@ -775,7 +775,7 @@ def get_project_manager_permissions(user, project_id):
             'can_manage_incidents': True,
             'can_manage_performance': True,
             'can_view_veterinary': True,
-            'can_view_breeding': True
+            'can_view_production': True
         }
     
     if user.role == UserRole.PROJECT_MANAGER:
@@ -794,7 +794,7 @@ def get_project_manager_permissions(user, project_id):
                 'can_manage_incidents': permission.can_manage_incidents,
                 'can_manage_performance': permission.can_manage_performance,
                 'can_view_veterinary': permission.can_view_veterinary,
-                'can_view_breeding': permission.can_view_breeding
+                'can_view_production': permission.can_view_production
             }
         else:
             # Create default permissions for new PROJECT_MANAGER with all permissions enabled
@@ -821,7 +821,7 @@ def get_project_manager_permissions(user, project_id):
                 'can_manage_incidents': True,
                 'can_manage_performance': True,
                 'can_view_veterinary': True,
-                'can_view_breeding': True
+                'can_view_production': True
             }
     
     # Default: no permissions for other roles

@@ -69,13 +69,13 @@
                                         <option value="training" {% if pre_selected_type == 'training' %}selected{% endif %}>تقرير التدريب</option>
                                         <option value="veterinary" {% if pre_selected_type == 'veterinary' %}selected{% endif %}>تقرير الطبابة</option>
                                         <optgroup label="نظام الإنتاج">
-                                            <option value="breeding_maturity">البلوغ</option>
-                                            <option value="breeding_heat_cycles">الدورة</option>
-                                            <option value="breeding_mating">التزاوج</option>
-                                            <option value="breeding_pregnancy">الحمل</option>
-                                            <option value="breeding_delivery">الولادة</option>
-                                            <option value="breeding_puppies">الجراء</option>
-                                            <option value="breeding_puppy_training">تدريب الجراء</option>
+                                            <option value="production_maturity">البلوغ</option>
+                                            <option value="production_heat_cycles">الدورة</option>
+                                            <option value="production_mating">التزاوج</option>
+                                            <option value="production_pregnancy">الحمل</option>
+                                            <option value="production_delivery">الولادة</option>
+                                            <option value="production_puppies">الجراء</option>
+                                            <option value="production_puppy_training">تدريب الجراء</option>
                                         </optgroup>
                                         <option value="projects" {% if pre_selected_type == 'projects' %}selected{% endif %}>تقرير المشاريع</option>
                                     </select>
@@ -284,8 +284,8 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Breeding Filters -->
-                                <div class="breeding-filters" style="display: none;">
+                                <!-- Production Filters -->
+                                <div class="production-filters" style="display: none;">
                                     <div class="col-md-3">
                                         <label class="form-label">نوع الدورة</label>
                                         <select class="form-select" name="cycle_type" multiple>
@@ -615,12 +615,12 @@ function updateEntityFilters() {
     const entityFilters = document.getElementById('entitySpecificFilters');
     const allFilterSections = entityFilters.querySelectorAll('[class$="-filters"]');
     
-    // Special handling for breeding options - redirect to specific breeding management pages
-    if (reportType.startsWith('breeding_')) {
-        const breedingType = reportType.replace('breeding_', '');
+    // Special handling for production options - redirect to specific production management pages
+    if (reportType.startsWith('production_')) {
+        const productionType = reportType.replace('production_', '');
         let redirectUrl = '';
         
-        switch(breedingType) {
+        switch(productionType) {
             case 'maturity':
                 redirectUrl = "{{ url_for('main.maturity_list') }}";
                 break;
@@ -643,7 +643,7 @@ function updateEntityFilters() {
                 redirectUrl = "{{ url_for('main.puppy_training_list') }}";
                 break;
             default:
-                redirectUrl = "{{ url_for('main.breeding_list') }}";
+                redirectUrl = "{{ url_for('main.production_list') }}";
         }
         
         window.location.href = redirectUrl;
