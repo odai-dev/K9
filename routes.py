@@ -20,7 +20,9 @@ from models import (Dog, Employee, TrainingSession, VeterinaryVisit, ProductionC
                    # Breeding models
                    FeedingLog, PrepMethod, BodyConditionScale, DailyCheckupLog, PermissionType,
                    # Excretion models
-                   ExcretionLog, StoolColor, StoolConsistency, StoolContent, UrineColor, VomitColor, ExcretionPlace)
+                   ExcretionLog, StoolColor, StoolConsistency, StoolContent, UrineColor, VomitColor, ExcretionPlace,
+                   # Grooming models
+                   GroomingLog, GroomingYesNo, GroomingCleanlinessScore)
 from utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
 from permission_decorators import require_sub_permission
 import os
@@ -4224,11 +4226,120 @@ def breeding_excretion_edit(id):
 
 @main_bp.route('/breeding/grooming')
 @login_required 
+@require_sub_permission('Breeding', 'العناية (الاستحمام)', PermissionType.VIEW)
 def breeding_grooming():
-    """Grooming care placeholder page"""
-    return render_template('breeding/_placeholder.html',
-                         title="العناية (الاستحمام والصيانة)",
-                         fields=["نوع الاستحمام", "نوع الشامبو", "تقليم الأظافر", "تنظيف الأذن", "تنظيف الأسنان", "تمشيط الشعر", "المدة المستغرقة", "ملاحظات"])
+    """Grooming care main page"""
+    # Get projects accessible by user
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        projects = Project.query.filter(Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])).all()
+    else:
+        projects = get_user_assigned_projects(current_user)
+    
+    # Get accessible dogs
+    accessible_dogs = get_user_accessible_dogs(current_user)
+    
+    # Arabic display mappings for enums
+    yesno_display = {
+        GroomingYesNo.YES.value: "نعم",
+        GroomingYesNo.NO.value: "لا"
+    }
+    
+    cleanliness_display = {
+        GroomingCleanlinessScore.SCORE_1.value: "1",
+        GroomingCleanlinessScore.SCORE_2.value: "2", 
+        GroomingCleanlinessScore.SCORE_3.value: "3",
+        GroomingCleanlinessScore.SCORE_4.value: "4",
+        GroomingCleanlinessScore.SCORE_5.value: "5"
+    }
+    
+    return render_template('breeding/grooming_list.html',
+                         projects=projects,
+                         dogs=accessible_dogs,
+                         yesno_display=yesno_display,
+                         cleanliness_display=cleanliness_display)
+
+@main_bp.route('/breeding/grooming/new')
+@login_required
+@require_sub_permission('Breeding', 'العناية (الاستحمام)', PermissionType.CREATE)
+def breeding_grooming_new():
+    """Create new grooming log entry"""
+    # Get projects accessible by user  
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        projects = Project.query.filter(Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])).all()
+    else:
+        projects = get_user_assigned_projects(current_user)
+    
+    # Get accessible dogs
+    accessible_dogs = get_user_accessible_dogs(current_user)
+    
+    # Get accessible employees for recorder field
+    accessible_employees = get_user_accessible_employees(current_user)
+    
+    # Arabic choices for enums
+    yesno_choices = [
+        (GroomingYesNo.YES.value, "نعم"),
+        (GroomingYesNo.NO.value, "لا")
+    ]
+    
+    cleanliness_choices = [
+        (GroomingCleanlinessScore.SCORE_1.value, "1"),
+        (GroomingCleanlinessScore.SCORE_2.value, "2"),
+        (GroomingCleanlinessScore.SCORE_3.value, "3"),
+        (GroomingCleanlinessScore.SCORE_4.value, "4"),
+        (GroomingCleanlinessScore.SCORE_5.value, "5")
+    ]
+    
+    return render_template('breeding/grooming_form.html',
+                         projects=projects,
+                         dogs=accessible_dogs,
+                         employees=accessible_employees,
+                         yesno_choices=yesno_choices,
+                         cleanliness_choices=cleanliness_choices,
+                         grooming_log=None)
+
+@main_bp.route('/breeding/grooming/<id>/edit')
+@login_required
+@require_sub_permission('Breeding', 'العناية (الاستحمام)', PermissionType.EDIT)
+def breeding_grooming_edit(id):
+    """Edit existing grooming log entry"""
+    grooming_log = GroomingLog.query.get_or_404(id)
+    
+    # Get projects accessible by user
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        projects = Project.query.filter(Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])).all()
+    else:
+        projects = get_user_assigned_projects(current_user)
+        # Verify user has access to this log's project
+        if grooming_log.project not in projects:
+            abort(403)
+    
+    # Get accessible dogs
+    accessible_dogs = get_user_accessible_dogs(current_user)
+    
+    # Get accessible employees 
+    accessible_employees = get_user_accessible_employees(current_user)
+    
+    # Arabic choices for enums
+    yesno_choices = [
+        (GroomingYesNo.YES.value, "نعم"),
+        (GroomingYesNo.NO.value, "لا")
+    ]
+    
+    cleanliness_choices = [
+        (GroomingCleanlinessScore.SCORE_1.value, "1"),
+        (GroomingCleanlinessScore.SCORE_2.value, "2"),
+        (GroomingCleanlinessScore.SCORE_3.value, "3"),
+        (GroomingCleanlinessScore.SCORE_4.value, "4"),
+        (GroomingCleanlinessScore.SCORE_5.value, "5")
+    ]
+    
+    return render_template('breeding/grooming_form.html',
+                         projects=projects,
+                         dogs=accessible_dogs,
+                         employees=accessible_employees,
+                         yesno_choices=yesno_choices,
+                         cleanliness_choices=cleanliness_choices,
+                         grooming_log=grooming_log)
 
 @main_bp.route('/breeding/deworming')
 @login_required

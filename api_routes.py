@@ -4,7 +4,8 @@ from datetime import datetime, date
 from models import (
     db, Project, Employee, Dog, UserRole, AttendanceStatus,
     FeedingLog, PrepMethod, BodyConditionScale, DailyCheckupLog, PermissionType, DogStatus,
-    ExcretionLog, StoolColor, StoolConsistency, StoolContent, UrineColor, VomitColor, ExcretionPlace
+    ExcretionLog, StoolColor, StoolConsistency, StoolContent, UrineColor, VomitColor, ExcretionPlace,
+    GroomingLog, GroomingYesNo, GroomingCleanlinessScore
 )
 from utils import get_user_permissions, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
 from permission_decorators import require_sub_permission
@@ -1121,3 +1122,303 @@ def excretion_delete(id):
         db.session.rollback()
         current_app.logger.error(f"Error deleting excretion log: {e}")
         return jsonify({'error': 'خطأ في حذف سجل الإفراز'}), 500
+
+
+# ============================================================
+# GROOMING API ENDPOINTS
+# ============================================================
+
+@api_bp.route('/breeding/grooming/list', methods=['GET'])
+@login_required
+@require_sub_permission('Breeding', 'العناية (الاستحمام)', PermissionType.VIEW)
+def grooming_list():
+    """Get paginated list of grooming logs with KPIs"""
+    try:
+        # Get query parameters
+        project_id = request.args.get('project_id')
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        dog_id = request.args.get('dog_id')
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 50))
+        
+        # Build base query
+        query = GroomingLog.query
+        
+        # Apply PROJECT_MANAGER restrictions
+        if current_user.role == UserRole.PROJECT_MANAGER:
+            assigned_projects = get_user_assigned_projects(current_user)
+            project_ids = [p.id for p in assigned_projects]
+            if not project_ids:
+                return jsonify({
+                    'items': [],
+                    'pagination': {'total': 0, 'page': 1, 'per_page': per_page, 'pages': 0},
+                    'kpis': {'total': 0, 'washed_yes': 0, 'brushed_yes': 0, 'nails_yes': 0, 
+                            'teeth_yes': 0, 'ear_yes': 0, 'eye_yes': 0, 'avg_cleanliness': 0}
+                })
+            query = query.filter(GroomingLog.project_id.in_(project_ids))
+        
+        # Apply filters
+        if project_id:
+            query = query.filter(GroomingLog.project_id == project_id)
+        if date_from:
+            query = query.filter(GroomingLog.date >= datetime.strptime(date_from, '%Y-%m-%d').date())
+        if date_to:
+            query = query.filter(GroomingLog.date <= datetime.strptime(date_to, '%Y-%m-%d').date())
+        if dog_id:
+            query = query.filter(GroomingLog.dog_id == dog_id)
+        
+        # Get total count for KPIs (before pagination)
+        total_query = query
+        total_count = total_query.count()
+        
+        # Calculate KPIs
+        kpis = {
+            'total': total_count,
+            'washed_yes': total_query.filter(GroomingLog.washed_bathed == GroomingYesNo.YES).count(),
+            'brushed_yes': total_query.filter(GroomingLog.brushing == GroomingYesNo.YES).count(),
+            'nails_yes': total_query.filter(GroomingLog.nail_trimming == GroomingYesNo.YES).count(),
+            'teeth_yes': total_query.filter(GroomingLog.teeth_brushing == GroomingYesNo.YES).count(),
+            'ear_yes': total_query.filter(GroomingLog.ear_cleaning == GroomingYesNo.YES).count(),
+            'eye_yes': total_query.filter(GroomingLog.eye_cleaning == GroomingYesNo.YES).count(),
+            'avg_cleanliness': 0
+        }
+        
+        # Calculate average cleanliness score
+        cleanliness_logs = total_query.filter(GroomingLog.cleanliness_score.isnot(None)).all()
+        if cleanliness_logs:
+            cleanliness_sum = sum(int(log.cleanliness_score.value) for log in cleanliness_logs)
+            kpis['avg_cleanliness'] = round(cleanliness_sum / len(cleanliness_logs), 2)
+        
+        # Apply pagination and sorting
+        query = query.order_by(GroomingLog.date.desc(), GroomingLog.time.desc())
+        paginated = query.paginate(page=page, per_page=per_page, error_out=False)
+        
+        # Prepare items with Arabic display values
+        items = []
+        for log in paginated.items:
+            items.append({
+                'id': log.id,
+                'project_id': log.project_id,
+                'project_name': log.project.name if log.project else '',
+                'date': log.date.strftime('%Y-%m-%d'),
+                'time': log.time.strftime('%H:%M:%S'),
+                'dog_id': log.dog_id,
+                'dog_name': log.dog.name if log.dog else '',
+                'recorder_employee_id': log.recorder_employee_id,
+                'recorder_name': log.recorder_employee.name if log.recorder_employee else '',
+                'washed_bathed': "نعم" if log.washed_bathed == GroomingYesNo.YES else "لا" if log.washed_bathed == GroomingYesNo.NO else "",
+                'shampoo_type': log.shampoo_type or '',
+                'brushing': "نعم" if log.brushing == GroomingYesNo.YES else "لا" if log.brushing == GroomingYesNo.NO else "",
+                'nail_trimming': "نعم" if log.nail_trimming == GroomingYesNo.YES else "لا" if log.nail_trimming == GroomingYesNo.NO else "",
+                'teeth_brushing': "نعم" if log.teeth_brushing == GroomingYesNo.YES else "لا" if log.teeth_brushing == GroomingYesNo.NO else "",
+                'ear_cleaning': "نعم" if log.ear_cleaning == GroomingYesNo.YES else "لا" if log.ear_cleaning == GroomingYesNo.NO else "",
+                'eye_cleaning': "نعم" if log.eye_cleaning == GroomingYesNo.YES else "لا" if log.eye_cleaning == GroomingYesNo.NO else "",
+                'cleanliness_score': log.cleanliness_score.value if log.cleanliness_score else '',
+                'notes': log.notes or '',
+                'created_at': log.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            })
+        
+        return jsonify({
+            'items': items,
+            'pagination': {
+                'total': paginated.total,
+                'page': paginated.page,
+                'per_page': paginated.per_page,
+                'pages': paginated.pages
+            },
+            'kpis': kpis
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error fetching grooming logs: {e}")
+        return jsonify({'error': 'خطأ في جلب سجلات العناية'}), 500
+
+
+@api_bp.route('/breeding/grooming', methods=['POST'])
+@login_required
+@require_sub_permission('Breeding', 'العناية (الاستحمام)', PermissionType.CREATE)
+def grooming_create():
+    """Create new grooming log entry"""
+    try:
+        data = request.json
+        
+        # Validate required fields
+        if not all(k in data for k in ['project_id', 'date', 'time', 'dog_id']):
+            return jsonify({'error': 'الحقول المطلوبة: المشروع، التاريخ، الوقت، الكلب'}), 400
+        
+        # Check PROJECT_MANAGER access to project
+        if current_user.role == UserRole.PROJECT_MANAGER:
+            assigned_projects = get_user_assigned_projects(current_user)
+            project_ids = [p.id for p in assigned_projects]
+            if data['project_id'] not in project_ids:
+                return jsonify({'error': 'ليس لديك صلاحية لهذا المشروع'}), 403
+        
+        # Validate project and dog exist
+        project = Project.query.get(data['project_id'])
+        if not project:
+            return jsonify({'error': 'المشروع غير موجود'}), 404
+            
+        dog = Dog.query.get(data['dog_id'])
+        if not dog:
+            return jsonify({'error': 'الكلب غير موجود'}), 404
+        
+        # Parse and validate date/time
+        try:
+            log_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+            log_time = datetime.strptime(data['time'], '%H:%M').time()
+        except ValueError:
+            return jsonify({'error': 'تنسيق التاريخ أو الوقت غير صحيح'}), 400
+        
+        # Validate enum values
+        for field, enum_class in [
+            ('washed_bathed', GroomingYesNo),
+            ('brushing', GroomingYesNo),
+            ('nail_trimming', GroomingYesNo),
+            ('teeth_brushing', GroomingYesNo),
+            ('ear_cleaning', GroomingYesNo),
+            ('eye_cleaning', GroomingYesNo)
+        ]:
+            if field in data and data[field]:
+                try:
+                    enum_class(data[field])
+                except ValueError:
+                    return jsonify({'error': f'قيمة غير صحيحة للحقل {field}'}), 400
+        
+        if 'cleanliness_score' in data and data['cleanliness_score']:
+            try:
+                GroomingCleanlinessScore(data['cleanliness_score'])
+            except ValueError:
+                return jsonify({'error': 'قيمة غير صحيحة لدرجة النظافة'}), 400
+        
+        # Create new grooming log
+        grooming_log = GroomingLog()
+        grooming_log.project_id = data['project_id']
+        grooming_log.date = log_date
+        grooming_log.time = log_time
+        grooming_log.dog_id = data['dog_id']
+        grooming_log.recorder_employee_id = data.get('recorder_employee_id')
+        
+        # Set enum fields
+        grooming_log.washed_bathed = GroomingYesNo(data['washed_bathed']) if data.get('washed_bathed') else None
+        grooming_log.shampoo_type = data.get('shampoo_type', '').strip()[:120]
+        grooming_log.brushing = GroomingYesNo(data['brushing']) if data.get('brushing') else None
+        grooming_log.nail_trimming = GroomingYesNo(data['nail_trimming']) if data.get('nail_trimming') else None
+        grooming_log.teeth_brushing = GroomingYesNo(data['teeth_brushing']) if data.get('teeth_brushing') else None
+        grooming_log.ear_cleaning = GroomingYesNo(data['ear_cleaning']) if data.get('ear_cleaning') else None
+        grooming_log.eye_cleaning = GroomingYesNo(data['eye_cleaning']) if data.get('eye_cleaning') else None
+        grooming_log.cleanliness_score = GroomingCleanlinessScore(data['cleanliness_score']) if data.get('cleanliness_score') else None
+        grooming_log.notes = data.get('notes', '').strip()
+        grooming_log.created_by_user_id = current_user.id
+        
+        db.session.add(grooming_log)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'تم إنشاء سجل العناية بنجاح',
+            'id': grooming_log.id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error creating grooming log: {e}")
+        return jsonify({'error': 'خطأ في إنشاء سجل العناية'}), 500
+
+
+@api_bp.route('/breeding/grooming/<id>', methods=['PUT'])
+@login_required
+@require_sub_permission('Breeding', 'العناية (الاستحمام)', PermissionType.EDIT)
+def grooming_update(id):
+    """Update existing grooming log entry"""
+    try:
+        grooming_log = GroomingLog.query.get_or_404(id)
+        
+        # Check PROJECT_MANAGER access
+        if current_user.role == UserRole.PROJECT_MANAGER:
+            assigned_projects = get_user_assigned_projects(current_user)
+            project_ids = [p.id for p in assigned_projects]
+            if grooming_log.project_id not in project_ids:
+                return jsonify({'error': 'ليس لديك صلاحية لهذا المشروع'}), 403
+        
+        data = request.json
+        
+        # Update fields if provided
+        if 'shampoo_type' in data:
+            grooming_log.shampoo_type = data['shampoo_type'].strip()[:120]
+        
+        # Update enum fields
+        for field, enum_class, attr in [
+            ('washed_bathed', GroomingYesNo, 'washed_bathed'),
+            ('brushing', GroomingYesNo, 'brushing'),
+            ('nail_trimming', GroomingYesNo, 'nail_trimming'),
+            ('teeth_brushing', GroomingYesNo, 'teeth_brushing'),
+            ('ear_cleaning', GroomingYesNo, 'ear_cleaning'),
+            ('eye_cleaning', GroomingYesNo, 'eye_cleaning')
+        ]:
+            if field in data:
+                if data[field]:
+                    try:
+                        setattr(grooming_log, attr, enum_class(data[field]))
+                    except ValueError:
+                        return jsonify({'error': f'قيمة غير صحيحة للحقل {field}'}), 400
+                else:
+                    setattr(grooming_log, attr, None)
+        
+        if 'cleanliness_score' in data:
+            if data['cleanliness_score']:
+                try:
+                    grooming_log.cleanliness_score = GroomingCleanlinessScore(data['cleanliness_score'])
+                except ValueError:
+                    return jsonify({'error': 'قيمة غير صحيحة لدرجة النظافة'}), 400
+            else:
+                grooming_log.cleanliness_score = None
+        
+        if 'notes' in data:
+            grooming_log.notes = data['notes'].strip()
+        
+        if 'recorder_employee_id' in data:
+            grooming_log.recorder_employee_id = data['recorder_employee_id']
+        
+        grooming_log.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'تم تحديث سجل العناية بنجاح'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error updating grooming log: {e}")
+        return jsonify({'error': 'خطأ في تحديث سجل العناية'}), 500
+
+
+@api_bp.route('/breeding/grooming/<id>', methods=['DELETE'])
+@login_required
+@require_sub_permission('Breeding', 'العناية (الاستحمام)', PermissionType.DELETE)
+def grooming_delete(id):
+    """Delete grooming log entry"""
+    try:
+        grooming_log = GroomingLog.query.get_or_404(id)
+        
+        # Check PROJECT_MANAGER access
+        if current_user.role == UserRole.PROJECT_MANAGER:
+            assigned_projects = get_user_assigned_projects(current_user)
+            project_ids = [p.id for p in assigned_projects]
+            if grooming_log.project_id not in project_ids:
+                return jsonify({'error': 'ليس لديك صلاحية لهذا المشروع'}), 403
+        
+        db.session.delete(grooming_log)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'تم حذف سجل العناية بنجاح'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error deleting grooming log: {e}")
+        return jsonify({'error': 'خطأ في حذف سجل العناية'}), 500

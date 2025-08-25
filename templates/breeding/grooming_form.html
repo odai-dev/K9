@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if grooming_log %}تعديل سجل العناية{% else %}إضافة سجل عناية جديد{% endif %} - نظام إدارة عمليات الكلاب
+{% endblock %}
+
+{% block head %}
+<style>
+    .form-section {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        background-color: #f8f9fa;
+    }
+    
+    .form-section h5 {
+        color: #495057;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 8px;
+        margin-bottom: 16px;
+    }
+    
+    .required-field::after {
+        content: " *";
+        color: #dc3545;
+        font-weight: bold;
+    }
+    
+    .btn-group-toggle label {
+        margin-bottom: 0;
+    }
+    
+    .grooming-actions .form-check {
+        margin-bottom: 15px;
+    }
+    
+    .cleanliness-score .btn {
+        width: 45px;
+        height: 45px;
+        margin: 2px;
+        border-radius: 50%;
+        font-weight: bold;
+    }
+    
+    .alert-error {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-spa me-2"></i>
+                        {% if grooming_log %}تعديل سجل العناية{% else %}إضافة سجل عناية جديد{% endif %}
+                    </h4>
+                    <a href="{{ url_for('main.breeding_grooming') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-right me-1"></i>
+                        العودة للقائمة
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    <div class="alert alert-danger alert-error" id="errorAlert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <span id="errorMessage"></span>
+                    </div>
+
+                    <form id="groomingForm">
+                        {% if grooming_log %}
+                        <input type="hidden" id="groomingId" value="{{ grooming_log.id }}">
+                        {% endif %}
+
+                        <!-- Basic Information Section -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-info-circle me-2"></i>المعلومات الأساسية</h5>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="projectId" class="form-label required-field">المشروع</label>
+                                        <select id="projectId" name="project_id" class="form-select" required>
+                                            <option value="">اختر المشروع</option>
+                                            {% for project in projects %}
+                                            <option value="{{ project.id }}" 
+                                                {% if grooming_log and grooming_log.project_id == project.id %}selected{% endif %}>
+                                                {{ project.name }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="date" class="form-label required-field">التاريخ</label>
+                                        <input type="date" id="date" name="date" class="form-control" 
+                                               value="{% if grooming_log %}{{ grooming_log.date.strftime('%Y-%m-%d') }}{% endif %}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="time" class="form-label required-field">الوقت</label>
+                                        <input type="time" id="time" name="time" class="form-control" 
+                                               value="{% if grooming_log %}{{ grooming_log.time.strftime('%H:%M') }}{% endif %}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label for="dogId" class="form-label required-field">الكلب</label>
+                                        <select id="dogId" name="dog_id" class="form-select" required>
+                                            <option value="">اختر الكلب</option>
+                                            {% for dog in dogs %}
+                                            <option value="{{ dog.id }}"
+                                                {% if grooming_log and grooming_log.dog_id == dog.id %}selected{% endif %}>
+                                                {{ dog.name }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="recorderEmployeeId" class="form-label">الموظف المسجل</label>
+                                        <select id="recorderEmployeeId" name="recorder_employee_id" class="form-select">
+                                            <option value="">اختياري</option>
+                                            {% for employee in employees %}
+                                            <option value="{{ employee.id }}"
+                                                {% if grooming_log and grooming_log.recorder_employee_id == employee.id %}selected{% endif %}>
+                                                {{ employee.name }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Grooming Actions Section -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-hands-wash me-2"></i>أنشطة العناية</h5>
+                            <div class="row grooming-actions">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">غسل الكلب</label>
+                                        <div class="btn-group d-block" data-bs-toggle="buttons">
+                                            {% for value, label in yesno_choices %}
+                                            <input type="radio" class="btn-check" name="washed_bathed" id="washed_{{ value }}" value="{{ value }}"
+                                                {% if grooming_log and grooming_log.washed_bathed and grooming_log.washed_bathed.value == value %}checked{% endif %}>
+                                            <label class="btn btn-outline-primary" for="washed_{{ value }}">{{ label }}</label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="shampooType" class="form-label">نوع الشامبو</label>
+                                        <input type="text" id="shampooType" name="shampoo_type" class="form-control" 
+                                               placeholder="اكتب نوع الشامبو المستخدم" maxlength="120"
+                                               value="{% if grooming_log %}{{ grooming_log.shampoo_type or '' }}{% endif %}">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">تمشيط</label>
+                                        <div class="btn-group d-block" data-bs-toggle="buttons">
+                                            {% for value, label in yesno_choices %}
+                                            <input type="radio" class="btn-check" name="brushing" id="brushing_{{ value }}" value="{{ value }}"
+                                                {% if grooming_log and grooming_log.brushing and grooming_log.brushing.value == value %}checked{% endif %}>
+                                            <label class="btn btn-outline-primary" for="brushing_{{ value }}">{{ label }}</label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">قص الأظافر</label>
+                                        <div class="btn-group d-block" data-bs-toggle="buttons">
+                                            {% for value, label in yesno_choices %}
+                                            <input type="radio" class="btn-check" name="nail_trimming" id="nails_{{ value }}" value="{{ value }}"
+                                                {% if grooming_log and grooming_log.nail_trimming and grooming_log.nail_trimming.value == value %}checked{% endif %}>
+                                            <label class="btn btn-outline-primary" for="nails_{{ value }}">{{ label }}</label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">فرش الأسنان</label>
+                                        <div class="btn-group d-block" data-bs-toggle="buttons">
+                                            {% for value, label in yesno_choices %}
+                                            <input type="radio" class="btn-check" name="teeth_brushing" id="teeth_{{ value }}" value="{{ value }}"
+                                                {% if grooming_log and grooming_log.teeth_brushing and grooming_log.teeth_brushing.value == value %}checked{% endif %}>
+                                            <label class="btn btn-outline-primary" for="teeth_{{ value }}">{{ label }}</label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">تنظيف الأذن</label>
+                                        <div class="btn-group d-block" data-bs-toggle="buttons">
+                                            {% for value, label in yesno_choices %}
+                                            <input type="radio" class="btn-check" name="ear_cleaning" id="ear_{{ value }}" value="{{ value }}"
+                                                {% if grooming_log and grooming_log.ear_cleaning and grooming_log.ear_cleaning.value == value %}checked{% endif %}>
+                                            <label class="btn btn-outline-primary" for="ear_{{ value }}">{{ label }}</label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">تنظيف العين</label>
+                                        <div class="btn-group d-block" data-bs-toggle="buttons">
+                                            {% for value, label in yesno_choices %}
+                                            <input type="radio" class="btn-check" name="eye_cleaning" id="eye_{{ value }}" value="{{ value }}"
+                                                {% if grooming_log and grooming_log.eye_cleaning and grooming_log.eye_cleaning.value == value %}checked{% endif %}>
+                                            <label class="btn btn-outline-primary" for="eye_{{ value }}">{{ label }}</label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Overall Assessment Section -->
+                        <div class="form-section">
+                            <h5><i class="fas fa-star me-2"></i>التقييم العام</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">نظافة عامة (1-5)</label>
+                                        <div class="cleanliness-score">
+                                            {% for value, label in cleanliness_choices %}
+                                            <input type="radio" class="btn-check" name="cleanliness_score" id="clean_{{ value }}" value="{{ value }}"
+                                                {% if grooming_log and grooming_log.cleanliness_score and grooming_log.cleanliness_score.value == value %}checked{% endif %}>
+                                            <label class="btn btn-outline-warning" for="clean_{{ value }}">{{ label }}</label>
+                                            {% endfor %}
+                                        </div>
+                                        <small class="form-text text-muted">1 = سيء، 5 = ممتاز</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="notes" class="form-label">ملاحظات</label>
+                                        <textarea id="notes" name="notes" class="form-control" rows="4" 
+                                                  placeholder="أي ملاحظات إضافية حول جلسة العناية">{% if grooming_log %}{{ grooming_log.notes or '' }}{% endif %}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg me-3" id="submitBtn">
+                                <i class="fas fa-save me-2"></i>
+                                {% if grooming_log %}تحديث السجل{% else %}حفظ السجل{% endif %}
+                            </button>
+                            <a href="{{ url_for('main.breeding_grooming') }}" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-times me-2"></i>
+                                إلغاء
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/grooming.js') }}"></script>
+<script>
+    // Initialize form if editing
+    {% if grooming_log %}
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeEditForm();
+    });
+    {% endif %}
+</script>
+{% endblock %}
