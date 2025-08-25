@@ -23,8 +23,16 @@ EXCRETION_PERMISSIONS = {
     "excretion:delete": "Delete Excretion Logs",
 }
 
+# Deworming permission keys
+DEWORMING_PERMISSIONS = {
+    "deworming:view": "View Deworming Logs",
+    "deworming:create": "Create Deworming Logs",
+    "deworming:edit": "Edit Deworming Logs",
+    "deworming:delete": "Delete Deworming Logs",
+}
+
 # Combined permissions
-ALL_PERMISSIONS = {**PM_DAILY_PERMISSIONS, **UNIFIED_MATRIX_PERMISSIONS, **EXCRETION_PERMISSIONS}
+ALL_PERMISSIONS = {**PM_DAILY_PERMISSIONS, **UNIFIED_MATRIX_PERMISSIONS, **EXCRETION_PERMISSIONS, **DEWORMING_PERMISSIONS}
 
 # Default permissions for roles
 DEFAULT_ROLE_PERMISSIONS = {
@@ -37,6 +45,10 @@ DEFAULT_ROLE_PERMISSIONS = {
         "excretion:create",
         "excretion:edit",
         "excretion:delete",
+        "deworming:view",
+        "deworming:create",
+        "deworming:edit",
+        "deworming:delete",
     ],
     "PROJECT_MANAGER": [
         "reports:attendance:pm_daily:view",
@@ -44,6 +56,9 @@ DEFAULT_ROLE_PERMISSIONS = {
         "excretion:view",
         "excretion:create",
         "excretion:edit",
+        "deworming:view",
+        "deworming:create",
+        "deworming:edit",
         # Note: delete and export permissions only if explicitly granted
     ]
 }

@@ -1,0 +1,235 @@
+You are directly editing the K9 Operations Management System app.
+
+INTENT (what & why)
+- Add the **Deworming** tab under Breeding (التربية) to record anti‑parasite treatments per dog & time:
+  • Dog weight
+  • Product & active ingredient
+  • Dose rule (mg/kg) and administered amount (with unit)
+  • Route (oral/topical/injection)
+  • Batch/expiry
+  • Specialist (employee) who administered it
+  • Next due date (optional scheduling)
+  • Notes & adverse reactions flag
+- Store enum/string values in **Arabic**, UI is **Arabic + RTL**. This enables future compliance reports and reminders for upcoming doses.
+
+================================================
+STEP 1 — MODEL & MIGRATION (models.py + alembic)
+================================================
+Append to models.py. Use ASCII-safe Python identifiers, but **Arabic strings** for enum values.
+
+import enum
+from datetime import datetime
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import UniqueConstraint
+from sqlalchemy import orm as sa
+
+# ---------- Arabic enums (stored values are Arabic) ----------
+class Route(enum.Enum):
+    فموي = "فموي"
+    موضعي = "موضعي"
+    حقن = "حقن"
+
+class Unit(enum.Enum):
+    مل = "مل"
+    ملغم = "ملغم"
+    قرص = "قرص"
+
+class Reaction(enum.Enum):
+    لا_يوجد = "لا يوجد"
+    قيء = "قيء"
+    إسهال = "إسهال"
+    خمول = "خمول"
+    تحسس_جلدي = "تحسس جلدي"
+    أخرى = "أخرى"
+
+# ---------- DewormingLog (per administration) ----------
+class DewormingLog(db.Model):
+    __tablename__ = "deworming_log"
+
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+
+    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    time = db.Column(db.Time, nullable=False)
+
+    dog_id = db.Column(UUID(as_uuid=True), db.ForeignKey("dog.id", ondelete="CASCADE"), nullable=False)
+    specialist_employee_id = db.Column(UUID(as_uuid=True), db.ForeignKey("employee.id", ondelete="SET NULL"), nullable=True)
+
+    وزن_الكلب_كغم = db.Column(db.Float, nullable=True)                       # > 0 if provided
+    اسم_المنتج = db.Column(db.String(120), nullable=True)                    # e.g., Drontal
+    المادة_الفعالة = db.Column(db.String(120), nullable=True)               # e.g., praziquantel
+    جرعة_قياسية_ملغم_لكل_كغم = db.Column(db.Float, nullable=True)           # mg/kg rule (optional)
+    جرعة_محسوبة_ملغم = db.Column(db.Float, nullable=True)                   # auto-calc if weight & rule present
+
+    كمية_معطاة = db.Column(db.Float, nullable=True)                          # numeric amount actually given
+    وحدة_الكمية = db.Column(db.Enum(Unit), nullable=True)                    # مل | ملغم | قرص
+    طريقة_الإعطاء = db.Column(db.Enum(Route), nullable=True)                 # فموي | موضعي | حقن
+
+    رقم_التشغيلة = db.Column(db.String(60), nullable=True)                   # batch/lot
+    تاريخ_الانتهاء = db.Column(db.Date, nullable=True)                       # expiry date
+
+    تفاعل_سلبي = db.Column(db.Enum(Reaction), nullable=True)                 # adverse reaction category
+    ملاحظات = db.Column(db.Text, nullable=True)
+
+    تاريخ_الجرعة_القادمة = db.Column(db.Date, nullable=True)                 # next due date (optional)
+
+    created_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        sa.Index("ix_deworming_project_date", "project_id", "date"),
+        sa.Index("ix_deworming_dog_datetime", "dog_id", "date", "time"),
+        UniqueConstraint("project_id","dog_id","date","time", name="uq_deworming_project_dog_dt"),
+    )
+
+Create Alembic migration `migrations/versions/xxxx_breeding_deworming.py`:
+- Create enums Route, Unit, Reaction (Arabic values).
+- Create `deworming_log` table + indexes + unique constraint exactly as defined.
+- Safe downgrade (drop indexes/table/enums). Provide SQLite fallback via VARCHAR if needed.
+
+=====================
+STEP 2 — PERMISSIONS
+=====================
+Add and seed:
+- "deworming:view", "deworming:create", "deworming:edit", "deworming:delete"
+
+Rules:
+- GENERAL_ADMIN: all.
+- PROJECT_MANAGER: view/create/edit within assigned projects; delete optional.
+
+================================================
+STEP 3 — NAVIGATION (Arabic, RTL)
+================================================
+In the **Breeding (التربية)** parent menu, add/confirm:
+- **"جرعة الديدان"** → `/breeding/deworming`
+
+Breeding menu should appear if user has any Breeding permission.
+
+=====================================
+STEP 4 — ROUTES (UI pages, routes.py)
+=====================================
+Add @login_required pages (protect with permissions):
+
+GET  /breeding/deworming            → render `templates/breeding/deworming_list.html` (perm "deworming:view")
+GET  /breeding/deworming/new        → render `templates/breeding/deworming_form.html` (perm "deworming:create")
+GET  /breeding/deworming/<id>/edit  → render same form (perm "deworming:edit")
+
+Each page must receive:
+- Visible projects (PM‑scoped), dog list (optionally filtered by project),
+- Arabic choices for Route / Unit / Reaction.
+
+===========================================
+STEP 5 — APIs (CRUD + list, api_routes.py)
+===========================================
+Add @login_required endpoints; enforce PM scoping:
+
+GET  /api/breeding/deworming/list?project_id&date_from&date_to&dog_id&page=1&per_page=50
+- perm: "deworming:view"
+- returns:
+  {
+    "items":[ {... Arabic enum strings ...} ],
+    "pagination": {...},
+    "kpis": {
+      "total": <int>,
+      "by_route": {"فموي":X,"موضعي":Y,"حقن":Z},
+      "by_unit": {"مل":a,"ملغم":b,"قرص":c},
+      "avg_mg_per_kg": <float|null>,  // average of جرعة_قياسية_ملغم_لكل_كغم where present
+      "with_next_due": <int>,         // count where تاريخ_الجرعة_القادمة not null
+      "adverse": {"لا يوجد":u,"قيء":v,"إسهال":w,"خمول":x,"تحسس جلدي":y,"أخرى":z}
+    }
+  }
+
+POST /api/breeding/deworming
+- perm: "deworming:create"
+- Validate JSON body:
+  - project_id (uuid, required; PM must own)
+  - date (YYYY-MM-DD, required)
+  - time (HH:MM or HH:MM:SS, required → normalize :00)
+  - dog_id (uuid, required)
+  - وزن_الكلب_كغم ≥ 0 if provided
+  - If جرعة_قياسية_ملغم_لكل_كغم and وزن_الكلب_كغم both present → compute جرعة_محسوبة_ملغم = rule × weight (round to 1 decimal)
+  - If كمية_معطاة provided → require وحدة_الكمية ∈ ["مل","ملغم","قرص"]
+  - طريقة_الإعطاء ∈ ["فموي","موضعي","حقن"] or null
+  - تاريخ_الانتهاء must be ≥ date if provided
+  - تاريخ_الجرعة_القادمة optional; if provided must be ≥ date
+  - تفاعل_سلبي ∈ ["لا يوجد","قيء","إسهال","خمول","تحسس جلدي","أخرى"] or null
+- Return created row JSON (Arabic values intact)
+
+PUT  /api/breeding/deworming/<id>   (perm "deworming:edit")
+  - Re-run the calculation of جرعة_محسوبة_ملغم on update if rule or weight changed.
+DELETE /api/breeding/deworming/<id> (perm "deworming:delete")
+
+Use joinedload/selectinload for Dog & Project.
+
+=========================================
+STEP 6 — TEMPLATES (Arabic RTL, reversed)
+=========================================
+Create:
+
+1) templates/breeding/deworming_list.html
+- RTL filters: المشروع، المدة، الكلب
+- KPI badges as returned by API (by_route, by_unit, avg_mg_per_kg, with_next_due, adverse)
+- Table headers in **RIGHT → LEFT order** (reverse arrays so first header is rightmost):
+  [
+    "التاريخ","الوقت",
+    "وزن الكلب (كغ)",
+    "اسم المنتج","المادة الفعالة",
+    "جرعة قياسية (ملغم/كغ)","جرعة محسوبة (ملغم)",
+    "كمية معطاة","وحدة الكمية","طريقة الإعطاء",
+    "رقم التشغيلة","تاريخ الانتهاء",
+    "تاريخ الجرعة القادمة",
+    "تفاعل سلبي","ملاحظات",
+    "الكلب","المشروع","إجراءات"
+  ]
+- Button: "إضافة جرعة" → /breeding/deworming/new
+- Include `/static/js/deworming.js`
+
+2) templates/breeding/deworming_form.html
+- RTL form groups:
+  Scope: المشروع (select)، التاريخ (date)، الوقت (time)، الكلب (select)
+  الجرعة:
+    وزن الكلب (كغ) [float ≥ 0]
+    جرعة قياسية (ملغم/كغ) [float ≥ 0] → عند توفر الوزن احسب تلقائيًا "جرعة محسوبة (ملغم)"
+    كمية معطاة [float ≥ 0] + وحدة الكمية (select: مل/ملغم/قرص)
+    طريقة الإعطاء (select: فموي/موضعي/حقن)
+  المنتج:
+    اسم المنتج (text 120)، المادة الفعالة (text 120)، رقم التشغيلة (text 60)، تاريخ الانتهاء (date)
+  المتابعة:
+    تاريخ الجرعة القادمة (date) (اختياري)
+    تفاعل سلبي (select: لا يوجد/قيء/إسهال/خمول/تحسس جلدي/أخرى)
+    ملاحظات (textarea)
+- On change of الوزن أو الجرعة القياسية، احسب الجرعة المحسوبة (front‑end hint only; server also calculates).
+- Submit via fetch (POST/PUT) with CSRF; show Arabic validation errors.
+
+======================================
+STEP 7 — STATIC JS (vanilla, CSRF)
+======================================
+Create `/static/js/deworming.js`:
+- List page: GET /api/breeding/deworming/list; render KPI badges and RTL/reversed table; support filters, pagination, delete with confirm.
+- Form page: live-calc جرعة محسوبة when weight/rule changes; submit JSON to POST/PUT; redirect to list.
+- Include CSRF token like other app pages.
+
+========================================
+STEP 8 — BUSINESS RULES & NOTES
+========================================
+- PROJECT_MANAGER can only access assigned projects.
+- Recalculate جرعة_محسوبة_ملغم on server whenever weight or rule changes.
+- If كمية_معطاة provided without وحدة_الكمية → 400.
+- تاريخ_الانتهاء < التاريخ → warn or 400 (choose 400 for safety now).
+- Optional policy later: auto‑suggest تاريخ_الجرعة_القادمة = date + 3 months (configurable).
+
+================
+STEP 9 — TESTS
+================
+Add `tests/test_breeding_deworming.py`:
+- Seed project, dog, PM user.
+- Create records with and without weight/rule; assert جرعة_محسوبة_ملغم is computed correctly.
+- GET list; assert KPIs by_route/by_unit/avg_mg_per_kg/with_next_due/adverse.
+- PUT update weight/rule; assert recalculated value.
+- DELETE if allowed.
+
+========================
+IMPORTANT RTL NOTE
+========================
+In ALL Breeding tables, **reverse the column order** so the first Arabic header appears at the RIGHT edge (best for Arabic reading).
