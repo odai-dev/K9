@@ -150,6 +150,22 @@ class AbsenceReason(Enum):
     NO_REASON = "بلا سبب"
     OTHER = "أخرى"
 
+# Arabic enums for Daily Checkup (store Arabic strings)
+class PartStatus(Enum):
+    NORMAL = "سليم"
+    REDNESS = "احمرار"
+    INFLAMMATION = "التهاب"
+    DISCHARGE = "إفرازات"
+    SWELLING = "تورم"
+    WOUND = "جرح"
+    PAIN = "ألم"
+    OTHER = "أخرى"
+
+class Severity(Enum):
+    MILD = "خفيف"
+    MODERATE = "متوسط"
+    SEVERE = "شديد"
+
 # Association table for many-to-many relationship between employees and dogs
 employee_dog_assignment = db.Table('employee_dog_assignment',
     db.Column('employee_id', get_uuid_column(), db.ForeignKey('employee.id'), primary_key=True),
@@ -1441,5 +1457,47 @@ class FeedingLog(db.Model):
     
     def __repr__(self):
         return f'<FeedingLog {self.id}: {self.dog_id} on {self.date} at {self.time}>'
+
+
+# ---------- DailyCheckupLog ----------
+class DailyCheckupLog(db.Model):
+    __tablename__ = "daily_checkup_log"
+
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+
+    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    time = db.Column(db.Time, nullable=False)
+
+    dog_id = db.Column(get_uuid_column(), db.ForeignKey("dog.id", ondelete="CASCADE"), nullable=False)
+    examiner_employee_id = db.Column(get_uuid_column(), db.ForeignKey("employee.id", ondelete="SET NULL"), nullable=True)
+
+    # Body parts (using English column names for SQLite compatibility, values will be Arabic strings)
+    eyes = db.Column(db.String(50), nullable=True)      # العين
+    ears = db.Column(db.String(50), nullable=True)      # الأذن
+    nose = db.Column(db.String(50), nullable=True)      # الأنف
+    front_legs = db.Column(db.String(50), nullable=True)  # الأطراف الأمامية
+    hind_legs = db.Column(db.String(50), nullable=True)   # الأطراف الخلفية
+    coat = db.Column(db.String(50), nullable=True)      # الشعر
+    tail = db.Column(db.String(50), nullable=True)      # الذيل
+
+    severity = db.Column(db.String(50), nullable=True)  # شدة الحالة
+    symptoms = db.Column(db.Text, nullable=True)          # الأعراض المرضية إن وجدت
+    initial_diagnosis = db.Column(db.Text, nullable=True)  # تشخيص أولي/ملاحظة
+    suggested_treatment = db.Column(db.Text, nullable=True) # علاج أو إجراء مقترح
+    notes = db.Column(db.Text, nullable=True)              # ملاحظات
+
+    created_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    project = db.relationship('Project', backref='daily_checkups')
+    dog = db.relationship('Dog', backref='daily_checkups')
+    examiner_employee = db.relationship('Employee', backref='daily_checkups')
+    created_by_user = db.relationship('User', backref='daily_checkups')
+
+    def __repr__(self):
+        return f'<DailyCheckupLog {self.id}: {self.dog_id} on {self.date} at {self.time}>'
 
 

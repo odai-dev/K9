@@ -3,9 +3,10 @@ from flask_login import login_required, current_user
 from datetime import datetime, date
 from models import (
     db, Project, Employee, Dog, UserRole, AttendanceStatus,
-    FeedingLog, PrepMethod, BodyConditionScale
+    FeedingLog, PrepMethod, BodyConditionScale, DailyCheckupLog, PermissionType, DogStatus
 )
-from utils import get_user_permissions
+from utils import get_user_permissions, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
+from permission_decorators import require_sub_permission
 import uuid
 from attendance_service import (
     resolve_project_control, get_attendance_day, set_attendance_global,
@@ -505,3 +506,280 @@ def feeding_log_delete(log_id):
         db.session.rollback()
         current_app.logger.error(f"Error in feeding_log_delete: {e}")
         return jsonify({'error': 'خطأ في حذف سجل التغذية'}), 500
+
+
+# Daily Checkup API Routes
+@api_bp.route('/breeding/checkup/list')
+@login_required
+@require_sub_permission('Breeding', 'الفحص الظاهري اليومي', PermissionType.VIEW)
+def api_checkup_list():
+    """API endpoint to list daily checkup records with filters and pagination"""
+    try:
+        # Get query parameters
+        project_id = request.args.get('project_id')
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        dog_id = request.args.get('dog_id')
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 50))
+
+        # Base query
+        query = DailyCheckupLog.query
+
+        # Apply project manager scoping
+        if current_user.role == UserRole.PROJECT_MANAGER:
+            assigned_projects = get_user_assigned_projects(current_user)
+            assigned_project_ids = [p.id for p in assigned_projects]
+            query = query.filter(DailyCheckupLog.project_id.in_(assigned_project_ids))
+
+        # Apply filters
+        if project_id:
+            query = query.filter(DailyCheckupLog.project_id == project_id)
+        if date_from:
+            query = query.filter(DailyCheckupLog.date >= datetime.strptime(date_from, '%Y-%m-%d').date())
+        if date_to:
+            query = query.filter(DailyCheckupLog.date <= datetime.strptime(date_to, '%Y-%m-%d').date())
+        if dog_id:
+            query = query.filter(DailyCheckupLog.dog_id == dog_id)
+
+        # Load related data
+        query = query.options(
+            db.joinedload(DailyCheckupLog.dog),
+            db.joinedload(DailyCheckupLog.project),
+            db.joinedload(DailyCheckupLog.examiner_employee)
+        ).order_by(DailyCheckupLog.date.desc(), DailyCheckupLog.time.desc())
+
+        # Paginate
+        paginated = query.paginate(page=page, per_page=per_page, error_out=False)
+        checkups = paginated.items
+
+        # Calculate KPIs
+        total_query = query
+        all_checkups = total_query.all()
+        
+        # Count body part flags (not 'سليم')
+        body_parts = ['eyes', 'ears', 'nose', 'front_legs', 'hind_legs', 'coat', 'tail']
+        flags = {}
+        for part in body_parts:
+            flags[part] = len([c for c in all_checkups if getattr(c, part) and getattr(c, part) != 'سليم'])
+        
+        # Count severity levels
+        severity_counts = {"خفيف": 0, "متوسط": 0, "شديد": 0}
+        for checkup in all_checkups:
+            if checkup.severity:
+                severity_counts[checkup.severity] = severity_counts.get(checkup.severity, 0) + 1
+
+        # Format response
+        items = []
+        for checkup in checkups:
+            items.append({
+                'id': checkup.id,
+                'date': checkup.date.isoformat(),
+                'time': checkup.time.strftime('%H:%M'),
+                'dog_name': checkup.dog.name if checkup.dog else '',
+                'project_name': checkup.project.name if checkup.project else '',
+                'examiner_name': checkup.examiner_employee.name if checkup.examiner_employee else '',
+                'eyes': checkup.eyes,
+                'ears': checkup.ears,
+                'nose': checkup.nose,
+                'front_legs': checkup.front_legs,
+                'hind_legs': checkup.hind_legs,
+                'coat': checkup.coat,
+                'tail': checkup.tail,
+                'severity': checkup.severity,
+                'symptoms': checkup.symptoms,
+                'initial_diagnosis': checkup.initial_diagnosis,
+                'suggested_treatment': checkup.suggested_treatment
+            })
+
+        return jsonify({
+            'items': items,
+            'pagination': {
+                'page': page,
+                'pages': paginated.pages,
+                'per_page': per_page,
+                'total': paginated.total,
+                'has_prev': paginated.has_prev,
+                'has_next': paginated.has_next
+            },
+            'kpis': {
+                'total': len(all_checkups),
+                'flags': {
+                    'العين': flags['eyes'],
+                    'الأذن': flags['ears'],
+                    'الأنف': flags['nose'],
+                    'الأطراف_الأمامية': flags['front_legs'],
+                    'الأطراف_الخلفية': flags['hind_legs'],
+                    'الشعر': flags['coat'],
+                    'الذيل': flags['tail']
+                },
+                'severity': severity_counts
+            }
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/breeding/checkup', methods=['POST'])
+@login_required
+@require_sub_permission('Breeding', 'الفحص الظاهري اليومي', PermissionType.CREATE)
+def api_checkup_create():
+    """API endpoint to create a new daily checkup record"""
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        required_fields = ['project_id', 'date', 'time', 'dog_id']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({'error': f'مطلوب: {field}'}), 400
+
+        # Check project access for project managers
+        if current_user.role == UserRole.PROJECT_MANAGER:
+            assigned_projects = get_user_assigned_projects(current_user)
+            assigned_project_ids = [p.id for p in assigned_projects]
+            if int(data['project_id']) not in assigned_project_ids:
+                return jsonify({'error': 'ليس لديك صلاحية لهذا المشروع'}), 403
+
+        # Validate enum values
+        valid_part_statuses = ["سليم", "احمرار", "التهاب", "إفرازات", "تورم", "جرح", "ألم", "أخرى"]
+        valid_severities = ["خفيف", "متوسط", "شديد"]
+
+        body_parts = ['eyes', 'ears', 'nose', 'front_legs', 'hind_legs', 'coat', 'tail']
+        for part in body_parts:
+            if data.get(part) and data[part] not in valid_part_statuses:
+                return jsonify({'error': f'قيمة غير صحيحة لـ {part}'}), 400
+
+        if data.get('severity') and data['severity'] not in valid_severities:
+            return jsonify({'error': 'قيمة شدة الحالة غير صحيحة'}), 400
+
+        # Parse and normalize time
+        time_str = data['time']
+        if len(time_str) == 5:  # HH:MM
+            time_str += ':00'  # Add seconds
+        parsed_time = datetime.strptime(time_str, '%H:%M:%S').time()
+
+        # Create checkup record
+        checkup = DailyCheckupLog()
+        checkup.project_id = int(data['project_id'])
+        checkup.date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+        checkup.time = parsed_time
+        checkup.dog_id = int(data['dog_id'])
+        checkup.examiner_employee_id = int(data['examiner_employee_id']) if data.get('examiner_employee_id') else None
+
+        # Set body part statuses
+        for part in body_parts:
+            if data.get(part):
+                setattr(checkup, part, data[part])
+
+        checkup.severity = data.get('severity')
+        checkup.symptoms = data.get('symptoms')
+        checkup.initial_diagnosis = data.get('initial_diagnosis')
+        checkup.suggested_treatment = data.get('suggested_treatment')
+        checkup.notes = data.get('notes')
+        checkup.created_by_user_id = current_user.id
+        checkup.created_at = datetime.utcnow()
+        checkup.updated_at = datetime.utcnow()
+
+        db.session.add(checkup)
+        db.session.commit()
+
+        # Return created record
+        return jsonify({
+            'success': True,
+            'id': checkup.id,
+            'message': 'تم إنشاء الفحص بنجاح'
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/breeding/checkup/<id>', methods=['PUT'])
+@login_required
+@require_sub_permission('Breeding', 'الفحص الظاهري اليومي', PermissionType.EDIT)
+def api_checkup_update(id):
+    """API endpoint to update a daily checkup record"""
+    try:
+        checkup = DailyCheckupLog.query.get_or_404(id)
+
+        # Check project access for project managers
+        if current_user.role == UserRole.PROJECT_MANAGER:
+            assigned_projects = get_user_assigned_projects(current_user)
+            assigned_project_ids = [p.id for p in assigned_projects]
+            if checkup.project_id not in assigned_project_ids:
+                return jsonify({'error': 'ليس لديك صلاحية لهذا المشروع'}), 403
+
+        data = request.get_json()
+
+        # Validate enum values
+        valid_part_statuses = ["سليم", "احمرار", "التهاب", "إفرازات", "تورم", "جرح", "ألم", "أخرى"]
+        valid_severities = ["خفيف", "متوسط", "شديد"]
+
+        body_parts = ['eyes', 'ears', 'nose', 'front_legs', 'hind_legs', 'coat', 'tail']
+        for part in body_parts:
+            if data.get(part) and data[part] not in valid_part_statuses:
+                return jsonify({'error': f'قيمة غير صحيحة لـ {part}'}), 400
+
+        if data.get('severity') and data['severity'] not in valid_severities:
+            return jsonify({'error': 'قيمة شدة الحالة غير صحيحة'}), 400
+
+        # Update fields
+        if data.get('examiner_employee_id'):
+            checkup.examiner_employee_id = int(data['examiner_employee_id'])
+
+        # Update body part statuses
+        for part in body_parts:
+            if part in data:
+                setattr(checkup, part, data[part])
+
+        if 'severity' in data:
+            checkup.severity = data['severity']
+        if 'symptoms' in data:
+            checkup.symptoms = data['symptoms']
+        if 'initial_diagnosis' in data:
+            checkup.initial_diagnosis = data['initial_diagnosis']
+        if 'suggested_treatment' in data:
+            checkup.suggested_treatment = data['suggested_treatment']
+        if 'notes' in data:
+            checkup.notes = data['notes']
+
+        checkup.updated_at = datetime.utcnow()
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'تم تحديث الفحص بنجاح'
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/breeding/checkup/<id>', methods=['DELETE'])
+@login_required
+@require_sub_permission('Breeding', 'الفحص الظاهري اليومي', PermissionType.DELETE)
+def api_checkup_delete(id):
+    """API endpoint to delete a daily checkup record"""
+    try:
+        checkup = DailyCheckupLog.query.get_or_404(id)
+
+        # Check project access for project managers
+        if current_user.role == UserRole.PROJECT_MANAGER:
+            assigned_projects = get_user_assigned_projects(current_user)
+            assigned_project_ids = [p.id for p in assigned_projects]
+            if checkup.project_id not in assigned_project_ids:
+                return jsonify({'error': 'ليس لديك صلاحية لهذا المشروع'}), 403
+
+        db.session.delete(checkup)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'تم حذف الفحص بنجاح'
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
