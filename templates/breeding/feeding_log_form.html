@@ -39,8 +39,6 @@
                         <div class="card-body">
                             <!-- Form -->
                             <form id="feedingLogForm" class="needs-validation" novalidate>
-                                <!-- CSRF Token -->
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 
                                 <!-- Basic Information -->
                                 <div class="row mb-4">
@@ -77,14 +75,14 @@
                                     <div class="col-md-6 mb-3">
                                         <label for="date" class="form-label required">التاريخ <span class="text-danger">*</span></label>
                                         <input type="date" class="form-control" id="date" name="date" 
-                                               value="{% if log_entry %}{{ log_entry.date.isoformat() }}{% else %}{{ moment().format('YYYY-MM-DD') }}{% endif %}" required>
+                                               value="{% if log_entry %}{{ log_entry.date.isoformat() }}{% endif %}" required>
                                         <div class="invalid-feedback">يرجى تحديد التاريخ</div>
                                     </div>
                                     
                                     <div class="col-md-6 mb-3">
                                         <label for="time" class="form-label required">الوقت <span class="text-danger">*</span></label>
                                         <input type="time" class="form-control" id="time" name="time" 
-                                               value="{% if log_entry %}{{ log_entry.time.strftime('%H:%M') }}{% else %}{{ moment().format('HH:mm') }}{% endif %}" required>
+                                               value="{% if log_entry %}{{ log_entry.time.strftime('%H:%M') }}{% endif %}" required>
                                         <div class="invalid-feedback">يرجى تحديد الوقت</div>
                                     </div>
                                 </div>
@@ -232,11 +230,10 @@
 </div>
 
 <!-- Hidden data for JavaScript -->
-<script>
+<script type="text/javascript">
     window.feedingLogData = {
-        isEdit: {% if log_entry %}true{% else %}false{% endif %},
-        logId: {% if log_entry %}'{{ log_entry.id }}'{% else %}null{% endif %},
-        csrfToken: '{{ csrf_token() }}'
+        isEdit: {{ 'true' if log_entry else 'false' }},
+        logId: {{ ("'" + log_entry.id|string + "'") if log_entry else 'null' }}
     };
 </script>
 {% endblock %}
