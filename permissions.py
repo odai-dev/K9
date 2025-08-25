@@ -15,8 +15,16 @@ UNIFIED_MATRIX_PERMISSIONS = {
     "reports:attendance:unified:export": "Export Unified Attendance Matrix",
 }
 
+# Excretion permission keys
+EXCRETION_PERMISSIONS = {
+    "excretion:view": "View Excretion Logs",
+    "excretion:create": "Create Excretion Logs",
+    "excretion:edit": "Edit Excretion Logs",
+    "excretion:delete": "Delete Excretion Logs",
+}
+
 # Combined permissions
-ALL_PERMISSIONS = {**PM_DAILY_PERMISSIONS, **UNIFIED_MATRIX_PERMISSIONS}
+ALL_PERMISSIONS = {**PM_DAILY_PERMISSIONS, **UNIFIED_MATRIX_PERMISSIONS, **EXCRETION_PERMISSIONS}
 
 # Default permissions for roles
 DEFAULT_ROLE_PERMISSIONS = {
@@ -25,11 +33,18 @@ DEFAULT_ROLE_PERMISSIONS = {
         "reports:attendance:pm_daily:export",
         "reports:attendance:unified:view",
         "reports:attendance:unified:export",
+        "excretion:view",
+        "excretion:create",
+        "excretion:edit",
+        "excretion:delete",
     ],
     "PROJECT_MANAGER": [
         "reports:attendance:pm_daily:view",
         "reports:attendance:unified:view",
-        # Note: export permissions only if explicitly granted
+        "excretion:view",
+        "excretion:create",
+        "excretion:edit",
+        # Note: delete and export permissions only if explicitly granted
     ]
 }
 

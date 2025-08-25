@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if excretion_log %}تعديل سجل الإفراز{% else %}إضافة سجل إفراز جديد{% endif %} - نظام إدارة العمليات K9
+{% endblock %}
+
+{% block head %}
+<style>
+    .form-section {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-right: 4px solid #007bff;
+    }
+    .section-title {
+        color: #007bff;
+        font-weight: bold;
+        margin-bottom: 15px;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 8px;
+    }
+    .required-field::after {
+        content: " *";
+        color: red;
+    }
+    .form-help {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 4px;
+    }
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    .validation-error {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    .btn-submit {
+        min-width: 120px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid" dir="rtl">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="fas fa-clipboard-check me-2"></i>
+                    {% if excretion_log %}تعديل سجل الإفراز{% else %}إضافة سجل إفراز جديد{% endif %}
+                </h2>
+                <a href="{{ url_for('main.breeding_excretion') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة للقائمة
+                </a>
+            </div>
+
+            <!-- Form -->
+            <form id="excretionForm" novalidate>
+                {% if excretion_log %}
+                    <input type="hidden" id="excretionId" name="excretion_id" value="{{ excretion_log.id }}">
+                {% endif %}
+
+                <!-- Basic Info Section -->
+                <div class="form-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-info-circle me-2"></i>
+                        معلومات أساسية
+                    </h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="project_id" class="form-label required-field">المشروع</label>
+                                <select class="form-select" id="project_id" name="project_id" required>
+                                    <option value="">اختر المشروع</option>
+                                    {% for project in projects %}
+                                        <option value="{{ project.id }}" 
+                                            {% if excretion_log and excretion_log.project_id == project.id %}selected{% endif %}>
+                                            {{ project.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="validation-error"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="dog_id" class="form-label required-field">الكلب</label>
+                                <select class="form-select" id="dog_id" name="dog_id" required>
+                                    <option value="">اختر الكلب</option>
+                                    {% for dog in dogs %}
+                                        <option value="{{ dog.id }}" 
+                                            {% if excretion_log and excretion_log.dog_id == dog.id %}selected{% endif %}>
+                                            {{ dog.name }} - {{ dog.code }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="validation-error"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="date" class="form-label required-field">التاريخ</label>
+                                <input type="date" class="form-control" id="date" name="date" required
+                                    value="{{ excretion_log.date.strftime('%Y-%m-%d') if excretion_log else '' }}">
+                                <div class="validation-error"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="time" class="form-label required-field">الوقت</label>
+                                <input type="time" class="form-control" id="time" name="time" required
+                                    value="{{ excretion_log.time.strftime('%H:%M') if excretion_log else '' }}">
+                                <div class="validation-error"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="recorder_employee_id" class="form-label">المسجل</label>
+                                <select class="form-select" id="recorder_employee_id" name="recorder_employee_id">
+                                    <option value="">اختر الموظف (اختياري)</option>
+                                    {% for employee in employees %}
+                                        <option value="{{ employee.id }}" 
+                                            {% if excretion_log and excretion_log.recorder_employee_id == employee.id %}selected{% endif %}>
+                                            {{ employee.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stool Section -->
+                <div class="form-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-circle me-2" style="color: #8B4513;"></i>
+                        البراز
+                    </h4>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="stool_color" class="form-label">لون البراز</label>
+                                <select class="form-select" id="stool_color" name="stool_color">
+                                    <option value="">لم يتم الملاحظة</option>
+                                    {% for value, display in stool_color_choices %}
+                                        <option value="{{ value }}" 
+                                            {% if excretion_log and excretion_log.stool_color == value %}selected{% endif %}>
+                                            {{ display }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="stool_consistency" class="form-label">قوام البراز</label>
+                                <select class="form-select" id="stool_consistency" name="stool_consistency">
+                                    <option value="">لم يتم الملاحظة</option>
+                                    {% for value, display in stool_consistency_choices %}
+                                        <option value="{{ value }}" 
+                                            {% if excretion_log and excretion_log.stool_consistency == value %}selected{% endif %}>
+                                            {{ display }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="stool_content" class="form-label">محتوى البراز</label>
+                                <select class="form-select" id="stool_content" name="stool_content">
+                                    <option value="">لم يتم الملاحظة</option>
+                                    {% for value, display in stool_content_choices %}
+                                        <option value="{{ value }}" 
+                                            {% if excretion_log and excretion_log.stool_content == value %}selected{% endif %}>
+                                            {{ display }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="stool_place" class="form-label">مكان التبرز</label>
+                                <select class="form-select" id="stool_place" name="stool_place">
+                                    <option value="">لم يتم الملاحظة</option>
+                                    {% for value, display in excretion_place_choices %}
+                                        <option value="{{ value }}" 
+                                            {% if excretion_log and excretion_log.stool_place == value %}selected{% endif %}>
+                                            {{ display }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input" type="checkbox" id="constipation" name="constipation" value="1"
+                                        {% if excretion_log and excretion_log.constipation %}checked{% endif %}>
+                                    <label class="form-check-label" for="constipation">
+                                        إمساك
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label for="stool_notes" class="form-label">ملاحظات على البراز</label>
+                                <textarea class="form-control" id="stool_notes" name="stool_notes" rows="2" 
+                                    placeholder="أي ملاحظات إضافية حول البراز...">{{ excretion_log.stool_notes if excretion_log else '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Urine Section -->
+                <div class="form-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-circle me-2" style="color: #FFD700;"></i>
+                        البول
+                    </h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="urine_color" class="form-label">لون البول</label>
+                                <select class="form-select" id="urine_color" name="urine_color">
+                                    <option value="">لم يتم الملاحظة</option>
+                                    {% for value, display in urine_color_choices %}
+                                        <option value="{{ value }}" 
+                                            {% if excretion_log and excretion_log.urine_color == value %}selected{% endif %}>
+                                            {{ display }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="urine_notes" class="form-label">ملاحظات على البول</label>
+                                <textarea class="form-control" id="urine_notes" name="urine_notes" rows="2" 
+                                    placeholder="أي ملاحظات إضافية حول البول...">{{ excretion_log.urine_notes if excretion_log else '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vomit Section -->
+                <div class="form-section">
+                    <h4 class="section-title">
+                        <i class="fas fa-circle me-2" style="color: #DC143C;"></i>
+                        القيء
+                    </h4>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="vomit_color" class="form-label">لون القيء</label>
+                                <select class="form-select" id="vomit_color" name="vomit_color">
+                                    <option value="">لم يتم الملاحظة</option>
+                                    {% for value, display in vomit_color_choices %}
+                                        <option value="{{ value }}" 
+                                            {% if excretion_log and excretion_log.vomit_color == value %}selected{% endif %}>
+                                            {{ display }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="vomit_count" class="form-label">عدد مرات القيء</label>
+                                <input type="number" class="form-control" id="vomit_count" name="vomit_count" 
+                                    min="0" max="20" placeholder="0"
+                                    value="{{ excretion_log.vomit_count if excretion_log and excretion_log.vomit_count is not none else '' }}">
+                                <div class="form-help">أدخل 0 إذا لم يحدث قيء</div>
+                                <div class="validation-error"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="vomit_notes" class="form-label">ملاحظات على القيء</label>
+                                <textarea class="form-control" id="vomit_notes" name="vomit_notes" rows="2" 
+                                    placeholder="أي ملاحظات إضافية حول القيء...">{{ excretion_log.vomit_notes if excretion_log else '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <div class="form-help">
+                        <i class="fas fa-info-circle me-1"></i>
+                        يجب تسجيل ملاحظة واحدة على الأقل (براز أو بول أو قيء)
+                    </div>
+                    <div>
+                        <a href="{{ url_for('main.breeding_excretion') }}" class="btn btn-outline-secondary me-2">
+                            إلغاء
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-submit" id="submitBtn">
+                            <span class="spinner-border spinner-border-sm d-none me-2" id="submitSpinner"></span>
+                            {% if excretion_log %}تحديث السجل{% else %}حفظ السجل{% endif %}
+                        </button>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/excretion.js') }}"></script>
+<script>
+    // Initialize excretion form page
+    document.addEventListener('DOMContentLoaded', function() {
+        const isEdit = {{ 'true' if excretion_log else 'false' }};
+        ExcretionManager.initForm(isEdit);
+    });
+</script>
+{% endblock %}

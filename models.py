@@ -1501,3 +1501,104 @@ class DailyCheckupLog(db.Model):
         return f'<DailyCheckupLog {self.id}: {self.dog_id} on {self.date} at {self.time}>'
 
 
+# ---------- Arabic enums for Excretion (store Arabic strings) ----------
+class StoolColor(Enum):
+    شفاف_او_فاتح = "شفاف/فاتح"
+    اصفر = "أصفر"
+    بني = "بني"
+    داكن = "داكن"
+    اخضر = "أخضر"
+    وردي_دموي = "وردي/دموي"
+    اخرى = "أخرى"
+
+class StoolConsistency(Enum):
+    سائل = "سائل"
+    لين = "لين"
+    طبيعي_مشكّل = "طبيعي مُشكّل"
+    صلب = "صلب"
+    شديد_الصلابة = "شديد الصلابة"
+
+class StoolContent(Enum):
+    طبيعي = "طبيعي"
+    مخاط = "مخاط"
+    دم = "دم"
+    طفيليات_او_ديدان = "طفيليات/ديدان"
+    بقايا_طعام = "بقايا طعام"
+    جسم_غريب = "جسم غريب"
+    عشب = "عشب"
+    اخرى = "أخرى"
+
+class UrineColor(Enum):
+    شفاف = "شفاف"
+    اصفر_فاتح = "أصفر فاتح"
+    اصفر = "أصفر"
+    اصفر_غامق = "أصفر غامق"
+    بني_مصفر = "بني مصفر"
+    وردي_دموي = "وردي/دموي"
+
+class VomitColor(Enum):
+    شفاف = "شفاف"
+    اصفر = "أصفر"
+    بني = "بني"
+    اخضر = "أخضر"
+    وردي_دموي = "وردي/دموي"
+    رغوي = "رغوي"
+    اخرى = "أخرى"
+
+class ExcretionPlace(Enum):
+    داخل_البيت = "داخل البيت"
+    خارج_البيت = "خارج البيت"
+    القفص = "القفص"
+    المكان_المخصص = "المكان المخصص"
+    اخرى = "أخرى"
+
+# ---------- ExcretionLog table (per observation) ----------
+class ExcretionLog(db.Model):
+    __tablename__ = "excretion_log"
+
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+
+    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    time = db.Column(db.Time, nullable=False)
+
+    dog_id = db.Column(get_uuid_column(), db.ForeignKey("dog.id", ondelete="CASCADE"), nullable=False)
+    recorder_employee_id = db.Column(get_uuid_column(), db.ForeignKey("employee.id", ondelete="SET NULL"), nullable=True)
+
+    # --- Stool (any may be null if not observed) ---
+    stool_color = db.Column(db.String(50), nullable=True)              # لون البراز
+    stool_consistency = db.Column(db.String(50), nullable=True)        # قوام/شكل البراز
+    stool_content = db.Column(db.String(50), nullable=True)            # محتوى البراز
+    constipation = db.Column(db.Boolean, nullable=False, default=False)      # إمساك
+    stool_place = db.Column(db.String(50), nullable=True)              # مكان التبرز
+    stool_notes = db.Column(db.Text, nullable=True)
+
+    # --- Urine ---
+    urine_color = db.Column(db.String(50), nullable=True)              # لون البول
+    urine_notes = db.Column(db.Text, nullable=True)
+
+    # --- Vomit ---
+    vomit_color = db.Column(db.String(50), nullable=True)              # لون القيء
+    vomit_count = db.Column(db.Integer, nullable=True)                       # عدد مرات القيء (>=0)
+    vomit_notes = db.Column(db.Text, nullable=True)
+
+    # Audit
+    created_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    project = db.relationship('Project', backref='excretion_logs')
+    dog = db.relationship('Dog', backref='excretion_logs')
+    recorder_employee = db.relationship('Employee', backref='excretion_logs')
+    created_by_user = db.relationship('User', backref='excretion_logs')
+
+    __table_args__ = (
+        db.Index("ix_excretion_project_date", "project_id", "date"),
+        db.Index("ix_excretion_dog_datetime", "dog_id", "date", "time"),
+    )
+
+    def __repr__(self):
+        return f'<ExcretionLog {self.id}: {self.dog_id} on {self.date} at {self.time}>'
+
+

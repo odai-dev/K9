@@ -18,7 +18,9 @@ from models import (Dog, Employee, TrainingSession, VeterinaryVisit, ProductionC
                    # Standalone attendance models
                    Shift, ShiftAssignment, Attendance,
                    # Breeding models
-                   FeedingLog, PrepMethod, BodyConditionScale, DailyCheckupLog, PermissionType)
+                   FeedingLog, PrepMethod, BodyConditionScale, DailyCheckupLog, PermissionType,
+                   # Excretion models
+                   ExcretionLog, StoolColor, StoolConsistency, StoolContent, UrineColor, VomitColor, ExcretionPlace)
 from utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
 from permission_decorators import require_sub_permission
 import os
@@ -4128,13 +4130,97 @@ def breeding_checkup_edit(id):
                          part_status_choices=part_status_choices,
                          severity_choices=severity_choices)
 
-@main_bp.route('/breeding/excretion') 
+# Excretion Routes (Breeding Module)
+@main_bp.route('/breeding/excretion')
 @login_required
+@require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.VIEW)
 def breeding_excretion():
-    """Excretion monitoring placeholder page"""
-    return render_template('breeding/_placeholder.html',
-                         title="البراز / البول / القيء", 
-                         fields=["نوع البراز", "لون البراز", "كمية البول", "لون البول", "وجود قيء", "نوع القيء", "التكرار", "ملاحظات"])
+    """List excretion logs"""
+    return render_template('breeding/excretion_list.html')
+
+@main_bp.route('/breeding/excretion/new')
+@login_required
+@require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.CREATE)
+def breeding_excretion_new():
+    """Create new excretion log entry"""
+    # Get user's accessible projects and dogs
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        projects = Project.query.all()
+        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+        employees = Employee.query.filter_by(is_active=True).all()
+    else:
+        assigned_projects = get_user_assigned_projects(current_user)
+        assigned_dogs = get_user_accessible_dogs(current_user)
+        assigned_employees = get_user_accessible_employees(current_user)
+        projects = assigned_projects
+        dogs = assigned_dogs
+        employees = assigned_employees
+
+    # Arabic choices for form enums
+    stool_color_choices = [(e.value, e.value) for e in StoolColor]
+    stool_consistency_choices = [(e.value, e.value) for e in StoolConsistency]
+    stool_content_choices = [(e.value, e.value) for e in StoolContent]
+    urine_color_choices = [(e.value, e.value) for e in UrineColor]
+    vomit_color_choices = [(e.value, e.value) for e in VomitColor]
+    excretion_place_choices = [(e.value, e.value) for e in ExcretionPlace]
+    
+    return render_template('breeding/excretion_form.html', 
+                         projects=projects, 
+                         dogs=dogs, 
+                         employees=employees,
+                         stool_color_choices=stool_color_choices,
+                         stool_consistency_choices=stool_consistency_choices,
+                         stool_content_choices=stool_content_choices,
+                         urine_color_choices=urine_color_choices,
+                         vomit_color_choices=vomit_color_choices,
+                         excretion_place_choices=excretion_place_choices)
+
+@main_bp.route('/breeding/excretion/<id>/edit')
+@login_required
+@require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.EDIT)
+def breeding_excretion_edit(id):
+    """Edit excretion log record"""
+    excretion_log = ExcretionLog.query.get_or_404(id)
+    
+    # Check project access for project managers
+    if current_user.role == UserRole.PROJECT_MANAGER:
+        assigned_projects = get_user_assigned_projects(current_user)
+        assigned_project_ids = [p.id for p in assigned_projects]
+        if excretion_log.project_id not in assigned_project_ids:
+            abort(403)
+    
+    # Get data for form
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        projects = Project.query.all()
+        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+        employees = Employee.query.filter_by(is_active=True).all()
+    else:
+        assigned_projects = get_user_assigned_projects(current_user)
+        assigned_dogs = get_user_accessible_dogs(current_user)
+        assigned_employees = get_user_accessible_employees(current_user)
+        projects = assigned_projects
+        dogs = assigned_dogs
+        employees = assigned_employees
+
+    # Arabic choices for form enums
+    stool_color_choices = [(e.value, e.value) for e in StoolColor]
+    stool_consistency_choices = [(e.value, e.value) for e in StoolConsistency]
+    stool_content_choices = [(e.value, e.value) for e in StoolContent]
+    urine_color_choices = [(e.value, e.value) for e in UrineColor]
+    vomit_color_choices = [(e.value, e.value) for e in VomitColor]
+    excretion_place_choices = [(e.value, e.value) for e in ExcretionPlace]
+    
+    return render_template('breeding/excretion_form.html', 
+                         excretion_log=excretion_log,
+                         projects=projects, 
+                         dogs=dogs, 
+                         employees=employees,
+                         stool_color_choices=stool_color_choices,
+                         stool_consistency_choices=stool_consistency_choices,
+                         stool_content_choices=stool_content_choices,
+                         urine_color_choices=urine_color_choices,
+                         vomit_color_choices=vomit_color_choices,
+                         excretion_place_choices=excretion_place_choices)
 
 @main_bp.route('/breeding/grooming')
 @login_required 
