@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-The K9 Operations Management System is a comprehensive, web-based application designed for military and police canine units. Built with Flask and PostgreSQL, it provides an Arabic RTL-compatible interface for managing the complete lifecycle of K9 operations, from dog and employee management to project coordination, training tracking, veterinary care, breeding programs, and attendance monitoring.
+The K9 Operations Management System is a comprehensive, web-based application designed for military and police canine units. Built with Flask and PostgreSQL, it provides an Arabic RTL-compatible interface for managing the complete lifecycle of K9 operations, from dog and employee management to project coordination, training tracking, veterinary care, production programs, and attendance monitoring.
 
 ---
 
@@ -28,7 +28,7 @@ The K9 Operations Management System streamlines the complex operations of canine
 - Centralized dog and employee management
 - Project-based mission coordination
 - Comprehensive training and veterinary tracking
-- Breeding program management
+- production program management
 - Advanced attendance and shift management
 - Detailed reporting and analytics
 - Multi-level permission system
@@ -74,7 +74,7 @@ The K9 Operations Management System streamlines the complex operations of canine
 ### 1. Dogs Management Module
 
 #### Overview
-Comprehensive canine lifecycle management covering identification, health, assignments, and breeding records.
+Comprehensive canine lifecycle management covering identification, health, assignments, and production records.
 
 #### Key Features
 - **Basic Information**
@@ -94,7 +94,7 @@ Comprehensive canine lifecycle management covering identification, health, assig
   - Parent tracking (father/mother relationships)
   - Handler assignments (many-to-many with employees)
   - Project assignments
-  - Breeding history
+  - production history
 
 #### Database Model
 ```python
@@ -128,7 +128,7 @@ Human resource management for all canine unit personnel with role-based capabili
 #### Employee Roles
 - **سائس (Handler)**: Dog care and basic handling
 - **مدرب (Trainer)**: Training session management
-- **مربي (Breeder)**: Breeding program oversight
+- **مربي (Producer)**: production program oversight
 - **طبيب (Veterinarian)**: Medical care provider
 - **مسؤول مشروع (Project Manager)**: Project coordination
 
@@ -312,25 +312,25 @@ class VeterinaryVisit(db.Model):
     # ... additional fields
 ```
 
-### 6. Breeding Management Module
+### 6. production Management Module
 
 #### Overview
-Comprehensive breeding program management covering the complete reproductive cycle.
+Comprehensive production program management covering the complete reproductive cycle.
 
 #### Module Components
 
 ##### 6.1 Maturity Tracking
 - Age-based maturity status monitoring
 - Physical development milestones
-- Breeding readiness assessment
+- production readiness assessment
 
 ##### 6.2 Heat Cycle Management
 - Cycle tracking for female dogs
-- Optimal breeding window identification
+- Optimal production window identification
 - Historical pattern analysis
 
 ##### 6.3 Mating Records
-- Breeding pair documentation
+- production pair documentation
 - Mating date and method tracking
 - Success rate monitoring
 
@@ -472,7 +472,7 @@ The system implements 79 distinct permission combinations across 9 major section
 
 1. **Dogs** (8 subsections × 7 actions = 56 permissions)
 2. **Employees** (8 subsections × 7 actions = 56 permissions)
-3. **Breeding** (6 subsections × 7 actions = 42 permissions)
+3. **production** (6 subsections × 7 actions = 42 permissions)
 4. **Projects** (10 subsections × 7 actions = 70 permissions)
 5. **Training** (7 subsections × 7 actions = 49 permissions)
 6. **Veterinary** (6 subsections × 7 actions = 42 permissions)
@@ -551,7 +551,7 @@ class PermissionAuditLog(db.Model):
 4. **Project** - Mission and project coordination
 5. **TrainingSession** - Training event tracking
 6. **VeterinaryVisit** - Medical care records
-7. **BreedingCycle** - Reproductive program management
+7. **productionCycle** - Reproductive program management
 
 ### Relationship Patterns
 - **Many-to-Many**: Employee-Dog assignments, Project-Dog assignments
@@ -685,7 +685,7 @@ Dashboard
 ├── Veterinary
 │   ├── Veterinary Visits
 │   └── Add Visit
-├── Breeding
+├── production
 │   ├── Maturity Tracking
 │   ├── Heat Cycles
 │   ├── Mating Records
@@ -760,7 +760,7 @@ templates/
 ├── projects/              # Project management templates
 ├── training/              # Training module templates
 ├── veterinary/            # Veterinary module templates
-├── breeding/              # Breeding module templates
+├── production/              # production module templates
 ├── attendance/            # Attendance module templates
 ├── reports/               # Reporting templates
 ├── admin/                 # Administrative templates

@@ -379,6 +379,7 @@ class VeterinaryVisit(db.Model):
         return f'<VeterinaryVisit {self.visit_type.value} - {self.dog.name}>'
 
 class ProductionCycle(db.Model):
+    __tablename__ = 'production_cycle'
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     female_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     male_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
