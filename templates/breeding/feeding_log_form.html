@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if log_entry %}تعديل سجل التغذية{% else %}إضافة سجل تغذية جديد{% endif %} - نظام إدارة عمليات الكلاب البوليسية
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-2 text-gray-800">
+                        <i class="fas fa-utensils text-success me-2"></i>
+                        {% if log_entry %}تعديل سجل التغذية{% else %}إضافة سجل تغذية جديد{% endif %}
+                    </h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">الرئيسية</a></li>
+                            <li class="breadcrumb-item">التربية</li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('main.breeding_feeding_log') }}">التغذية — السجل اليومي</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">
+                                {% if log_entry %}تعديل{% else %}إضافة جديد{% endif %}
+                            </li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <div class="card shadow">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">
+                                {% if log_entry %}تعديل سجل التغذية{% else %}معلومات سجل التغذية الجديد{% endif %}
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <!-- Form -->
+                            <form id="feedingLogForm" class="needs-validation" novalidate>
+                                <!-- CSRF Token -->
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                
+                                <!-- Basic Information -->
+                                <div class="row mb-4">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="project_id" class="form-label required">المشروع <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="project_id" name="project_id" required>
+                                            <option value="">اختر المشروع</option>
+                                            {% for project in projects %}
+                                            <option value="{{ project.id }}" 
+                                                {% if log_entry and log_entry.project_id == project.id %}selected{% endif %}>
+                                                {{ project.name }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="invalid-feedback">يرجى اختيار المشروع</div>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="dog_id" class="form-label required">الكلب <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="dog_id" name="dog_id" required>
+                                            <option value="">اختر الكلب</option>
+                                            {% for dog in dogs %}
+                                            <option value="{{ dog.id }}"
+                                                {% if log_entry and log_entry.dog_id == dog.id %}selected{% endif %}>
+                                                {{ dog.name }} ({{ dog.code }})
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="invalid-feedback">يرجى اختيار الكلب</div>
+                                    </div>
+                                </div>
+
+                                <div class="row mb-4">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="date" class="form-label required">التاريخ <span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control" id="date" name="date" 
+                                               value="{% if log_entry %}{{ log_entry.date.isoformat() }}{% else %}{{ moment().format('YYYY-MM-DD') }}{% endif %}" required>
+                                        <div class="invalid-feedback">يرجى تحديد التاريخ</div>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="time" class="form-label required">الوقت <span class="text-danger">*</span></label>
+                                        <input type="time" class="form-control" id="time" name="time" 
+                                               value="{% if log_entry %}{{ log_entry.time.strftime('%H:%M') }}{% else %}{{ moment().format('HH:mm') }}{% endif %}" required>
+                                        <div class="invalid-feedback">يرجى تحديد الوقت</div>
+                                    </div>
+                                </div>
+
+                                <!-- Meal Type -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <label class="form-label required">نوع الوجبة <span class="text-danger">*</span></label>
+                                        <div class="d-flex gap-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="meal_type_fresh" name="meal_type_fresh"
+                                                       {% if log_entry and log_entry.meal_type_fresh %}checked{% endif %}>
+                                                <label class="form-check-label" for="meal_type_fresh">
+                                                    <i class="fas fa-leaf text-success me-1"></i>طازج
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="meal_type_dry" name="meal_type_dry"
+                                                       {% if log_entry and log_entry.meal_type_dry %}checked{% endif %}>
+                                                <label class="form-check-label" for="meal_type_dry">
+                                                    <i class="fas fa-box text-warning me-1"></i>مجفف
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="invalid-feedback" id="mealTypeError">يجب اختيار نوع وجبة واحد على الأقل</div>
+                                    </div>
+                                </div>
+
+                                <!-- Meal Details -->
+                                <div class="row mb-4">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="meal_name" class="form-label">اسم الوجبة</label>
+                                        <input type="text" class="form-control" id="meal_name" name="meal_name" 
+                                               value="{{ log_entry.meal_name if log_entry else '' }}" placeholder="مثال: دجاج مع خضار">
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="prep_method" class="form-label">طريقة التحضير</label>
+                                        <select class="form-select" id="prep_method" name="prep_method">
+                                            <option value="">اختر طريقة التحضير</option>
+                                            <option value="غليان" {% if log_entry and log_entry.prep_method and log_entry.prep_method.value == 'غليان' %}selected{% endif %}>غليان</option>
+                                            <option value="تبخير" {% if log_entry and log_entry.prep_method and log_entry.prep_method.value == 'تبخير' %}selected{% endif %}>تبخير</option>
+                                            <option value="نقع" {% if log_entry and log_entry.prep_method and log_entry.prep_method.value == 'نقع' %}selected{% endif %}>نقع</option>
+                                            <option value="أخرى" {% if log_entry and log_entry.prep_method and log_entry.prep_method.value == 'أخرى' %}selected{% endif %}>أخرى</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Quantities -->
+                                <div class="row mb-4">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="grams" class="form-label">كمية الوجبة (غم)</label>
+                                        <input type="number" class="form-control" id="grams" name="grams" min="0" 
+                                               value="{{ log_entry.grams if log_entry and log_entry.grams else '' }}" placeholder="0">
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="water_ml" class="form-label">ماء الشرب (مل)</label>
+                                        <input type="number" class="form-control" id="water_ml" name="water_ml" min="0" 
+                                               value="{{ log_entry.water_ml if log_entry and log_entry.water_ml else '' }}" placeholder="0">
+                                    </div>
+                                </div>
+
+                                <!-- Supplements -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <label class="form-label">المكملات الغذائية</label>
+                                        <div id="supplementsContainer">
+                                            {% if log_entry and log_entry.supplements %}
+                                                {% for supplement in log_entry.supplements %}
+                                                <div class="row supplement-row mb-2">
+                                                    <div class="col-md-5">
+                                                        <input type="text" class="form-control" name="supplement_name" 
+                                                               value="{{ supplement.name }}" placeholder="اسم المكمل">
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <input type="text" class="form-control" name="supplement_qty" 
+                                                               value="{{ supplement.qty }}" placeholder="الكمية">
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <button type="button" class="btn btn-danger btn-sm remove-supplement">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" id="addSupplement">
+                                            <i class="fas fa-plus me-1"></i>إضافة مكمل
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Body Condition -->
+                                <div class="row mb-4">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="body_condition" class="form-label">كتلة الجسم</label>
+                                        <select class="form-select" id="body_condition" name="body_condition">
+                                            <option value="">اختر حالة كتلة الجسم</option>
+                                            <option value="نحيف جدًا (1)" {% if log_entry and log_entry.body_condition and log_entry.body_condition.value == 'نحيف جدًا (1)' %}selected{% endif %}>نحيف جدًا (1)</option>
+                                            <option value="نحيف (2)" {% if log_entry and log_entry.body_condition and log_entry.body_condition.value == 'نحيف (2)' %}selected{% endif %}>نحيف (2)</option>
+                                            <option value="أقل من المثالي (3)" {% if log_entry and log_entry.body_condition and log_entry.body_condition.value == 'أقل من المثالي (3)' %}selected{% endif %}>أقل من المثالي (3)</option>
+                                            <option value="قريب من المثالي (4)" {% if log_entry and log_entry.body_condition and log_entry.body_condition.value == 'قريب من المثالي (4)' %}selected{% endif %}>قريب من المثالي (4)</option>
+                                            <option value="مثالي (5)" {% if log_entry and log_entry.body_condition and log_entry.body_condition.value == 'مثالي (5)' %}selected{% endif %}>مثالي (5)</option>
+                                            <option value="فوق المثالي (6)" {% if log_entry and log_entry.body_condition and log_entry.body_condition.value == 'فوق المثالي (6)' %}selected{% endif %}>فوق المثالي (6)</option>
+                                            <option value="ممتلئ (7)" {% if log_entry and log_entry.body_condition and log_entry.body_condition.value == 'ممتلئ (7)' %}selected{% endif %}>ممتلئ (7)</option>
+                                            <option value="سمين (8)" {% if log_entry and log_entry.body_condition and log_entry.body_condition.value == 'سمين (8)' %}selected{% endif %}>سمين (8)</option>
+                                            <option value="سمين جدًا (9)" {% if log_entry and log_entry.body_condition and log_entry.body_condition.value == 'سمين جدًا (9)' %}selected{% endif %}>سمين جدًا (9)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Notes -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <label for="notes" class="form-label">ملاحظات</label>
+                                        <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                                  placeholder="أي ملاحظات إضافية حول وجبة التغذية...">{{ log_entry.notes if log_entry else '' }}</textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Form Actions -->
+                                <div class="row">
+                                    <div class="col-12">
+                                        <hr>
+                                        <div class="d-flex justify-content-end gap-2">
+                                            <a href="{{ url_for('main.breeding_feeding_log') }}" class="btn btn-secondary">
+                                                <i class="fas fa-times me-2"></i>إلغاء
+                                            </a>
+                                            <button type="submit" class="btn btn-success" id="submitBtn">
+                                                <i class="fas fa-save me-2"></i>
+                                                {% if log_entry %}تحديث السجل{% else %}حفظ السجل{% endif %}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden data for JavaScript -->
+<script>
+    window.feedingLogData = {
+        isEdit: {% if log_entry %}true{% else %}false{% endif %},
+        logId: {% if log_entry %}'{{ log_entry.id }}'{% else %}null{% endif %},
+        csrfToken: '{{ csrf_token() }}'
+    };
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/feeding_log.js') }}"></script>
+{% endblock %}
