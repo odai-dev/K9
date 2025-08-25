@@ -83,61 +83,67 @@
                         <hr>
                     </div>
                     <div class="col-md-4">
-                        <label for="washed_bathed" class="form-label">غسل الكلب</label>
-                        <select class="form-select" id="washed_bathed" name="washed_bathed">
-                            <option value="">غير محدد</option>
+                        <label class="form-label">غسل الكلب</label>
+                        <div class="btn-group d-block" data-bs-toggle="buttons">
                             {% for value, label in yesno_choices %}
-                            <option value="{{ value }}" {% if grooming_log and grooming_log.washed_bathed and grooming_log.washed_bathed.value == value %}selected{% endif %}>{{ label }}</option>
+                            <input type="radio" class="btn-check" name="washed_bathed" id="washed_{{ value }}" value="{{ value }}"
+                                {% if grooming_log and grooming_log.washed_bathed and grooming_log.washed_bathed.value == value %}checked{% endif %}>
+                            <label class="btn btn-outline-primary" for="washed_{{ value }}">{{ label }}</label>
                             {% endfor %}
-                        </select>
+                        </div>
                     </div>
                     <div class="col-md-4">
-                        <label for="brushing" class="form-label">تمشيط</label>
-                        <select class="form-select" id="brushing" name="brushing">
-                            <option value="">غير محدد</option>
+                        <label class="form-label">تمشيط</label>
+                        <div class="btn-group d-block" data-bs-toggle="buttons">
                             {% for value, label in yesno_choices %}
-                            <option value="{{ value }}" {% if grooming_log and grooming_log.brushing and grooming_log.brushing.value == value %}selected{% endif %}>{{ label }}</option>
+                            <input type="radio" class="btn-check" name="brushing" id="brushing_{{ value }}" value="{{ value }}"
+                                {% if grooming_log and grooming_log.brushing and grooming_log.brushing.value == value %}checked{% endif %}>
+                            <label class="btn btn-outline-primary" for="brushing_{{ value }}">{{ label }}</label>
                             {% endfor %}
-                        </select>
+                        </div>
                     </div>
                     <div class="col-md-4">
-                        <label for="nail_trimming" class="form-label">قص الأظافر</label>
-                        <select class="form-select" id="nail_trimming" name="nail_trimming">
-                            <option value="">غير محدد</option>
+                        <label class="form-label">قص الأظافر</label>
+                        <div class="btn-group d-block" data-bs-toggle="buttons">
                             {% for value, label in yesno_choices %}
-                            <option value="{{ value }}" {% if grooming_log and grooming_log.nail_trimming and grooming_log.nail_trimming.value == value %}selected{% endif %}>{{ label }}</option>
+                            <input type="radio" class="btn-check" name="nail_trimming" id="nails_{{ value }}" value="{{ value }}"
+                                {% if grooming_log and grooming_log.nail_trimming and grooming_log.nail_trimming.value == value %}checked{% endif %}>
+                            <label class="btn btn-outline-primary" for="nails_{{ value }}">{{ label }}</label>
                             {% endfor %}
-                        </select>
+                        </div>
                     </div>
                 </div>
 
                 <div class="row mb-4">
                     <div class="col-md-4">
-                        <label for="teeth_brushing" class="form-label">فرش الأسنان</label>
-                        <select class="form-select" id="teeth_brushing" name="teeth_brushing">
-                            <option value="">غير محدد</option>
+                        <label class="form-label">فرش الأسنان</label>
+                        <div class="btn-group d-block" data-bs-toggle="buttons">
                             {% for value, label in yesno_choices %}
-                            <option value="{{ value }}" {% if grooming_log and grooming_log.teeth_brushing and grooming_log.teeth_brushing.value == value %}selected{% endif %}>{{ label }}</option>
+                            <input type="radio" class="btn-check" name="teeth_brushing" id="teeth_{{ value }}" value="{{ value }}"
+                                {% if grooming_log and grooming_log.teeth_brushing and grooming_log.teeth_brushing.value == value %}checked{% endif %}>
+                            <label class="btn btn-outline-primary" for="teeth_{{ value }}">{{ label }}</label>
                             {% endfor %}
-                        </select>
+                        </div>
                     </div>
                     <div class="col-md-4">
-                        <label for="ear_cleaning" class="form-label">تنظيف الأذن</label>
-                        <select class="form-select" id="ear_cleaning" name="ear_cleaning">
-                            <option value="">غير محدد</option>
+                        <label class="form-label">تنظيف الأذن</label>
+                        <div class="btn-group d-block" data-bs-toggle="buttons">
                             {% for value, label in yesno_choices %}
-                            <option value="{{ value }}" {% if grooming_log and grooming_log.ear_cleaning and grooming_log.ear_cleaning.value == value %}selected{% endif %}>{{ label }}</option>
+                            <input type="radio" class="btn-check" name="ear_cleaning" id="ear_{{ value }}" value="{{ value }}"
+                                {% if grooming_log and grooming_log.ear_cleaning and grooming_log.ear_cleaning.value == value %}checked{% endif %}>
+                            <label class="btn btn-outline-primary" for="ear_{{ value }}">{{ label }}</label>
                             {% endfor %}
-                        </select>
+                        </div>
                     </div>
                     <div class="col-md-4">
-                        <label for="eye_cleaning" class="form-label">تنظيف العين</label>
-                        <select class="form-select" id="eye_cleaning" name="eye_cleaning">
-                            <option value="">غير محدد</option>
+                        <label class="form-label">تنظيف العين</label>
+                        <div class="btn-group d-block" data-bs-toggle="buttons">
                             {% for value, label in yesno_choices %}
-                            <option value="{{ value }}" {% if grooming_log and grooming_log.eye_cleaning and grooming_log.eye_cleaning.value == value %}selected{% endif %}>{{ label }}</option>
+                            <input type="radio" class="btn-check" name="eye_cleaning" id="eye_{{ value }}" value="{{ value }}"
+                                {% if grooming_log and grooming_log.eye_cleaning and grooming_log.eye_cleaning.value == value %}checked{% endif %}>
+                            <label class="btn btn-outline-primary" for="eye_{{ value }}">{{ label }}</label>
                             {% endfor %}
-                        </select>
+                        </div>
                     </div>
                 </div>
 
@@ -147,13 +153,15 @@
                         <input type="text" class="form-control" id="shampoo_type" name="shampoo_type" placeholder="اكتب نوع الشامبو..." value="{{ grooming_log.shampoo_type if grooming_log else '' }}">
                     </div>
                     <div class="col-md-6">
-                        <label for="cleanliness_score" class="form-label">نظافة عامة (1-5)</label>
-                        <select class="form-select" id="cleanliness_score" name="cleanliness_score">
-                            <option value="">غير محدد</option>
+                        <label class="form-label">نظافة عامة (1-5)</label>
+                        <div class="btn-group d-block" data-bs-toggle="buttons">
                             {% for value, label in cleanliness_choices %}
-                            <option value="{{ value }}" {% if grooming_log and grooming_log.cleanliness_score and grooming_log.cleanliness_score.value == value %}selected{% endif %}>{{ label }}</option>
+                            <input type="radio" class="btn-check" name="cleanliness_score" id="clean_{{ value }}" value="{{ value }}"
+                                {% if grooming_log and grooming_log.cleanliness_score and grooming_log.cleanliness_score.value == value %}checked{% endif %}>
+                            <label class="btn btn-outline-warning" for="clean_{{ value }}">{{ label }}</label>
                             {% endfor %}
-                        </select>
+                        </div>
+                        <small class="form-text text-muted">1 = سيء، 5 = ممتاز</small>
                     </div>
                 </div>
 
@@ -188,6 +196,9 @@
     </div>
 </div>
 
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script>
 $(document).ready(function() {
     // Set default date to today if creating new record
@@ -212,14 +223,14 @@ function submitForm() {
         recorder_employee_id: $('#recorder_employee_id').val() || null,
         date: $('#date').val(),
         time: $('#time').val(),
-        washed_bathed: $('#washed_bathed').val() || null,
-        brushing: $('#brushing').val() || null,
-        nail_trimming: $('#nail_trimming').val() || null,
-        teeth_brushing: $('#teeth_brushing').val() || null,
-        ear_cleaning: $('#ear_cleaning').val() || null,
-        eye_cleaning: $('#eye_cleaning').val() || null,
+        washed_bathed: $('input[name="washed_bathed"]:checked').val() || null,
+        brushing: $('input[name="brushing"]:checked').val() || null,
+        nail_trimming: $('input[name="nail_trimming"]:checked').val() || null,
+        teeth_brushing: $('input[name="teeth_brushing"]:checked').val() || null,
+        ear_cleaning: $('input[name="ear_cleaning"]:checked').val() || null,
+        eye_cleaning: $('input[name="eye_cleaning"]:checked').val() || null,
         shampoo_type: $('#shampoo_type').val(),
-        cleanliness_score: $('#cleanliness_score').val() || null,
+        cleanliness_score: $('input[name="cleanliness_score"]:checked').val() || null,
         notes: $('#notes').val()
     };
 
