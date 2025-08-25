@@ -89,14 +89,14 @@
                     </li>
                     {% endif %}
                     
-                    {% if permissions.breeding %}
+                    {% if permissions.production %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="breedingDropdown" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="productionDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-heart me-1"></i>الإنتاج
                         </a>
                         <ul class="dropdown-menu shadow">
                             <li><h6 class="dropdown-header">إدارة الإنتاج</h6></li>
-                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_list') }}"><i class="fas fa-tachometer-alt me-2"></i>لوحة الإنتاج</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.production_list') }}"><i class="fas fa-tachometer-alt me-2"></i>لوحة الإنتاج</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header">دورة الحياة</h6></li>
                             <li><a class="dropdown-item" href="{{ url_for('main.maturity_list') }}"><i class="fas fa-seedling me-2"></i>البلوغ</a></li>

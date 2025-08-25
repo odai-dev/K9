@@ -2,15 +2,15 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app import db
-from models import (Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCycle, 
+from models import (Dog, Employee, TrainingSession, VeterinaryVisit, ProductionCycle, 
                    Project, AuditLog, UserRole, DogStatus, 
-                   EmployeeRole, TrainingCategory, VisitType, BreedingCycleType, 
-                   BreedingResult, ProjectStatus, AuditAction, DogGender, User,
+                   EmployeeRole, TrainingCategory, VisitType, ProductionCycleType, 
+                   ProductionResult, ProjectStatus, AuditAction, DogGender, User,
                    MaturityStatus, HeatStatus, PregnancyStatus, ProjectDog, ProjectAssignment,
                    Incident, Suspicion, PerformanceEvaluation, 
                    ElementType, PerformanceRating, TargetType,
                    project_employee_assignment, project_dog_assignment,
-                   # Breeding models
+                   # Production models
                    HeatCycle, MatingRecord, MatingResult, PregnancyRecord, DeliveryRecord, PuppyRecord, PuppyTraining,
                    # New attendance models
                    ProjectShift, ProjectShiftAssignment, ProjectAttendance,
@@ -171,12 +171,12 @@ def dogs_view(dog_id):
     # Get related data
     training_sessions = TrainingSession.query.filter_by(dog_id=dog.id).order_by(TrainingSession.created_at.desc()).all()
     vet_visits = VeterinaryVisit.query.filter_by(dog_id=dog.id).order_by(VeterinaryVisit.created_at.desc()).all()
-    breeding_cycles = BreedingCycle.query.filter(
-        (BreedingCycle.female_id == dog.id) | (BreedingCycle.male_id == dog.id)
-    ).order_by(BreedingCycle.created_at.desc()).all()
+    production_cycles = ProductionCycle.query.filter(
+        (ProductionCycle.female_id == dog.id) | (ProductionCycle.male_id == dog.id)
+    ).order_by(ProductionCycle.created_at.desc()).all()
     
     return render_template('dogs/view.html', dog=dog, training_sessions=training_sessions, 
-                         vet_visits=vet_visits, breeding_cycles=breeding_cycles)
+                         vet_visits=vet_visits, production_cycles=production_cycles)
 
 @main_bp.route('/dogs/<dog_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -458,41 +458,41 @@ def veterinary_add():
     
     return render_template('veterinary/add.html', dogs=dogs, vets=vets, visit_types=VisitType)
 
-# Breeding routes
-@main_bp.route('/breeding')
+# Production routes
+@main_bp.route('/production')
 @login_required
-def breeding_list():
+def production_list():
     if current_user.role == UserRole.GENERAL_ADMIN:
-        cycles = BreedingCycle.query.order_by(BreedingCycle.created_at.desc()).all()
+        cycles = ProductionCycle.query.order_by(ProductionCycle.created_at.desc()).all()
         all_dogs = Dog.query.all()
     else:
         assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
-        cycles = BreedingCycle.query.filter(
-            db.or_(BreedingCycle.female_id.in_(assigned_dog_ids), BreedingCycle.male_id.in_(assigned_dog_ids))
-        ).order_by(BreedingCycle.created_at.desc()).all()
+        cycles = ProductionCycle.query.filter(
+            db.or_(ProductionCycle.female_id.in_(assigned_dog_ids), ProductionCycle.male_id.in_(assigned_dog_ids))
+        ).order_by(ProductionCycle.created_at.desc()).all()
         all_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id).all()
     
-    # Calculate breeding statistics
+    # Calculate production statistics
     stats = {
         'total_dogs': len(all_dogs),
         'mature_dogs': len([d for d in all_dogs if d.gender == DogGender.FEMALE]),
-        'breeding_ready_females': len([d for d in all_dogs if d.gender == DogGender.FEMALE and d.current_status == DogStatus.ACTIVE]),
-        'breeding_males': len([d for d in all_dogs if d.gender == DogGender.MALE and d.current_status == DogStatus.ACTIVE]),
+        'production_ready_females': len([d for d in all_dogs if d.gender == DogGender.FEMALE and d.current_status == DogStatus.ACTIVE]),
+        'production_males': len([d for d in all_dogs if d.gender == DogGender.MALE and d.current_status == DogStatus.ACTIVE]),
         'active_pregnancies': 0,  # This would need pregnancy tracking
         'recent_births': 0  # This would need birth tracking
     }
     
-    return render_template('breeding/index.html', cycles=cycles, stats=stats)
+    return render_template('production/index.html', cycles=cycles, stats=stats)
 
-@main_bp.route('/breeding/add', methods=['GET', 'POST'])
+@main_bp.route('/production/add', methods=['GET', 'POST'])
 @login_required
-def breeding_add():
+def production_add():
     if request.method == 'POST':
         try:
-            cycle = BreedingCycle()
+            cycle = ProductionCycle()
             cycle.female_id = request.form['female_id']
             cycle.male_id = request.form['male_id']
-            cycle.cycle_type = BreedingCycleType(request.form['cycle_type'])
+            cycle.cycle_type = ProductionCycleType(request.form['cycle_type'])
             cycle.mating_date = datetime.strptime(request.form['mating_date'], '%Y-%m-%d').date()
             if request.form.get('heat_start_date'):
                 cycle.heat_start_date = datetime.strptime(request.form['heat_start_date'], '%Y-%m-%d').date()
@@ -501,9 +501,9 @@ def breeding_add():
             if request.form.get('actual_delivery_date'):
                 cycle.actual_delivery_date = datetime.strptime(request.form['actual_delivery_date'], '%Y-%m-%d').date()
             if request.form.get('result'):
-                cycle.result = BreedingResult(request.form['result'])
+                cycle.result = ProductionResult(request.form['result'])
             else:
-                cycle.result = BreedingResult.UNKNOWN
+                cycle.result = ProductionResult.UNKNOWN
             cycle.prenatal_care = request.form.get('prenatal_care')
             cycle.delivery_notes = request.form.get('delivery_notes')
             cycle.complications = request.form.get('complications')
@@ -511,9 +511,9 @@ def breeding_add():
             db.session.add(cycle)
             db.session.commit()
             
-            log_audit(current_user.id, AuditAction.CREATE, 'BreedingCycle', cycle.id, f'دورة تربية جديدة: {cycle.female.name} × {cycle.male.name}', None, {'cycle_type': cycle.cycle_type.value})
+            log_audit(current_user.id, AuditAction.CREATE, 'ProductionCycle', cycle.id, f'دورة إنتاج جديدة: {cycle.female.name} × {cycle.male.name}', None, {'cycle_type': cycle.cycle_type.value})
             flash('تم تسجيل دورة التربية بنجاح', 'success')
-            return redirect(url_for('main.breeding_list'))
+            return redirect(url_for('main.production_list'))
             
         except Exception as e:
             db.session.rollback()
@@ -528,10 +528,10 @@ def breeding_add():
     females = [dog for dog in all_dogs if dog.gender == DogGender.FEMALE]
     males = [dog for dog in all_dogs if dog.gender == DogGender.MALE]
     
-    return render_template('breeding/add.html', females=females, males=males, cycle_types=BreedingCycleType, results=BreedingResult)
+    return render_template('production/add.html', females=females, males=males, cycle_types=ProductionCycleType, results=ProductionResult)
 
-# Individual breeding component routes
-@main_bp.route('/breeding/maturity')
+# Individual production component routes
+@main_bp.route('/production/maturity')
 @login_required
 def maturity_list():
     from models import DogMaturity
@@ -542,9 +542,9 @@ def maturity_list():
         assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
         maturity_records = DogMaturity.query.filter(DogMaturity.dog_id.in_(assigned_dog_ids)).order_by(DogMaturity.created_at.desc()).all()
     
-    return render_template('breeding/maturity_list.html', records=maturity_records, maturities=maturity_records)
+    return render_template('production/maturity_list.html', records=maturity_records, maturities=maturity_records)
 
-@main_bp.route('/breeding/maturity/add', methods=['GET', 'POST'])
+@main_bp.route('/production/maturity/add', methods=['GET', 'POST'])
 @login_required
 def maturity_add():
     if request.method == 'POST':
@@ -584,9 +584,9 @@ def maturity_add():
     else:
         dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
     
-    return render_template('breeding/maturity_add.html', dogs=dogs)
+    return render_template('production/maturity_add.html', dogs=dogs)
 
-@main_bp.route('/breeding/heat-cycles')
+@main_bp.route('/production/heat-cycles')
 @login_required  
 def heat_cycles_list():
     from models import HeatCycle
@@ -597,9 +597,9 @@ def heat_cycles_list():
         assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
         heat_cycles = HeatCycle.query.filter(HeatCycle.dog_id.in_(assigned_dog_ids)).order_by(HeatCycle.created_at.desc()).all()
     
-    return render_template('breeding/heat_cycles_list.html', records=heat_cycles, heat_cycles=heat_cycles)
+    return render_template('production/heat_cycles_list.html', records=heat_cycles, heat_cycles=heat_cycles)
 
-@main_bp.route('/breeding/heat-cycles/add', methods=['GET', 'POST'])
+@main_bp.route('/production/heat-cycles/add', methods=['GET', 'POST'])
 @login_required
 def heat_cycles_add():
     if request.method == 'POST':
@@ -647,9 +647,9 @@ def heat_cycles_add():
     
     females = [dog for dog in all_dogs if dog.gender == DogGender.FEMALE]
     
-    return render_template('breeding/heat_cycles_add.html', females=females)
+    return render_template('production/heat_cycles_add.html', females=females)
 
-@main_bp.route('/breeding/mating')
+@main_bp.route('/production/mating')
 @login_required
 def mating_list():
     from models import MatingRecord
@@ -662,9 +662,9 @@ def mating_list():
             db.or_(MatingRecord.female_id.in_(assigned_dog_ids), MatingRecord.male_id.in_(assigned_dog_ids))
         ).order_by(MatingRecord.created_at.desc()).all()
     
-    return render_template('breeding/mating_list.html', records=mating_records, matings=mating_records)
+    return render_template('production/mating_list.html', records=mating_records, matings=mating_records)
 
-@main_bp.route('/breeding/mating/add', methods=['GET', 'POST'])
+@main_bp.route('/production/mating/add', methods=['GET', 'POST'])
 @login_required
 def mating_add():
     if request.method == 'POST':
@@ -723,9 +723,9 @@ def mating_add():
     females = [dog for dog in all_dogs if dog.gender == DogGender.FEMALE]
     males = [dog for dog in all_dogs if dog.gender == DogGender.MALE]
     
-    return render_template('breeding/mating_add.html', females=females, males=males, employees=employees)
+    return render_template('production/mating_add.html', females=females, males=males, employees=employees)
 
-@main_bp.route('/breeding/pregnancy')
+@main_bp.route('/production/pregnancy')
 @login_required
 def pregnancy_list():
     from models import PregnancyRecord
@@ -736,9 +736,9 @@ def pregnancy_list():
         assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
         pregnancy_records = PregnancyRecord.query.filter(PregnancyRecord.dog_id.in_(assigned_dog_ids)).order_by(PregnancyRecord.created_at.desc()).all()
     
-    return render_template('breeding/pregnancy_list.html', pregnancies=pregnancy_records, records=pregnancy_records)
+    return render_template('production/pregnancy_list.html', pregnancies=pregnancy_records, records=pregnancy_records)
 
-@main_bp.route('/breeding/pregnancy/add', methods=['GET', 'POST'])
+@main_bp.route('/production/pregnancy/add', methods=['GET', 'POST'])
 @login_required
 def pregnancy_add():
     if request.method == 'POST':
@@ -788,9 +788,9 @@ def pregnancy_add():
     
     females = [dog for dog in all_dogs if dog.gender == DogGender.FEMALE]
     
-    return render_template('breeding/pregnancy_add.html', females=females, matings=mating_records)
+    return render_template('production/pregnancy_add.html', females=females, matings=mating_records)
 
-@main_bp.route('/breeding/delivery')
+@main_bp.route('/production/delivery')
 @login_required
 def delivery_list():
     from models import DeliveryRecord
@@ -811,9 +811,9 @@ def delivery_list():
         print(f"Error fetching delivery records: {e}")
         delivery_records = []
     
-    return render_template('breeding/delivery_list.html', deliveries=delivery_records, records=delivery_records)
+    return render_template('production/delivery_list.html', deliveries=delivery_records, records=delivery_records)
 
-@main_bp.route('/breeding/delivery/add', methods=['GET', 'POST'])
+@main_bp.route('/production/delivery/add', methods=['GET', 'POST'])
 @login_required
 def delivery_add():
     if request.method == 'POST':
@@ -879,9 +879,9 @@ def delivery_add():
         pregnancies = PregnancyRecord.query.filter(PregnancyRecord.dog_id.in_(assigned_dog_ids), PregnancyRecord.status == PregnancyStatus.PREGNANT).order_by(PregnancyRecord.expected_delivery_date.asc()).all()
         employees = Employee.query.filter_by(assigned_to_user_id=current_user.id, is_active=True).all()
     
-    return render_template('breeding/delivery_add.html', pregnancies=pregnancies, employees=employees)
+    return render_template('production/delivery_add.html', pregnancies=pregnancies, employees=employees)
 
-@main_bp.route('/breeding/puppies')
+@main_bp.route('/production/puppies')
 @login_required
 def puppies_list():
     from models import PuppyRecord, DeliveryRecord
@@ -902,9 +902,9 @@ def puppies_list():
         print(f"Error fetching puppy records: {e}")
         puppies = []
     
-    return render_template('breeding/puppies_list.html', puppies=puppies)
+    return render_template('production/puppies_list.html', puppies=puppies)
 
-@main_bp.route('/breeding/puppies/add', methods=['GET', 'POST'])
+@main_bp.route('/production/puppies/add', methods=['GET', 'POST'])
 @login_required
 def puppies_add():
     if request.method == 'POST':
@@ -968,10 +968,10 @@ def puppies_add():
     if not deliveries:
         flash('لا توجد سجلات ولادة متاحة. يجب إنشاء سجلات الحمل والولادة أولاً من قسم التربية.', 'info')
     
-    return render_template('breeding/puppies_add.html', deliveries=deliveries)
+    return render_template('production/puppies_add.html', deliveries=deliveries)
 
 # View routes for all breeding sections
-@main_bp.route('/breeding/maturity/view/<id>')
+@main_bp.route('/production/maturity/view/<id>')
 @login_required
 def maturity_view(id):
     from models import DogMaturity
@@ -984,9 +984,9 @@ def maturity_view(id):
         if maturity.dog_id not in assigned_dog_ids:
             abort(403)
     
-    return render_template('breeding/maturity_view.html', maturity=maturity)
+    return render_template('production/maturity_view.html', maturity=maturity)
 
-@main_bp.route('/breeding/heat-cycles/view/<id>')
+@main_bp.route('/production/heat-cycles/view/<id>')
 @login_required
 def heat_cycles_view(id):
     from models import HeatCycle
@@ -999,9 +999,9 @@ def heat_cycles_view(id):
         if heat_cycle.dog_id not in assigned_dog_ids:
             abort(403)
     
-    return render_template('breeding/heat_cycles_view.html', heat_cycle=heat_cycle)
+    return render_template('production/heat_cycles_view.html', heat_cycle=heat_cycle)
 
-@main_bp.route('/breeding/mating/view/<id>')
+@main_bp.route('/production/mating/view/<id>')
 @login_required
 def mating_view(id):
     from models import MatingRecord
@@ -1014,9 +1014,9 @@ def mating_view(id):
         if mating.female_id not in assigned_dog_ids and mating.male_id not in assigned_dog_ids:
             abort(403)
     
-    return render_template('breeding/mating_view.html', mating=mating)
+    return render_template('production/mating_view.html', mating=mating)
 
-@main_bp.route('/breeding/pregnancy/view/<id>')
+@main_bp.route('/production/pregnancy/view/<id>')
 @login_required
 def pregnancy_view(id):
     from models import PregnancyRecord
@@ -1029,9 +1029,9 @@ def pregnancy_view(id):
         if pregnancy.dog_id not in assigned_dog_ids:
             abort(403)
     
-    return render_template('breeding/pregnancy_view.html', pregnancy=pregnancy)
+    return render_template('production/pregnancy_view.html', pregnancy=pregnancy)
 
-@main_bp.route('/breeding/delivery/view/<id>')
+@main_bp.route('/production/delivery/view/<id>')
 @login_required
 def delivery_view(id):
     from models import DeliveryRecord
@@ -1044,9 +1044,9 @@ def delivery_view(id):
         if delivery.pregnancy_record.dog_id not in assigned_dog_ids:
             abort(403)
     
-    return render_template('breeding/delivery_view.html', delivery=delivery)
+    return render_template('production/delivery_view.html', delivery=delivery)
 
-@main_bp.route('/breeding/puppies/view/<id>')
+@main_bp.route('/production/puppies/view/<id>')
 @login_required
 def puppies_view(id):
     from models import PuppyRecord
@@ -1059,9 +1059,9 @@ def puppies_view(id):
         if puppy.delivery_record.pregnancy_record.dog_id not in assigned_dog_ids:
             abort(403)
     
-    return render_template('breeding/puppies_view.html', puppy=puppy)
+    return render_template('production/puppies_view.html', puppy=puppy)
 
-@main_bp.route('/breeding/puppy-training')
+@main_bp.route('/production/puppy-training')
 @login_required
 def puppy_training_list():
     # Get puppy training sessions
@@ -1077,9 +1077,9 @@ def puppy_training_list():
             PregnancyRecord.dog_id.in_(assigned_dog_ids)
         ).order_by(PuppyTraining.session_date.desc()).all()
     
-    return render_template('breeding/puppy_training_list.html', sessions=sessions)
+    return render_template('production/puppy_training_list.html', sessions=sessions)
 
-@main_bp.route('/breeding/puppy-training/view/<id>')
+@main_bp.route('/production/puppy-training/view/<id>')
 @login_required
 def puppy_training_view(id):
     session = PuppyTraining.query.get_or_404(id)
@@ -1091,9 +1091,9 @@ def puppy_training_view(id):
         if session.puppy.delivery_record.pregnancy_record.dog_id not in assigned_dog_ids:
             abort(403)
     
-    return render_template('breeding/puppy_training_view.html', session=session)
+    return render_template('production/puppy_training_view.html', session=session)
 
-@main_bp.route('/breeding/puppy-training/add', methods=['GET', 'POST'])
+@main_bp.route('/production/puppy-training/add', methods=['GET', 'POST'])
 @login_required
 def puppy_training_add():
     if request.method == 'POST':
@@ -1153,7 +1153,7 @@ def puppy_training_add():
         {'name': 'FITNESS', 'value': 'تدريب اللياقة'}
     ]
     
-    return render_template('breeding/puppy_training_add.html', puppies=puppies, trainers=trainers, categories=categories)
+    return render_template('production/puppy_training_add.html', puppies=puppies, trainers=trainers, categories=categories)
 
 # Project routes (without attendance/assignment functionality)
 @main_bp.route('/projects')
