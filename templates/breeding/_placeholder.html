@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - نظام إدارة عمليات الكلاب البوليسية{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-2 text-gray-800">
+                        <i class="fas fa-leaf text-success me-2"></i>{{ title }}
+                    </h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">الرئيسية</a></li>
+                            <li class="breadcrumb-item">التربية</li>
+                            <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Coming Soon Card -->
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="card shadow border-0">
+                        <div class="card-body text-center p-5">
+                            <div class="mb-4">
+                                <i class="fas fa-tools text-warning" style="font-size: 4rem;"></i>
+                            </div>
+                            
+                            <h2 class="h4 mb-3 text-dark">{{ title }}</h2>
+                            <p class="text-muted mb-4">هذه الصفحة قيد التنفيذ حاليًا وستكون متاحة قريبًا</p>
+                            
+                            <!-- Future Fields Preview -->
+                            <div class="alert alert-info text-start mb-4" role="alert">
+                                <h6 class="alert-heading mb-3">
+                                    <i class="fas fa-list-ul me-2"></i>الحقول المخططة لهذا القسم:
+                                </h6>
+                                <div class="row">
+                                    {% for field in fields %}
+                                    <div class="col-md-6 mb-2">
+                                        <span class="badge bg-light text-dark border">
+                                            <i class="fas fa-check-circle text-success me-1"></i>{{ field }}
+                                        </span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <!-- Timeline Info -->
+                            <div class="bg-light rounded p-3 mb-4">
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    سيتم إطلاق هذه الميزة في التحديث القادم من النظام
+                                </small>
+                            </div>
+                            
+                            <!-- Back Button -->
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">
+                                <i class="fas fa-arrow-right me-2"></i>العودة للرئيسية
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

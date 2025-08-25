@@ -1379,4 +1379,67 @@ class Attendance(db.Model):
 
 # All model methods are properly defined within their respective classes
 
+# ---------- Breeding Enums with ARABIC VALUES ----------
+class PrepMethod(Enum):
+    BOILED = "غليان"
+    STEAMED = "تبخير"
+    SOAKED = "نقع"
+    OTHER = "أخرى"
+
+class BodyConditionScale(Enum):  # optional per meal if noted
+    VERY_THIN   = "نحيف جدًا (1)"
+    THIN        = "نحيف (2)"
+    BELOW_IDEAL = "أقل من المثالي (3)"
+    NEAR_IDEAL  = "قريب من المثالي (4)"
+    IDEAL       = "مثالي (5)"
+    ABOVE_IDEAL = "فوق المثالي (6)"
+    FULL        = "ممتلئ (7)"
+    OBESE       = "سمين (8)"
+    VERY_OBESE  = "سمين جدًا (9)"
+
+# ---------- FeedingLog table (per‑meal) ----------
+class FeedingLog(db.Model):
+    __tablename__ = "feeding_log"
+
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+
+    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    time = db.Column(db.Time, nullable=False)
+
+    dog_id = db.Column(get_uuid_column(), db.ForeignKey("dog.id", ondelete="CASCADE"), nullable=False)
+    recorder_employee_id = db.Column(get_uuid_column(), db.ForeignKey("employee.id", ondelete="SET NULL"), nullable=True)
+
+    # Meal type — checkboxes (both can be True if mixed)
+    meal_type_fresh = db.Column(db.Boolean, nullable=False, default=False)  # طازج
+    meal_type_dry   = db.Column(db.Boolean, nullable=False, default=False)  # مجفف
+
+    meal_name   = db.Column(db.String(120), nullable=True)                 # اسم الوجبة
+    prep_method = db.Column(db.Enum(PrepMethod), nullable=True)            # طريقة التحضير (Arabic values)
+
+    grams    = db.Column(db.Integer, nullable=True)                        # كمية الوجبة (غم)
+    water_ml = db.Column(db.Integer, nullable=True)                        # ماء الشرب (مل)
+
+    supplements   = db.Column(JSON, nullable=True)                         # [{"name":"اسم المكمل","qty":"5 مل"}]
+    body_condition = db.Column(db.Enum(BodyConditionScale), nullable=True) # كتلة الجسم (Arabic values)
+    notes = db.Column(db.Text, nullable=True)
+
+    created_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    project = db.relationship('Project', backref='feeding_logs')
+    dog = db.relationship('Dog', backref='feeding_logs')
+    recorder_employee = db.relationship('Employee', backref='feeding_logs')
+    created_by_user = db.relationship('User', backref='feeding_logs')
+
+    __table_args__ = (
+        db.Index("ix_feeding_log_project_date", "project_id", "date"),
+        db.Index("ix_feeding_log_dog_datetime", "dog_id", "date", "time"),
+    )
+    
+    def __repr__(self):
+        return f'<FeedingLog {self.id}: {self.dog_id} on {self.date} at {self.time}>'
+
 

@@ -16,7 +16,9 @@ from models import (Dog, Employee, TrainingSession, VeterinaryVisit, ProductionC
                    ProjectShift, ProjectShiftAssignment, ProjectAttendance,
                    EntityType, AttendanceStatus, AbsenceReason, AttendanceDay,
                    # Standalone attendance models
-                   Shift, ShiftAssignment, Attendance)
+                   Shift, ShiftAssignment, Attendance,
+                   # Breeding models
+                   FeedingLog, PrepMethod, BodyConditionScale)
 from utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
 import os
 from datetime import datetime, date, timedelta
@@ -3957,4 +3959,116 @@ def attendance_assignments_remove(assignment_id):
         return jsonify({'success': False, 'error': f'خطأ في إزالة التعيين: {str(e)}'})
 
 
+# =============================================
+# BREEDING SECTION ROUTES (Arabic RTL)
+# =============================================
+
+from permission_utils import has_permission
+from sqlalchemy.orm import joinedload
+
+@main_bp.route('/breeding/feeding/log')
+@login_required
+def breeding_feeding_log():
+    """Feeding Log main page (Arabic RTL)"""
+    # Check permissions
+    if not has_permission(current_user, "Breeding", "التغذية - السجل اليومي", "VIEW"):
+        abort(403)
+    
+    return render_template('breeding/feeding_log.html')
+
+@main_bp.route('/breeding/feeding/log/new')
+@login_required
+def breeding_feeding_log_new():
+    """Create new feeding log entry"""
+    # Check permissions
+    if not has_permission(current_user, "Breeding", "التغذية - السجل اليومي", "CREATE"):
+        abort(403)
+    
+    # Get available projects and dogs for dropdowns
+    assigned_projects = get_user_assigned_projects(current_user)
+    assigned_dogs = get_user_accessible_dogs(current_user)
+    
+    return render_template('breeding/feeding_log_form.html', 
+                         projects=assigned_projects, 
+                         dogs=assigned_dogs)
+
+@main_bp.route('/breeding/feeding/log/<log_id>/edit')
+@login_required
+def breeding_feeding_log_edit(log_id):
+    """Edit existing feeding log entry"""
+    # Check permissions
+    if not has_permission(current_user, "Breeding", "التغذية - السجل اليومي", "EDIT"):
+        abort(403)
+    
+    # Get the log entry with eager loading
+    log_entry = FeedingLog.query.options(
+        joinedload(FeedingLog.project),
+        joinedload(FeedingLog.dog),
+        joinedload(FeedingLog.recorder_employee)
+    ).get_or_404(log_id)
+    
+    # Check if user has access to this project
+    if current_user.role == UserRole.PROJECT_MANAGER:
+        assigned_projects = get_user_assigned_projects(current_user)
+        project_ids = [p.id for p in assigned_projects]
+        if log_entry.project_id not in project_ids:
+            abort(403)
+    
+    # Get available projects and dogs for dropdowns
+    assigned_projects = get_user_assigned_projects(current_user)
+    assigned_dogs = get_user_accessible_dogs(current_user)
+    
+    return render_template('breeding/feeding_log_form.html',
+                         projects=assigned_projects,
+                         dogs=assigned_dogs,
+                         log_entry=log_entry)
+
+# PLACEHOLDER ROUTES for other breeding sections
+@main_bp.route('/breeding/checkup')
+@login_required
+def breeding_checkup():
+    """Daily Checkup placeholder page"""
+    return render_template('breeding/_placeholder.html', 
+                         title="الفحص الظاهري اليومي",
+                         fields=["درجة الحرارة", "النبض", "معدل التنفس", "لون اللثة", "رد الفعل للضوء", "الوزن", "السلوك العام", "ملاحظات"])
+
+@main_bp.route('/breeding/excretion') 
+@login_required
+def breeding_excretion():
+    """Excretion monitoring placeholder page"""
+    return render_template('breeding/_placeholder.html',
+                         title="البراز / البول / القيء", 
+                         fields=["نوع البراز", "لون البراز", "كمية البول", "لون البول", "وجود قيء", "نوع القيء", "التكرار", "ملاحظات"])
+
+@main_bp.route('/breeding/grooming')
+@login_required 
+def breeding_grooming():
+    """Grooming care placeholder page"""
+    return render_template('breeding/_placeholder.html',
+                         title="العناية (الاستحمام والصيانة)",
+                         fields=["نوع الاستحمام", "نوع الشامبو", "تقليم الأظافر", "تنظيف الأذن", "تنظيف الأسنان", "تمشيط الشعر", "المدة المستغرقة", "ملاحظات"])
+
+@main_bp.route('/breeding/deworming')
+@login_required
+def breeding_deworming():
+    """Deworming management placeholder page"""
+    return render_template('breeding/_placeholder.html',
+                         title="جرعة الديدان",
+                         fields=["نوع الدواء", "الجرعة", "طريقة الإعطاء", "تاريخ الجرعة التالية", "الوزن عند الإعطاء", "أعراض جانبية", "استجابة الكلب", "ملاحظات"])
+
+@main_bp.route('/breeding/training-activity')
+@login_required
+def breeding_training_activity():
+    """Daily training activity placeholder page"""
+    return render_template('breeding/_placeholder.html',
+                         title="تدريب — أنشطة يومية",
+                         fields=["نوع التمرين", "المدة", "الشدة", "الأداء", "الاستجابة", "المكافآت المستخدمة", "السلوك", "ملاحظات"])
+
+@main_bp.route('/breeding/cleaning')
+@login_required
+def breeding_cleaning():
+    """Environment/cage cleaning placeholder page"""
+    return render_template('breeding/_placeholder.html',
+                         title="النظافة (البيئة/القفص)",
+                         fields=["نوع التنظيف", "المواد المستخدمة", "وقت التنظيف", "حالة القفص", "تغيير الفراش", "تطهير الأواني", "حالة المنطقة", "ملاحظات"])
 
