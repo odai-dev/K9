@@ -18,8 +18,9 @@ from models import (Dog, Employee, TrainingSession, VeterinaryVisit, ProductionC
                    # Standalone attendance models
                    Shift, ShiftAssignment, Attendance,
                    # Breeding models
-                   FeedingLog, PrepMethod, BodyConditionScale)
+                   FeedingLog, PrepMethod, BodyConditionScale, DailyCheckupLog, PermissionType)
 from utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
+from permission_decorators import require_sub_permission
 import os
 from datetime import datetime, date, timedelta
 import uuid
@@ -4023,14 +4024,109 @@ def breeding_feeding_log_edit(log_id):
                          dogs=assigned_dogs,
                          log_entry=log_entry)
 
-# PLACEHOLDER ROUTES for other breeding sections
+# Daily Checkup Routes (Breeding Module)
 @main_bp.route('/breeding/checkup')
 @login_required
+@require_sub_permission('Breeding', 'الفحص الظاهري اليومي', PermissionType.VIEW)
 def breeding_checkup():
-    """Daily Checkup placeholder page"""
-    return render_template('breeding/_placeholder.html', 
-                         title="الفحص الظاهري اليومي",
-                         fields=["درجة الحرارة", "النبض", "معدل التنفس", "لون اللثة", "رد الفعل للضوء", "الوزن", "السلوك العام", "ملاحظات"])
+    """List daily checkup records"""
+    return render_template('breeding/checkup_list.html')
+
+@main_bp.route('/breeding/checkup/new')
+@login_required
+@require_sub_permission('Breeding', 'الفحص الظاهري اليومي', PermissionType.CREATE)
+def breeding_checkup_new():
+    """Create new daily checkup record"""
+    # Get user's accessible projects and dogs
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        projects = Project.query.all()
+        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+        employees = Employee.query.filter_by(is_active=True).all()
+    else:
+        assigned_projects = get_user_assigned_projects(current_user)
+        assigned_dogs = get_user_accessible_dogs(current_user)
+        assigned_employees = get_user_accessible_employees(current_user)
+        projects = assigned_projects
+        dogs = assigned_dogs
+        employees = assigned_employees
+
+    # Arabic choices for form
+    part_status_choices = [
+        ("سليم", "سليم"),
+        ("احمرار", "احمرار"), 
+        ("التهاب", "التهاب"),
+        ("إفرازات", "إفرازات"),
+        ("تورم", "تورم"),
+        ("جرح", "جرح"),
+        ("ألم", "ألم"),
+        ("أخرى", "أخرى"),
+    ]
+    
+    severity_choices = [
+        ("خفيف", "خفيف"),
+        ("متوسط", "متوسط"),
+        ("شديد", "شديد"),
+    ]
+    
+    return render_template('breeding/checkup_form.html', 
+                         projects=projects, 
+                         dogs=dogs, 
+                         employees=employees,
+                         part_status_choices=part_status_choices,
+                         severity_choices=severity_choices)
+
+@main_bp.route('/breeding/checkup/<id>/edit')
+@login_required
+@require_sub_permission('Breeding', 'الفحص الظاهري اليومي', PermissionType.EDIT)
+def breeding_checkup_edit(id):
+    """Edit daily checkup record"""
+    checkup = DailyCheckupLog.query.get_or_404(id)
+    
+    # Check project access for project managers
+    if current_user.role == UserRole.PROJECT_MANAGER:
+        assigned_projects = get_user_assigned_projects(current_user)
+        assigned_project_ids = [p.id for p in assigned_projects]
+        if checkup.project_id not in assigned_project_ids:
+            abort(403)
+    
+    # Get data for form
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        projects = Project.query.all()
+        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+        employees = Employee.query.filter_by(is_active=True).all()
+    else:
+        assigned_projects = get_user_assigned_projects(current_user)
+        assigned_dogs = get_user_accessible_dogs(current_user)
+        assigned_employees = get_user_accessible_employees(current_user)
+        projects = assigned_projects
+        dogs = assigned_dogs
+        employees = assigned_employees
+
+    # Arabic choices for form  
+    part_status_choices = [
+        ("سليم", "سليم"),
+        ("احمرار", "احمرار"),
+        ("التهاب", "التهاب"),
+        ("إفرازات", "إفرازات"),
+        ("تورم", "تورم"),
+        ("جرح", "جرح"),
+        ("ألم", "ألم"),
+        ("أخرى", "أخرى"),
+    ]
+    
+    severity_choices = [
+        ("خفيف", "خفيف"),
+        ("متوسط", "متوسط"),
+        ("شديد", "شديد"),
+    ]
+    
+    return render_template('breeding/checkup_form.html', 
+                         checkup=checkup,
+                         projects=projects, 
+                         dogs=dogs, 
+                         employees=employees,
+                         part_status_choices=part_status_choices,
+                         severity_choices=severity_choices)
 
 @main_bp.route('/breeding/excretion') 
 @login_required

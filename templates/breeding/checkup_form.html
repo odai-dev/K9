@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+{% block title %}{% if checkup %}تعديل{% else %}إضافة{% endif %} فحص ظاهري يومي - التربية{% endblock %}
+
+{% block content %}
+<div class="breeding-checkup-form" dir="rtl">
+    <div class="header-section mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2>{% if checkup %}تعديل{% else %}إضافة{% endif %} فحص ظاهري يومي</h2>
+                <p class="text-muted">تسجيل بيانات الفحص الصحي اليومي للكلاب</p>
+            </div>
+            <div>
+                <a href="{{ url_for('main.breeding_checkup') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right"></i> العودة للقائمة
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form id="checkup-form">
+                {% if checkup %}
+                <input type="hidden" id="checkup_id" value="{{ checkup.id }}">
+                {% endif %}
+
+                <!-- Basic Information Section -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5 class="section-title">المعلومات الأساسية</h5>
+                        <hr>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="project_id" class="form-label">المشروع <span class="text-danger">*</span></label>
+                        <select class="form-select" id="project_id" name="project_id" required>
+                            <option value="">اختر المشروع...</option>
+                            {% for project in projects %}
+                            <option value="{{ project.id }}" {% if checkup and checkup.project_id == project.id %}selected{% endif %}>
+                                {{ project.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="dog_id" class="form-label">الكلب <span class="text-danger">*</span></label>
+                        <select class="form-select" id="dog_id" name="dog_id" required>
+                            <option value="">اختر الكلب...</option>
+                            {% for dog in dogs %}
+                            <option value="{{ dog.id }}" {% if checkup and checkup.dog_id == dog.id %}selected{% endif %}>
+                                {{ dog.name }} ({{ dog.dog_id }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="examiner_employee_id" class="form-label">الفاحص</label>
+                        <select class="form-select" id="examiner_employee_id" name="examiner_employee_id">
+                            <option value="">اختر الفاحص...</option>
+                            {% for employee in employees %}
+                            <option value="{{ employee.id }}" {% if checkup and checkup.examiner_employee_id == employee.id %}selected{% endif %}>
+                                {{ employee.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label for="date" class="form-label">تاريخ الفحص <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="date" name="date" value="{{ checkup.date.isoformat() if checkup else '' }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="time" class="form-label">وقت الفحص <span class="text-danger">*</span></label>
+                        <input type="time" class="form-control" id="time" name="time" value="{{ checkup.time.strftime('%H:%M') if checkup else '' }}" required>
+                    </div>
+                </div>
+
+                <!-- Body Parts Examination Section -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5 class="section-title">فحص أجزاء الجسم</h5>
+                        <hr>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="eyes" class="form-label">العين</label>
+                        <select class="form-select" id="eyes" name="eyes">
+                            {% for value, label in part_status_choices %}
+                            <option value="{{ value }}" {% if checkup and checkup.eyes == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="ears" class="form-label">الأذن</label>
+                        <select class="form-select" id="ears" name="ears">
+                            {% for value, label in part_status_choices %}
+                            <option value="{{ value }}" {% if checkup and checkup.ears == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="nose" class="form-label">الأنف</label>
+                        <select class="form-select" id="nose" name="nose">
+                            {% for value, label in part_status_choices %}
+                            <option value="{{ value }}" {% if checkup and checkup.nose == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <label for="front_legs" class="form-label">الأطراف الأمامية</label>
+                        <select class="form-select" id="front_legs" name="front_legs">
+                            {% for value, label in part_status_choices %}
+                            <option value="{{ value }}" {% if checkup and checkup.front_legs == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="hind_legs" class="form-label">الأطراف الخلفية</label>
+                        <select class="form-select" id="hind_legs" name="hind_legs">
+                            {% for value, label in part_status_choices %}
+                            <option value="{{ value }}" {% if checkup and checkup.hind_legs == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="coat" class="form-label">الشعر/الفراء</label>
+                        <select class="form-select" id="coat" name="coat">
+                            {% for value, label in part_status_choices %}
+                            <option value="{{ value }}" {% if checkup and checkup.coat == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <label for="tail" class="form-label">الذيل</label>
+                        <select class="form-select" id="tail" name="tail">
+                            {% for value, label in part_status_choices %}
+                            <option value="{{ value }}" {% if checkup and checkup.tail == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="severity" class="form-label">شدة الحالة</label>
+                        <select class="form-select" id="severity" name="severity">
+                            <option value="">غير محدد</option>
+                            {% for value, label in severity_choices %}
+                            <option value="{{ value }}" {% if checkup and checkup.severity == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Detailed Observations Section -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5 class="section-title">الملاحظات والتشخيص</h5>
+                        <hr>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="symptoms" class="form-label">الأعراض المرصودة</label>
+                        <textarea class="form-control" id="symptoms" name="symptoms" rows="4" placeholder="اكتب الأعراض والعلامات المرصودة...">{{ checkup.symptoms if checkup else '' }}</textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="initial_diagnosis" class="form-label">التشخيص الأولي</label>
+                        <textarea class="form-control" id="initial_diagnosis" name="initial_diagnosis" rows="4" placeholder="التشخيص الأولي أو التقييم...">{{ checkup.initial_diagnosis if checkup else '' }}</textarea>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label for="suggested_treatment" class="form-label">العلاج المقترح</label>
+                        <textarea class="form-control" id="suggested_treatment" name="suggested_treatment" rows="4" placeholder="العلاج أو الإجراءات المقترحة...">{{ checkup.suggested_treatment if checkup else '' }}</textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="notes" class="form-label">ملاحظات إضافية</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="4" placeholder="أي ملاحظات أو تفاصيل إضافية...">{{ checkup.notes if checkup else '' }}</textarea>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="row">
+                    <div class="col-12">
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('main.breeding_checkup') }}" class="btn btn-secondary">إلغاء</a>
+                            <div>
+                                <button type="button" class="btn btn-outline-primary me-2" onclick="saveDraft()">حفظ كمسودة</button>
+                                <button type="submit" class="btn btn-primary">
+                                    {% if checkup %}حفظ التعديلات{% else %}إنشاء الفحص{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Set default date to today if creating new record
+    {% if not checkup %}
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date().toTimeString().split(' ')[0].slice(0,5);
+    $('#date').val(today);
+    $('#time').val(now);
+    {% endif %}
+
+    // Form submission handler
+    $('#checkup-form').on('submit', function(e) {
+        e.preventDefault();
+        submitForm();
+    });
+
+    // Auto-save functionality
+    let autoSaveTimer;
+    $('#checkup-form input, #checkup-form select, #checkup-form textarea').on('change input', function() {
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = setTimeout(saveDraft, 3000); // Auto-save after 3 seconds of inactivity
+    });
+});
+
+function submitForm() {
+    const formData = {
+        project_id: $('#project_id').val(),
+        dog_id: $('#dog_id').val(),
+        examiner_employee_id: $('#examiner_employee_id').val() || null,
+        date: $('#date').val(),
+        time: $('#time').val(),
+        eyes: $('#eyes').val(),
+        ears: $('#ears').val(),
+        nose: $('#nose').val(),
+        front_legs: $('#front_legs').val(),
+        hind_legs: $('#hind_legs').val(),
+        coat: $('#coat').val(),
+        tail: $('#tail').val(),
+        severity: $('#severity').val() || null,
+        symptoms: $('#symptoms').val(),
+        initial_diagnosis: $('#initial_diagnosis').val(),
+        suggested_treatment: $('#suggested_treatment').val(),
+        notes: $('#notes').val()
+    };
+
+    // Validate required fields
+    if (!formData.project_id || !formData.dog_id || !formData.date || !formData.time) {
+        showAlert('يرجى ملء جميع الحقول المطلوبة', 'error');
+        return;
+    }
+
+    const submitButton = $('button[type="submit"]');
+    const originalText = submitButton.text();
+    submitButton.prop('disabled', true).text('جاري الحفظ...');
+
+    const checkupId = $('#checkup_id').val();
+    const url = checkupId ? `/api/breeding/checkup/${checkupId}` : '/api/breeding/checkup';
+    const method = checkupId ? 'PUT' : 'POST';
+
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(data.message || 'تم حفظ الفحص بنجاح', 'success');
+            setTimeout(() => {
+                window.location.href = '{{ url_for("main.breeding_checkup") }}';
+            }, 1500);
+        } else {
+            showAlert(data.error || 'حدث خطأ أثناء الحفظ', 'error');
+            submitButton.prop('disabled', false).text(originalText);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('حدث خطأ أثناء الحفظ', 'error');
+        submitButton.prop('disabled', false).text(originalText);
+    });
+}
+
+function saveDraft() {
+    // Implement draft saving logic if needed
+    // For now, just show a temporary message
+    showAlert('تم حفظ المسودة تلقائياً', 'info', 1000);
+}
+
+function showAlert(message, type, duration = 3000) {
+    const alertClass = type === 'success' ? 'alert-success' : 
+                     type === 'error' ? 'alert-danger' : 
+                     type === 'info' ? 'alert-info' : 'alert-warning';
+    
+    const alert = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    $('body').append(alert);
+    setTimeout(() => $('.alert').alert('close'), duration);
+}
+
+// Real-time form validation
+function validateForm() {
+    const project = $('#project_id').val();
+    const dog = $('#dog_id').val();
+    const date = $('#date').val();
+    const time = $('#time').val();
+
+    const isValid = project && dog && date && time;
+    $('button[type="submit"]').prop('disabled', !isValid);
+    
+    return isValid;
+}
+
+// Validate on field changes
+$('#project_id, #dog_id, #date, #time').on('change', validateForm);
+
+// Initialize validation
+validateForm();
+</script>
+
+<style>
+.breeding-checkup-form .section-title {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 0;
+}
+
+.breeding-checkup-form .form-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.breeding-checkup-form .text-danger {
+    font-size: 0.9em;
+}
+
+.breeding-checkup-form .card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.breeding-checkup-form textarea {
+    resize: vertical;
+}
+
+.breeding-checkup-form .btn-group .btn {
+    margin-right: 0.5rem;
+}
+
+.alert {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* RTL adjustments */
+.breeding-checkup-form input[type="time"] {
+    direction: ltr;
+    text-align: right;
+}
+
+.breeding-checkup-form input[type="date"] {
+    direction: ltr;
+    text-align: right;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .breeding-checkup-form .d-flex {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .breeding-checkup-form .d-flex > div {
+        margin-bottom: 1rem;
+    }
+    
+    .breeding-checkup-form .btn-group {
+        width: 100%;
+    }
+    
+    .breeding-checkup-form .btn-group .btn {
+        flex: 1;
+    }
+}
+</style>
+{% endblock %}
