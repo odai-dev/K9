@@ -4387,7 +4387,7 @@ def breeding_deworming_new():
         ).all()
     
     from models import Employee, Route, Unit, Reaction
-    employees = Employee.query.filter_by(active=True).all()
+    employees = Employee.query.filter_by(is_active=True).all()
     
     # Convert enums to list of dictionaries for JavaScript
     route_choices = [{"value": choice.value, "text": choice.value} for choice in Route]
@@ -4434,7 +4434,7 @@ def breeding_deworming_edit(id):
             project_dog_assignment.c.project_id.in_([p.id for p in assigned_projects])
         ).all()
     
-    employees = Employee.query.filter_by(active=True).all()
+    employees = Employee.query.filter_by(is_active=True).all()
     
     # Convert enums to list of dictionaries for JavaScript
     route_choices = [{"value": choice.value, "text": choice.value} for choice in Route]
