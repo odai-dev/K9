@@ -430,7 +430,7 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
             ])
         story.append(build_table(data, colors.HexColor('#008080')))  # teal header
     elif report_type == 'production':
-        story.append(Paragraph(safe_arabic_text("تقرير التكاثر"), title_style))
+        story.append(Paragraph(safe_arabic_text("تقرير الإنتاج"), title_style))
         cycles = ProductionCycle.query
         if start_date and end_date:
             cycles = cycles.filter(ProductionCycle.mating_date >= start_date,
@@ -809,7 +809,7 @@ def get_project_manager_permissions(user, project_id):
             permission.can_manage_incidents = True
             permission.can_manage_performance = True
             permission.can_view_veterinary = True
-            permission.can_view_breeding = True
+            permission.can_view_production = True
             db.session.add(permission)
             db.session.commit()
             

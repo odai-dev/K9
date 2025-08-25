@@ -86,7 +86,7 @@
                                                     <i class="fas fa-{{ 'check text-success' if (permission and permission.can_view_veterinary) else 'times text-danger' }}"></i>
                                                 </td>
                                                 <td class="text-center">
-                                                    <i class="fas fa-{{ 'check text-success' if (permission and permission.can_view_breeding) else 'times text-danger' }}"></i>
+                                                    <i class="fas fa-{{ 'check text-success' if (permission and permission.can_view_production) else 'times text-danger' }}"></i>
                                                 </td>
                                                 <td>
                                                     <button type="button" 
@@ -105,7 +105,7 @@
                                                             data-incidents="{{ permission.can_manage_incidents|lower }}"
                                                             data-performance="{{ permission.can_manage_performance|lower }}"
                                                             data-veterinary="{{ permission.can_view_veterinary|lower }}"
-                                                            data-breeding="{{ permission.can_view_breeding|lower }}"
+                                                            data-production="{{ permission.can_view_production|lower }}"
                                                             {% else %}
                                                             data-assignments="true"
                                                             data-shifts="true"
@@ -114,7 +114,7 @@
                                                             data-incidents="true"
                                                             data-performance="true"
                                                             data-veterinary="true"
-                                                            data-breeding="true"
+                                                            data-production="true"
                                                             {% endif %}>
                                                         <i class="fas fa-edit"></i>
                                                         تعديل
@@ -233,8 +233,8 @@
                             </div>
                             
                             <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" name="can_view_breeding" id="can_view_breeding">
-                                <label class="form-check-label" for="can_view_breeding">
+                                <input class="form-check-input" type="checkbox" name="can_view_production" id="can_view_production">
+                                <label class="form-check-label" for="can_view_production">
                                     <i class="fas fa-heart"></i>
                                     عرض معلومات التربية
                                 </label>
@@ -279,7 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('can_manage_incidents').checked = button.getAttribute('data-incidents') === 'true';
         document.getElementById('can_manage_performance').checked = button.getAttribute('data-performance') === 'true';
         document.getElementById('can_view_veterinary').checked = button.getAttribute('data-veterinary') === 'true';
-        document.getElementById('can_view_breeding').checked = button.getAttribute('data-breeding') === 'true';
+        document.getElementById('can_view_production').checked = button.getAttribute('data-production') === 'true';
     });
 });
 </script>

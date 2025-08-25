@@ -2140,7 +2140,7 @@ def reports_generate():
 @login_required
 def reports_preview():
     """Get filtered data for live preview in advanced reports"""
-    from models import Dog, Employee, TrainingSession, VeterinaryVisit, BreedingCycle, Project
+    from models import Dog, Employee, TrainingSession, VeterinaryVisit, ProductionCycle, Project
     
     report_type = request.form.get('report_type')
     start_date_str = request.form.get('start_date')
