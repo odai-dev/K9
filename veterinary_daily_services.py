@@ -128,7 +128,7 @@ def get_vet_daily(
             "time": visit.visit_date.strftime("%H:%M"),
             "dog_name": visit.dog.name,
             "breed": visit.dog.breed or "",
-            "vet_name": visit.vet.full_name,
+            "vet_name": visit.vet.name,
             "visit_type_ar": VISIT_TYPE_LABELS.get(visit.visit_type.value, visit.visit_type.value),
             "diagnosis": visit.diagnosis or "",
             "treatment": visit.treatment or "",
@@ -180,7 +180,7 @@ def get_available_vets(project_id: Optional[str] = None) -> List[Dict[str, Any]]
         pass
     
     vets = query.all()
-    return [{"id": vet.id, "name": vet.full_name} for vet in vets]
+    return [{"id": vet.id, "name": vet.name} for vet in vets]
 
 
 def get_available_dogs(project_id: Optional[str] = None) -> List[Dict[str, Any]]:

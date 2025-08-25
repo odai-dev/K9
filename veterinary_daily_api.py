@@ -123,11 +123,9 @@ def export_daily_pdf():
 
 @bp.route('/data/vets', methods=['GET'])
 @login_required
+@admin_required
 def get_vets():
     """Get available veterinarians"""
-    # Check permission
-    if not has_permission(current_user, "reports:veterinary:daily:view"):
-        return jsonify({"error": "Access denied"}), 403
         
     try:
         project_id = request.args.get('project_id')
@@ -139,11 +137,9 @@ def get_vets():
 
 @bp.route('/data/dogs', methods=['GET'])
 @login_required
+@admin_required
 def get_dogs():
     """Get available dogs"""
-    # Check permission
-    if not has_permission(current_user, "reports:veterinary:daily:view"):
-        return jsonify({"error": "Access denied"}), 403
         
     try:
         project_id = request.args.get('project_id')
