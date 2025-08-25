@@ -4348,7 +4348,7 @@ def breeding_deworming():
     # Check permissions
     from utils import get_user_permissions
     permissions = get_user_permissions(current_user)
-    if not permissions.breeding:
+    if not permissions['training']:
         abort(403)
     
     from utils import get_user_assigned_projects
@@ -4373,7 +4373,7 @@ def breeding_deworming_new():
     # Check permissions  
     from utils import get_user_permissions
     permissions = get_user_permissions(current_user)
-    if not permissions.breeding:
+    if not permissions['training']:
         abort(403)
         
     from utils import get_user_assigned_projects
@@ -4381,8 +4381,9 @@ def breeding_deworming_new():
     assigned_dogs = []
     if assigned_projects:
         from models import Dog
-        assigned_dogs = Dog.query.join(models.project_dog_assignment).filter(
-            models.project_dog_assignment.c.project_id.in_([p.id for p in assigned_projects])
+        from models import project_dog_assignment
+        assigned_dogs = Dog.query.join(project_dog_assignment).filter(
+            project_dog_assignment.c.project_id.in_([p.id for p in assigned_projects])
         ).all()
     
     from models import Employee, Route, Unit, Reaction
@@ -4411,7 +4412,7 @@ def breeding_deworming_edit(id):
     # Check permissions
     from utils import get_user_permissions
     permissions = get_user_permissions(current_user)
-    if not permissions.breeding:
+    if not permissions['training']:
         abort(403)
     
     log = DewormingLog.query.get_or_404(id)
@@ -4428,8 +4429,9 @@ def breeding_deworming_edit(id):
     assigned_projects = get_user_assigned_projects(current_user)
     assigned_dogs = []
     if assigned_projects:
-        assigned_dogs = Dog.query.join(models.project_dog_assignment).filter(
-            models.project_dog_assignment.c.project_id.in_([p.id for p in assigned_projects])
+        from models import project_dog_assignment
+        assigned_dogs = Dog.query.join(project_dog_assignment).filter(
+            project_dog_assignment.c.project_id.in_([p.id for p in assigned_projects])
         ).all()
     
     employees = Employee.query.filter_by(active=True).all()
