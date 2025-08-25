@@ -82,8 +82,9 @@ class FeedingLogManager {
     }
 
     getCsrfToken() {
-        const meta = document.querySelector('meta[name="csrf-token"]');
-        return meta ? meta.getAttribute('content') : '';
+        // For now, we'll use an empty token since we're not using Flask-WTF CSRF
+        // In a production environment, you would want to implement proper CSRF protection
+        return '';
     }
 
     async loadFeedingLogs() {
