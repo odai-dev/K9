@@ -31,8 +31,16 @@ DEWORMING_PERMISSIONS = {
     "deworming:delete": "Delete Deworming Logs",
 }
 
+# Cleaning permission keys
+CLEANING_PERMISSIONS = {
+    "cleaning:view": "View Cleaning Logs",
+    "cleaning:create": "Create Cleaning Logs",
+    "cleaning:edit": "Edit Cleaning Logs",
+    "cleaning:delete": "Delete Cleaning Logs",
+}
+
 # Combined permissions
-ALL_PERMISSIONS = {**PM_DAILY_PERMISSIONS, **UNIFIED_MATRIX_PERMISSIONS, **EXCRETION_PERMISSIONS, **DEWORMING_PERMISSIONS}
+ALL_PERMISSIONS = {**PM_DAILY_PERMISSIONS, **UNIFIED_MATRIX_PERMISSIONS, **EXCRETION_PERMISSIONS, **DEWORMING_PERMISSIONS, **CLEANING_PERMISSIONS}
 
 # Default permissions for roles
 DEFAULT_ROLE_PERMISSIONS = {
@@ -49,6 +57,10 @@ DEFAULT_ROLE_PERMISSIONS = {
         "deworming:create",
         "deworming:edit",
         "deworming:delete",
+        "cleaning:view",
+        "cleaning:create",
+        "cleaning:edit",
+        "cleaning:delete",
     ],
     "PROJECT_MANAGER": [
         "reports:attendance:pm_daily:view",
@@ -59,6 +71,9 @@ DEFAULT_ROLE_PERMISSIONS = {
         "deworming:view",
         "deworming:create",
         "deworming:edit",
+        "cleaning:view",
+        "cleaning:create",
+        "cleaning:edit",
         # Note: delete and export permissions only if explicitly granted
     ]
 }

@@ -22,7 +22,9 @@ from models import (Dog, Employee, TrainingSession, VeterinaryVisit, ProductionC
                    # Excretion models
                    ExcretionLog, StoolColor, StoolConsistency, StoolContent, UrineColor, VomitColor, ExcretionPlace,
                    # Grooming models
-                   GroomingLog, GroomingYesNo, GroomingCleanlinessScore)
+                   GroomingLog, GroomingCleanlinessScore,
+                   # Cleaning models
+                   CleaningLog)
 from utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
 from permission_decorators import require_sub_permission
 import os
@@ -4340,6 +4342,70 @@ def breeding_grooming_edit(id):
                          yesno_choices=yesno_choices,
                          cleanliness_choices=cleanliness_choices,
                          grooming_log=grooming_log)
+
+# Cleaning Routes (Breeding Module)
+@main_bp.route('/breeding/cleaning')
+@login_required 
+@require_sub_permission('Breeding', 'النظافة (البيئة/القفص)', PermissionType.VIEW)
+def cleaning_list():
+    """Cleaning logs main page"""
+    # Get projects accessible by user
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        projects = Project.query.filter(Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])).all()
+    else:
+        projects = get_user_assigned_projects(current_user)
+    
+    # Get accessible dogs
+    accessible_dogs = get_user_accessible_dogs(current_user)
+    
+    return render_template('breeding/cleaning_list.html',
+                         projects=projects,
+                         dogs=accessible_dogs)
+
+@main_bp.route('/breeding/cleaning/new')
+@login_required
+@require_sub_permission('Breeding', 'النظافة (البيئة/القفص)', PermissionType.CREATE)
+def cleaning_new():
+    """Create new cleaning log entry"""
+    # Get projects accessible by user  
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        projects = Project.query.filter(Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])).all()
+    else:
+        projects = get_user_assigned_projects(current_user)
+    
+    # Get accessible dogs
+    accessible_dogs = get_user_accessible_dogs(current_user)
+    
+    return render_template('breeding/cleaning_form.html',
+                         projects=projects,
+                         dogs=accessible_dogs,
+                         cleaning_log=None,
+                         today=date.today())
+
+@main_bp.route('/breeding/cleaning/<id>/edit')
+@login_required
+@require_sub_permission('Breeding', 'النظافة (البيئة/القفص)', PermissionType.EDIT)
+def cleaning_edit(id):
+    """Edit existing cleaning log entry"""
+    cleaning_log = CleaningLog.query.get_or_404(id)
+    
+    # Get projects accessible by user
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        projects = Project.query.filter(Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])).all()
+    else:
+        projects = get_user_assigned_projects(current_user)
+        # Verify user has access to this log's project
+        if cleaning_log.project not in projects:
+            abort(403)
+    
+    # Get accessible dogs
+    accessible_dogs = get_user_accessible_dogs(current_user)
+    
+    return render_template('breeding/cleaning_form.html',
+                         projects=projects,
+                         dogs=accessible_dogs,
+                         cleaning_log=cleaning_log,
+                         today=date.today())
 
 @main_bp.route('/breeding/deworming')
 @login_required

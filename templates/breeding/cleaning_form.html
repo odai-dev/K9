@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}{% if cleaning_log %}تعديل{% else %}إضافة{% endif %} سجل النظافة - نظام K9{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" dir="rtl">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>
+                        <i class="fas fa-broom me-2"></i>
+                        {% if cleaning_log %}تعديل سجل النظافة{% else %}إضافة سجل نظافة جديد{% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form id="cleaningForm">
+                        {% if cleaning_log %}
+                        <input type="hidden" id="cleaning_id" value="{{ cleaning_log.id }}">
+                        {% endif %}
+                        
+                        <!-- Scope Section -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="project_id" class="form-label">المشروع <span class="text-danger">*</span></label>
+                                <select class="form-select" id="project_id" name="project_id" required>
+                                    <option value="">اختر المشروع</option>
+                                    {% for project in projects %}
+                                    <option value="{{ project.id }}" 
+                                        {% if cleaning_log and cleaning_log.project_id == project.id %}selected{% endif %}>
+                                        {{ project.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="date" class="form-label">التاريخ <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="date" name="date" 
+                                       value="{% if cleaning_log %}{{ cleaning_log.date }}{% else %}{{ today }}{% endif %}" required>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="time" class="form-label">الوقت <span class="text-danger">*</span></label>
+                                <input type="time" class="form-control" id="time" name="time" 
+                                       value="{% if cleaning_log %}{{ cleaning_log.time.strftime('%H:%M') }}{% endif %}" required>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="dog_id" class="form-label">الكلب <span class="text-danger">*</span></label>
+                                <select class="form-select" id="dog_id" name="dog_id" required>
+                                    <option value="">اختر الكلب</option>
+                                    {% for dog in dogs %}
+                                    <option value="{{ dog.id }}" 
+                                        {% if cleaning_log and cleaning_log.dog_id == dog.id %}selected{% endif %}>
+                                        {{ dog.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+
+                        <!-- Area Info Section -->
+                        <h5 class="mb-3"><i class="fas fa-map-marker-alt me-2"></i>معلومات المكان</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="area_type" class="form-label">نوع المكان</label>
+                                <select class="form-select" id="area_type" name="area_type">
+                                    <option value="">اختر نوع المكان</option>
+                                    <option value="بيت الكلب" {% if cleaning_log and cleaning_log.area_type == 'بيت الكلب' %}selected{% endif %}>بيت الكلب</option>
+                                    <option value="القفص" {% if cleaning_log and cleaning_log.area_type == 'القفص' %}selected{% endif %}>القفص</option>
+                                    <option value="ساحة خارجية" {% if cleaning_log and cleaning_log.area_type == 'ساحة خارجية' %}selected{% endif %}>ساحة خارجية</option>
+                                    <option value="منطقة مشتركة" {% if cleaning_log and cleaning_log.area_type == 'منطقة مشتركة' %}selected{% endif %}>منطقة مشتركة</option>
+                                    <option value="أخرى" {% if cleaning_log and cleaning_log.area_type == 'أخرى' %}selected{% endif %}>أخرى</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="cage_house_number" class="form-label">رقم البيت/القفص</label>
+                                <input type="text" class="form-control" id="cage_house_number" name="cage_house_number" 
+                                       value="{% if cleaning_log %}{{ cleaning_log.cage_house_number or '' }}{% endif %}" maxlength="60">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="alternate_place" class="form-label">المكان البديل</label>
+                                <input type="text" class="form-control" id="alternate_place" name="alternate_place" 
+                                       value="{% if cleaning_log %}{{ cleaning_log.alternate_place or '' }}{% endif %}" maxlength="120">
+                            </div>
+                        </div>
+
+                        <!-- Actions Section -->
+                        <h5 class="mb-3"><i class="fas fa-tasks me-2"></i>الإجراءات</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="cleaned_house" class="form-label">تنظيف البيت</label>
+                                <select class="form-select" id="cleaned_house" name="cleaned_house">
+                                    <option value="">لم يحدد</option>
+                                    <option value="نعم" {% if cleaning_log and cleaning_log.cleaned_house == 'نعم' %}selected{% endif %}>نعم</option>
+                                    <option value="لا" {% if cleaning_log and cleaning_log.cleaned_house == 'لا' %}selected{% endif %}>لا</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="washed_house" class="form-label">غسل البيت</label>
+                                <select class="form-select" id="washed_house" name="washed_house">
+                                    <option value="">لم يحدد</option>
+                                    <option value="نعم" {% if cleaning_log and cleaning_log.washed_house == 'نعم' %}selected{% endif %}>نعم</option>
+                                    <option value="لا" {% if cleaning_log and cleaning_log.washed_house == 'لا' %}selected{% endif %}>لا</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="disinfected_house" class="form-label">تعقيم البيت</label>
+                                <select class="form-select" id="disinfected_house" name="disinfected_house">
+                                    <option value="">لم يحدد</option>
+                                    <option value="نعم" {% if cleaning_log and cleaning_log.disinfected_house == 'نعم' %}selected{% endif %}>نعم</option>
+                                    <option value="لا" {% if cleaning_log and cleaning_log.disinfected_house == 'لا' %}selected{% endif %}>لا</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Group Disinfection -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="group_disinfection" class="form-label">تطهير بيوت مجموعة كلاب</label>
+                                <select class="form-select" id="group_disinfection" name="group_disinfection">
+                                    <option value="">لم يحدد</option>
+                                    <option value="نعم" {% if cleaning_log and cleaning_log.group_disinfection == 'نعم' %}selected{% endif %}>نعم</option>
+                                    <option value="لا" {% if cleaning_log and cleaning_log.group_disinfection == 'لا' %}selected{% endif %}>لا</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="group_description" class="form-label">وصف المجموعة</label>
+                                <input type="text" class="form-control" id="group_description" name="group_description" 
+                                       value="{% if cleaning_log %}{{ cleaning_log.group_description or '' }}{% endif %}" maxlength="120">
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+
+                        <!-- Materials Used -->
+                        <h5 class="mb-3"><i class="fas fa-flask me-2"></i>المواد المستخدمة</h5>
+                        <div id="materialsContainer">
+                            <!-- Materials will be populated by JavaScript -->
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm mb-3" onclick="addMaterialRow()">
+                            <i class="fas fa-plus"></i> إضافة مادة
+                        </button>
+
+                        <!-- Notes -->
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">ملاحظات</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3">{% if cleaning_log %}{{ cleaning_log.notes or '' }}{% endif %}</textarea>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="row">
+                            <div class="col-md-12 text-center">
+                                <button type="submit" class="btn btn-success me-2">
+                                    <i class="fas fa-save"></i> حفظ
+                                </button>
+                                <a href="{{ url_for('main.cleaning_list') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> إلغاء
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/cleaning.js') }}"></script>
+{% endblock %}
