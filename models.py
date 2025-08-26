@@ -1729,3 +1729,53 @@ class DewormingLog(db.Model):
         return f'<DewormingLog {self.id}: {self.dog_id} on {self.date} at {self.time}>'
 
 
+# ---------- CleaningLog (per dog action) ----------
+class CleaningLog(db.Model):
+    __tablename__ = "cleaning_log"
+
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+
+    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    time = db.Column(db.Time, nullable=False)
+
+    dog_id = db.Column(get_uuid_column(), db.ForeignKey("dog.id", ondelete="CASCADE"), nullable=False)
+    recorder_employee_id = db.Column(get_uuid_column(), db.ForeignKey("employee.id", ondelete="SET NULL"), nullable=True)
+
+    # Target area info (using ASCII column names)
+    area_type = db.Column(db.String(50), nullable=True)                   # نوع المكان - بيت الكلب | القفص | ساحة خارجية | ...
+    cage_house_number = db.Column(db.String(60), nullable=True)           # رقم البيت او القفص - kennel/cage number
+    alternate_place = db.Column(db.String(120), nullable=True)            # مكان بديل - alternate place used
+
+    # Actions (per your spec) - using ASCII column names
+    cleaned_house = db.Column(db.String(10), nullable=True)               # تنظيف البيت - sweeping/cleaning
+    washed_house = db.Column(db.String(10), nullable=True)                # غسل البيت - washing house
+    disinfected_house = db.Column(db.String(10), nullable=True)           # تعقيم البيت - disinfecting house
+
+    group_disinfection = db.Column(db.String(10), nullable=True)          # تطهير بيوت مجموعة كلاب - group disinfection
+    group_description = db.Column(db.String(120), nullable=True)          # وصف المجموعة - e.g., "الصف A" or "مجموعة 1"
+
+    materials_used = db.Column(JSON, nullable=True)                       # المواد المستخدمة - list like [{"name":"هيبوكلوريت","qty":"100 مل"}]
+    notes = db.Column(Text, nullable=True)                                # ملاحظات
+
+    # For cadence computation (not persisted as enums, computed in API)
+    created_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    project = db.relationship('Project', backref='cleaning_logs')
+    dog = db.relationship('Dog', backref='cleaning_logs')
+    recorder_employee = db.relationship('Employee', backref='cleaning_logs')
+    created_by_user = db.relationship('User', backref='cleaning_logs')
+
+    __table_args__ = (
+        db.Index("ix_cleaning_project_date", "project_id", "date"),
+        db.Index("ix_cleaning_dog_datetime", "dog_id", "date", "time"),
+        db.UniqueConstraint("project_id","dog_id","date","time", name="uq_cleaning_project_dog_dt"),
+    )
+
+    def __repr__(self):
+        return f'<CleaningLog {self.id}: {self.dog_id} on {self.date} at {self.time}>'
+
+

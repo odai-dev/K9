@@ -46,6 +46,7 @@ PERMISSION_STRUCTURE = {
         "حذف الفحص الظاهري": ["DELETE"],
         "تصدير تقارير الفحص": ["EXPORT"],
         "العناية (الاستحمام)": ["VIEW", "CREATE", "EDIT", "DELETE"],
+        "النظافة (البيئة/القفص)": ["VIEW", "CREATE", "EDIT", "DELETE"],
     },
     "Projects": {
         "إنشاء مشروع": ["CREATE"],

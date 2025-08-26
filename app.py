@@ -140,6 +140,16 @@ with app.app_context():
     except Exception as e:
         print(f"⚠ Warning: Could not register veterinary reports: {e}")
         # Continue without veterinary reports for now
+        
+    # Register Cleaning API blueprint
+    try:
+        from api_cleaning import bp as cleaning_api_bp
+        app.register_blueprint(cleaning_api_bp)
+        print("✓ Cleaning API registered successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Could not register cleaning API: {e}")
+        # Continue without cleaning API for now
     
     
     # Add route to serve uploaded files
