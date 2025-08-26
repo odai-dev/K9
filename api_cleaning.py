@@ -2,6 +2,7 @@
 API endpoints for Cleaning Log management
 Provides CRUD operations and listing functionality
 """
+# -*- coding: utf-8 -*-
 
 from flask import Blueprint, request, jsonify, abort
 from flask_login import login_required, current_user
@@ -163,7 +164,7 @@ def create_cleaning_log():
             return jsonify({'error': f'Invalid date/time format: {str(e)}'}), 400
         
         # Validate group disinfection
-        if data.get('group_disinfection') == 'نعم' and not data.get('group_description'):
+        if data.get('group_disinfection') == u'نعم' and not data.get('group_description'):
             return jsonify({'error': 'Group description is required when group disinfection is Yes'}), 400
         
         # Validate at least one action
@@ -171,7 +172,7 @@ def create_cleaning_log():
         has_materials = data.get('materials_used') and len(data.get('materials_used', [])) > 0
         has_notes = data.get('notes') and data.get('notes').strip()
         
-        if not any(action == 'نعم' for action in actions) and not has_materials and not has_notes:
+        if not any(action == u'نعم' for action in actions) and not has_materials and not has_notes:
             return jsonify({'error': 'At least one action, materials, or notes must be provided'}), 400
         
         # Check for duplicate entry
@@ -248,7 +249,7 @@ def update_cleaning_log(log_id):
             return jsonify({'error': f'Invalid date/time format: {str(e)}'}), 400
         
         # Validate group disinfection
-        if data.get('group_disinfection') == 'نعم' and not data.get('group_description'):
+        if data.get('group_disinfection') == u'نعم' and not data.get('group_description'):
             return jsonify({'error': 'Group description is required when group disinfection is Yes'}), 400
         
         # Check for duplicate entry (excluding current record)
@@ -326,10 +327,14 @@ def calculate_cleaning_kpis(query, date_to_str=None):
     try:
         # Basic counts
         total = query.count()
-        cleaned_yes = query.filter(CleaningLog.cleaned_house == 'نعم').count()
-        washed_yes = query.filter(CleaningLog.washed_house == 'نعم').count()
-        disinfected_yes = query.filter(CleaningLog.disinfected_house == 'نعم').count()
-        group_disinfections = query.filter(CleaningLog.group_disinfection == 'نعم').count()
+        
+        # Use Unicode strings explicitly for Arabic text
+        yes_value = u'نعم'
+        
+        cleaned_yes = query.filter(CleaningLog.cleaned_house == yes_value).count()
+        washed_yes = query.filter(CleaningLog.washed_house == yes_value).count()
+        disinfected_yes = query.filter(CleaningLog.disinfected_house == yes_value).count()
+        group_disinfections = query.filter(CleaningLog.group_disinfection == yes_value).count()
         
         # Cadence calculations
         reference_date = date.today()
@@ -352,7 +357,7 @@ def calculate_cleaning_kpis(query, date_to_str=None):
             last_wash = CleaningLog.query.filter(
                 and_(
                     CleaningLog.dog_id == dog_id,
-                    CleaningLog.washed_house == 'نعم'
+                    CleaningLog.washed_house == yes_value
                 )
             ).order_by(CleaningLog.date.desc(), CleaningLog.time.desc()).first()
             
@@ -370,7 +375,7 @@ def calculate_cleaning_kpis(query, date_to_str=None):
             last_disinfect = CleaningLog.query.filter(
                 and_(
                     CleaningLog.dog_id == dog_id,
-                    CleaningLog.disinfected_house == 'نعم'
+                    CleaningLog.disinfected_house == yes_value
                 )
             ).order_by(CleaningLog.date.desc(), CleaningLog.time.desc()).first()
             
@@ -397,7 +402,9 @@ def calculate_cleaning_kpis(query, date_to_str=None):
         }
         
     except Exception as e:
-        print(f"Error calculating KPIs: {e}")
+        import traceback
+        print(f"Error calculating KPIs: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
         return {
             'total': 0,
             'cleaned_yes': 0,
