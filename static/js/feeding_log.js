@@ -140,7 +140,7 @@ class FeedingLogManager {
             });
             if (projectsResponse.ok) {
                 const projectsData = await projectsResponse.json();
-                this.populateSelect('projectFilter', projectsData.projects, 'id', 'name');
+                this.populateSelect('projectFilter', projectsData, 'id', 'name');
             }
             
             // Load dogs for filter
@@ -149,7 +149,7 @@ class FeedingLogManager {
             });
             if (dogsResponse.ok) {
                 const dogsData = await dogsResponse.json();
-                this.populateSelect('dogFilter', dogsData.dogs, 'id', dog => `${dog.name} (${dog.code})`);
+                this.populateSelect('dogFilter', dogsData, 'id', dog => `${dog.name} (${dog.code})`);
             }
             
         } catch (error) {
