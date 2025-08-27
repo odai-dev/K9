@@ -1220,13 +1220,27 @@ def projects():
 def project_add():
     if request.method == 'POST':
         try:
+            print("=== تشخيص إضافة المشروع ===")
+            print(f"Form data: {dict(request.form)}")
+            
+            # التحقق من وجود البيانات المطلوبة
+            if not request.form.get('name'):
+                flash('اسم المشروع مطلوب', 'error')
+                raise Exception("Project name is required")
+            
+            if not request.form.get('start_date'):
+                flash('تاريخ البداية مطلوب', 'error')
+                raise Exception("Start date is required")
+            
             # Determine the manager ID
             manager_id = current_user.id if current_user.role == UserRole.PROJECT_MANAGER else request.form.get('manager_id')
+            print(f"Manager ID: {manager_id}")
             
             # Generate unique project code
             import random
             import string
             code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+            print(f"Generated code: {code}")
             
             project = Project()
             project.name = request.form['name']
@@ -1240,10 +1254,13 @@ def project_add():
             project.mission_type = request.form.get('mission_type')
             project.priority = request.form.get('priority', 'MEDIUM')
             
+            print(f"Project object created: {project.name}, {project.code}")
+            
             # Validate project manager assignment if provided
             if manager_id:
                 # Find the employee profile for project manager
                 employee = Employee.query.get(manager_id)
+                print(f"Employee found: {employee}")
                 if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
                     # Validate one-project-per-manager constraint
                     can_assign, error_msg = validate_project_manager_assignment(employee.id, project)
@@ -1252,12 +1269,15 @@ def project_add():
                         raise Exception("Project manager assignment validation failed")
                     
                     project.project_manager_id = employee.id
+                    print(f"Project manager assigned: {employee.name}")
                 else:
                     flash('الموظف المحدد ليس مدير مشروع صالح', 'error')
                     raise Exception("Invalid project manager")
             
+            print("Adding project to database...")
             db.session.add(project)
             db.session.commit()
+            print("Project committed successfully!")
             
             log_audit(current_user.id, AuditAction.CREATE, 'Project', project.id, f'مشروع جديد: {project.name}', None, {'name': project.name})
             flash('تم إنشاء المشروع بنجاح', 'success')
@@ -1265,6 +1285,9 @@ def project_add():
             
         except Exception as e:
             db.session.rollback()
+            print(f"Error creating project: {str(e)}")
+            import traceback
+            traceback.print_exc()
             flash(f'حدث خطأ أثناء إنشاء المشروع: {str(e)}', 'error')
     
     # Get available data for the form

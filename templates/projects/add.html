@@ -105,7 +105,7 @@
                                 <option value="">اختر مدير المشروع</option>
                                 {% for manager in managers %}
                                     <option value="{{ manager.id }}">
-                                        {{ manager.full_name }} ({{ manager.username }})
+                                        {{ manager.name }} ({{ manager.employee_id }})
                                         {% if manager.email %} - {{ manager.email }}{% endif %}
                                     </option>
                                 {% endfor %}
@@ -114,31 +114,6 @@
                     </div>
                     {% endif %}
 
-                    <!-- Employee Assignment -->
-                    {% if employees %}
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">تعيين الموظفين</h6>
-                        </div>
-                        
-                        <div class="col-12 mb-3">
-                            <label class="form-label">الموظفين المكلفين بالمشروع</label>
-                            <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
-                                {% for employee in employees %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" value="{{ employee.id }}" 
-                                           id="employee_{{ employee.id }}" name="employee_ids">
-                                    <label class="form-check-label" for="employee_{{ employee.id }}">
-                                        <strong>{{ employee.name }}</strong> - {{ employee.role.value }}
-                                        <br><small class="text-muted">{{ employee.employee_id }}</small>
-                                    </label>
-                                </div>
-                                {% endfor %}
-                            </div>
-                            <small class="form-text text-muted">اختر الموظفين الذين سيعملون في هذا المشروع</small>
-                        </div>
-                    </div>
-                    {% endif %}
 
 
 
