@@ -1264,7 +1264,7 @@ def project_add():
     
     # Get available data for the form
     if current_user.role == UserRole.GENERAL_ADMIN:
-        managers = Employee.query.filter_by(role=EmployeeRole.PROJECT_MANAGER, active=True).all()
+        managers = Employee.query.filter_by(role=EmployeeRole.PROJECT_MANAGER, is_active=True).all()
     else:
         managers = []  # PROJECT_MANAGER users can only assign to themselves
     
