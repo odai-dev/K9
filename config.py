@@ -17,9 +17,17 @@ class Config:
         SQLALCHEMY_ENGINE_OPTIONS = {
             "pool_recycle": 300,
             "pool_pre_ping": True,
+            "connect_args": {
+                "charset": "utf8mb4",
+                "client_encoding": "utf8"
+            }
         }
     else:
-        SQLALCHEMY_ENGINE_OPTIONS = {}
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "connect_args": {
+                "check_same_thread": False
+            }
+        }
     
     @staticmethod
     def is_sqlite():

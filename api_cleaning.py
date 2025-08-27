@@ -172,11 +172,11 @@ def create_cleaning_log():
         has_materials = data.get('materials_used') and len(data.get('materials_used', [])) > 0
         has_notes = data.get('notes') and data.get('notes').strip()
         
-        if not any(action == u'نعم' for action in actions) and not has_materials and not has_notes:
+        if not any(action == 'نعم' for action in actions) and not has_materials and not has_notes:
             return jsonify({'error': 'At least one action, materials, or notes must be provided'}), 400
         
         # Check for duplicate entry
-        existing = CleaningLog.query.filter_and(
+        existing = CleaningLog.query.filter(
             CleaningLog.project_id == data['project_id'],
             CleaningLog.dog_id == data['dog_id'],
             CleaningLog.date == log_date,
@@ -329,7 +329,7 @@ def calculate_cleaning_kpis(query, date_to_str=None):
         total = query.count()
         
         # Use Unicode strings explicitly for Arabic text
-        yes_value = u'نعم'
+        yes_value = 'نعم'
         
         cleaned_yes = query.filter(CleaningLog.cleaned_house == yes_value).count()
         washed_yes = query.filter(CleaningLog.washed_house == yes_value).count()
