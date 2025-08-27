@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
 from datetime import datetime, date
+from sqlalchemy import func
 from models import (
     db, Project, Employee, Dog, UserRole, AttendanceStatus,
     FeedingLog, PrepMethod, BodyConditionScale, DailyCheckupLog, PermissionType, DogStatus,
@@ -385,23 +386,22 @@ def feeding_log_create():
                 return jsonify({'error': 'كتلة الجسم غير صحيحة'}), 400
         
         # Create new feeding log entry
-        feeding_log = FeedingLog(
-            project_id=data['project_id'],
-            date=parsed_date,
-            time=parsed_time,
-            dog_id=data['dog_id'],
-            recorder_employee_id=data.get('recorder_employee_id'),
-            meal_type_fresh=data.get('meal_type_fresh', False),
-            meal_type_dry=data.get('meal_type_dry', False),
-            meal_name=data.get('meal_name'),
-            prep_method=prep_method,
-            grams=grams,
-            water_ml=water_ml,
-            supplements=supplements if supplements else None,
-            body_condition=body_condition,
-            notes=data.get('notes'),
-            created_by_user_id=current_user.id
-        )
+        feeding_log = FeedingLog()
+        feeding_log.project_id = data['project_id']
+        feeding_log.date = parsed_date
+        feeding_log.time = parsed_time
+        feeding_log.dog_id = data['dog_id']
+        feeding_log.recorder_employee_id = data.get('recorder_employee_id')
+        feeding_log.meal_type_fresh = data.get('meal_type_fresh', False)
+        feeding_log.meal_type_dry = data.get('meal_type_dry', False)
+        feeding_log.meal_name = data.get('meal_name')
+        feeding_log.prep_method = prep_method
+        feeding_log.grams = grams
+        feeding_log.water_ml = water_ml
+        feeding_log.supplements = supplements if supplements else None
+        feeding_log.body_condition = body_condition
+        feeding_log.notes = data.get('notes')
+        feeding_log.created_by_user_id = current_user.id
         
         db.session.add(feeding_log)
         db.session.commit()
