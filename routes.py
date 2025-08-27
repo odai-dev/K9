@@ -136,7 +136,7 @@ def dogs_add():
             dog.color = request.form.get('color')
             dog.weight = float(request.form['weight']) if request.form.get('weight') and request.form['weight'].strip() else None
             dog.height = float(request.form['height']) if request.form.get('height') and request.form['height'].strip() else None
-            dog.microchip_id = request.form.get('microchip_id')
+            dog.microchip_id = request.form.get('microchip_id') if request.form.get('microchip_id') and request.form.get('microchip_id').strip() else None
             dog.location = request.form.get('location')
             dog.specialization = request.form.get('specialization')
             dog.current_status = DogStatus.ACTIVE
@@ -228,7 +228,7 @@ def dogs_edit(dog_id):
             dog.color = request.form.get('color')
             dog.weight = float(request.form['weight']) if request.form.get('weight') else None
             dog.height = float(request.form['height']) if request.form.get('height') else None
-            dog.microchip_id = request.form.get('microchip_id')
+            dog.microchip_id = request.form.get('microchip_id') if request.form.get('microchip_id') and request.form.get('microchip_id').strip() else None
             dog.current_status = DogStatus(request.form['current_status'])
             dog.health_notes = request.form.get('health_notes')
             dog.training_notes = request.form.get('training_notes')
