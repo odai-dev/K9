@@ -1171,7 +1171,12 @@ def projects():
     if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.order_by(Project.created_at.desc()).all()
     else:
-        projects = Project.query.filter_by(manager_id=current_user.id).order_by(Project.created_at.desc()).all()
+        # PROJECT_MANAGER users - get projects where they are assigned as project manager via Employee relationship
+        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        if employee:
+            projects = Project.query.filter_by(project_manager_id=employee.id).order_by(Project.created_at.desc()).all()
+        else:
+            projects = []
     
     # Add assignment counts to each project
     for project in projects:
