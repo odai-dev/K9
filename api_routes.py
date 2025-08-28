@@ -937,8 +937,8 @@ def excretion_create():
         if not data:
             return jsonify({'error': 'لم يتم تقديم بيانات'}), 400
         
-        # Validate required fields
-        required_fields = ['project_id', 'date', 'time', 'dog_id']
+        # Validate required fields (project_id is optional)
+        required_fields = ['date', 'time', 'dog_id']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'الحقل {field} مطلوب'}), 400
@@ -981,7 +981,7 @@ def excretion_create():
         
         # Create excretion log
         excretion_log = ExcretionLog()
-        excretion_log.project_id = data['project_id']
+        excretion_log.project_id = int(data['project_id']) if data.get('project_id') else None
         excretion_log.date = parsed_date
         excretion_log.time = parsed_time
         excretion_log.dog_id = data['dog_id']
@@ -1253,9 +1253,9 @@ def grooming_create():
     try:
         data = request.json
         
-        # Validate required fields
-        if not all(k in data for k in ['project_id', 'date', 'time', 'dog_id']):
-            return jsonify({'error': 'الحقول المطلوبة: المشروع، التاريخ، الوقت، الكلب'}), 400
+        # Validate required fields (project_id is optional)
+        if not all(k in data for k in ['date', 'time', 'dog_id']):
+            return jsonify({'error': 'الحقول المطلوبة: التاريخ، الوقت، الكلب'}), 400
         
         # Check PROJECT_MANAGER access to project
         if current_user.role == UserRole.PROJECT_MANAGER:
@@ -1303,7 +1303,7 @@ def grooming_create():
         
         # Create new grooming log
         grooming_log = GroomingLog()
-        grooming_log.project_id = data['project_id']
+        grooming_log.project_id = int(data['project_id']) if data.get('project_id') else None
         grooming_log.date = log_date
         grooming_log.time = log_time
         grooming_log.dog_id = data['dog_id']
@@ -1625,8 +1625,8 @@ def api_deworming_create():
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
         
-        # Validate required fields
-        required_fields = ['project_id', 'date', 'time', 'dog_id']
+        # Validate required fields (project_id is optional)
+        required_fields = ['date', 'time', 'dog_id']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'Missing required field: {field}'}), 400
@@ -1691,7 +1691,7 @@ def api_deworming_create():
         
         # Create new deworming log
         new_log = DewormingLog()
-        new_log.project_id = data['project_id']
+        new_log.project_id = int(data['project_id']) if data.get('project_id') else None
         new_log.date = log_date
         new_log.time = log_time
         new_log.dog_id = data['dog_id']
