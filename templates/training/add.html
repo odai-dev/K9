@@ -60,14 +60,7 @@
                             <select class="form-select" id="category" name="category" required>
                                 <option value="">اختر نوع التدريب</option>
                                 {% for category in categories %}
-                                    <option value="{{ category.value }}">
-                                        {% if category.value == 'OBEDIENCE' %}طاعة
-                                        {% elif category.value == 'DETECTION' %}كشف
-                                        {% elif category.value == 'AGILITY' %}رشاقة
-                                        {% elif category.value == 'ATTACK' %}هجوم
-                                        {% elif category.value == 'FITNESS' %}لياقة
-                                        {% endif %}
-                                    </option>
+                                    <option value="{{ category.name }}">{{ category.value }}</option>
                                 {% endfor %}
                             </select>
                         </div>
