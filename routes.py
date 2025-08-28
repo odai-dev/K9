@@ -185,7 +185,8 @@ def dogs_view(dog_id):
     ).order_by(ProductionCycle.created_at.desc()).all()
     
     return render_template('dogs/view.html', dog=dog, training_sessions=training_sessions, 
-                         vet_visits=vet_visits, production_cycles=production_cycles)
+                         vet_visits=vet_visits, production_cycles=production_cycles, 
+                         today=datetime.now().date())
 
 @main_bp.route('/dogs/<dog_id>/edit', methods=['GET', 'POST'])
 @login_required
