@@ -2443,7 +2443,10 @@ def reports_preview():
             assigned_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
             sessions = sessions.filter(TrainingSession.dog_id.in_(assigned_ids))
         if filters.get('category'):
-            sessions = sessions.filter(TrainingSession.category == filters['category'])
+            if isinstance(filters['category'], list):
+                sessions = sessions.filter(TrainingSession.category.in_(filters['category']))
+            else:
+                sessions = sessions.filter(TrainingSession.category == filters['category'])
         sessions = sessions.all()
         
         category_map = {'OBEDIENCE': 'طاعة', 'DETECTION': 'كشف', 'AGILITY': 'رشاقة', 'ATTACK': 'هجوم', 'FITNESS': 'لياقة'}
@@ -2467,7 +2470,10 @@ def reports_preview():
             assigned_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
             visits = visits.filter(VeterinaryVisit.dog_id.in_(assigned_ids))
         if filters.get('visit_type'):
-            visits = visits.filter(VeterinaryVisit.visit_type == filters['visit_type'])
+            if isinstance(filters['visit_type'], list):
+                visits = visits.filter(VeterinaryVisit.visit_type.in_(filters['visit_type']))
+            else:
+                visits = visits.filter(VeterinaryVisit.visit_type == filters['visit_type'])
         visits = visits.all()
         
         visit_type_map = {'ROUTINE': 'روتينية', 'EMERGENCY': 'طارئة', 'VACCINATION': 'تطعيم'}
@@ -2488,7 +2494,10 @@ def reports_preview():
             cycles = cycles.filter(ProductionCycle.mating_date >= start_date,
                                  ProductionCycle.mating_date <= end_date)
         if filters.get('cycle_type'):
-            cycles = cycles.filter(ProductionCycle.cycle_type == filters['cycle_type'])
+            if isinstance(filters['cycle_type'], list):
+                cycles = cycles.filter(ProductionCycle.cycle_type.in_(filters['cycle_type']))
+            else:
+                cycles = cycles.filter(ProductionCycle.cycle_type == filters['cycle_type'])
         cycles = cycles.all()
         
         cycle_map = {'NATURAL': 'طبيعي', 'ARTIFICIAL': 'صناعي'}
@@ -2579,7 +2588,10 @@ def reports_preview():
             projects = projects.filter(Project.start_date >= start_date,
                                      Project.start_date <= end_date)
         if filters.get('project_status'):
-            projects = projects.filter(Project.status == filters['project_status'])
+            if isinstance(filters['project_status'], list):
+                projects = projects.filter(Project.status.in_(filters['project_status']))
+            else:
+                projects = projects.filter(Project.status == filters['project_status'])
         projects = projects.all()
         
         status_map = {'ACTIVE': 'نشط', 'COMPLETED': 'منجز', 'CANCELLED': 'ملغى', 'PLANNED': 'مخطط'}
@@ -2594,12 +2606,22 @@ def reports_preview():
                 'الموقع': p.location or ''
             })
     
-    return jsonify({
-        'records': records,
-        'total': len(records),
-        'filtered': len(records),
-        'report_type': report_type
-    })
+    try:
+        return jsonify({
+            'records': records,
+            'total': len(records),
+            'filtered': len(records),
+            'report_type': report_type
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error in reports_preview: {str(e)}")
+        return jsonify({
+            'error': f'حدث خطأ في معالجة التقرير: {str(e)}',
+            'records': [],
+            'total': 0,
+            'filtered': 0,
+            'report_type': report_type
+        }), 500
 
 @main_bp.route('/reports/preview-pdf', methods=['POST'])
 @login_required

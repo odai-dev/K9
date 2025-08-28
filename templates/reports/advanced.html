@@ -252,7 +252,7 @@
                                             <option value="">جميع المدربين</option>
                                             {% for employee in employees %}
                                                 {% if employee.role.value == 'TRAINER' %}
-                                                <option value="{{ employee.id }}">{{ employee.name }}</option>
+                                                <option value="{{ employee.id }}">{{ employee.name or 'مدرب' }}</option>
                                                 {% endif %}
                                             {% endfor %}
                                         </select>
@@ -275,7 +275,7 @@
                                             <option value="">جميع الأطباء</option>
                                             {% for employee in employees %}
                                                 {% if employee.role.value == 'VET' %}
-                                                <option value="{{ employee.id }}">{{ employee.name }}</option>
+                                                <option value="{{ employee.id }}">{{ employee.name or 'طبيب بيطري' }}</option>
                                                 {% endif %}
                                             {% endfor %}
                                         </select>
@@ -717,16 +717,24 @@ function applyFilters() {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
-        currentData = data.records;
-        totalRecords = data.total;
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        currentData = data.records || [];
+        totalRecords = data.total || 0;
         updateSummary(data);
         updateTable();
     })
     .catch(error => {
         console.error('Error:', error);
-        document.getElementById('dataTable').innerHTML = '<tbody><tr><td colspan="100%" class="text-center text-danger"><i class="fas fa-exclamation-triangle"></i> حدث خطأ في تحميل البيانات</td></tr></tbody>';
+        document.getElementById('dataTable').innerHTML = `<tbody><tr><td colspan="100%" class="text-center text-danger"><i class="fas fa-exclamation-triangle"></i> حدث خطأ: ${error.message}</td></tr></tbody>`;
     });
 }
 
@@ -839,13 +847,18 @@ function previewReport() {
         method: 'POST',
         body: formData
     })
-    .then(response => response.text())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text();
+    })
     .then(html => {
         document.getElementById('previewData').innerHTML = html;
     })
     .catch(error => {
         console.error('Error:', error);
-        document.getElementById('previewData').innerHTML = '<div class="alert alert-danger">حدث خطأ في تحميل المعاينة</div>';
+        document.getElementById('previewData').innerHTML = `<div class="alert alert-danger">حدث خطأ في تحميل المعاينة: ${error.message}</div>`;
     });
 }
 
