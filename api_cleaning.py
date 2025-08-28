@@ -134,8 +134,8 @@ def create_cleaning_log():
     try:
         data = request.get_json()
         
-        # Validate required fields
-        required_fields = ['project_id', 'date', 'time', 'dog_id']
+        # Validate required fields (project_id is optional)
+        required_fields = ['date', 'time', 'dog_id']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'Missing required field: {field}'}), 400
@@ -176,8 +176,9 @@ def create_cleaning_log():
             return jsonify({'error': 'At least one action, materials, or notes must be provided'}), 400
         
         # Check for duplicate entry
+        project_id_value = int(data['project_id']) if data.get('project_id') else None
         existing = CleaningLog.query.filter(
-            CleaningLog.project_id == data['project_id'],
+            CleaningLog.project_id == project_id_value,
             CleaningLog.dog_id == data['dog_id'],
             CleaningLog.date == log_date,
             CleaningLog.time == log_time
@@ -188,7 +189,7 @@ def create_cleaning_log():
         
         # Create new log
         cleaning_log = CleaningLog()
-        cleaning_log.project_id = data['project_id']
+        cleaning_log.project_id = int(data['project_id']) if data.get('project_id') else None
         cleaning_log.dog_id = data['dog_id']
         cleaning_log.date = log_date
         cleaning_log.time = log_time
@@ -235,8 +236,8 @@ def update_cleaning_log(log_id):
         
         data = request.get_json()
         
-        # Validate required fields
-        required_fields = ['project_id', 'date', 'time', 'dog_id']
+        # Validate required fields (project_id is optional)
+        required_fields = ['date', 'time', 'dog_id']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'Missing required field: {field}'}), 400
@@ -253,9 +254,10 @@ def update_cleaning_log(log_id):
             return jsonify({'error': 'Group description is required when group disinfection is Yes'}), 400
         
         # Check for duplicate entry (excluding current record)
+        project_id_value = int(data['project_id']) if data.get('project_id') else None
         existing = CleaningLog.query.filter(
             and_(
-                CleaningLog.project_id == data['project_id'],
+                CleaningLog.project_id == project_id_value,
                 CleaningLog.dog_id == data['dog_id'],
                 CleaningLog.date == log_date,
                 CleaningLog.time == log_time,
@@ -267,7 +269,7 @@ def update_cleaning_log(log_id):
             return jsonify({'error': 'A cleaning log already exists for this dog, project, date, and time'}), 400
         
         # Update log
-        cleaning_log.project_id = data['project_id']
+        cleaning_log.project_id = int(data['project_id']) if data.get('project_id') else None
         cleaning_log.dog_id = data['dog_id']
         cleaning_log.date = log_date
         cleaning_log.time = log_time
