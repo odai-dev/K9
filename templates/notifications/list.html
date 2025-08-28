@@ -1,0 +1,752 @@
+{% extends "base.html" %}
+
+{% block title %}الإشعارات{% endblock %}
+
+{% block extra_css %}
+<style>
+.notifications-container {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+    min-height: 70vh;
+}
+
+.notification-item {
+    background: white;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+    border-left: 4px solid #e9ecef;
+}
+
+.notification-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.notification-item.unread {
+    border-left-color: #007bff;
+    background: linear-gradient(135deg, rgba(0,123,255,0.02) 0%, rgba(0,86,179,0.02) 100%);
+}
+
+.notification-item.urgent {
+    border-left-color: #dc3545;
+    background: linear-gradient(135deg, rgba(220,53,69,0.05) 0%, rgba(189,33,48,0.05) 100%);
+}
+
+.notification-item.high {
+    border-left-color: #ffc107;
+    background: linear-gradient(135deg, rgba(255,193,7,0.05) 0%, rgba(224,168,0,0.05) 100%);
+}
+
+.notification-header {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    border-radius: 10px 10px 0 0;
+}
+
+.filter-tabs {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.filter-tabs .nav-link {
+    border: none;
+    border-radius: 8px;
+    margin: 0 5px;
+    transition: all 0.3s ease;
+}
+
+.filter-tabs .nav-link.active {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+}
+
+.notification-actions {
+    display: flex;
+    gap: 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.notification-item:hover .notification-actions {
+    opacity: 1;
+}
+
+.priority-badge {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border-radius: 12px;
+}
+
+.connection-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.85rem;
+}
+
+.connection-connected {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+    border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.connection-disconnected {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.bulk-actions {
+    background: rgba(0,123,255,0.1);
+    border: 1px solid rgba(0,123,255,0.3);
+    border-radius: 8px;
+    padding: 10px 15px;
+    margin-bottom: 1rem;
+    display: none;
+}
+
+.bulk-actions.show {
+    display: block;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="card notification-header mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-1">
+                                <i class="fas fa-bell me-2"></i>
+                                الإشعارات
+                            </h2>
+                            <p class="mb-0 opacity-75">إدارة وعرض جميع الإشعارات</p>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <div id="connection-status" class="connection-indicator connection-disconnected">
+                                <i class="fas fa-circle"></i>
+                                <span>غير متصل</span>
+                            </div>
+                            <a href="/notifications/settings" class="btn btn-light">
+                                <i class="fas fa-cog me-1"></i>
+                                الإعدادات
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters and Stats -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card filter-tabs">
+                        <div class="card-body py-2">
+                            <ul class="nav nav-pills justify-content-center">
+                                <li class="nav-item">
+                                    <a class="nav-link active" data-filter="all" href="#">
+                                        <i class="fas fa-list me-1"></i>
+                                        الكل <span id="count-all" class="badge bg-secondary ms-1">0</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" data-filter="unread" href="#">
+                                        <i class="fas fa-circle me-1"></i>
+                                        غير مقروء <span id="count-unread" class="badge bg-primary ms-1">0</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" data-filter="urgent" href="#">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                        عاجل <span id="count-urgent" class="badge bg-danger ms-1">0</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" data-filter="today" href="#">
+                                        <i class="fas fa-calendar-day me-1"></i>
+                                        اليوم <span id="count-today" class="badge bg-success ms-1">0</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary" onclick="refreshNotifications()">
+                            <i class="fas fa-sync-alt me-1"></i>
+                            تحديث
+                        </button>
+                        <button class="btn btn-outline-success" onclick="markAllAsRead()">
+                            <i class="fas fa-check-double me-1"></i>
+                            تحديد الكل كمقروء
+                        </button>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="sortNotifications('date')">ترتيب بالتاريخ</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="sortNotifications('priority')">ترتيب بالأولوية</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="sortNotifications('type')">ترتيب بالنوع</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bulk Actions -->
+            <div id="bulk-actions" class="bulk-actions">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>تم تحديد <span id="selected-count">0</span> إشعار</span>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-success" onclick="markSelectedAsRead()">
+                            <i class="fas fa-check me-1"></i>
+                            تحديد كمقروء
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteSelected()">
+                            <i class="fas fa-trash me-1"></i>
+                            حذف
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="clearSelection()">
+                            إلغاء التحديد
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications List -->
+            <div class="notifications-container p-4">
+                <div id="notifications-container">
+                    <div class="text-center p-4">
+                        <div class="loading-spinner me-2"></div>
+                        جاري تحميل الإشعارات...
+                    </div>
+                </div>
+
+                <!-- Load More Button -->
+                <div class="text-center mt-4" id="load-more-container" style="display: none;">
+                    <button class="btn btn-outline-primary" onclick="loadMoreNotifications()">
+                        <i class="fas fa-plus me-1"></i>
+                        تحميل المزيد
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Details Modal -->
+<div class="modal fade" id="notificationDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تفاصيل الإشعار</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="notification-details-content">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                <button type="button" class="btn btn-primary" id="mark-read-btn" onclick="markCurrentAsRead()">تحديد كمقروء</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/notifications.js"></script>
+<script>
+// متغيرات الصفحة
+let currentFilter = 'all';
+let currentSort = 'date';
+let notifications = [];
+let selectedNotifications = new Set();
+let currentNotificationId = null;
+let loadOffset = 0;
+const loadLimit = 20;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initNotificationsPage();
+});
+
+function initNotificationsPage() {
+    // انتظار تحميل مدير الإشعارات
+    if (typeof notificationManager !== 'undefined' && notificationManager.isConnected) {
+        setupEventListeners();
+        loadNotifications();
+        updateConnectionStatus();
+    } else {
+        setTimeout(initNotificationsPage, 500);
+    }
+}
+
+function setupEventListeners() {
+    // معالجات فلترة الإشعارات
+    document.querySelectorAll('[data-filter]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // تحديث UI
+            document.querySelectorAll('[data-filter]').forEach(l => l.classList.remove('active'));
+            this.classList.add('active');
+            
+            // تطبيق الفلتر
+            currentFilter = this.dataset.filter;
+            filterAndDisplayNotifications();
+        });
+    });
+    
+    // تحديث دوري
+    setInterval(() => {
+        updateConnectionStatus();
+        updateCounts();
+    }, 10000);
+}
+
+async function loadNotifications() {
+    try {
+        const response = await fetch(`/api/notifications/list?limit=50`);
+        if (response.ok) {
+            const data = await response.json();
+            notifications = data.notifications;
+            displayNotifications();
+            updateCounts();
+        } else {
+            showError('فشل في تحميل الإشعارات');
+        }
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+        showError('خطأ في الاتصال');
+    }
+}
+
+function filterAndDisplayNotifications() {
+    let filtered = [...notifications];
+    
+    // تطبيق الفلتر
+    switch (currentFilter) {
+        case 'unread':
+            filtered = filtered.filter(n => n.status !== 'READ');
+            break;
+        case 'urgent':
+            filtered = filtered.filter(n => n.priority === 'URGENT');
+            break;
+        case 'today':
+            const today = new Date().toDateString();
+            filtered = filtered.filter(n => 
+                new Date(n.created_at).toDateString() === today
+            );
+            break;
+    }
+    
+    // تطبيق الترتيب
+    filtered.sort((a, b) => {
+        switch (currentSort) {
+            case 'priority':
+                const priorities = { 'URGENT': 4, 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 };
+                return priorities[b.priority] - priorities[a.priority];
+            case 'type':
+                return a.type.localeCompare(b.type);
+            default: // date
+                return new Date(b.created_at) - new Date(a.created_at);
+        }
+    });
+    
+    displayNotifications(filtered);
+}
+
+function displayNotifications(notificationsToShow = notifications) {
+    const container = document.getElementById('notifications-container');
+    
+    if (notificationsToShow.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-bell-slash fa-3x mb-3 text-muted"></i>
+                <h5>لا توجد إشعارات</h5>
+                <p class="text-muted">لا توجد إشعارات تطابق المعايير المحددة</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const html = notificationsToShow.map(notification => {
+        const isUnread = notification.status !== 'READ';
+        const priorityClass = notification.priority.toLowerCase();
+        const timeAgo = getTimeAgo(new Date(notification.created_at));
+        const typeIcon = getNotificationTypeIcon(notification.type);
+        const typeText = getNotificationTypeText(notification.type);
+        
+        return `
+            <div class="notification-item ${isUnread ? 'unread' : ''} ${priorityClass}" data-id="${notification.id}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="form-check me-3">
+                            <input class="form-check-input notification-checkbox" type="checkbox" 
+                                   value="${notification.id}" onchange="toggleSelection('${notification.id}')">
+                        </div>
+                        <div class="flex-grow-1" style="cursor: pointer;" onclick="showNotificationDetails('${notification.id}')">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="d-flex align-items-center">
+                                    <i class="${typeIcon} me-2 text-primary"></i>
+                                    <h6 class="mb-0 fw-bold">${notification.title}</h6>
+                                    ${isUnread ? '<span class="badge bg-primary ms-2 small">جديد</span>' : ''}
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="priority-badge bg-${getPriorityColor(notification.priority)} text-white">
+                                        ${getPriorityText(notification.priority)}
+                                    </span>
+                                    <small class="text-muted">${timeAgo}</small>
+                                </div>
+                            </div>
+                            <p class="mb-2 text-muted">${notification.message}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-light text-dark">${typeText}</span>
+                                ${notification.action_url ? 
+                                    `<a href="${notification.action_url}" class="btn btn-sm btn-outline-primary">عرض التفاصيل</a>` : 
+                                    ''
+                                }
+                            </div>
+                        </div>
+                        <div class="notification-actions">
+                            ${isUnread ? 
+                                `<button class="btn btn-sm btn-outline-success" onclick="markAsRead('${notification.id}')">
+                                    <i class="fas fa-check"></i>
+                                </button>` : ''
+                            }
+                            <button class="btn btn-sm btn-outline-info" onclick="showNotificationDetails('${notification.id}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = html;
+}
+
+function getNotificationTypeIcon(type) {
+    const icons = {
+        'ATTENDANCE_LATE': 'fas fa-user-clock',
+        'ATTENDANCE_ABSENT': 'fas fa-user-times',
+        'VACCINATION_DUE': 'fas fa-syringe',
+        'PROJECT_ENDING': 'fas fa-project-diagram',
+        'HEAT_CYCLE_START': 'fas fa-heart',
+        'HEAT_CYCLE_END': 'fas fa-heart',
+        'TRAINING_OVERDUE': 'fas fa-dumbbell',
+        'VET_CHECKUP_DUE': 'fas fa-stethoscope',
+        'EMERGENCY_ALERT': 'fas fa-exclamation-triangle',
+        'SYSTEM_MAINTENANCE': 'fas fa-cog'
+    };
+    return icons[type] || 'fas fa-info-circle';
+}
+
+function getNotificationTypeText(type) {
+    const texts = {
+        'ATTENDANCE_LATE': 'تأخر حضور',
+        'ATTENDANCE_ABSENT': 'غياب',
+        'VACCINATION_DUE': 'موعد تطعيم',
+        'PROJECT_ENDING': 'انتهاء مشروع',
+        'HEAT_CYCLE_START': 'دورة حرارة',
+        'HEAT_CYCLE_END': 'انتهاء دورة حرارة',
+        'TRAINING_OVERDUE': 'تدريب متأخر',
+        'VET_CHECKUP_DUE': 'فحص طبي',
+        'EMERGENCY_ALERT': 'تنبيه طارئ',
+        'SYSTEM_MAINTENANCE': 'صيانة نظام'
+    };
+    return texts[type] || 'إشعار';
+}
+
+function getPriorityColor(priority) {
+    const colors = {
+        'URGENT': 'danger',
+        'HIGH': 'warning',
+        'MEDIUM': 'info',
+        'LOW': 'secondary'
+    };
+    return colors[priority] || 'secondary';
+}
+
+function getPriorityText(priority) {
+    const texts = {
+        'URGENT': 'عاجل',
+        'HIGH': 'مهم',
+        'MEDIUM': 'متوسط',
+        'LOW': 'منخفض'
+    };
+    return texts[priority] || 'عادي';
+}
+
+function updateCounts() {
+    const unreadCount = notifications.filter(n => n.status !== 'READ').length;
+    const urgentCount = notifications.filter(n => n.priority === 'URGENT').length;
+    const todayCount = notifications.filter(n => {
+        const today = new Date().toDateString();
+        return new Date(n.created_at).toDateString() === today;
+    }).length;
+    
+    document.getElementById('count-all').textContent = notifications.length;
+    document.getElementById('count-unread').textContent = unreadCount;
+    document.getElementById('count-urgent').textContent = urgentCount;
+    document.getElementById('count-today').textContent = todayCount;
+}
+
+function updateConnectionStatus() {
+    const statusEl = document.getElementById('connection-status');
+    if (notificationManager && notificationManager.isConnected) {
+        statusEl.className = 'connection-indicator connection-connected';
+        statusEl.innerHTML = '<i class="fas fa-circle"></i><span>متصل</span>';
+    } else {
+        statusEl.className = 'connection-indicator connection-disconnected';
+        statusEl.innerHTML = '<i class="fas fa-circle"></i><span>غير متصل</span>';
+    }
+}
+
+function toggleSelection(notificationId) {
+    if (selectedNotifications.has(notificationId)) {
+        selectedNotifications.delete(notificationId);
+    } else {
+        selectedNotifications.add(notificationId);
+    }
+    
+    updateBulkActions();
+}
+
+function updateBulkActions() {
+    const bulkActions = document.getElementById('bulk-actions');
+    const selectedCount = document.getElementById('selected-count');
+    
+    if (selectedNotifications.size > 0) {
+        bulkActions.classList.add('show');
+        selectedCount.textContent = selectedNotifications.size;
+    } else {
+        bulkActions.classList.remove('show');
+    }
+}
+
+function clearSelection() {
+    selectedNotifications.clear();
+    document.querySelectorAll('.notification-checkbox').forEach(cb => cb.checked = false);
+    updateBulkActions();
+}
+
+async function markAsRead(notificationId) {
+    try {
+        const response = await fetch('/api/notifications/mark-read', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notification_id: notificationId })
+        });
+        
+        if (response.ok) {
+            // تحديث الحالة محلياً
+            const notification = notifications.find(n => n.id === notificationId);
+            if (notification) {
+                notification.status = 'READ';
+                notification.read_at = new Date().toISOString();
+            }
+            
+            filterAndDisplayNotifications();
+            updateCounts();
+            showSuccess('تم تحديد الإشعار كمقروء');
+        }
+    } catch (error) {
+        console.error('Error marking as read:', error);
+        showError('فشل في تحديث الإشعار');
+    }
+}
+
+async function markAllAsRead() {
+    const unreadNotifications = notifications.filter(n => n.status !== 'READ');
+    if (unreadNotifications.length === 0) {
+        showInfo('جميع الإشعارات مقروءة بالفعل');
+        return;
+    }
+    
+    if (!confirm(`هل تريد تحديد ${unreadNotifications.length} إشعار كمقروء؟`)) {
+        return;
+    }
+    
+    try {
+        const notificationIds = unreadNotifications.map(n => n.id);
+        const response = await fetch('/api/notifications/bulk-mark-read', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notification_ids: notificationIds })
+        });
+        
+        if (response.ok) {
+            // تحديث الحالة محلياً
+            unreadNotifications.forEach(n => {
+                n.status = 'read';
+                n.read_at = new Date().toISOString();
+            });
+            
+            filterAndDisplayNotifications();
+            updateCounts();
+            showSuccess('تم تحديد جميع الإشعارات كمقروءة');
+        }
+    } catch (error) {
+        console.error('Error marking all as read:', error);
+        showError('فشل في تحديث الإشعارات');
+    }
+}
+
+function showNotificationDetails(notificationId) {
+    const notification = notifications.find(n => n.id === notificationId);
+    if (!notification) return;
+    
+    currentNotificationId = notificationId;
+    
+    const content = document.getElementById('notification-details-content');
+    const isUnread = notification.status !== 'READ';
+    
+    content.innerHTML = `
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="${getNotificationTypeIcon(notification.type)} fa-2x text-primary me-3"></i>
+                    <div>
+                        <h5 class="mb-1">${notification.title}</h5>
+                        <small class="text-muted">${getNotificationTypeText(notification.type)}</small>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <p class="lead">${notification.message}</p>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>الأولوية:</strong>
+                        <span class="badge bg-${getPriorityColor(notification.priority)} ms-2">
+                            ${getPriorityText(notification.priority)}
+                        </span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>الحالة:</strong>
+                        <span class="badge ${isUnread ? 'bg-primary' : 'bg-success'} ms-2">
+                            ${isUnread ? 'غير مقروء' : 'مقروء'}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>تاريخ الإنشاء:</strong><br>
+                        <small class="text-muted">${new Date(notification.created_at).toLocaleString('ar-SA')}</small>
+                    </div>
+                    ${notification.read_at ? 
+                        `<div class="col-md-6">
+                            <strong>تاريخ القراءة:</strong><br>
+                            <small class="text-muted">${new Date(notification.read_at).toLocaleString('ar-SA')}</small>
+                        </div>` : ''
+                    }
+                </div>
+                
+                ${notification.action_url ? 
+                    `<div class="mt-3">
+                        <a href="${notification.action_url}" class="btn btn-primary" target="_blank">
+                            <i class="fas fa-external-link-alt me-1"></i>
+                            عرض التفاصيل
+                        </a>
+                    </div>` : ''
+                }
+            </div>
+        </div>
+    `;
+    
+    // إظهار/إخفاء زر التحديد كمقروء
+    const markReadBtn = document.getElementById('mark-read-btn');
+    if (isUnread) {
+        markReadBtn.style.display = 'inline-block';
+    } else {
+        markReadBtn.style.display = 'none';
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('notificationDetailsModal'));
+    modal.show();
+}
+
+function markCurrentAsRead() {
+    if (currentNotificationId) {
+        markAsRead(currentNotificationId);
+        const modal = bootstrap.Modal.getInstance(document.getElementById('notificationDetailsModal'));
+        modal.hide();
+    }
+}
+
+function refreshNotifications() {
+    loadNotifications();
+    showInfo('تم تحديث الإشعارات');
+}
+
+function sortNotifications(sortBy) {
+    currentSort = sortBy;
+    filterAndDisplayNotifications();
+}
+
+function getTimeAgo(date) {
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (days > 0) return `منذ ${days} يوم`;
+    if (hours > 0) return `منذ ${hours} ساعة`;
+    if (minutes > 0) return `منذ ${minutes} دقيقة`;
+    return 'الآن';
+}
+
+function showSuccess(message) {
+    if (typeof notificationManager !== 'undefined') {
+        notificationManager.showToast(message, 'success');
+    }
+}
+
+function showError(message) {
+    if (typeof notificationManager !== 'undefined') {
+        notificationManager.showToast(message, 'error');
+    }
+}
+
+function showInfo(message) {
+    if (typeof notificationManager !== 'undefined') {
+        notificationManager.showToast(message, 'info');
+    }
+}
+</script>
+{% endblock %}

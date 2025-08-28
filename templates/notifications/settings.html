@@ -1,0 +1,666 @@
+{% extends "base.html" %}
+
+{% block title %}إعدادات الإشعارات{% endblock %}
+
+{% block extra_css %}
+<style>
+.notification-settings-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.settings-section {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.settings-section h5 {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.form-check-input:checked {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.form-check-input:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.notification-preview {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.test-notification-btn {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+    border-radius: 25px;
+    padding: 10px 25px;
+    font-weight: 500;
+    transition: transform 0.2s;
+}
+
+.test-notification-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+}
+
+.connection-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.status-connected {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+
+.status-disconnected {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+}
+
+.notification-type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.notification-type-card {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    transition: all 0.3s ease;
+}
+
+.notification-type-card:hover {
+    background: #e9ecef;
+    transform: translateY(-2px);
+}
+
+.notification-type-card.enabled {
+    background: rgba(40, 167, 69, 0.1);
+    border-color: #28a745;
+}
+
+.quiet-hours-section {
+    background: rgba(108, 117, 125, 0.1);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header Section -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="fas fa-bell text-primary me-2"></i>
+                        إعدادات الإشعارات
+                    </h2>
+                    <p class="text-muted mb-0">إدارة تفضيلات الإشعارات والتنبيهات الفورية</p>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <div id="connection-status" class="connection-status status-disconnected">
+                        <i class="fas fa-circle"></i>
+                        <span>غير متصل</span>
+                    </div>
+                    <button class="btn test-notification-btn" onclick="testNotification()">
+                        <i class="fas fa-test-tube me-1"></i>
+                        اختبار الإشعار
+                    </button>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Main Settings Panel -->
+                <div class="col-lg-8">
+                    <div class="card notification-settings-card">
+                        <div class="card-body p-0">
+                            <form id="notification-settings-form">
+                                
+                                <!-- General Settings -->
+                                <div class="settings-section">
+                                    <h5>
+                                        <i class="fas fa-toggle-on text-success me-2"></i>
+                                        الإعدادات العامة
+                                    </h5>
+                                    
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enabled" checked>
+                                        <label class="form-check-label" for="enabled">
+                                            <strong>تفعيل جميع الإشعارات</strong>
+                                            <small class="d-block text-muted">تشغيل أو إيقاف جميع الإشعارات</small>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Notification Types -->
+                                <div class="settings-section">
+                                    <h5>
+                                        <i class="fas fa-list-check text-info me-2"></i>
+                                        أنواع الإشعارات
+                                    </h5>
+                                    
+                                    <div class="notification-type-grid">
+                                        <div class="notification-type-card">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="attendance_alerts" checked>
+                                                <label class="form-check-label" for="attendance_alerts">
+                                                    <i class="fas fa-user-clock text-warning me-2"></i>
+                                                    <strong>تنبيهات الحضور</strong>
+                                                    <small class="d-block text-muted">تأخير وغياب الموظفين</small>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="notification-type-card">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="vaccination_reminders" checked>
+                                                <label class="form-check-label" for="vaccination_reminders">
+                                                    <i class="fas fa-syringe text-success me-2"></i>
+                                                    <strong>تذكيرات التطعيم</strong>
+                                                    <small class="d-block text-muted">مواعيد التطعيمات القادمة</small>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="notification-type-card">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="project_updates" checked>
+                                                <label class="form-check-label" for="project_updates">
+                                                    <i class="fas fa-project-diagram text-primary me-2"></i>
+                                                    <strong>تحديثات المشاريع</strong>
+                                                    <small class="d-block text-muted">انتهاء المشاريع والمعالم المهمة</small>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="notification-type-card">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="heat_cycle_alerts" checked>
+                                                <label class="form-check-label" for="heat_cycle_alerts">
+                                                    <i class="fas fa-heart text-danger me-2"></i>
+                                                    <strong>تنبيهات دورة الحرارة</strong>
+                                                    <small class="d-block text-muted">دورات حرارة الإناث</small>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="notification-type-card">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="training_reminders" checked>
+                                                <label class="form-check-label" for="training_reminders">
+                                                    <i class="fas fa-dumbbell text-info me-2"></i>
+                                                    <strong>تذكيرات التدريب</strong>
+                                                    <small class="d-block text-muted">جلسات التدريب المتأخرة</small>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="notification-type-card">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="vet_checkup_reminders" checked>
+                                                <label class="form-check-label" for="vet_checkup_reminders">
+                                                    <i class="fas fa-stethoscope text-success me-2"></i>
+                                                    <strong>تذكيرات الفحص الطبي</strong>
+                                                    <small class="d-block text-muted">الفحوصات الطبية المطلوبة</small>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="notification-type-card">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="emergency_alerts" checked>
+                                                <label class="form-check-label" for="emergency_alerts">
+                                                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                                                    <strong>التنبيهات الطارئة</strong>
+                                                    <small class="d-block text-muted">تنبيهات عاجلة ومهمة</small>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="notification-type-card">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="system_updates">
+                                                <label class="form-check-label" for="system_updates">
+                                                    <i class="fas fa-cog text-secondary me-2"></i>
+                                                    <strong>تحديثات النظام</strong>
+                                                    <small class="d-block text-muted">صيانة وتحديثات النظام</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Delivery Channels -->
+                                <div class="settings-section">
+                                    <h5>
+                                        <i class="fas fa-paper-plane text-primary me-2"></i>
+                                        قنوات الإرسال
+                                    </h5>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="browser_notifications" checked>
+                                                <label class="form-check-label" for="browser_notifications">
+                                                    <i class="fas fa-browser text-info me-2"></i>
+                                                    <strong>إشعارات المتصفح</strong>
+                                                    <small class="d-block text-muted">عرض الإشعارات في المتصفح</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="push_notifications" checked>
+                                                <label class="form-check-label" for="push_notifications">
+                                                    <i class="fas fa-mobile-alt text-success me-2"></i>
+                                                    <strong>الإشعارات الفورية</strong>
+                                                    <small class="d-block text-muted">إشعارات خارج المتصفح</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="email_notifications">
+                                                <label class="form-check-label" for="email_notifications">
+                                                    <i class="fas fa-envelope text-warning me-2"></i>
+                                                    <strong>البريد الإلكتروني</strong>
+                                                    <small class="d-block text-muted">إرسال عبر البريد الإلكتروني</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Quiet Hours -->
+                                <div class="settings-section">
+                                    <h5>
+                                        <i class="fas fa-moon text-secondary me-2"></i>
+                                        الساعات الهادئة
+                                    </h5>
+                                    
+                                    <div class="quiet-hours-section">
+                                        <p class="mb-3 text-muted">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            خلال هذه الفترة لن يتم إرسال إشعارات غير طارئة
+                                        </p>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <label for="quiet_hours_start" class="form-label">من الساعة</label>
+                                                <input type="time" class="form-control" id="quiet_hours_start" value="22:00">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="quiet_hours_end" class="form-label">إلى الساعة</label>
+                                                <input type="time" class="form-control" id="quiet_hours_end" value="08:00">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="settings-section">
+                                    <div class="d-flex justify-content-between">
+                                        <button type="button" class="btn btn-success btn-lg" onclick="saveSettings()">
+                                            <i class="fas fa-save me-2"></i>
+                                            حفظ الإعدادات
+                                        </button>
+                                        
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-outline-primary" onclick="resetToDefaults()">
+                                                <i class="fas fa-undo me-1"></i>
+                                                الإعدادات الافتراضية
+                                            </button>
+                                            <button type="button" class="btn btn-outline-info" onclick="loadSettings()">
+                                                <i class="fas fa-refresh me-1"></i>
+                                                إعادة تحميل
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview Panel -->
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-eye me-2"></i>
+                                معاينة الإشعار
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="notification-preview">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <strong>نظام K9 للعمليات</strong>
+                                    <small>الآن</small>
+                                </div>
+                                <h6 class="mb-1">إشعار تجريبي</h6>
+                                <p class="mb-0 small">هذا مثال على كيفية ظهور الإشعارات</p>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <h6>إحصائيات سريعة</h6>
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <div class="bg-light p-2 rounded">
+                                            <div class="fw-bold text-primary" id="unread-count">0</div>
+                                            <small class="text-muted">غير مقروء</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="bg-light p-2 rounded">
+                                            <div class="fw-bold text-success" id="today-count">0</div>
+                                            <small class="text-muted">اليوم</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="bg-light p-2 rounded">
+                                            <div class="fw-bold text-info" id="total-count">0</div>
+                                            <small class="text-muted">المجموع</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <h6>الإشعارات الأخيرة</h6>
+                                <div id="recent-notifications" class="small">
+                                    <div class="text-muted text-center p-3">
+                                        لا توجد إشعارات حديثة
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/notifications.js"></script>
+<script>
+// إعدادات صفحة الإشعارات
+let settingsLoaded = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // انتظار تحميل مدير الإشعارات
+    if (typeof notificationManager !== 'undefined') {
+        initSettingsPage();
+    } else {
+        setTimeout(initSettingsPage, 1000);
+    }
+});
+
+function initSettingsPage() {
+    if (!notificationManager || !notificationManager.isConnected) {
+        setTimeout(initSettingsPage, 500);
+        return;
+    }
+    
+    loadSettings();
+    loadStats();
+    loadRecentNotifications();
+    
+    // تحديث حالة الاتصال
+    updateConnectionStatus();
+    
+    // مراقبة تغييرات الإعدادات
+    document.querySelectorAll('input[type="checkbox"], input[type="time"]').forEach(input => {
+        input.addEventListener('change', updatePreview);
+    });
+}
+
+async function loadSettings() {
+    try {
+        const response = await fetch('/api/notifications/settings');
+        if (response.ok) {
+            const settings = await response.json();
+            
+            // تحديث الحقول
+            Object.keys(settings).forEach(key => {
+                const input = document.getElementById(key);
+                if (input) {
+                    if (input.type === 'checkbox') {
+                        input.checked = settings[key];
+                    } else {
+                        input.value = settings[key] || '';
+                    }
+                }
+            });
+            
+            updatePreview();
+            settingsLoaded = true;
+            
+            showToast('تم تحميل الإعدادات بنجاح', 'success');
+        }
+    } catch (error) {
+        console.error('Error loading settings:', error);
+        showToast('فشل في تحميل الإعدادات', 'error');
+    }
+}
+
+async function saveSettings() {
+    if (!settingsLoaded) {
+        showToast('يرجى انتظار تحميل الإعدادات أولاً', 'warning');
+        return;
+    }
+    
+    try {
+        const form = document.getElementById('notification-settings-form');
+        const settings = {};
+        
+        // جمع البيانات
+        form.querySelectorAll('input').forEach(input => {
+            if (input.type === 'checkbox') {
+                settings[input.id] = input.checked;
+            } else {
+                settings[input.id] = input.value || null;
+            }
+        });
+        
+        const response = await fetch('/api/notifications/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(settings)
+        });
+        
+        if (response.ok) {
+            showToast('تم حفظ الإعدادات بنجاح', 'success');
+        } else {
+            throw new Error('Failed to save settings');
+        }
+        
+    } catch (error) {
+        console.error('Error saving settings:', error);
+        showToast('فشل في حفظ الإعدادات', 'error');
+    }
+}
+
+async function testNotification() {
+    try {
+        const response = await fetch('/api/notifications/test', {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            showToast('تم إرسال الإشعار التجريبي', 'success');
+        } else {
+            throw new Error('Failed to send test notification');
+        }
+        
+    } catch (error) {
+        console.error('Error sending test notification:', error);
+        showToast('فشل في إرسال الإشعار التجريبي', 'error');
+    }
+}
+
+async function loadStats() {
+    try {
+        const response = await fetch('/api/notifications/stats');
+        if (response.ok) {
+            const stats = await response.json();
+            
+            document.getElementById('unread-count').textContent = stats.unread_notifications;
+            document.getElementById('today-count').textContent = stats.week_notifications;
+            document.getElementById('total-count').textContent = stats.total_notifications;
+        }
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
+}
+
+async function loadRecentNotifications() {
+    try {
+        const response = await fetch('/api/notifications/list?limit=5');
+        if (response.ok) {
+            const data = await response.json();
+            const container = document.getElementById('recent-notifications');
+            
+            if (data.notifications.length === 0) {
+                container.innerHTML = '<div class="text-muted text-center p-3">لا توجد إشعارات حديثة</div>';
+                return;
+            }
+            
+            const html = data.notifications.map(notification => {
+                const timeAgo = getTimeAgo(new Date(notification.created_at));
+                return `
+                    <div class="border-bottom py-2">
+                        <div class="fw-bold small">${notification.title}</div>
+                        <div class="text-muted small">${timeAgo}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = html;
+        }
+    } catch (error) {
+        console.error('Error loading recent notifications:', error);
+    }
+}
+
+function updateConnectionStatus() {
+    const statusEl = document.getElementById('connection-status');
+    if (notificationManager && notificationManager.isConnected) {
+        statusEl.className = 'connection-status status-connected';
+        statusEl.innerHTML = '<i class="fas fa-circle"></i><span>متصل</span>';
+    } else {
+        statusEl.className = 'connection-status status-disconnected';
+        statusEl.innerHTML = '<i class="fas fa-circle"></i><span>غير متصل</span>';
+    }
+}
+
+function updatePreview() {
+    // تحديث بطاقات أنواع الإشعارات
+    document.querySelectorAll('.notification-type-card').forEach(card => {
+        const checkbox = card.querySelector('input[type="checkbox"]');
+        if (checkbox && checkbox.checked) {
+            card.classList.add('enabled');
+        } else {
+            card.classList.remove('enabled');
+        }
+    });
+}
+
+function resetToDefaults() {
+    if (confirm('هل أنت متأكد من إعادة الإعدادات للافتراضية؟')) {
+        // الإعدادات الافتراضية
+        const defaults = {
+            enabled: true,
+            attendance_alerts: true,
+            vaccination_reminders: true,
+            project_updates: true,
+            heat_cycle_alerts: true,
+            training_reminders: true,
+            vet_checkup_reminders: true,
+            emergency_alerts: true,
+            system_updates: false,
+            browser_notifications: true,
+            push_notifications: true,
+            email_notifications: false,
+            quiet_hours_start: '22:00',
+            quiet_hours_end: '08:00'
+        };
+        
+        Object.keys(defaults).forEach(key => {
+            const input = document.getElementById(key);
+            if (input) {
+                if (input.type === 'checkbox') {
+                    input.checked = defaults[key];
+                } else {
+                    input.value = defaults[key];
+                }
+            }
+        });
+        
+        updatePreview();
+        showToast('تم إعادة الإعدادات للافتراضية', 'info');
+    }
+}
+
+function getTimeAgo(date) {
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    
+    if (hours > 0) return `منذ ${hours} ساعة`;
+    if (minutes > 0) return `منذ ${minutes} دقيقة`;
+    return 'الآن';
+}
+
+function showToast(message, type) {
+    if (typeof notificationManager !== 'undefined') {
+        notificationManager.showToast(message, type);
+    } else {
+        alert(message);
+    }
+}
+
+// تحديث دوري للإحصائيات
+setInterval(() => {
+    if (settingsLoaded) {
+        loadStats();
+        updateConnectionStatus();
+    }
+}, 30000);
+</script>
+{% endblock %}

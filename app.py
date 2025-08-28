@@ -154,6 +154,40 @@ with app.app_context():
         print(f"⚠ Warning: Could not register cleaning API: {e}")
         # Continue without cleaning API for now
     
+    # Register Notifications API and WebSocket
+    try:
+        from notifications_api import bp as notifications_api_bp
+        from routes_notifications import bp as notifications_routes_bp
+        app.register_blueprint(notifications_api_bp)
+        app.register_blueprint(notifications_routes_bp)
+        
+        # Import notification models to create tables
+        import models_notifications
+        
+        # Initialize SocketIO with notifications
+        from flask_socketio import SocketIO
+        from websocket_handlers import init_socketio_handlers
+        from notifications_api import notification_service
+        from notification_scheduler import init_notification_scheduler
+        
+        # Create SocketIO instance
+        socketio = SocketIO(app, cors_allowed_origins="*", logger=True, engineio_logger=True)
+        
+        # Set socketio in notification service
+        notification_service.socketio = socketio
+        
+        # Initialize WebSocket handlers
+        init_socketio_handlers(socketio, notification_service)
+        
+        # Initialize notification scheduler
+        init_notification_scheduler(notification_service)
+        
+        print("✓ Notifications system registered successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Could not register notifications system: {e}")
+        # Continue without notifications for now
+    
     
     # Add route to serve uploaded files
     from flask import send_from_directory
