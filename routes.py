@@ -373,7 +373,7 @@ def training_add():
             session.subject = request.form.get('subject', 'جلسة تدريب')
             session.session_date = datetime.strptime(request.form['session_date'], '%Y-%m-%dT%H:%M') if request.form.get('session_date') else datetime.utcnow()
             session.duration = int(request.form['duration']) if request.form.get('duration') else 60
-            session.success_rating = int(request.form['rating']) if request.form.get('rating') else 5
+            session.success_rating = int(request.form['success_rating']) if request.form.get('success_rating') else 5
             session.location = request.form.get('location')
             session.notes = request.form.get('notes')
             session.weather_conditions = request.form.get('weather_conditions')
