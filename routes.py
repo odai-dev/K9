@@ -22,7 +22,7 @@ from models import (Dog, Employee, TrainingSession, VeterinaryVisit, ProductionC
                    # Excretion models
                    ExcretionLog, StoolColor, StoolConsistency, StoolContent, UrineColor, VomitColor, ExcretionPlace,
                    # Grooming models
-                   GroomingLog, GroomingCleanlinessScore,
+                   GroomingLog, GroomingCleanlinessScore, GroomingYesNo,
                    # Cleaning models
                    CleaningLog)
 from utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
