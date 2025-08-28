@@ -34,7 +34,6 @@ class EmployeeRole(Enum):
     BREEDER = "مربي"
     VET = "طبيب"
     PROJECT_MANAGER = "مسؤول مشروع"
-    BEHAVIOR_IMPROVEMENT = "تحسين سلوك"
 
 class DogStatus(Enum):
     ACTIVE = "ACTIVE"
@@ -47,11 +46,12 @@ class DogGender(Enum):
     FEMALE = "FEMALE"
 
 class TrainingCategory(Enum):
-    OBEDIENCE = "OBEDIENCE"
-    DETECTION = "DETECTION"
-    AGILITY = "AGILITY"
-    ATTACK = "ATTACK"
-    FITNESS = "FITNESS"
+    OBEDIENCE = "طاعة"
+    DETECTION = "كشف"
+    AGILITY = "رشاقة"
+    ATTACK = "هجوم"
+    FITNESS = "لياقة"
+    BEHAVIOR_IMPROVEMENT = "تحسين سلوك"
 
 class VisitType(Enum):
     ROUTINE = "ROUTINE"
