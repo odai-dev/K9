@@ -384,7 +384,10 @@ def training_add():
             session = TrainingSession()
             session.dog_id = request.form['dog_id']
             session.trainer_id = request.form['trainer_id']
-            session.category = TrainingCategory(request.form['category'])
+            
+            # Handle enum by getting the enum member by name
+            category_name = request.form['category']
+            session.category = getattr(TrainingCategory, category_name)
             session.subject = request.form.get('subject', 'جلسة تدريب')
             session.session_date = datetime.strptime(request.form['session_date'], '%Y-%m-%dT%H:%M') if request.form.get('session_date') else datetime.utcnow()
             session.duration = int(request.form['duration']) if request.form.get('duration') else 60
