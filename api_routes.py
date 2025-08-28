@@ -357,7 +357,7 @@ def feeding_log_create():
             return jsonify({'error': 'ماء الشرب بالمللي يجب أن تكون رقم صحيح موجب'}), 400
         
         # Validate supplements format
-        supplements = data.get('supplements', [])
+        supplements = data.get('supplements') or []
         if supplements and not isinstance(supplements, list):
             return jsonify({'error': 'المكملات الغذائية يجب أن تكون قائمة'}), 400
         
