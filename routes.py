@@ -2168,7 +2168,8 @@ def reports_generate():
     """
     Generate a report based on type, optional date range and optional filters.
     Supported report types: 'dogs', 'employees', 'training', 'veterinary',
-                            'breeding', 'projects'.
+                            'breeding', 'projects', 'attendance_daily', 'attendance_pm_daily',
+                            'training_trainer_daily', 'veterinary_daily', plus production sub-types.
     Additional filters (passed via POST form) vary by type:
       - dogs: status, gender
       - employees: role, status
@@ -2200,7 +2201,21 @@ def reports_generate():
             from utils import generate_excel_report
             filename = generate_excel_report(report_type, start_date, end_date, current_user, filters)
         else:
-            filename = generate_pdf_report(report_type, start_date, end_date, current_user, filters)
+            # Map new report types to existing system for PDF generation
+            if report_type.startswith('production_'):
+                pdf_report_type = 'breeding'  # Use breeding for all production reports
+            elif report_type in ['attendance_daily', 'attendance_pm_daily', 'training_trainer_daily', 'veterinary_daily']:
+                # For daily reports, redirect to training or veterinary as appropriate
+                if 'training' in report_type:
+                    pdf_report_type = 'training'
+                elif 'veterinary' in report_type:
+                    pdf_report_type = 'veterinary'
+                else:
+                    pdf_report_type = 'employees'  # Attendance reports use employee-like format
+            else:
+                pdf_report_type = report_type
+            
+            filename = generate_pdf_report(pdf_report_type, start_date, end_date, current_user, filters)
         
         upload_dir = current_app.config['UPLOAD_FOLDER']
         return send_from_directory(upload_dir, filename, as_attachment=True)
@@ -2466,13 +2481,14 @@ def reports_preview():
                 'العلاج': v.treatment or ''
             })
     
-    elif report_type == 'breeding':
-        cycles = BreedingCycle.query
+    elif report_type == 'breeding' or report_type.startswith('production_'):
+        # Handle production/breeding reports
+        cycles = ProductionCycle.query
         if start_date and end_date:
-            cycles = cycles.filter(BreedingCycle.mating_date >= start_date,
-                                 BreedingCycle.mating_date <= end_date)
+            cycles = cycles.filter(ProductionCycle.mating_date >= start_date,
+                                 ProductionCycle.mating_date <= end_date)
         if filters.get('cycle_type'):
-            cycles = cycles.filter(BreedingCycle.cycle_type == filters['cycle_type'])
+            cycles = cycles.filter(ProductionCycle.cycle_type == filters['cycle_type'])
         cycles = cycles.all()
         
         cycle_map = {'NATURAL': 'طبيعي', 'ARTIFICIAL': 'صناعي'}
@@ -2489,6 +2505,73 @@ def reports_preview():
                 'عدد الجراء': c.number_of_puppies or '',
                 'الناجون': c.puppies_survived or ''
             })
+    
+    # New report types for attendance and daily reports
+    elif report_type == 'attendance_daily':
+        # Get attendance daily sheet data
+        try:
+            from attendance_reporting_services import get_daily_sheet_summary
+            summary_data = get_daily_sheet_summary(start_date, end_date, current_user)
+            for item in summary_data:
+                records.append({
+                    'المشروع': item.get('project_name', ''),
+                    'التاريخ': item.get('date', ''),
+                    'الحضور': item.get('attendance_count', 0),
+                    'الغياب': item.get('absence_count', 0),
+                    'المجموع': item.get('total_employees', 0)
+                })
+        except Exception:
+            records = []
+    
+    elif report_type == 'attendance_pm_daily':
+        # Get PM daily data
+        try:
+            from pm_daily_services import get_pm_daily_summary
+            summary_data = get_pm_daily_summary(start_date, end_date, current_user)
+            for item in summary_data:
+                records.append({
+                    'المشروع': item.get('project_name', ''),
+                    'التاريخ': item.get('date', ''),
+                    'المسؤول': item.get('responsible_name', ''),
+                    'الحالة': item.get('status', ''),
+                    'الملاحظات': item.get('notes', '')
+                })
+        except Exception:
+            records = []
+    
+    elif report_type == 'training_trainer_daily':
+        # Get trainer daily data
+        try:
+            from trainer_daily_services import get_trainer_daily_summary
+            summary_data = get_trainer_daily_summary(start_date, end_date, current_user)
+            for item in summary_data:
+                records.append({
+                    'المدرب': item.get('trainer_name', ''),
+                    'التاريخ': item.get('date', ''),
+                    'الكلب': item.get('dog_name', ''),
+                    'التمرين': item.get('exercise_type', ''),
+                    'التقييم': item.get('rating', ''),
+                    'الملاحظات': item.get('notes', '')
+                })
+        except Exception:
+            records = []
+    
+    elif report_type == 'veterinary_daily':
+        # Get veterinary daily data
+        try:
+            from veterinary_daily_services import get_veterinary_daily_summary
+            summary_data = get_veterinary_daily_summary(start_date, end_date, current_user)
+            for item in summary_data:
+                records.append({
+                    'الطبيب': item.get('vet_name', ''),
+                    'التاريخ': item.get('date', ''),
+                    'الكلب': item.get('dog_name', ''),
+                    'نوع الفحص': item.get('examination_type', ''),
+                    'التشخيص': item.get('diagnosis', ''),
+                    'العلاج': item.get('treatment', '')
+                })
+        except Exception:
+            records = []
     
     elif report_type == 'projects':
         projects = Project.query
@@ -2535,7 +2618,18 @@ def reports_preview_pdf():
         'training': 'تقرير التدريب', 
         'veterinary': 'تقرير الطبابة', 
         'breeding': 'تقرير التكاثر', 
-        'projects': 'تقرير المشاريع'
+        'projects': 'تقرير المشاريع',
+        'attendance_daily': 'تقرير الحضور اليومي',
+        'attendance_pm_daily': 'تقرير المسؤول اليومي',
+        'training_trainer_daily': 'تقرير المدرب اليومي',
+        'veterinary_daily': 'تقرير الطبيب اليومي',
+        'production_maturity': 'تقرير البلوغ',
+        'production_heat_cycles': 'تقرير الدورة',
+        'production_mating': 'تقرير التزاوج',
+        'production_pregnancy': 'تقرير الحمل',
+        'production_delivery': 'تقرير الولادة',
+        'production_puppies': 'تقرير الجراء',
+        'production_puppy_training': 'تقرير تدريب الجراء'
     }
     report_title = report_titles.get(report_type, 'تقرير')
     
