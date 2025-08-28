@@ -1,0 +1,68 @@
+[2025-08-28 16:44:41 +0000] [766] [INFO] Starting gunicorn 23.0.0
+[2025-08-28 16:44:41 +0000] [766] [INFO] Listening at: http://0.0.0.0:5000 (766)
+[2025-08-28 16:44:41 +0000] [766] [INFO] Using worker: sync
+[2025-08-28 16:44:41 +0000] [777] [INFO] Booting worker with pid: 777
+[2025-08-28 16:44:41 +0000] [766] [INFO] Handling signal: winch
+[2025-08-28 16:44:41 +0000] [766] [INFO] Handling signal: winch
+[2025-08-28 16:44:41 +0000] [766] [INFO] Handling signal: winch
+[2025-08-28 16:44:42 +0000] [766] [INFO] Handling signal: winch
+[2025-08-28 16:44:42 +0000] [766] [INFO] Handling signal: winch
+[2025-08-28 16:44:42 +0000] [766] [INFO] Handling signal: winch
+[2025-08-28 16:44:42 +0000] [766] [INFO] Handling signal: winch
+[2025-08-28 16:44:42 +0000] [766] [INFO] Handling signal: winch
+[2025-08-28 16:44:43 +0000] [766] [INFO] Handling signal: winch
+[2025-08-28 16:44:43 +0000] [766] [INFO] Handling signal: winch
+✓ Training reports registered successfully
+✓ Veterinary reports registered successfully
+✓ Cleaning API registered successfully
+[2025-08-28 16:44:43 +0000] [766] [INFO] Handling signal: winch
+[2025-08-28 16:44:44 +0000] [766] [INFO] Handling signal: winch
+[2025-08-28 16:44:44 +0000] [766] [INFO] Handling signal: winch
+[2025-08-28 16:44:44 +0000] [766] [INFO] Handling signal: winch
+[2025-08-28 16:44:44 +0000] [766] [INFO] Handling signal: winch
+[2025-08-28 16:44:44 +0000] [766] [INFO] Handling signal: winch
+[2025-08-28 16:44:45 +0000] [766] [INFO] Handling signal: winch
+[2025-08-28 16:44:45 +0000] [766] [INFO] Handling signal: winch
+[2025-08-28 16:44:46 +0000] [766] [INFO] Handling signal: winch
+[2025-08-28 16:44:46 +0000] [766] [INFO] Handling signal: winch
+ERROR:app:Exception on /dogs/eab46fb1-9707-4ccc-af21-9bc8a63f804f [GET]
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/routes.py", line 187, in dogs_view
+    return render_template('dogs/view.html', dog=dog, training_sessions=training_sessions,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/runner/workspace/templates/dogs/view.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/runner/workspace/templates/base.html", line 259, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/templates/dogs/view.html", line 77, in block 'content'
+    {% set age = (today - dog.birth_date).days // 365 %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+jinja2.exceptions.UndefinedError: 'today' is undefined
+[2025-08-28 16:45:02 +0000] [766] [INFO] Handling signal: winch
+[2025-08-28 16:45:09 +0000] [766] [INFO] Handling signal: winch
