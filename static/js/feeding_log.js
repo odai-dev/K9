@@ -376,7 +376,7 @@ class FeedingLogManager {
         form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
         
         // Required fields validation
-        const requiredFields = ['project_id', 'dog_id', 'date', 'time'];
+        const requiredFields = ['dog_id', 'date', 'time'];
         requiredFields.forEach(fieldName => {
             const field = form.querySelector(`[name="${fieldName}"]`);
             if (!field.value.trim()) {
@@ -419,7 +419,7 @@ class FeedingLogManager {
         const data = {};
         
         // Standard fields
-        data.project_id = formData.get('project_id');
+        data.project_id = formData.get('project_id') || null;
         data.dog_id = formData.get('dog_id');
         data.date = formData.get('date');
         data.time = formData.get('time');

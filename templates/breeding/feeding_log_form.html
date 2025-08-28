@@ -43,9 +43,9 @@
                                 <!-- Basic Information -->
                                 <div class="row mb-4">
                                     <div class="col-md-6 mb-3">
-                                        <label for="project_id" class="form-label required">المشروع <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="project_id" name="project_id" required>
-                                            <option value="">اختر المشروع</option>
+                                        <label for="project_id" class="form-label">المشروع</label>
+                                        <select class="form-select" id="project_id" name="project_id">
+                                            <option value="">بدون مشروع</option>
                                             {% for project in projects %}
                                             <option value="{{ project.id }}" 
                                                 {% if log_entry and log_entry.project_id == project.id %}selected{% endif %}>
@@ -53,7 +53,6 @@
                                             </option>
                                             {% endfor %}
                                         </select>
-                                        <div class="invalid-feedback">يرجى اختيار المشروع</div>
                                     </div>
                                     
                                     <div class="col-md-6 mb-3">
