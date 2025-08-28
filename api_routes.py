@@ -230,8 +230,14 @@ def feeding_log_list():
             assigned_projects = get_user_assigned_projects(current_user)
             project_ids = [p.id for p in assigned_projects]
             if not project_ids:
-                return jsonify({'items': [], 'pagination': {}, 'kpis': {}})
-            query = query.filter(FeedingLog.project_id.in_(project_ids))
+                # Only show feeding logs with no project
+                query = query.filter(FeedingLog.project_id.is_(None))
+            else:
+                # Show feeding logs with no project OR assigned projects
+                query = query.filter(
+                    (FeedingLog.project_id.is_(None)) | 
+                    (FeedingLog.project_id.in_(project_ids))
+                )
         
         # Apply filters
         if project_id:
@@ -387,7 +393,7 @@ def feeding_log_create():
         
         # Create new feeding log entry
         feeding_log = FeedingLog()
-        feeding_log.project_id = data['project_id']
+        feeding_log.project_id = data.get('project_id') or None
         feeding_log.date = parsed_date
         feeding_log.time = parsed_time
         feeding_log.dog_id = data['dog_id']
@@ -455,7 +461,8 @@ def feeding_log_update(log_id):
         if current_user.role == UserRole.PROJECT_MANAGER:
             assigned_projects = get_user_assigned_projects(current_user)
             project_ids = [p.id for p in assigned_projects]
-            if feeding_log.project_id not in project_ids:
+            # Allow access if project_id is None or in assigned projects
+            if feeding_log.project_id is not None and feeding_log.project_id not in project_ids:
                 return jsonify({'error': 'غير مصرح لك بتعديل هذا السجل'}), 403
         
         data = request.get_json()
@@ -493,7 +500,8 @@ def feeding_log_delete(log_id):
         if current_user.role == UserRole.PROJECT_MANAGER:
             assigned_projects = get_user_assigned_projects(current_user)
             project_ids = [p.id for p in assigned_projects]
-            if feeding_log.project_id not in project_ids:
+            # Allow access if project_id is None or in assigned projects
+            if feeding_log.project_id is not None and feeding_log.project_id not in project_ids:
                 return jsonify({'error': 'غير مصرح لك بحذف هذا السجل'}), 403
         
         db.session.delete(feeding_log)
