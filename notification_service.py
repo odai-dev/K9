@@ -176,7 +176,7 @@ class NotificationService:
             user_room = f"user_{notification.user_id}"
             
             notification_data = {
-                'id': notification.id,
+                'id': str(notification.id),
                 'type': notification.type.value,
                 'title': notification.title,
                 'message': notification.message,
@@ -215,10 +215,11 @@ class NotificationService:
                 'icon': '/static/img/logo.png',
                 'badge': '/static/img/logo.png',
                 'data': {
-                    'id': notification.id,
+                    'id': str(notification.id),
                     'type': notification.type.value,
                     'action_url': notification.action_url,
-                    'metadata': notification.extra_data
+                    'metadata': notification.extra_data,
+                    'related_id': str(notification.related_id) if notification.related_id else None
                 },
                 'actions': []
             }
@@ -354,7 +355,7 @@ class NotificationService:
             notifications = query.order_by(Notification.created_at.desc()).limit(limit).all()
             
             return [{
-                'id': n.id,
+                'id': str(n.id),
                 'type': n.type.value,
                 'title': n.title,
                 'message': n.message,
@@ -362,6 +363,7 @@ class NotificationService:
                 'status': n.status.value,
                 'action_url': n.action_url,
                 'metadata': n.extra_data,
+                'related_id': str(n.related_id) if n.related_id else None,
                 'created_at': n.created_at.isoformat(),
                 'read_at': n.read_at.isoformat() if n.read_at else None
             } for n in notifications]
