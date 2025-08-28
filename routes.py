@@ -2644,7 +2644,6 @@ def reports_preview_pdf():
         'attendance_daily': 'تقرير الحضور اليومي',
         'attendance_pm_daily': 'تقرير المسؤول اليومي',
         'training_trainer_daily': 'تقرير المدرب اليومي',
-        'veterinary_daily': 'تقرير الطبيب اليومي',
         'production_maturity': 'تقرير البلوغ',
         'production_heat_cycles': 'تقرير الدورة',
         'production_mating': 'تقرير التزاوج',
