@@ -329,17 +329,18 @@ def feeding_log_create():
         if not data:
             return jsonify({'error': 'بيانات JSON مطلوبة'}), 400
         
-        # Validate required fields
-        required_fields = ['project_id', 'date', 'time', 'dog_id']
+        # Validate required fields (project_id can be null for "No project")
+        required_fields = ['date', 'time', 'dog_id']
         for field in required_fields:
             if field not in data or not data[field]:
                 return jsonify({'error': f'الحقل {field} مطلوب'}), 400
         
-        # Check PROJECT_MANAGER scoping
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # Check PROJECT_MANAGER scoping (only if project_id is provided)
+        project_id = data.get('project_id')
+        if current_user.role == UserRole.PROJECT_MANAGER and project_id:
             assigned_projects = get_user_assigned_projects(current_user)
             project_ids = [p.id for p in assigned_projects]
-            if data['project_id'] not in project_ids:
+            if project_id not in project_ids:
                 return jsonify({'error': 'غير مصرح لك بالعمل على هذا المشروع'}), 403
         
         # Validate meal type (at least one must be True)
@@ -425,7 +426,7 @@ def feeding_log_create():
             'id': str(feeding_log.id),
             'item': {
                 'id': str(feeding_log.id),
-                'project_name': feeding_log.project.name,
+                'project_name': feeding_log.project.name if feeding_log.project else "بدون مشروع",
                 'dog_name': feeding_log.dog.name,
                 'date': feeding_log.date.isoformat(),
                 'time': feeding_log.time.strftime('%H:%M'),
