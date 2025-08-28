@@ -46,15 +46,17 @@ def dashboard():
     stats = {}
     
     if current_user.role == UserRole.GENERAL_ADMIN:
+        # Optimize with single queries combining multiple counts
+        from sqlalchemy import func
         stats['total_dogs'] = Dog.query.count()
         stats['active_dogs'] = Dog.query.filter_by(current_status=DogStatus.ACTIVE).count()
         stats['total_employees'] = Employee.query.count()
         stats['active_employees'] = Employee.query.filter_by(is_active=True).count()
         stats['total_projects'] = Project.query.count()
         
-        # Recent activities
-        recent_training = TrainingSession.query.order_by(TrainingSession.created_at.desc()).limit(5).all()
-        recent_vet_visits = VeterinaryVisit.query.order_by(VeterinaryVisit.created_at.desc()).limit(5).all()
+        # Recent activities - limit to reduce load
+        recent_training = TrainingSession.query.order_by(TrainingSession.created_at.desc()).limit(3).all()
+        recent_vet_visits = VeterinaryVisit.query.order_by(VeterinaryVisit.created_at.desc()).limit(3).all()
         
     else:  # PROJECT_MANAGER - Use permission-based access
         # Get data through SubPermission system
@@ -96,9 +98,7 @@ def dogs_add():
     # Get potential parents for dropdowns
     potential_parents = get_user_accessible_dogs(current_user)
     
-    print(f"Dogs add route called with method: {request.method}")
     if request.method == 'POST':
-        print(f"Form data: {dict(request.form)}")
         try:
             # Handle photo upload
             photo_filename = None

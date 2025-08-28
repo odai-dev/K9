@@ -882,21 +882,15 @@ def get_user_accessible_dogs(user):
         if not dogs_permission:
             return []
             
-        # Get projects this user has access to
-        user_projects = get_user_assigned_projects(user)
-        if not user_projects:
-            return []
-            
-        # Get dogs through project assignments
-        dogs = []
-        for project in user_projects:
-            project_dogs = db.session.query(Dog).join(ProjectAssignment).filter(
-                ProjectAssignment.project_id == project.id,
-                ProjectAssignment.dog_id.isnot(None)
-            ).all()
-            dogs.extend(project_dogs)
+        # Optimized single query: Get all dogs assigned to user's projects
+        user_project_ids = db.session.query(ProjectAssignment.project_id).filter_by(user_id=user.id).subquery()
         
-        return list(set(dogs))  # Remove duplicates
+        dogs = db.session.query(Dog).join(ProjectAssignment).filter(
+            ProjectAssignment.project_id.in_(user_project_ids),
+            ProjectAssignment.dog_id.isnot(None)
+        ).distinct().all()
+        
+        return dogs
     
     return []
 
@@ -919,21 +913,15 @@ def get_user_accessible_employees(user):
         if not employees_permission:
             return []
             
-        # Get projects this user has access to
-        user_projects = get_user_assigned_projects(user)
-        if not user_projects:
-            return []
-            
-        # Get employees through project assignments
-        employees = []
-        for project in user_projects:
-            project_employees = db.session.query(Employee).join(ProjectAssignment).filter(
-                ProjectAssignment.project_id == project.id,
-                ProjectAssignment.employee_id.isnot(None)
-            ).all()
-            employees.extend(project_employees)
+        # Optimized single query: Get all employees assigned to user's projects
+        user_project_ids = db.session.query(ProjectAssignment.project_id).filter_by(user_id=user.id).subquery()
         
-        return list(set(employees))  # Remove duplicates
+        employees = db.session.query(Employee).join(ProjectAssignment).filter(
+            ProjectAssignment.project_id.in_(user_project_ids),
+            ProjectAssignment.employee_id.isnot(None)
+        ).distinct().all()
+        
+        return employees
     
     return []
 
