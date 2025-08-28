@@ -66,8 +66,9 @@
                                 'لياقة': {'class': 'warning', 'text': 'لياقة'},
                                 'تحسين سلوك': {'class': 'secondary', 'text': 'تحسين سلوك'}
                             } %}
-                            <span class="badge bg-{{ category_map[session.category.value]['class'] }}">
-                                {{ category_map[session.category.value]['text'] }}
+                            {% set category_info = category_map.get(session.category.value, {'class': 'secondary', 'text': session.category.value}) %}
+                            <span class="badge bg-{{ category_info['class'] }}">
+                                {{ category_info['text'] }}
                             </span>
                         </td>
                         <td>{{ session.subject }}</td>
