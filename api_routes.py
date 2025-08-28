@@ -639,17 +639,18 @@ def api_checkup_create():
     try:
         data = request.get_json()
 
-        # Validate required fields
-        required_fields = ['project_id', 'date', 'time', 'dog_id']
+        # Validate required fields (project_id is optional)
+        required_fields = ['date', 'time', 'dog_id']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'مطلوب: {field}'}), 400
 
-        # Check project access for project managers
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # Check project access for project managers (only if project_id is provided)
+        project_id = data.get('project_id')
+        if current_user.role == UserRole.PROJECT_MANAGER and project_id:
             assigned_projects = get_user_assigned_projects(current_user)
             assigned_project_ids = [p.id for p in assigned_projects]
-            if int(data['project_id']) not in assigned_project_ids:
+            if int(project_id) not in assigned_project_ids:
                 return jsonify({'error': 'ليس لديك صلاحية لهذا المشروع'}), 403
 
         # Validate enum values
@@ -672,7 +673,7 @@ def api_checkup_create():
 
         # Create checkup record
         checkup = DailyCheckupLog()
-        checkup.project_id = int(data['project_id'])
+        checkup.project_id = int(data['project_id']) if data.get('project_id') else None
         checkup.date = datetime.strptime(data['date'], '%Y-%m-%d').date()
         checkup.time = parsed_time
         checkup.dog_id = int(data['dog_id'])
