@@ -78,6 +78,12 @@
                                             <option value="production_puppy_training">تدريب الجراء</option>
                                         </optgroup>
                                         <option value="projects" {% if pre_selected_type == 'projects' %}selected{% endif %}>تقرير المشاريع</option>
+                                        <optgroup label="تقارير يومية">
+                                            <option value="attendance_daily">تقرير الحضور اليومي</option>
+                                            <option value="attendance_pm_daily">تقرير المسؤول اليومي</option>
+                                            <option value="training_trainer_daily">تقرير المدرب اليومي</option>
+                                            <option value="veterinary_daily">تقرير الطبيب اليومي</option>
+                                        </optgroup>
                                     </select>
                                 </div>
                                 
@@ -622,25 +628,25 @@ function updateEntityFilters() {
         
         switch(productionType) {
             case 'maturity':
-                redirectUrl = "{{ url_for('main.maturity_list') }}";
+                redirectUrl = "{{ url_for('main.production_list') }}#maturity";
                 break;
             case 'heat_cycles':
-                redirectUrl = "{{ url_for('main.heat_cycles_list') }}";
+                redirectUrl = "/production/heat-cycles";
                 break;
             case 'mating':
-                redirectUrl = "{{ url_for('main.mating_list') }}";
+                redirectUrl = "/production/mating";
                 break;
             case 'pregnancy':
-                redirectUrl = "{{ url_for('main.pregnancy_list') }}";
+                redirectUrl = "/production/pregnancy";
                 break;
             case 'delivery':
-                redirectUrl = "{{ url_for('main.delivery_list') }}";
+                redirectUrl = "/production/delivery";
                 break;
             case 'puppies':
-                redirectUrl = "{{ url_for('main.puppies_list') }}";
+                redirectUrl = "/production/puppies";
                 break;
             case 'puppy_training':
-                redirectUrl = "{{ url_for('main.puppy_training_list') }}";
+                redirectUrl = "/production/puppy-training";
                 break;
             default:
                 redirectUrl = "{{ url_for('main.production_list') }}";
