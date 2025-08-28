@@ -274,8 +274,8 @@
                                         <select class="form-select" name="vet_id">
                                             <option value="">جميع الأطباء</option>
                                             {% for employee in employees %}
-                                                {% if employee.role.value == 'VET' %}
-                                                <option value="{{ employee.id }}">{{ employee.name or 'طبيب بيطري' }}</option>
+                                                {% if employee.role == 'VET' or (employee.role and employee.role.value == 'VET') %}
+                                                <option value="{{ employee.id }}">{{ employee.name or 'طبيب بيطري' }} - {{ employee.role }}</option>
                                                 {% endif %}
                                             {% endfor %}
                                         </select>
