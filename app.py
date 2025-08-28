@@ -58,6 +58,7 @@ with app.app_context():
     # Make sure to import the models here or their tables won't be created
     import models  # noqa: F401
     import models_attendance_reporting  # noqa: F401
+    import models_notifications  # noqa: F401
 
     db.create_all()
     
