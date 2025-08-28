@@ -364,6 +364,21 @@ def training_add():
         try:
             from utils import auto_link_dog_activity_to_project
             from datetime import datetime
+            import logging
+            
+            # Debug: Print form data
+            logging.info(f"Form data: {dict(request.form)}")
+            
+            # Validate required fields
+            if not request.form.get('dog_id'):
+                flash('يجب اختيار كلب', 'error')
+                raise ValueError("Dog ID is required")
+            if not request.form.get('trainer_id'):
+                flash('يجب اختيار مدرب', 'error')
+                raise ValueError("Trainer ID is required")
+            if not request.form.get('category'):
+                flash('يجب اختيار نوع التدريب', 'error')
+                raise ValueError("Category is required")
             
             # Create training session with proper model construction
             session = TrainingSession()
@@ -381,8 +396,12 @@ def training_add():
             # Automatically link to project based on dog assignment
             session.project_id = auto_link_dog_activity_to_project(session.dog_id, session.session_date)
             
+            logging.info(f"Training session created: {session.__dict__}")
+            
             db.session.add(session)
             db.session.commit()
+            
+            logging.info(f"Training session saved with ID: {session.id}")
             
             project_info = f" (مرتبط بالمشروع: {session.project.name})" if session.project else " (غير مرتبط بمشروع)"
             log_audit(current_user.id, AuditAction.CREATE, 'TrainingSession', session.id, f'جلسة تدريب جديدة للكلب {session.dog.name}{project_info}', None, {'category': session.category.value})
@@ -391,6 +410,9 @@ def training_add():
             
         except Exception as e:
             db.session.rollback()
+            logging.error(f"Training session save error: {str(e)}")
+            import traceback
+            logging.error(f"Full traceback: {traceback.format_exc()}")
             flash(f'حدث خطأ أثناء تسجيل جلسة التدريب: {str(e)}', 'error')
     
     # Get available dogs and employees for the form
