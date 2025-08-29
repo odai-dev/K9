@@ -132,18 +132,7 @@ with app.app_context():
         print(f"⚠ Warning: Could not register training reports: {e}")
         # Continue without training reports for now
     
-    # Register Veterinary Report blueprints
-    try:
-        from veterinary_daily_routes import bp as vet_daily_ui_bp
-        from veterinary_daily_api import bp as vet_daily_api_bp
-        
-        app.register_blueprint(vet_daily_ui_bp, url_prefix='/reports/veterinary')
-        app.register_blueprint(vet_daily_api_bp, url_prefix='/api/reports/veterinary')
-        print("✓ Veterinary reports registered successfully")
-        
-    except Exception as e:
-        print(f"⚠ Warning: Could not register veterinary reports: {e}")
-        # Continue without veterinary reports for now
+    # Note: Veterinary daily reports have been removed from the system
         
     # Register Cleaning API blueprint
     try:
