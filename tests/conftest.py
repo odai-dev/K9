@@ -208,10 +208,71 @@ def sample_attendance_record(db_session, sample_project, sample_employee):
     return attendance
 
 
+@pytest.fixture
+def sample_trainer(db_session):
+    """إنشاء مدرب نموذجي للاختبارات"""
+    trainer = Employee()
+    trainer.name = 'أحمد المدرب'
+    trainer.employee_id = 'TRN001'
+    trainer.role = EmployeeRole.TRAINER
+    trainer.phone = '0501234567'
+    trainer.email = 'trainer@example.com'
+    trainer.hire_date = date(2023, 1, 1)
+    trainer.active = True
+    
+    db_session.add(trainer)
+    db_session.commit()
+    return trainer
+
+
+@pytest.fixture
+def sample_vet(db_session):
+    """إنشاء طبيب بيطري نموذجي للاختبارات"""
+    vet = Employee()
+    vet.name = 'د. فاطمة البيطرية'
+    vet.employee_id = 'VET001'
+    vet.role = EmployeeRole.VETERINARIAN
+    vet.phone = '0507654321'
+    vet.email = 'vet@example.com'
+    vet.hire_date = date(2023, 1, 1)
+    vet.active = True
+    
+    db_session.add(vet)
+    db_session.commit()
+    return vet
+
+
+@pytest.fixture
+def login_admin(client, db_session):
+    """إنشاء وتسجيل دخول مدير نظام"""
+    from werkzeug.security import generate_password_hash
+    
+    admin = User()
+    admin.username = 'admin_test'
+    admin.email = 'admin@test.com'
+    admin.password_hash = generate_password_hash('password')
+    admin.full_name = 'مدير الاختبار'
+    admin.role = UserRole.GENERAL_ADMIN
+    admin.active = True
+    
+    db_session.add(admin)
+    db_session.commit()
+    
+    # تسجيل دخول المدير
+    with client.session_transaction() as sess:
+        sess['_user_id'] = str(admin.id)
+        sess['_fresh'] = True
+    
+    return admin
+
+
 # Markers للتصنيف
 def pytest_configure(config):
     """تكوين إضافي للاختبارات"""
     config.addinivalue_line("markers", "unit: اختبارات الوحدة")
-    config.addinivalue_line("markers", "integration: اختبارات التكامل")
+    config.addinivalue_line("markers", "integration: اختبارات التكامل") 
+    config.addinivalue_line("markers", "e2e: اختبارات النهاية إلى النهاية")
     config.addinivalue_line("markers", "slow: اختبارات بطيئة")
     config.addinivalue_line("markers", "database: اختبارات تتطلب قاعدة بيانات")
+    config.addinivalue_line("markers", "reports: اختبارات التقارير")
+    config.addinivalue_line("markers", "export: اختبارات التصدير")
