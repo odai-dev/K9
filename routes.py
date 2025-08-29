@@ -2169,7 +2169,7 @@ def reports_generate():
     Generate a report based on type, optional date range and optional filters.
     Supported report types: 'dogs', 'employees', 'training', 'veterinary',
                             'breeding', 'projects', 'attendance_daily', 'attendance_pm_daily',
-                            'training_trainer_daily', 'veterinary_daily', plus production sub-types.
+                            'training_trainer_daily', plus production sub-types.
     Additional filters (passed via POST form) vary by type:
       - dogs: status, gender
       - employees: role, status
@@ -2204,7 +2204,7 @@ def reports_generate():
             # Map new report types to existing system for PDF generation
             if report_type.startswith('production_'):
                 pdf_report_type = 'breeding'  # Use breeding for all production reports
-            elif report_type in ['attendance_daily', 'attendance_pm_daily', 'training_trainer_daily', 'veterinary_daily']:
+            elif report_type in ['attendance_daily', 'attendance_pm_daily', 'training_trainer_daily']:
                 # For daily reports, redirect to training or veterinary as appropriate
                 if 'training' in report_type:
                     pdf_report_type = 'training'
@@ -2561,23 +2561,6 @@ def reports_preview():
                     'التمرين': item.get('exercise_type', ''),
                     'التقييم': item.get('rating', ''),
                     'الملاحظات': item.get('notes', '')
-                })
-        except Exception:
-            records = []
-    
-    elif report_type == 'veterinary_daily':
-        # Get veterinary daily data
-        try:
-            from veterinary_daily_services import get_veterinary_daily_summary
-            summary_data = get_veterinary_daily_summary(start_date, end_date, current_user)
-            for item in summary_data:
-                records.append({
-                    'الطبيب': item.get('vet_name', ''),
-                    'التاريخ': item.get('date', ''),
-                    'الكلب': item.get('dog_name', ''),
-                    'نوع الفحص': item.get('examination_type', ''),
-                    'التشخيص': item.get('diagnosis', ''),
-                    'العلاج': item.get('treatment', '')
                 })
         except Exception:
             records = []
