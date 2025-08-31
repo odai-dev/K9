@@ -202,6 +202,73 @@
     </div>
 </div>
 
+
+<style>
+.breeding-checkup-form .section-title {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 0;
+}
+
+.breeding-checkup-form .form-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.breeding-checkup-form .text-danger {
+    font-size: 0.9em;
+}
+
+.breeding-checkup-form .card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.breeding-checkup-form textarea {
+    resize: vertical;
+}
+
+.breeding-checkup-form .btn-group .btn {
+    margin-right: 0.5rem;
+}
+
+.alert {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* RTL adjustments */
+.breeding-checkup-form input[type="time"] {
+    direction: ltr;
+    text-align: right;
+}
+
+.breeding-checkup-form input[type="date"] {
+    direction: ltr;
+    text-align: right;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .breeding-checkup-form .d-flex {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .breeding-checkup-form .d-flex > div {
+        margin-bottom: 1rem;
+    }
+    
+    .breeding-checkup-form .btn-group {
+        width: 100%;
+    }
+    
+    .breeding-checkup-form .btn-group .btn {
+        flex: 1;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
 <script>
 $(document).ready(function() {
     // Set default date to today if creating new record
@@ -224,6 +291,12 @@ $(document).ready(function() {
         clearTimeout(autoSaveTimer);
         autoSaveTimer = setTimeout(saveDraft, 3000); // Auto-save after 3 seconds of inactivity
     });
+
+    // Validate on field changes
+    $('#project_id, #dog_id, #date, #time').on('change', validateForm);
+
+    // Initialize validation
+    validateForm();
 });
 
 function submitForm() {
@@ -320,75 +393,5 @@ function validateForm() {
     
     return isValid;
 }
-
-// Validate on field changes
-$('#project_id, #dog_id, #date, #time').on('change', validateForm);
-
-// Initialize validation
-validateForm();
 </script>
-
-<style>
-.breeding-checkup-form .section-title {
-    color: #495057;
-    font-weight: 600;
-    margin-bottom: 0;
-}
-
-.breeding-checkup-form .form-label {
-    font-weight: 500;
-    color: #495057;
-}
-
-.breeding-checkup-form .text-danger {
-    font-size: 0.9em;
-}
-
-.breeding-checkup-form .card {
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-}
-
-.breeding-checkup-form textarea {
-    resize: vertical;
-}
-
-.breeding-checkup-form .btn-group .btn {
-    margin-right: 0.5rem;
-}
-
-.alert {
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-}
-
-/* RTL adjustments */
-.breeding-checkup-form input[type="time"] {
-    direction: ltr;
-    text-align: right;
-}
-
-.breeding-checkup-form input[type="date"] {
-    direction: ltr;
-    text-align: right;
-}
-
-/* Responsive improvements */
-@media (max-width: 768px) {
-    .breeding-checkup-form .d-flex {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .breeding-checkup-form .d-flex > div {
-        margin-bottom: 1rem;
-    }
-    
-    .breeding-checkup-form .btn-group {
-        width: 100%;
-    }
-    
-    .breeding-checkup-form .btn-group .btn {
-        flex: 1;
-    }
-}
-</style>
 {% endblock %}
