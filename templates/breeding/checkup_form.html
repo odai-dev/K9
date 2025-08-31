@@ -189,7 +189,6 @@
                         <div class="d-flex justify-content-between">
                             <a href="{{ url_for('main.breeding_checkup') }}" class="btn btn-secondary">إلغاء</a>
                             <div>
-                                <button type="button" class="btn btn-outline-primary me-2" onclick="saveDraft()">حفظ كمسودة</button>
                                 <button type="submit" class="btn btn-primary">
                                     {% if checkup %}حفظ التعديلات{% else %}إنشاء الفحص{% endif %}
                                 </button>
@@ -270,41 +269,30 @@
 
 {% block scripts %}
 <script>
-// Ensure jQuery is loaded before running our code
-function waitForJQuery(callback) {
-    if (typeof $ !== 'undefined') {
-        callback();
-    } else {
-        setTimeout(function() { waitForJQuery(callback); }, 50);
-    }
-}
-
-waitForJQuery(function() {
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
     // Set default date to today if creating new record
     var isNewRecord = {{ 'true' if not checkup else 'false' }};
     if (isNewRecord) {
         const today = new Date().toISOString().split('T')[0];
         const now = new Date().toTimeString().split(' ')[0].slice(0,5);
-        $('#date').val(today);
-        $('#time').val(now);
+        document.getElementById('date').value = today;
+        document.getElementById('time').value = now;
     }
 
     // Form submission handler
-    $('#checkup-form').on('submit', function(e) {
+    document.getElementById('checkup-form').addEventListener('submit', function(e) {
         e.preventDefault();
         submitForm();
     });
 
-    // Auto-save functionality
-    let autoSaveTimer;
-    $('#checkup-form input, #checkup-form select, #checkup-form textarea').on('change input', function() {
-        clearTimeout(autoSaveTimer);
-        autoSaveTimer = setTimeout(saveDraft, 3000); // Auto-save after 3 seconds of inactivity
-    });
+    // Auto-save functionality (removed since draft button is removed)
+    // Auto-save functionality has been removed as requested
 
     // Validate on field changes
-    $('#project_id, #dog_id, #date, #time').on('change', validateForm);
+    const validateFields = ['project_id', 'dog_id', 'date', 'time'];
+    validateFields.forEach(fieldId => {
+        document.getElementById(fieldId).addEventListener('change', validateForm);
+    });
 
     // Initialize validation
     validateForm();
@@ -312,23 +300,23 @@ $(document).ready(function() {
 
 function submitForm() {
     const formData = {
-        project_id: $('#project_id').val(),
-        dog_id: $('#dog_id').val(),
-        examiner_employee_id: $('#examiner_employee_id').val() || null,
-        date: $('#date').val(),
-        time: $('#time').val(),
-        eyes: $('#eyes').val(),
-        ears: $('#ears').val(),
-        nose: $('#nose').val(),
-        front_legs: $('#front_legs').val(),
-        hind_legs: $('#hind_legs').val(),
-        coat: $('#coat').val(),
-        tail: $('#tail').val(),
-        severity: $('#severity').val() || null,
-        symptoms: $('#symptoms').val(),
-        initial_diagnosis: $('#initial_diagnosis').val(),
-        suggested_treatment: $('#suggested_treatment').val(),
-        notes: $('#notes').val()
+        project_id: document.getElementById('project_id').value,
+        dog_id: document.getElementById('dog_id').value,
+        examiner_employee_id: document.getElementById('examiner_employee_id').value || null,
+        date: document.getElementById('date').value,
+        time: document.getElementById('time').value,
+        eyes: document.getElementById('eyes').value,
+        ears: document.getElementById('ears').value,
+        nose: document.getElementById('nose').value,
+        front_legs: document.getElementById('front_legs').value,
+        hind_legs: document.getElementById('hind_legs').value,
+        coat: document.getElementById('coat').value,
+        tail: document.getElementById('tail').value,
+        severity: document.getElementById('severity').value || null,
+        symptoms: document.getElementById('symptoms').value,
+        initial_diagnosis: document.getElementById('initial_diagnosis').value,
+        suggested_treatment: document.getElementById('suggested_treatment').value,
+        notes: document.getElementById('notes').value
     };
 
     // Validate required fields
@@ -337,11 +325,13 @@ function submitForm() {
         return;
     }
 
-    const submitButton = $('button[type="submit"]');
-    const originalText = submitButton.text();
-    submitButton.prop('disabled', true).text('جاري الحفظ...');
+    const submitButton = document.querySelector('button[type="submit"]');
+    const originalText = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.textContent = 'جاري الحفظ...';
 
-    const checkupId = $('#checkup_id').val();
+    const checkupIdElement = document.getElementById('checkup_id');
+    const checkupId = checkupIdElement ? checkupIdElement.value : null;
     const url = checkupId ? `/api/breeding/checkup/${checkupId}` : '/api/breeding/checkup';
     const method = checkupId ? 'PUT' : 'POST';
 
@@ -361,49 +351,48 @@ function submitForm() {
             }, 1500);
         } else {
             showAlert(data.error || 'حدث خطأ أثناء الحفظ', 'error');
-            submitButton.prop('disabled', false).text(originalText);
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
         }
     })
     .catch(error => {
         console.error('Error:', error);
         showAlert('حدث خطأ أثناء الحفظ', 'error');
-        submitButton.prop('disabled', false).text(originalText);
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
     });
 }
 
-function saveDraft() {
-    // Implement draft saving logic if needed
-    // For now, just show a temporary message
-    showAlert('تم حفظ المسودة تلقائياً', 'info', 1000);
-}
+// Draft functionality removed as requested
 
 function showAlert(message, type, duration = 3000) {
     const alertClass = type === 'success' ? 'alert-success' : 
                      type === 'error' ? 'alert-danger' : 
                      type === 'info' ? 'alert-info' : 'alert-warning';
     
-    const alert = `
-        <div class="alert ${alertClass} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+    const alert = document.createElement('div');
+    alert.className = `alert ${alertClass} alert-dismissible fade show`;
+    alert.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alert.setAttribute('role', 'alert');
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    $('body').append(alert);
-    setTimeout(() => $('.alert').alert('close'), duration);
+    document.body.appendChild(alert);
+    setTimeout(() => alert.remove(), duration);
 }
 
 // Real-time form validation
 function validateForm() {
-    const project = $('#project_id').val();
-    const dog = $('#dog_id').val();
-    const date = $('#date').val();
-    const time = $('#time').val();
+    const project = document.getElementById('project_id').value;
+    const dog = document.getElementById('dog_id').value;
+    const date = document.getElementById('date').value;
+    const time = document.getElementById('time').value;
 
     const isValid = project && dog && date && time;
-    $('button[type="submit"]').prop('disabled', !isValid);
+    document.querySelector('button[type="submit"]').disabled = !isValid;
     
     return isValid;
 }
-}); // Close waitForJQuery callback
 </script>
 {% endblock %}

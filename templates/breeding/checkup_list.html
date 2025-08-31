@@ -180,7 +180,7 @@ let currentFilters = {};
 let checkupToDelete = null;
 
 // Initialize the page
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
     loadFilterOptions();
     loadCheckups();
     
@@ -189,8 +189,8 @@ $(document).ready(function() {
     const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
     const weekEnd = new Date(now.setDate(now.getDate() - now.getDay() + 6));
     
-    $('#date_from').val(weekStart.toISOString().split('T')[0]);
-    $('#date_to').val(weekEnd.toISOString().split('T')[0]);
+    document.getElementById('date_from').value = weekStart.toISOString().split('T')[0];
+    document.getElementById('date_to').value = weekEnd.toISOString().split('T')[0];
 });
 
 function loadFilterOptions() {
@@ -198,21 +198,27 @@ function loadFilterOptions() {
     fetch('/api/dogs/accessible')
         .then(response => response.json())
         .then(data => {
-            const projectSelect = $('#project_filter');
-            const dogSelect = $('#dog_filter');
+            const projectSelect = document.getElementById('project_filter');
+            const dogSelect = document.getElementById('dog_filter');
             
             // Get unique projects from dogs data
             const projects = [...new Map(data.dogs.map(dog => [dog.project_id, dog.project_name])).entries()];
             
             projects.forEach(([id, name]) => {
                 if (name) {
-                    projectSelect.append(`<option value="${id}">${name}</option>`);
+                    const option = document.createElement('option');
+                    option.value = id;
+                    option.textContent = name;
+                    projectSelect.appendChild(option);
                 }
             });
             
             // Populate dogs
             data.dogs.forEach(dog => {
-                dogSelect.append(`<option value="${dog.id}">${dog.name}</option>`);
+                const option = document.createElement('option');
+                option.value = dog.id;
+                option.textContent = dog.name;
+                dogSelect.appendChild(option);
             });
         })
         .catch(error => console.error('Error loading filter options:', error));
@@ -220,10 +226,10 @@ function loadFilterOptions() {
 
 function applyFilters() {
     currentFilters = {
-        project_id: $('#project_filter').val(),
-        date_from: $('#date_from').val(),
-        date_to: $('#date_to').val(),
-        dog_id: $('#dog_filter').val()
+        project_id: document.getElementById('project_filter').value,
+        date_from: document.getElementById('date_from').value,
+        date_to: document.getElementById('date_to').value,
+        dog_id: document.getElementById('dog_filter').value
     };
     currentPage = 1;
     loadCheckups();
@@ -256,24 +262,24 @@ function loadCheckups() {
 }
 
 function updateKPIs(kpis) {
-    $('#total-count').text(kpis.total || 0);
-    $('#eyes-flags').text(kpis.flags?.العين || 0);
-    $('#ears-flags').text(kpis.flags?.الأذن || 0);
-    $('#severe-count').text(kpis.severity?.شديد || 0);
-    $('#moderate-count').text(kpis.severity?.متوسط || 0);
-    $('#mild-count').text(kpis.severity?.خفيف || 0);
+    document.getElementById('total-count').textContent = kpis.total || 0;
+    document.getElementById('eyes-flags').textContent = kpis.flags?.العين || 0;
+    document.getElementById('ears-flags').textContent = kpis.flags?.الأذن || 0;
+    document.getElementById('severe-count').textContent = kpis.severity?.شديد || 0;
+    document.getElementById('moderate-count').textContent = kpis.severity?.متوسط || 0;
+    document.getElementById('mild-count').textContent = kpis.severity?.خفيف || 0;
 }
 
 function updateTable(items) {
-    const tbody = $('#checkup-table-body');
-    tbody.empty();
+    const tbody = document.getElementById('checkup-table-body');
+    tbody.innerHTML = '';
     
     if (items.length === 0) {
-        tbody.append(`
+        tbody.innerHTML = `
             <tr>
                 <td colspan="12" class="text-center py-4">لا توجد سجلات</td>
             </tr>
-        `);
+        `;
         return;
     }
     
@@ -305,42 +311,42 @@ function updateTable(items) {
                 </td>
             </tr>
         `;
-        tbody.append(row);
+        tbody.innerHTML += row;
     });
 }
 
 function updatePagination(pagination) {
-    const container = $('#pagination-container');
-    container.empty();
+    const container = document.getElementById('pagination-container');
+    container.innerHTML = '';
     
     if (pagination.pages <= 1) return;
     
     // Previous button
     if (pagination.has_prev) {
-        container.append(`
+        container.innerHTML += `
             <li class="page-item">
                 <a class="page-link" href="#" onclick="changePage(${pagination.page - 1})">السابق</a>
             </li>
-        `);
+        `;
     }
     
     // Page numbers
     for (let i = 1; i <= pagination.pages; i++) {
         const active = i === pagination.page ? 'active' : '';
-        container.append(`
+        container.innerHTML += `
             <li class="page-item ${active}">
                 <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
             </li>
-        `);
+        `;
     }
     
     // Next button
     if (pagination.has_next) {
-        container.append(`
+        container.innerHTML += `
             <li class="page-item">
                 <a class="page-link" href="#" onclick="changePage(${pagination.page + 1})">التالي</a>
             </li>
-        `);
+        `;
     }
 }
 
@@ -371,10 +377,12 @@ function formatDate(dateStr) {
 
 function confirmDelete(id) {
     checkupToDelete = id;
-    $('#deleteModal').modal('show');
+    // Using Bootstrap's modal API
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
 }
 
-$('#confirm-delete').click(function() {
+document.getElementById('confirm-delete').addEventListener('click', function() {
     if (checkupToDelete) {
         fetch(`/api/breeding/checkup/${checkupToDelete}`, {
             method: 'DELETE',
@@ -385,7 +393,8 @@ $('#confirm-delete').click(function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                $('#deleteModal').modal('hide');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                modal.hide();
                 loadCheckups();
                 // Show success message
                 showAlert('تم حذف السجل بنجاح', 'success');
@@ -402,14 +411,16 @@ $('#confirm-delete').click(function() {
 
 function showAlert(message, type) {
     const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-    const alert = `
-        <div class="alert ${alertClass} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+    const alert = document.createElement('div');
+    alert.className = `alert ${alertClass} alert-dismissible fade show`;
+    alert.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999;';
+    alert.setAttribute('role', 'alert');
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    $('body').append(alert);
-    setTimeout(() => $('.alert').alert('close'), 3000);
+    document.body.appendChild(alert);
+    setTimeout(() => alert.remove(), 3000);
 }
 </script>
 
