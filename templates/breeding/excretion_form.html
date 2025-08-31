@@ -267,11 +267,26 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/excretion.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const isEdit = {{ 'true' if excretion_log else 'false' }};
-    ExcretionManager.initForm(isEdit);
+    // Wait for jQuery to be fully loaded
+    function waitForJQuery(callback) {
+        if (typeof $ !== 'undefined') {
+            callback();
+        } else {
+            setTimeout(function() { waitForJQuery(callback); }, 100);
+        }
+    }
+    
+    waitForJQuery(function() {
+        console.log('jQuery loaded:', typeof $);
+        // Now safely initialize the form
+        if (typeof ExcretionManager !== 'undefined') {
+            const isEdit = {{ 'true' if excretion_log else 'false' }};
+            ExcretionManager.initForm(isEdit);
+        }
+    });
 });
 </script>
+<script src="{{ url_for('static', filename='js/excretion.js') }}"></script>
 {% endblock %}
