@@ -1,0 +1,53 @@
+
+نظام إدارة الكلاب البوليسية
+الرئيسية
+الموارد 
+التربية 
+الطبابة 
+الإنتاج 
+المشاريع 
+الحضور
+التقارير 
+بحث سريع...
+System Administrator
+إضافة فحص ظاهري يومي
+تسجيل بيانات الفحص الصحي اليومي للكلاب
+
+المعلومات الأساسية
+المشروع
+بدون مشروع
+الكلب *
+taha ()
+الفاحص
+jutf
+تاريخ الفحص *
+08/31/2025
+وقت الفحص *
+08:41 PM
+فحص أجزاء الجسم
+العين
+سليم
+الأذن
+إفرازات
+الأنف
+أخرى
+الأطراف الأمامية
+سليم
+الأطراف الخلفية
+سليم
+الشعر/الفراء
+سليم
+الذيل
+سليم
+شدة الحالة
+خفيف
+الملاحظات والتشخيص
+الأعراض المرصودة
+اكتب الأعراض والعلامات المرصودة...
+التشخيص الأولي
+التشخيص الأولي أو التقييم...
+العلاج المقترح
+العلاج أو الإجراءات المقترحة...
+ملاحظات إضافية
+أي ملاحظات أو تفاصيل إضافية...
+(psycopg2.errors.NotNullViolation) null value in column "project_id" of relation "daily_checkup_log" violates not-null constraint DETAIL: Failing row contains (94eb1a94-7588-49e4-8d04-8137cde2bec2, null, 2025-08-31, 20:41:00, 91f827aa-393c-47e0-a717-2cb887b495ba, 34a25bfe-b9e1-4367-b519-2cf9429aa5ab, سليم, إفرازات, أخرى, سليم, سليم, سليم, سليم, خفيف, , , , , 1, 2025-08-31 17:42:26.930852, 2025-08-31 17:42:26.930856). [SQL: INSERT INTO daily_checkup_log (id, project_id, date, time, dog_id, examiner_employee_id, eyes, ears, nose, front_legs, hind_legs, coat, tail, severity, symptoms, initial_diagnosis, suggested_treatment, notes, created_by_user_id, created_at, updated_at) VALUES (%(id)s::UUID, %(project_id)s::UUID, %(date)s, %(time)s, %(dog_id)s::UUID, %(examiner_employee_id)s::UUID, %(eyes)s, %(ears)s, %(nose)s, %(front_legs)s, %(hind_legs)s, %(coat)s, %(tail)s, %(severity)s, %(symptoms)s, %(initial_diagnosis)s, %(suggested_treatment)s, %(notes)s, %(created_by_user_id)s, %(created_at)s, %(updated_at)s)] [parameters: {'id': '94eb1a94-7588-49e4-8d04-8137cde2bec2', 'project_id': None, 'date': datetime.date(2025, 8, 31), 'time': datetime.time(20, 41), 'dog_id': '91f827aa-393c-47e0-a717-2cb887b495ba', 'examiner_employee_id': '34a25bfe-b9e1-4367-b519-2cf9429aa5ab', 'eyes': 'سليم', 'ears': 'إفرازات', 'nose': 'أخرى', 'front_legs': 'سليم', 'hind_legs': 'سليم', 'coat': 'سليم', 'tail': 'سليم', 'severity': 'خفيف', 'symptoms': '', 'initial_diagnosis': '', 'suggested_treatment': '', 'notes': '', 'created_by_user_id': 1, 'created_at': datetime.datetime(2025, 8, 31, 17, 42, 26, 930852), 'updated_at': datetime.datetime(2025, 8, 31, 17, 42, 26, 930856)}] (Background on this error at: https://sqlalche.me/e/20/gkpj)
