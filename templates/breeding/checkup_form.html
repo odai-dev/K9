@@ -271,7 +271,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Set default date to today if creating new record
-    var isNewRecord = {{ 'true' if not checkup else 'false' }};
+    var isNewRecord = {% if not checkup %}true{% else %}false{% endif %};
     if (isNewRecord) {
         const today = new Date().toISOString().split('T')[0];
         const now = new Date().toTimeString().split(' ')[0].slice(0,5);
