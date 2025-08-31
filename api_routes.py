@@ -738,7 +738,7 @@ def api_checkup_update(id):
 
         # Update fields
         if data.get('examiner_employee_id'):
-            checkup.examiner_employee_id = int(data['examiner_employee_id'])
+            checkup.examiner_employee_id = data['examiner_employee_id']
 
         # Update body part statuses
         for part in body_parts:
