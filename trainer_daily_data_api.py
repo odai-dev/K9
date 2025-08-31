@@ -94,3 +94,50 @@ def get_dogs():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/dogs/accessible')
+@login_required
+def get_accessible_dogs():
+    """Get list of accessible dogs and projects for breeding forms"""
+    try:
+        # GENERAL_ADMIN sees all dogs, PROJECT_MANAGER sees assigned dogs
+        if current_user.role.value == "GENERAL_ADMIN":
+            dogs = db.session.query(Dog).filter(
+                Dog.current_status.in_(['ACTIVE', 'TRAINING'])
+            ).all()
+            projects = db.session.query(Project).filter(
+                Project.status.in_(['PLANNED', 'ACTIVE'])
+            ).all()
+        else:
+            # PROJECT_MANAGER - get dogs assigned to their projects
+            from models import project_dog_assignment
+            dogs = db.session.query(Dog).join(
+                project_dog_assignment
+            ).join(Project).filter(
+                Dog.current_status.in_(['ACTIVE', 'TRAINING']),
+                Project.manager_id == current_user.id
+            ).all()
+            
+            # Get assigned projects
+            projects = db.session.query(Project).filter(
+                Project.status.in_(['PLANNED', 'ACTIVE']),
+                Project.manager_id == current_user.id
+            ).all()
+        
+        return jsonify({
+            'dogs': [{
+                'id': str(dog.id),
+                'name': dog.name,
+                'code': dog.code,
+                'project_id': str(dog.projects[0].id) if dog.projects else None,
+                'project_name': dog.projects[0].name if dog.projects else None
+            } for dog in dogs],
+            'projects': [{
+                'id': str(project.id),
+                'name': project.name,
+                'code': project.code
+            } for project in projects]
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
