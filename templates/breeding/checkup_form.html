@@ -319,8 +319,8 @@ function submitForm() {
         notes: document.getElementById('notes').value
     };
 
-    // Validate required fields
-    if (!formData.project_id || !formData.dog_id || !formData.date || !formData.time) {
+    // Validate required fields (project_id is optional)
+    if (!formData.dog_id || !formData.date || !formData.time) {
         showAlert('يرجى ملء جميع الحقول المطلوبة', 'error');
         return;
     }
@@ -384,12 +384,12 @@ function showAlert(message, type, duration = 3000) {
 
 // Real-time form validation
 function validateForm() {
-    const project = document.getElementById('project_id').value;
     const dog = document.getElementById('dog_id').value;
     const date = document.getElementById('date').value;
     const time = document.getElementById('time').value;
 
-    const isValid = project && dog && date && time;
+    // Project is optional, so we don't require it for validation
+    const isValid = dog && date && time;
     document.querySelector('button[type="submit"]').disabled = !isValid;
     
     return isValid;
