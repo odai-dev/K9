@@ -221,18 +221,36 @@ def dogs_edit(dog_id):
                     photo.save(photo_path)
                     dog.photo_path = photo_filename
             
-            # Update dog data
+            # Handle birth certificate upload
+            if 'birth_certificate' in request.files and request.files['birth_certificate'].filename != '':
+                birth_cert = request.files['birth_certificate']
+                if allowed_file(birth_cert.filename):
+                    # Delete old certificate if exists
+                    if dog.birth_certificate:
+                        old_cert_path = os.path.join(current_app.config['UPLOAD_FOLDER'], dog.birth_certificate)
+                        if os.path.exists(old_cert_path):
+                            os.remove(old_cert_path)
+                    
+                    # Save new certificate
+                    cert_filename = f"{uuid.uuid4()}_{secure_filename(birth_cert.filename or 'certificate')}"
+                    cert_path = os.path.join(current_app.config['UPLOAD_FOLDER'], cert_filename)
+                    birth_cert.save(cert_path)
+                    dog.birth_certificate = cert_filename
+
+            # Update dog data - fix field name mismatches
             dog.name = request.form['name']
+            dog.code = request.form['code']
             dog.breed = request.form['breed']
+            dog.family_line = request.form.get('family_line') if request.form.get('family_line', '').strip() else None
             dog.gender = DogGender(request.form['gender'])
-            dog.birth_date = datetime.strptime(request.form['date_of_birth'], '%Y-%m-%d').date() if request.form['date_of_birth'] else None
-            dog.color = request.form.get('color')
-            dog.weight = float(request.form['weight']) if request.form.get('weight') else None
-            dog.height = float(request.form['height']) if request.form.get('height') else None
-            dog.microchip_id = request.form.get('microchip_id') if request.form.get('microchip_id') and request.form.get('microchip_id').strip() else None
+            dog.birth_date = datetime.strptime(request.form['birth_date'], '%Y-%m-%d').date() if request.form['birth_date'] else None
+            dog.microchip_id = request.form.get('microchip_id') if request.form.get('microchip_id', '').strip() else None
             dog.current_status = DogStatus(request.form['current_status'])
-            dog.health_notes = request.form.get('health_notes')
-            dog.training_notes = request.form.get('training_notes')
+            dog.color = request.form.get('color') if request.form.get('color', '').strip() else None
+            dog.weight = float(request.form['weight']) if request.form.get('weight', '').strip() else None
+            dog.height = float(request.form['height']) if request.form.get('height', '').strip() else None
+            dog.location = request.form.get('location') if request.form.get('location', '').strip() else None
+            dog.specialization = request.form.get('specialization') if request.form.get('specialization', '').strip() else None
             
             db.session.commit()
             
