@@ -825,7 +825,7 @@ def excretion_list():
             project_ids = [p.id for p in assigned_projects]
             if not project_ids:
                 return jsonify({'items': [], 'pagination': {}, 'kpis': {}})
-            query = query.filter(ExcretionLog.project_id.in_(project_ids))
+            query = query.filter(db.or_(ExcretionLog.project_id.in_(project_ids), ExcretionLog.project_id.is_(None)))
         
         # Apply filters
         if project_id:
@@ -947,7 +947,7 @@ def excretion_create():
         if current_user.role == UserRole.PROJECT_MANAGER:
             assigned_projects = get_user_assigned_projects(current_user)
             project_ids = [p.id for p in assigned_projects]
-            if data['project_id'] not in project_ids:
+            if data.get('project_id') and data['project_id'] not in project_ids:
                 return jsonify({'error': 'ليس لديك صلاحية لهذا المشروع'}), 403
         
         # Validate at least one observation type has data
@@ -979,9 +979,11 @@ def excretion_create():
         except ValueError:
             return jsonify({'error': 'صيغة الوقت غير صحيحة، استخدم HH:MM أو HH:MM:SS'}), 400
         
-        # Create excretion log
+        # Create excretion log with safe project_id handling
         excretion_log = ExcretionLog()
-        excretion_log.project_id = int(data['project_id']) if data.get('project_id') else None
+        # Ensure project_id is properly handled for nullable constraint
+        project_id_value = data.get('project_id')
+        excretion_log.project_id = project_id_value if project_id_value and project_id_value != '' else None
         excretion_log.date = parsed_date
         excretion_log.time = parsed_time
         excretion_log.dog_id = data['dog_id']

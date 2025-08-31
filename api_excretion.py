@@ -141,7 +141,7 @@ def create_excretion_log():
             if data.get('project_id'):
                 assigned_projects = get_user_assigned_projects(current_user)
                 project_ids = [str(p.id) for p in assigned_projects]
-                if data['project_id'] not in project_ids:
+                if str(data['project_id']) not in project_ids:
                     return jsonify({'error': 'Access denied to this project'}), 403
         
         # Verify project and dog exist
@@ -186,9 +186,14 @@ def create_excretion_log():
         if existing:
             return jsonify({'error': 'An excretion log already exists for this dog, project, date, and time'}), 400
         
-        # Create new log
+        # Create new log with comprehensive safety checks
         excretion_log = ExcretionLog()
-        excretion_log.project_id = data.get('project_id')
+        # CRITICAL: Ensure project_id is properly handled for nullable constraint
+        project_id_value = data.get('project_id')
+        if project_id_value is None or project_id_value == '' or project_id_value == 'null':
+            excretion_log.project_id = None
+        else:
+            excretion_log.project_id = project_id_value
         excretion_log.dog_id = data['dog_id']
         excretion_log.recorder_employee_id = data.get('recorder_employee_id')
         excretion_log.date = log_date
@@ -217,7 +222,11 @@ def create_excretion_log():
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        error_msg = str(e)
+        # Log detailed error for debugging
+        print(f"ERROR creating excretion log: {error_msg}")
+        print(f"Data received: {data}")
+        return jsonify({'error': 'حدث خطأ في حفظ سجل الإفراز'}), 500
 
 
 @bp.route('/api/breeding/excretion/<log_id>', methods=['PUT'])

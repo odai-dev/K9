@@ -4407,11 +4407,11 @@ def breeding_excretion_edit(id):
                          vomit_color_choices=vomit_color_choices,
                          excretion_place_choices=excretion_place_choices)
 
-# API Routes for Excretion 
-@main_bp.route('/api/breeding/excretion/list')
-@login_required
-@require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.VIEW)
-def api_list_excretion():
+# API Routes for Excretion - DEPRECATED: Use api_excretion.py instead
+# @main_bp.route('/api/breeding/excretion/list')
+# @login_required
+# @require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.VIEW)
+def api_list_excretion_deprecated():
     """API endpoint for excretion logs list"""
     try:
         # Get query parameters
