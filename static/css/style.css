@@ -123,16 +123,6 @@ body {
     color: rgba(255,255,255,0.7);
 }
 
-/* Notification styling */
-.navbar-nav .nav-link .badge {
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
-}
 
 /* Mobile responsiveness */
 @media (max-width: 991.98px) {
@@ -167,10 +157,6 @@ body {
         display: none;
     }
     
-    /* Mobile notifications */
-    .navbar-nav .nav-link .fs-5 {
-        font-size: 1.2rem !important;
-    }
     
     /* Main content mobile spacing */
     main {
