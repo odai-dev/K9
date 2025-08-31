@@ -194,34 +194,41 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadFilterOptions() {
-    // Load projects
-    fetch('/api/dogs/accessible')
-        .then(response => response.json())
-        .then(data => {
-            const projectSelect = document.getElementById('project_filter');
-            const dogSelect = document.getElementById('dog_filter');
-            
-            // Get unique projects from dogs data
-            const projects = [...new Map(data.dogs.map(dog => [dog.project_id, dog.project_name])).entries()];
-            
-            projects.forEach(([id, name]) => {
-                if (name) {
-                    const option = document.createElement('option');
-                    option.value = id;
-                    option.textContent = name;
-                    projectSelect.appendChild(option);
-                }
-            });
-            
-            // Populate dogs
-            data.dogs.forEach(dog => {
-                const option = document.createElement('option');
-                option.value = dog.id;
-                option.textContent = dog.name;
-                dogSelect.appendChild(option);
-            });
-        })
-        .catch(error => console.error('Error loading filter options:', error));
+    // Load projects and dogs separately using known working endpoints
+    Promise.all([
+        fetch('/api/projects'),
+        fetch('/api/dogs')
+    ])
+    .then(responses => Promise.all(responses.map(r => r.json())))
+    .then(([projects, dogs]) => {
+        const projectSelect = document.getElementById('project_filter');
+        const dogSelect = document.getElementById('dog_filter');
+        
+        // Populate projects
+        projects.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project.id;
+            option.textContent = project.name;
+            projectSelect.appendChild(option);
+        });
+        
+        // Populate dogs
+        dogs.forEach(dog => {
+            const option = document.createElement('option');
+            option.value = dog.id;
+            option.textContent = dog.name;
+            dogSelect.appendChild(option);
+        });
+    })
+    .catch(error => {
+        console.error('Error loading filter options:', error);
+        // Show user-friendly error
+        const projectSelect = document.getElementById('project_filter');
+        const dogSelect = document.getElementById('dog_filter');
+        
+        projectSelect.innerHTML = '<option value="">خطأ في تحميل المشاريع</option>';
+        dogSelect.innerHTML = '<option value="">خطأ في تحميل الكلاب</option>';
+    });
 }
 
 function applyFilters() {
