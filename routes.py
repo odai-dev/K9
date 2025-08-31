@@ -4329,7 +4329,8 @@ def breeding_excretion_new():
     # Get user's accessible projects and dogs
     if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.all()
-        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+        # Include ACTIVE and TRAINING dogs for health monitoring
+        dogs = Dog.query.filter(Dog.current_status.in_([DogStatus.ACTIVE, DogStatus.TRAINING])).all()
         employees = Employee.query.filter_by(is_active=True).all()
     else:
         assigned_projects = get_user_assigned_projects(current_user)
@@ -4375,7 +4376,8 @@ def breeding_excretion_edit(id):
     # Get data for form
     if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.all()
-        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
+        # Include ACTIVE and TRAINING dogs for health monitoring in edit form too
+        dogs = Dog.query.filter(Dog.current_status.in_([DogStatus.ACTIVE, DogStatus.TRAINING])).all()
         employees = Employee.query.filter_by(is_active=True).all()
     else:
         assigned_projects = get_user_assigned_projects(current_user)
