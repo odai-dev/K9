@@ -188,7 +188,6 @@
                         <div class="d-flex justify-content-between">
                             <a href="{{ url_for('main.breeding_excretion') }}" class="btn btn-secondary">إلغاء</a>
                             <div>
-                                <button type="button" class="btn btn-outline-primary me-2" onclick="saveDraft()">حفظ كمسودة</button>
                                 <button type="submit" class="btn btn-primary">
                                     {% if excretion_log %}حفظ التعديلات{% else %}إنشاء السجل{% endif %}
                                 </button>
