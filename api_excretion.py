@@ -7,14 +7,14 @@ from flask_login import login_required, current_user
 from sqlalchemy import and_, or_
 from datetime import datetime, date
 from models import db, ExcretionLog, Project, Dog, Employee, UserRole
-from utils import require_permission
+from permission_decorators import require_sub_permission
 from utils import get_user_assigned_projects
 
 bp = Blueprint('api_excretion', __name__)
 
 @bp.route('/api/breeding/excretion/list')
 @login_required
-@require_permission('excretion:view')
+@require_sub_permission('Breeding', 'البراز / البول / القيء', 'VIEW')
 def list_excretion_logs():
     """List excretion logs with filters and KPIs"""
     try:
@@ -124,7 +124,7 @@ def list_excretion_logs():
 
 @bp.route('/api/breeding/excretion', methods=['POST'])
 @login_required
-@require_permission('excretion:create')
+@require_sub_permission('Breeding', 'البراز / البول / القيء', 'CREATE')
 def create_excretion_log():
     """Create new excretion log"""
     try:
@@ -222,7 +222,7 @@ def create_excretion_log():
 
 @bp.route('/api/breeding/excretion/<log_id>', methods=['PUT'])
 @login_required
-@require_permission('excretion:edit')
+@require_sub_permission('Breeding', 'البراز / البول / القيء', 'EDIT')
 def update_excretion_log(log_id):
     """Update existing excretion log"""
     try:
@@ -296,7 +296,7 @@ def update_excretion_log(log_id):
 
 @bp.route('/api/breeding/excretion/<log_id>', methods=['DELETE'])
 @login_required
-@require_permission('excretion:delete')
+@require_sub_permission('Breeding', 'البراز / البول / القيء', 'DELETE')
 def delete_excretion_log(log_id):
     """Delete excretion log"""
     try:
