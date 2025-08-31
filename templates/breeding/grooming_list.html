@@ -210,10 +210,10 @@ function loadFilterOptions() {
 
 function applyFilters() {
     currentFilters = {
-        project_id: $('#project_filter').val(),
-        date_from: $('#date_from').val(),
-        date_to: $('#date_to').val(),
-        dog_id: $('#dog_filter').val()
+        project_id: document.getElementById('project_filter').value,
+        date_from: document.getElementById('date_from').value,
+        date_to: document.getElementById('date_to').value,
+        dog_id: document.getElementById('dog_filter').value
     };
     currentPage = 1;
     loadGroomingLogs();
@@ -246,93 +246,88 @@ function loadGroomingLogs() {
 }
 
 function updateKPIs(kpis) {
-    $('#total-count').text(kpis.total || 0);
-    $('#washed-count').text(kpis.washed_yes || 0);
-    $('#brushed-count').text(kpis.brushed_yes || 0);
-    $('#nails-count').text(kpis.nails_yes || 0);
-    $('#teeth-count').text(kpis.teeth_yes || 0);
-    $('#avg-cleanliness').text(kpis.avg_cleanliness || '0');
+    document.getElementById('total-count').textContent = kpis.total || 0;
+    document.getElementById('washed-count').textContent = kpis.washed_yes || 0;
+    document.getElementById('brushed-count').textContent = kpis.brushed_yes || 0;
+    document.getElementById('nails-count').textContent = kpis.nails_yes || 0;
+    document.getElementById('teeth-count').textContent = kpis.teeth_yes || 0;
+    document.getElementById('avg-cleanliness').textContent = kpis.avg_cleanliness || '0';
 }
 
 function updateTable(items) {
-    const tbody = $('#grooming-table-body');
-    tbody.empty();
+    const tbody = document.getElementById('grooming-table-body');
+    tbody.innerHTML = '';
     
     if (items.length === 0) {
-        tbody.append(`
+        tbody.innerHTML = `
             <tr>
                 <td colspan="14" class="text-center py-4">لا توجد سجلات</td>
             </tr>
-        `);
+        `;
         return;
     }
     
     items.forEach(item => {
-        const row = `
-            <tr>
-                <td>${formatDate(item.date)}</td>
-                <td>${item.time}</td>
-                <td>${item.dog_name}</td>
-                <td>${item.project_name}</td>
-                <td>${item.recorder_name || '-'}</td>
-                <td><span class="badge bg-${getBooleanColor(item.washed_bathed)}">${item.washed_bathed || '-'}</span></td>
-                <td>${item.shampoo_type || '-'}</td>
-                <td><span class="badge bg-${getBooleanColor(item.brushing)}">${item.brushing || '-'}</span></td>
-                <td><span class="badge bg-${getBooleanColor(item.nail_trimming)}">${item.nail_trimming || '-'}</span></td>
-                <td><span class="badge bg-${getBooleanColor(item.teeth_brushing)}">${item.teeth_brushing || '-'}</span></td>
-                <td><span class="badge bg-${getBooleanColor(item.ear_cleaning)}">${item.ear_cleaning || '-'}</span></td>
-                <td><span class="badge bg-${getBooleanColor(item.eye_cleaning)}">${item.eye_cleaning || '-'}</span></td>
-                <td>${item.cleanliness_score ? `<span class="badge bg-warning">${item.cleanliness_score}</span>` : '-'}</td>
-                <td>
-                    <div class="btn-group btn-group-sm">
-                        <a href="/breeding/grooming/${item.id}/edit" class="btn btn-outline-primary btn-sm" title="تعديل">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                        {% if current_user.role.name == 'GENERAL_ADMIN' or has_permission(current_user, 'Breeding', 'العناية (الاستحمام)', 'DELETE') %}
-                        <button class="btn btn-outline-danger btn-sm" onclick="confirmDelete('${item.id}')" title="حذف">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                        {% endif %}
-                    </div>
-                </td>
-            </tr>
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${formatDate(item.date)}</td>
+            <td>${item.time}</td>
+            <td>${item.dog_name}</td>
+            <td>${item.project_name}</td>
+            <td>${item.recorder_name || '-'}</td>
+            <td><span class="badge bg-${getBooleanColor(item.washed_bathed)}">${item.washed_bathed || '-'}</span></td>
+            <td>${item.shampoo_type || '-'}</td>
+            <td><span class="badge bg-${getBooleanColor(item.brushing)}">${item.brushing || '-'}</span></td>
+            <td><span class="badge bg-${getBooleanColor(item.nail_trimming)}">${item.nail_trimming || '-'}</span></td>
+            <td><span class="badge bg-${getBooleanColor(item.teeth_brushing)}">${item.teeth_brushing || '-'}</span></td>
+            <td><span class="badge bg-${getBooleanColor(item.ear_cleaning)}">${item.ear_cleaning || '-'}</span></td>
+            <td><span class="badge bg-${getBooleanColor(item.eye_cleaning)}">${item.eye_cleaning || '-'}</span></td>
+            <td>${item.cleanliness_score ? `<span class="badge bg-warning">${item.cleanliness_score}</span>` : '-'}</td>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    <a href="/breeding/grooming/${item.id}/edit" class="btn btn-outline-primary btn-sm" title="تعديل">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    {% if current_user.role.name == 'GENERAL_ADMIN' or has_permission(current_user, 'Breeding', 'العناية (الاستحمام)', 'DELETE') %}
+                    <button class="btn btn-outline-danger btn-sm" onclick="confirmDelete('${item.id}')" title="حذف">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    {% endif %}
+                </div>
+            </td>
         `;
-        tbody.append(row);
+        tbody.appendChild(row);
     });
 }
 
 function updatePagination(pagination) {
-    const container = $('#pagination-container');
-    container.empty();
+    const container = document.getElementById('pagination-container');
+    container.innerHTML = '';
     
     if (pagination.pages <= 1) return;
     
     // Previous button
     if (pagination.page > 1) {
-        container.append(`
-            <li class="page-item">
-                <a class="page-link" href="#" onclick="changePage(${pagination.page - 1})">السابق</a>
-            </li>
-        `);
+        const prevItem = document.createElement('li');
+        prevItem.className = 'page-item';
+        prevItem.innerHTML = `<a class="page-link" href="#" onclick="changePage(${pagination.page - 1})">السابق</a>`;
+        container.appendChild(prevItem);
     }
     
     // Page numbers
     for (let i = 1; i <= pagination.pages; i++) {
-        const active = i === pagination.page ? 'active' : '';
-        container.append(`
-            <li class="page-item ${active}">
-                <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
-            </li>
-        `);
+        const pageItem = document.createElement('li');
+        pageItem.className = i === pagination.page ? 'page-item active' : 'page-item';
+        pageItem.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i})">${i}</a>`;
+        container.appendChild(pageItem);
     }
     
     // Next button
     if (pagination.page < pagination.pages) {
-        container.append(`
-            <li class="page-item">
-                <a class="page-link" href="#" onclick="changePage(${pagination.page + 1})">التالي</a>
-            </li>
-        `);
+        const nextItem = document.createElement('li');
+        nextItem.className = 'page-item';
+        nextItem.innerHTML = `<a class="page-link" href="#" onclick="changePage(${pagination.page + 1})">التالي</a>`;
+        container.appendChild(nextItem);
     }
 }
 
@@ -353,44 +348,62 @@ function formatDate(dateStr) {
 
 function confirmDelete(id) {
     groomingToDelete = id;
-    $('#deleteModal').modal('show');
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
 }
 
-$('#confirm-delete').click(function() {
-    if (groomingToDelete) {
-        fetch(`/api/breeding/grooming/${groomingToDelete}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                $('#deleteModal').modal('hide');
-                loadGroomingLogs();
-                showAlert('تم حذف السجل بنجاح', 'success');
-            } else {
-                showAlert(data.error || 'حدث خطأ أثناء الحذف', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showAlert('حدث خطأ أثناء الحذف', 'error');
-        });
-    }
+// Set up delete confirmation button event listener
+document.addEventListener('DOMContentLoaded', function() {
+    loadGroomingLogs();
+    
+    document.getElementById('confirm-delete').addEventListener('click', function() {
+        if (groomingToDelete) {
+            fetch(`/api/breeding/grooming/${groomingToDelete}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                    modal.hide();
+                    loadGroomingLogs();
+                    showAlert('تم حذف السجل بنجاح', 'success');
+                } else {
+                    showAlert(data.error || 'حدث خطأ أثناء الحذف', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('حدث خطأ أثناء الحذف', 'error');
+            });
+        }
+    });
 });
 
 function showAlert(message, type) {
     const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-    const alert = `
-        <div class="alert ${alertClass} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert ${alertClass} alert-dismissible fade show`;
+    alertDiv.setAttribute('role', 'alert');
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.top = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    $('body').append(alert);
-    setTimeout(() => $('.alert').alert('close'), 3000);
+    document.body.appendChild(alertDiv);
+    
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 3000);
 }
 </script>
 
