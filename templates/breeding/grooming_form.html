@@ -264,6 +264,16 @@
 
 {% block scripts %}
 <script>
+// Ensure jQuery is loaded before running our code
+function waitForJQuery(callback) {
+    if (typeof $ !== 'undefined') {
+        callback();
+    } else {
+        setTimeout(function() { waitForJQuery(callback); }, 50);
+    }
+}
+
+waitForJQuery(function() {
 $(document).ready(function() {
     // Set default date to today if creating new record
     var isNewRecord = {{ 'true' if not grooming_log else 'false' }};
@@ -372,5 +382,6 @@ function validateForm() {
     
     return isValid;
 }
+}); // Close waitForJQuery callback
 </script>
 {% endblock %}
