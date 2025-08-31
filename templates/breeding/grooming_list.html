@@ -182,16 +182,13 @@
     </div>
 </div>
 
-<!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
 <script>
 let currentPage = 1;
 let currentFilters = {};
 let groomingToDelete = null;
 
 // Initialize the page
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
     loadFilterOptions();
     loadGroomingLogs();
     
@@ -200,8 +197,10 @@ $(document).ready(function() {
     const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
     const weekEnd = new Date(now.setDate(now.getDate() - now.getDay() + 6));
     
-    $('#date_from').val(weekStart.toISOString().split('T')[0]);
-    $('#date_to').val(weekEnd.toISOString().split('T')[0]);
+    const dateFromInput = document.getElementById('date_from');
+    const dateToInput = document.getElementById('date_to');
+    if (dateFromInput) dateFromInput.value = weekStart.toISOString().split('T')[0];
+    if (dateToInput) dateToInput.value = weekEnd.toISOString().split('T')[0];
 });
 
 function loadFilterOptions() {

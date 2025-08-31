@@ -264,34 +264,35 @@
 
 {% block scripts %}
 <script>
-// Ensure jQuery is loaded before running our code
-function waitForJQuery(callback) {
-    if (typeof $ !== 'undefined') {
-        callback();
-    } else {
-        setTimeout(function() { waitForJQuery(callback); }, 50);
-    }
-}
-
-waitForJQuery(function() {
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
     // Set default date to today if creating new record
     var isNewRecord = {{ 'true' if not grooming_log else 'false' }};
     if (isNewRecord) {
         const today = new Date().toISOString().split('T')[0];
         const now = new Date().toTimeString().split(' ')[0].slice(0,5);
-        $('#date').val(today);
-        $('#time').val(now);
+        const dateInput = document.getElementById('date');
+        const timeInput = document.getElementById('time');
+        if (dateInput) dateInput.value = today;
+        if (timeInput) timeInput.value = now;
     }
 
     // Form submission handler
-    $('#grooming-form').on('submit', function(e) {
-        e.preventDefault();
-        submitForm();
-    });
+    const groomingForm = document.getElementById('grooming-form');
+    if (groomingForm) {
+        groomingForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitForm();
+        });
+    }
 
     // Validate on field changes
-    $('#project_id, #dog_id, #date, #time').on('change', validateForm);
+    const fieldsToWatch = ['project_id', 'dog_id', 'date', 'time'];
+    fieldsToWatch.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('change', validateForm);
+        }
+    });
 
     // Initialize validation
     validateForm();
@@ -299,20 +300,20 @@ $(document).ready(function() {
 
 function submitForm() {
     const formData = {
-        project_id: $('#project_id').val(),
-        dog_id: $('#dog_id').val(),
-        recorder_employee_id: $('#recorder_employee_id').val() || null,
-        date: $('#date').val(),
-        time: $('#time').val(),
-        washed_bathed: $('input[name="washed_bathed"]:checked').val() || null,
-        brushing: $('input[name="brushing"]:checked').val() || null,
-        nail_trimming: $('input[name="nail_trimming"]:checked').val() || null,
-        teeth_brushing: $('input[name="teeth_brushing"]:checked').val() || null,
-        ear_cleaning: $('input[name="ear_cleaning"]:checked').val() || null,
-        eye_cleaning: $('input[name="eye_cleaning"]:checked').val() || null,
-        shampoo_type: $('#shampoo_type').val(),
-        cleanliness_score: $('input[name="cleanliness_score"]:checked').val() || null,
-        notes: $('#notes').val()
+        project_id: document.getElementById('project_id')?.value,
+        dog_id: document.getElementById('dog_id')?.value,
+        recorder_employee_id: document.getElementById('recorder_employee_id')?.value || null,
+        date: document.getElementById('date')?.value,
+        time: document.getElementById('time')?.value,
+        washed_bathed: document.querySelector('input[name="washed_bathed"]:checked')?.value || null,
+        brushing: document.querySelector('input[name="brushing"]:checked')?.value || null,
+        nail_trimming: document.querySelector('input[name="nail_trimming"]:checked')?.value || null,
+        teeth_brushing: document.querySelector('input[name="teeth_brushing"]:checked')?.value || null,
+        ear_cleaning: document.querySelector('input[name="ear_cleaning"]:checked')?.value || null,
+        eye_cleaning: document.querySelector('input[name="eye_cleaning"]:checked')?.value || null,
+        shampoo_type: document.getElementById('shampoo_type')?.value,
+        cleanliness_score: document.querySelector('input[name="cleanliness_score"]:checked')?.value || null,
+        notes: document.getElementById('notes')?.value
     };
 
     // Validate required fields
@@ -321,11 +322,14 @@ function submitForm() {
         return;
     }
 
-    const submitButton = $('button[type="submit"]');
-    const originalText = submitButton.text();
-    submitButton.prop('disabled', true).text('جاري الحفظ...');
+    const submitButton = document.querySelector('button[type="submit"]');
+    const originalText = submitButton?.textContent;
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = 'جاري الحفظ...';
+    }
 
-    const groomingId = $('#grooming_id').val();
+    const groomingId = document.getElementById('grooming_id')?.value;
     const url = groomingId ? `/api/breeding/grooming/${groomingId}` : '/api/breeding/grooming';
     const method = groomingId ? 'PUT' : 'POST';
 
@@ -345,13 +349,19 @@ function submitForm() {
             }, 1500);
         } else {
             showAlert(data.error || 'حدث خطأ أثناء الحفظ', 'error');
-            submitButton.prop('disabled', false).text(originalText);
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = originalText;
+            }
         }
     })
     .catch(error => {
         console.error('Error:', error);
         showAlert('حدث خطأ أثناء الحفظ', 'error');
-        submitButton.prop('disabled', false).text(originalText);
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+        }
     });
 }
 
@@ -360,28 +370,36 @@ function showAlert(message, type, duration = 3000) {
                      type === 'error' ? 'alert-danger' : 
                      type === 'info' ? 'alert-info' : 'alert-warning';
     
-    const alert = `
-        <div class="alert ${alertClass} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert ${alertClass} alert-dismissible fade show`;
+    alertDiv.setAttribute('role', 'alert');
+    alertDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    $('body').append(alert);
-    setTimeout(() => $('.alert').alert('close'), duration);
+    document.body.appendChild(alertDiv);
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, duration);
 }
 
 // Real-time form validation
 function validateForm() {
-    const project = $('#project_id').val();
-    const dog = $('#dog_id').val();
-    const date = $('#date').val();
-    const time = $('#time').val();
+    const project = document.getElementById('project_id')?.value;
+    const dog = document.getElementById('dog_id')?.value;
+    const date = document.getElementById('date')?.value;
+    const time = document.getElementById('time')?.value;
 
     const isValid = project && dog && date && time;
-    $('button[type="submit"]').prop('disabled', !isValid);
+    const submitButton = document.querySelector('button[type="submit"]');
+    if (submitButton) {
+        submitButton.disabled = !isValid;
+    }
     
     return isValid;
 }
-}); // Close waitForJQuery callback
 </script>
 {% endblock %}
