@@ -284,29 +284,37 @@
 
 {% block extra_js %}
 <script>
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
     let currentUserId = null;
     let currentProjectId = null;
 
     // User selection
-    $('.user-item').on('click', function() {
-        $('.user-item').removeClass('active');
-        $(this).addClass('active');
-        
-        currentUserId = $(this).data('user-id');
-        const username = $(this).data('username');
-        
-        $('#selectedUserName').text('صلاحيات: ' + $(this).find('strong').text());
-        $('#noUserSelected').addClass('d-none');
-        $('#permissionMatrix').removeClass('d-none');
-        $('#initPermissionsBtn, #previewBtn').show();
-        
-        loadUserPermissions();
+    document.querySelectorAll('.user-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+            // Remove active class from all items
+            document.querySelectorAll('.user-item').forEach(function(el) {
+                el.classList.remove('active');
+            });
+            
+            // Add active class to clicked item
+            this.classList.add('active');
+            
+            currentUserId = this.dataset.userId;
+            const username = this.dataset.username;
+            
+            document.getElementById('selectedUserName').textContent = 'صلاحيات: ' + this.querySelector('strong').textContent;
+            document.getElementById('noUserSelected').classList.add('d-none');
+            document.getElementById('permissionMatrix').classList.remove('d-none');
+            document.getElementById('initPermissionsBtn').style.display = 'inline-block';
+            document.getElementById('previewBtn').style.display = 'inline-block';
+            
+            loadUserPermissions();
+        });
     });
 
     // Project filter
-    $('#projectFilter').on('change', function() {
-        currentProjectId = $(this).val() || null;
+    document.getElementById('projectFilter').addEventListener('change', function() {
+        currentProjectId = this.value || null;
         if (currentUserId) {
             loadUserPermissions();
         }
@@ -320,44 +328,56 @@ $(document).ready(function() {
         
         const url = `/admin/permissions/user/${currentUserId}${currentProjectId ? '?project_id=' + currentProjectId : ''}`;
         
-        $.get(url)
-            .done(function(data) {
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
                 populatePermissionMatrix(data.permissions);
                 updatePermissionCounts();
             })
-            .fail(function(xhr) {
-                showAlert('error', 'فشل في تحميل الصلاحيات: ' + (xhr.responseJSON?.error || 'خطأ غير معروف'));
+            .catch(error => {
+                showAlert('error', 'فشل في تحميل الصلاحيات: ' + error.message);
             })
-            .always(function() {
+            .finally(() => {
                 hideLoading();
             });
     }
 
     // Populate permission matrix
     function populatePermissionMatrix(permissions) {
-        $('.permission-switch').prop('checked', false);
+        document.querySelectorAll('.permission-switch').forEach(function(checkbox) {
+            checkbox.checked = false;
+        });
         
         Object.keys(permissions).forEach(section => {
             Object.keys(permissions[section]).forEach(subsection => {
                 Object.keys(permissions[section][subsection]).forEach(permType => {
                     const isGranted = permissions[section][subsection][permType];
-                    $(`#${section}_${subsection}_${permType}`).prop('checked', isGranted);
+                    const checkbox = document.getElementById(`${section}_${subsection}_${permType}`);
+                    if (checkbox) {
+                        checkbox.checked = isGranted;
+                    }
                 });
             });
         });
     }
 
     // Permission toggle
-    $('.permission-switch').on('change', function() {
-        if (!currentUserId) return;
-        
-        const $this = $(this);
-        const section = $this.data('section');
-        const subsection = $this.data('subsection');
-        const permissionType = $this.data('permission-type');
-        const isGranted = $this.is(':checked');
-        
-        updatePermission(section, subsection, permissionType, isGranted);
+    document.querySelectorAll('.permission-switch').forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            if (!currentUserId) return;
+            
+            const section = this.dataset.section;
+            const subsection = this.dataset.subsection;
+            const permissionType = this.dataset.permissionType;
+            const isGranted = this.checked;
+            
+            updatePermission(section, subsection, permissionType, isGranted);
+        });
     });
 
     // Update permission
@@ -374,91 +394,117 @@ $(document).ready(function() {
             data.project_id = currentProjectId;
         }
         
-        $.ajax({
-            url: '/admin/permissions/update',
+        fetch('/admin/permissions/update', {
             method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(data)
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
         })
-        .done(function(response) {
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(response => {
             showAlert('success', response.message);
             updatePermissionCounts();
         })
-        .fail(function(xhr) {
-            showAlert('error', 'فشل في التحديث: ' + (xhr.responseJSON?.error || 'خطأ غير معروف'));
+        .catch(error => {
+            showAlert('error', 'فشل في التحديث: ' + error.message);
             // Revert checkbox state
-            const checkbox = $(`#${section}_${subsection}_${permissionType}`);
-            checkbox.prop('checked', !isGranted);
+            const checkbox = document.getElementById(`${section}_${subsection}_${permissionType}`);
+            if (checkbox) {
+                checkbox.checked = !isGranted;
+            }
         });
     }
 
     // Bulk operations
-    $('.bulk-grant, .bulk-revoke').on('click', function() {
-        if (!currentUserId) return;
-        
-        const section = $(this).data('section');
-        const isGranted = $(this).hasClass('bulk-grant');
-        
-        const data = {
-            user_id: currentUserId,
-            section: section,
-            is_granted: isGranted
-        };
-        
-        if (currentProjectId) {
-            data.project_id = currentProjectId;
-        }
-        
-        $.ajax({
-            url: '/admin/permissions/bulk-update',
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(data)
-        })
-        .done(function(response) {
-            showAlert('success', response.message);
-            loadUserPermissions(); // Reload to reflect changes
-        })
-        .fail(function(xhr) {
-            showAlert('error', 'فشل في التحديث المجمع: ' + (xhr.responseJSON?.error || 'خطأ غير معروف'));
+    document.querySelectorAll('.bulk-grant, .bulk-revoke').forEach(function(button) {
+        button.addEventListener('click', function() {
+            if (!currentUserId) return;
+            
+            const section = this.dataset.section;
+            const isGranted = this.classList.contains('bulk-grant');
+            
+            const data = {
+                user_id: currentUserId,
+                section: section,
+                is_granted: isGranted
+            };
+            
+            if (currentProjectId) {
+                data.project_id = currentProjectId;
+            }
+            
+            fetch('/admin/permissions/bulk-update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(response => {
+                showAlert('success', response.message);
+                loadUserPermissions(); // Reload to reflect changes
+            })
+            .catch(error => {
+                showAlert('error', 'فشل في التحديث المجمع: ' + error.message);
+            });
         });
     });
 
     // Initialize permissions
-    $('#initPermissionsBtn').on('click', function() {
+    document.getElementById('initPermissionsBtn').addEventListener('click', function() {
         if (!currentUserId) return;
         
-        $.post(`/admin/permissions/initialize/${currentUserId}`)
-            .done(function(response) {
-                showAlert('success', response.message);
-                loadUserPermissions();
-            })
-            .fail(function(xhr) {
-                showAlert('error', 'فشل في التهيئة: ' + (xhr.responseJSON?.error || 'خطأ غير معروف'));
-            });
+        fetch(`/admin/permissions/initialize/${currentUserId}`, {
+            method: 'POST'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(response => {
+            showAlert('success', response.message);
+            loadUserPermissions();
+        })
+        .catch(error => {
+            showAlert('error', 'فشل في التهيئة: ' + error.message);
+        });
     });
 
     // Export functions
-    $('#exportJsonBtn').on('click', function() {
+    document.getElementById('exportJsonBtn').addEventListener('click', function() {
         if (!currentUserId) return;
         
         const url = `/admin/permissions/export/${currentUserId}${currentProjectId ? '?project_id=' + currentProjectId : ''}`;
         window.open(url, '_blank');
     });
 
-    $('#exportPdfBtn').on('click', function() {
+    document.getElementById('exportPdfBtn').addEventListener('click', function() {
         if (!currentUserId) return;
         
         const url = `/admin/permissions/export-pdf/${currentUserId}${currentProjectId ? '?project_id=' + currentProjectId : ''}`;
         window.open(url, '_blank');
     });
 
-    $('#exportAllBtn').on('click', function() {
+    document.getElementById('exportAllBtn').addEventListener('click', function() {
         window.open('/admin/permissions/export-csv', '_blank');
     });
 
     // Preview
-    $('#previewBtn').on('click', function() {
+    document.getElementById('previewBtn').addEventListener('click', function() {
         if (!currentUserId) return;
         
         const url = `/admin/permissions/preview/${currentUserId}${currentProjectId ? '?project_id=' + currentProjectId : ''}`;
@@ -466,7 +512,7 @@ $(document).ready(function() {
     });
 
     // Audit log
-    $('#auditLogBtn').on('click', function() {
+    document.getElementById('auditLogBtn').addEventListener('click', function() {
         window.open('/admin/permissions/audit', '_blank');
     });
 
@@ -474,44 +520,58 @@ $(document).ready(function() {
     function updatePermissionCounts() {
         const permissionStructure = {{ permission_structure|tojson }};
         Object.keys(permissionStructure).forEach(section => {
-            const total = $(`.permission-switch[data-section="${section}"]`).length;
-            const granted = $(`.permission-switch[data-section="${section}"]:checked`).length;
-            $(`#sectionCount${section}`).text(`${granted}/${total}`);
+            const allSwitches = document.querySelectorAll(`.permission-switch[data-section="${section}"]`);
+            const checkedSwitches = document.querySelectorAll(`.permission-switch[data-section="${section}"]:checked`);
+            const sectionCountElement = document.getElementById(`sectionCount${section}`);
+            if (sectionCountElement) {
+                sectionCountElement.textContent = `${checkedSwitches.length}/${allSwitches.length}`;
+            }
         });
         
         if (currentUserId) {
-            const totalGranted = $('.permission-switch:checked').length;
-            $(`#count-${currentUserId}`).text(totalGranted);
+            const totalGranted = document.querySelectorAll('.permission-switch:checked').length;
+            const countElement = document.getElementById(`count-${currentUserId}`);
+            if (countElement) {
+                countElement.textContent = totalGranted;
+            }
         }
     }
 
     // Utility functions
     function showLoading() {
-        $('#loadingIndicator').show();
-        $('#permissionMatrix').addClass('loading');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const permissionMatrix = document.getElementById('permissionMatrix');
+        if (loadingIndicator) loadingIndicator.style.display = 'block';
+        if (permissionMatrix) permissionMatrix.classList.add('loading');
     }
 
     function hideLoading() {
-        $('#loadingIndicator').hide();
-        $('#permissionMatrix').removeClass('loading');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const permissionMatrix = document.getElementById('permissionMatrix');
+        if (loadingIndicator) loadingIndicator.style.display = 'none';
+        if (permissionMatrix) permissionMatrix.classList.remove('loading');
     }
 
     function showAlert(type, message) {
         const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-        const alert = $(`
-            <div class="alert ${alertClass} alert-dismissible fade show position-fixed" 
-                 style="top: 20px; right: 20px; z-index: 9999; max-width: 400px;">
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        `);
+        const iconClass = type === 'success' ? 'check-circle' : 'exclamation-circle';
         
-        $('body').append(alert);
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+        alertDiv.innerHTML = `
+            <i class="fas fa-${iconClass} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alertDiv);
         
         // Auto-remove after 5 seconds
         setTimeout(() => {
-            alert.alert('close');
+            if (alertDiv.parentNode) {
+                alertDiv.parentNode.removeChild(alertDiv);
+            }
         }, 5000);
     }
 });
