@@ -650,7 +650,7 @@ def api_checkup_create():
         if current_user.role == UserRole.PROJECT_MANAGER and project_id:
             assigned_projects = get_user_assigned_projects(current_user)
             assigned_project_ids = [p.id for p in assigned_projects]
-            if int(project_id) not in assigned_project_ids:
+            if project_id not in [str(pid) for pid in assigned_project_ids]:
                 return jsonify({'error': 'ليس لديك صلاحية لهذا المشروع'}), 403
 
         # Validate enum values
@@ -673,11 +673,11 @@ def api_checkup_create():
 
         # Create checkup record
         checkup = DailyCheckupLog()
-        checkup.project_id = int(data['project_id']) if data.get('project_id') else None
+        checkup.project_id = data['project_id'] if data.get('project_id') else None
         checkup.date = datetime.strptime(data['date'], '%Y-%m-%d').date()
         checkup.time = parsed_time
-        checkup.dog_id = int(data['dog_id'])
-        checkup.examiner_employee_id = int(data['examiner_employee_id']) if data.get('examiner_employee_id') else None
+        checkup.dog_id = data['dog_id']
+        checkup.examiner_employee_id = data['examiner_employee_id'] if data.get('examiner_employee_id') else None
 
         # Set body part statuses
         for part in body_parts:
