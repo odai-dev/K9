@@ -196,9 +196,73 @@
     </div>
 </div>
 
-<!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
+<style>
+.breeding-grooming-form .section-title {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 0;
+}
+
+.breeding-grooming-form .form-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.breeding-grooming-form .text-danger {
+    font-size: 0.9em;
+}
+
+.breeding-grooming-form .card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.breeding-grooming-form textarea {
+    resize: vertical;
+}
+
+.breeding-grooming-form .btn-group .btn {
+    margin-right: 0.5rem;
+}
+
+.alert {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* RTL adjustments */
+.breeding-grooming-form input[type="time"] {
+    direction: ltr;
+    text-align: right;
+}
+
+.breeding-grooming-form input[type="date"] {
+    direction: ltr;
+    text-align: right;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .breeding-grooming-form .d-flex {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .breeding-grooming-form .d-flex > div {
+        margin-bottom: 1rem;
+    }
+    
+    .breeding-grooming-form .btn-group {
+        width: 100%;
+    }
+    
+    .breeding-grooming-form .btn-group .btn {
+        flex: 1;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
 <script>
 $(document).ready(function() {
     // Set default date to today if creating new record
@@ -214,6 +278,12 @@ $(document).ready(function() {
         e.preventDefault();
         submitForm();
     });
+
+    // Validate on field changes
+    $('#project_id, #dog_id, #date, #time').on('change', validateForm);
+
+    // Initialize validation
+    validateForm();
 });
 
 function submitForm() {
@@ -301,75 +371,5 @@ function validateForm() {
     
     return isValid;
 }
-
-// Validate on field changes
-$('#project_id, #dog_id, #date, #time').on('change', validateForm);
-
-// Initialize validation
-validateForm();
 </script>
-
-<style>
-.breeding-grooming-form .section-title {
-    color: #495057;
-    font-weight: 600;
-    margin-bottom: 0;
-}
-
-.breeding-grooming-form .form-label {
-    font-weight: 500;
-    color: #495057;
-}
-
-.breeding-grooming-form .text-danger {
-    font-size: 0.9em;
-}
-
-.breeding-grooming-form .card {
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-}
-
-.breeding-grooming-form textarea {
-    resize: vertical;
-}
-
-.breeding-grooming-form .btn-group .btn {
-    margin-right: 0.5rem;
-}
-
-.alert {
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-}
-
-/* RTL adjustments */
-.breeding-grooming-form input[type="time"] {
-    direction: ltr;
-    text-align: right;
-}
-
-.breeding-grooming-form input[type="date"] {
-    direction: ltr;
-    text-align: right;
-}
-
-/* Responsive improvements */
-@media (max-width: 768px) {
-    .breeding-grooming-form .d-flex {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .breeding-grooming-form .d-flex > div {
-        margin-bottom: 1rem;
-    }
-    
-    .breeding-grooming-form .btn-group {
-        width: 100%;
-    }
-    
-    .breeding-grooming-form .btn-group .btn {
-        flex: 1;
-    }
-}
-</style>
 {% endblock %}
