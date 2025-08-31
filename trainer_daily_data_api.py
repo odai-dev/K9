@@ -124,13 +124,23 @@ def get_accessible_dogs():
                 Project.manager_id == current_user.id
             ).all()
         
+        # Get project assignments for dogs
+        dog_projects = {}
+        if dogs:
+            from models import project_dog_assignment
+            assignments = db.session.query(project_dog_assignment).all()
+            for assignment in assignments:
+                if assignment.dog_id not in dog_projects:
+                    dog_projects[assignment.dog_id] = []
+                dog_projects[assignment.dog_id].append(assignment.project_id)
+
         return jsonify({
             'dogs': [{
                 'id': str(dog.id),
                 'name': dog.name,
                 'code': dog.code,
-                'project_id': str(dog.projects[0].id) if dog.projects else None,
-                'project_name': dog.projects[0].name if dog.projects else None
+                'project_id': str(dog_projects.get(dog.id, [None])[0]) if dog_projects.get(dog.id) else None,
+                'project_name': next((p.name for p in projects if str(p.id) == str(dog_projects.get(dog.id, [None])[0])), None) if dog_projects.get(dog.id) else None
             } for dog in dogs],
             'projects': [{
                 'id': str(project.id),
