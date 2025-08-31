@@ -7,8 +7,12 @@ from flask_migrate import Migrate
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
+# Configure logging based on environment
+flask_env = os.environ.get("FLASK_ENV", "development")
+if flask_env == "production":
+    logging.basicConfig(level=logging.INFO)
+else:
+    logging.basicConfig(level=logging.DEBUG)
 
 class Base(DeclarativeBase):
     pass
@@ -22,13 +26,31 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET") or "k9-operations-development-secret-key-2025"
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1) # needed for url_for to generate with https
 
-# configure the database, relative to the app instance folder
+# Configure database - enforce PostgreSQL in production
 database_url = os.environ.get("DATABASE_URL")
-if not database_url:
-    # Use SQLite as fallback for Replit environment
-    database_url = 'sqlite:///k9_operations.db'
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {}
+flask_env = os.environ.get("FLASK_ENV", "development")
+
+if flask_env == "production":
+    if not database_url:
+        raise RuntimeError(
+            "DATABASE_URL environment variable is required in production. "
+            "Please set it to a PostgreSQL connection string."
+        )
+    if not database_url.startswith(("postgresql://", "postgres://")):
+        raise RuntimeError(
+            "Production environment requires PostgreSQL database. "
+            f"Got: {database_url[:20]}..."
+        )
+    # Ensure postgresql:// prefix for compatibility
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
 else:
+    # Development/Replit environment: use PostgreSQL if available, SQLite as fallback
+    if not database_url:
+        database_url = 'sqlite:///k9_operations.db'
+
+# Configure engine options based on database type
+if database_url.startswith(("postgresql://", "postgres://")):
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
         "pool_recycle": 300,
         "pool_pre_ping": True,
@@ -36,6 +58,8 @@ else:
             "client_encoding": "utf8"
         }
     }
+else:
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {}
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -60,24 +84,30 @@ with app.app_context():
     import models_attendance_reporting  # noqa: F401
     # import models_notifications  # noqa: F401  # DISABLED for performance
 
-    db.create_all()
-    
-    # Ensure default admin user exists
-    from models import User, UserRole
-    from werkzeug.security import generate_password_hash
-    
-    admin_user = User.query.filter_by(username='admin').first()
-    if not admin_user:
-        admin_user = User()
-        admin_user.username = 'admin'
-        admin_user.email = 'admin@k9ops.com'
-        admin_user.password_hash = generate_password_hash('admin123')
-        admin_user.role = UserRole.GENERAL_ADMIN
-        admin_user.full_name = 'System Administrator'
-        admin_user.active = True
-        db.session.add(admin_user)
-        db.session.commit()
-        print("✓ Default admin user created successfully (username: admin, password: admin123)")
+    # In production, migrations handle schema creation
+    # In development, create tables automatically for convenience
+    if flask_env != "production":
+        db.create_all()
+        
+        # Create default admin user only in development
+        from models import User, UserRole
+        from werkzeug.security import generate_password_hash
+        
+        admin_user = User.query.filter_by(username='admin').first()
+        if not admin_user:
+            admin_user = User()
+            admin_user.username = 'admin'
+            admin_user.email = 'admin@k9ops.com'
+            admin_user.password_hash = generate_password_hash('admin123')
+            admin_user.role = UserRole.GENERAL_ADMIN
+            admin_user.full_name = 'System Administrator'
+            admin_user.active = True
+            db.session.add(admin_user)
+            db.session.commit()
+            print("✓ Default admin user created successfully (username: admin, password: admin123)")
+    else:
+        print("Production mode: Skipping automatic table creation and default user setup")
+        print("Use 'flask db upgrade' for migrations and create admin user manually")
 
     # User loader
     @login_manager.user_loader

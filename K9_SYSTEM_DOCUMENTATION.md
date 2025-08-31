@@ -850,18 +850,82 @@ flask db downgrade
 
 ### Deployment Options
 
+#### Docker Production Deployment (Recommended)
+
+The system includes comprehensive Docker-based production deployment with the following components:
+
+**Docker Configuration**:
+- **Dockerfile**: Python 3.11 slim base with production optimizations
+- **docker-compose.yml**: Multi-service setup with PostgreSQL and web application
+- **docker-entrypoint.sh**: Automated migration and Gunicorn startup
+- **Environment Configuration**: Secure variable management with `.env` files
+
+**Key Features**:
+- **PostgreSQL Enforcement**: Production mode requires PostgreSQL (no SQLite fallback)
+- **Automatic Migrations**: Database schema updates on container startup
+- **Security**: Non-root user, proper secrets management, SSL termination support
+- **Scaling**: Configurable Gunicorn workers based on CPU cores
+- **Persistence**: Docker volumes for database and upload data
+- **Health Checks**: Built-in health monitoring for both services
+
+**Quick Start**:
+```bash
+# Setup environment
+cp .env.example .env
+# Edit .env with production values
+
+# Deploy
+docker-compose build
+docker-compose up -d
+
+# Verify deployment
+docker-compose ps
+docker-compose logs web
+```
+
+**Production Requirements**:
+- Docker Engine 20.10+ and Docker Compose 2.0+
+- Minimum 2GB RAM and 10GB disk space
+- PostgreSQL enforced (no SQLite fallback in production)
+- SESSION_SECRET must be cryptographically secure
+- Default admin user disabled (create manually via Flask shell)
+
 #### Replit Deployment
 1. **Automatic Setup**: Database and environment configured automatically
 2. **Workflow Management**: Uses Replit workflows for server management
 3. **Port Configuration**: Automatically binds to port 5000
 4. **SSL Termination**: Handled by Replit infrastructure
+5. **Development Mode**: Uses PostgreSQL with SQLite fallback
 
-#### Manual Deployment
+#### Manual Deployment (Legacy)
 1. **Database Setup**: Configure PostgreSQL instance
 2. **Environment Variables**: Set required configuration
 3. **Web Server**: Use Gunicorn for production
 4. **Reverse Proxy**: Configure Nginx for SSL and static files
 5. **Process Management**: Use systemd or supervisor
+
+#### Nginx Reverse Proxy Configuration
+
+The system includes production-ready Nginx configuration (`nginx.conf.example`) with:
+- **SSL/TLS Termination**: Modern SSL settings and security headers
+- **Static File Serving**: Direct Nginx serving for better performance
+- **Compression**: Gzip compression for text assets
+- **Security Headers**: HSTS, X-Frame-Options, CSP, and more
+- **Health Checks**: Dedicated health check endpoints
+- **Upload Handling**: Secure file upload proxy configuration
+
+**SSL Setup with Let's Encrypt**:
+```bash
+# Install Certbot
+sudo apt install certbot python3-certbot-nginx
+
+# Obtain certificates
+sudo certbot --nginx -d yourdomain.com
+
+# Auto-renewal setup
+sudo crontab -e
+# Add: 0 12 * * * /usr/bin/certbot renew --quiet
+```
 
 ### Performance Optimization
 - **Database Connection Pooling**: Configured for PostgreSQL
