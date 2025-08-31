@@ -288,8 +288,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-save functionality (removed since draft button is removed)
     // Auto-save functionality has been removed as requested
 
-    // Validate on field changes
-    const validateFields = ['project_id', 'dog_id', 'date', 'time'];
+    // Validate on field changes (project_id is optional, so not included)
+    const validateFields = ['dog_id', 'date', 'time'];
     validateFields.forEach(fieldId => {
         document.getElementById(fieldId).addEventListener('change', validateForm);
     });
