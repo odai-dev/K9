@@ -4407,6 +4407,135 @@ def breeding_excretion_edit(id):
                          vomit_color_choices=vomit_color_choices,
                          excretion_place_choices=excretion_place_choices)
 
+# API Routes for Excretion 
+@main_bp.route('/api/breeding/excretion/list')
+@login_required
+@require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.VIEW)
+def api_list_excretion():
+    """API endpoint for excretion logs list"""
+    try:
+        # Get query parameters
+        page = request.args.get('page', 1, type=int)
+        per_page = min(request.args.get('per_page', 50, type=int), 100)
+        project_id = request.args.get('project_id')
+        dog_id = request.args.get('dog_id')
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        
+        # Base query with joins
+        query = ExcretionLog.query.join(Dog, ExcretionLog.dog_id == Dog.id)
+        query = query.outerjoin(Project, ExcretionLog.project_id == Project.id)
+        
+        # Apply user access restrictions
+        if current_user.role == UserRole.GENERAL_ADMIN:
+            # Admin can see all logs
+            pass
+        else:
+            # PROJECT_MANAGER can only see logs from assigned projects
+            assigned_projects = get_user_assigned_projects(current_user)
+            if not assigned_projects:
+                return jsonify({
+                    'items': [],
+                    'pagination': {'page': 1, 'pages': 1, 'per_page': per_page, 'total': 0, 'has_prev': False, 'has_next': False},
+                    'kpis': {'total': 0, 'stool': {'constipation': 0, 'abnormal_consistency': 0}, 'urine': {'abnormal_color': 0}, 'vomit': {'total_events': 0}}
+                })
+            
+            project_ids = [p.id for p in assigned_projects]
+            query = query.filter(db.or_(ExcretionLog.project_id.in_(project_ids), ExcretionLog.project_id.is_(None)))
+        
+        # Apply filters
+        if project_id:
+            query = query.filter(ExcretionLog.project_id == project_id)
+        
+        if dog_id:
+            query = query.filter(ExcretionLog.dog_id == dog_id)
+        
+        if date_from:
+            try:
+                date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+                query = query.filter(ExcretionLog.date >= date_from_obj)
+            except ValueError:
+                return jsonify({'error': 'Invalid date_from format'}), 400
+        
+        if date_to:
+            try:
+                date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+                query = query.filter(ExcretionLog.date <= date_to_obj)
+            except ValueError:
+                return jsonify({'error': 'Invalid date_to format'}), 400
+        
+        # Calculate KPIs on filtered data
+        kpis_query = query.with_entities(ExcretionLog)
+        total_count = kpis_query.count()
+        constipation_count = kpis_query.filter(ExcretionLog.constipation == True).count()
+        abnormal_stool_count = kpis_query.filter(ExcretionLog.stool_consistency.in_(['سائل', 'شديد الصلابة'])).count()
+        abnormal_urine_count = kpis_query.filter(ExcretionLog.urine_color.in_(['بني مصفر', 'وردي/دموي'])).count()
+        vomit_events = kpis_query.filter(ExcretionLog.vomit_count > 0).count()
+        
+        kpis = {
+            'total': total_count,
+            'stool': {
+                'constipation': constipation_count,
+                'abnormal_consistency': abnormal_stool_count
+            },
+            'urine': {
+                'abnormal_color': abnormal_urine_count
+            },
+            'vomit': {
+                'total_events': vomit_events
+            }
+        }
+        
+        # Order by date and time descending
+        query = query.order_by(ExcretionLog.date.desc(), ExcretionLog.time.desc())
+        
+        # Paginate
+        pagination = query.paginate(
+            page=page,
+            per_page=per_page,
+            error_out=False
+        )
+        
+        # Format results
+        items = []
+        for log in pagination.items:
+            items.append({
+                'id': str(log.id),
+                'date': log.date.strftime('%Y-%m-%d'),
+                'time': log.time.strftime('%H:%M'),
+                'project_name': log.project.name if log.project else '',
+                'dog_name': log.dog.name if log.dog else '',
+                'stool_color': log.stool_color,
+                'stool_consistency': log.stool_consistency,
+                'stool_content': log.stool_content,
+                'constipation': log.constipation,
+                'stool_place': log.stool_place,
+                'stool_notes': log.stool_notes,
+                'urine_color': log.urine_color,
+                'urine_notes': log.urine_notes,
+                'vomit_color': log.vomit_color,
+                'vomit_count': log.vomit_count,
+                'vomit_notes': log.vomit_notes,
+                'created_at': log.created_at.strftime('%Y-%m-%d %H:%M')
+            })
+        
+        return jsonify({
+            'items': items,
+            'pagination': {
+                'page': pagination.page,
+                'pages': pagination.pages,
+                'per_page': pagination.per_page,
+                'total': pagination.total,
+                'has_prev': pagination.has_prev,
+                'has_next': pagination.has_next
+            },
+            'kpis': kpis
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error listing excretion logs: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
 @main_bp.route('/breeding/grooming')
 @login_required 
 @require_sub_permission('Breeding', 'العناية (الاستحمام)', PermissionType.VIEW)
