@@ -173,6 +173,16 @@ with app.app_context():
         print(f"⚠ Warning: Could not register cleaning API: {e}")
         # Continue without cleaning API for now
     
+    # Register Excretion API blueprint
+    try:
+        from api_excretion import bp as excretion_api_bp
+        app.register_blueprint(excretion_api_bp)
+        print("✓ Excretion API registered successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Could not register excretion API: {e}")
+        # Continue without excretion API for now
+    
     
     
     # Add route to serve uploaded files

@@ -61,7 +61,7 @@ const ExcretionManager = {
 
     // Bind events for form page
     bindFormEvents() {
-        const form = document.getElementById('excretionForm');
+        const form = document.getElementById('excretion-form');
         if (form) {
             form.addEventListener('submit', (e) => this.handleFormSubmit(e));
         }
@@ -376,19 +376,19 @@ const ExcretionManager = {
             return;
         }
 
-        const submitBtn = document.getElementById('submitBtn');
-        const spinner = document.getElementById('submitSpinner');
+        const submitBtn = document.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
         
         // Show loading state
         submitBtn.disabled = true;
-        spinner.classList.remove('d-none');
+        submitBtn.textContent = 'جاري الحفظ...';
 
         try {
             const formData = this.getFormData();
-            const isEdit = document.getElementById('excretionId') !== null;
+            const isEdit = document.getElementById('excretion_id') !== null;
             
             const url = isEdit 
-                ? `/api/breeding/excretion/${document.getElementById('excretionId').value}`
+                ? `/api/breeding/excretion/${document.getElementById('excretion_id').value}`
                 : '/api/breeding/excretion';
             
             const method = isEdit ? 'PUT' : 'POST';
@@ -418,17 +418,17 @@ const ExcretionManager = {
         } finally {
             // Hide loading state
             submitBtn.disabled = false;
-            spinner.classList.add('d-none');
+            submitBtn.textContent = originalText;
         }
     },
 
     // Get form data
     getFormData() {
-        const form = document.getElementById('excretionForm');
+        const form = document.getElementById('excretion-form');
         const formData = {};
 
         // Basic fields
-        formData.project_id = form.project_id.value;
+        formData.project_id = form.project_id.value || null;
         formData.dog_id = form.dog_id.value;
         formData.date = form.date.value;
         formData.time = form.time.value;
@@ -457,14 +457,14 @@ const ExcretionManager = {
     // Validate form
     validateForm() {
         let isValid = true;
-        const form = document.getElementById('excretionForm');
+        const form = document.getElementById('excretion-form');
 
         // Clear previous errors
         form.querySelectorAll('.validation-error').forEach(el => el.textContent = '');
         form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
 
-        // Validate required fields
-        const requiredFields = ['project_id', 'dog_id', 'date', 'time'];
+        // Validate required fields (project_id is optional)
+        const requiredFields = ['dog_id', 'date', 'time'];
         requiredFields.forEach(fieldName => {
             const field = form[fieldName];
             if (!field.value.trim()) {
