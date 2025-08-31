@@ -6,7 +6,7 @@ from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
 from models import Project, Employee, Dog, EmployeeRole
 from app import db
-from permission_utils import require_sub_permission
+from permission_decorators import require_sub_permission
 
 bp = Blueprint('trainer_daily_data_api', __name__)
 
