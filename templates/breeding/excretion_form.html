@@ -271,12 +271,13 @@
 <script>
 $(document).ready(function() {
     // Set default date to today if creating new record
-    {% if not excretion_log %}
-    const today = new Date().toISOString().split('T')[0];
-    const now = new Date().toTimeString().split(' ')[0].slice(0,5);
-    $('#date').val(today);
-    $('#time').val(now);
-    {% endif %}
+    var isNewRecord = {{ 'true' if not excretion_log else 'false' }};
+    if (isNewRecord) {
+        const today = new Date().toISOString().split('T')[0];
+        const now = new Date().toTimeString().split(' ')[0].slice(0,5);
+        $('#date').val(today);
+        $('#time').val(now);
+    }
 
     // Form submission handler
     $('#excretion-form').on('submit', function(e) {
