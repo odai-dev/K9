@@ -797,11 +797,11 @@ def api_checkup_delete(id):
         return jsonify({'error': str(e)}), 500
 
 
-# Excretion API Routes
-@api_bp.route('/breeding/excretion/list', methods=['GET'])
-@login_required
-@require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.VIEW)
-def excretion_list():
+# Excretion API Routes - DISABLED: Handled by api_excretion.py instead
+# @api_bp.route('/breeding/excretion/list', methods=['GET'])
+# @login_required
+# @require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.VIEW)
+# def excretion_list():
     """Get excretion log entries with filters and pagination"""
     try:
         # Get parameters
