@@ -329,9 +329,9 @@ function submitForm() {
         vomit_notes: $('#vomit_notes').val() || null
     };
 
-    // Validate required fields
-    if (!formData.project_id || !formData.dog_id || !formData.date || !formData.time) {
-        showAlert('يرجى ملء جميع الحقول المطلوبة', 'error');
+    // Validate required fields (project_id is optional)
+    if (!formData.dog_id || !formData.date || !formData.time) {
+        showAlert('يرجى ملء جميع الحقول المطلوبة (الكلب، التاريخ، والوقت)', 'error');
         return;
     }
 
@@ -401,14 +401,13 @@ function showAlert(message, type, duration = 3000) {
     setTimeout(() => $('.alert').alert('close'), duration);
 }
 
-// Real-time form validation
+// Real-time form validation  
 function validateForm() {
-    const project = $('#project_id').val();
     const dog = $('#dog_id').val();
     const date = $('#date').val();
     const time = $('#time').val();
 
-    const isValid = project && dog && date && time;
+    const isValid = dog && date && time; // project is optional
     $('button[type="submit"]').prop('disabled', !isValid);
     
     return isValid;
