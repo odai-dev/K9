@@ -170,18 +170,8 @@ let currentPage = 1;
 let currentFilters = {};
 let excretionToDelete = null;
 
-// Wait for jQuery to load first
-function waitForJQuery(callback) {
-    if (typeof $ !== 'undefined') {
-        callback();
-    } else {
-        setTimeout(() => waitForJQuery(callback), 50);
-    }
-}
-
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
-    waitForJQuery(function() {
     loadFilterOptions();
     loadExcretions();
     
@@ -190,8 +180,36 @@ document.addEventListener('DOMContentLoaded', function() {
     const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
     const weekEnd = new Date(now.setDate(now.getDate() - now.getDay() + 6));
     
-    $('#date_from').val(weekStart.toISOString().split('T')[0]);
-    $('#date_to').val(weekEnd.toISOString().split('T')[0]);
+    document.getElementById('date_from').value = weekStart.toISOString().split('T')[0];
+    document.getElementById('date_to').value = weekEnd.toISOString().split('T')[0];
+    
+    // Set up delete confirmation button
+    document.getElementById('confirm-delete').addEventListener('click', function() {
+        if (excretionToDelete) {
+            fetch(`/api/breeding/excretion/${excretionToDelete}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Hide modal using Bootstrap's API
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                    modal.hide();
+                    loadExcretions();
+                    // Show success message
+                    showAlert('تم حذف السجل بنجاح', 'success');
+                } else {
+                    showAlert(data.error || 'حدث خطأ أثناء الحذف', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('حدث خطأ أثناء الحذف', 'error');
+            });
+        }
     });
 });
 
@@ -200,21 +218,27 @@ function loadFilterOptions() {
     fetch('/api/dogs/accessible')
         .then(response => response.json())
         .then(data => {
-            const projectSelect = $('#project_filter');
-            const dogSelect = $('#dog_filter');
+            const projectSelect = document.getElementById('project_filter');
+            const dogSelect = document.getElementById('dog_filter');
             
             // Get unique projects from dogs data
             const projects = [...new Map(data.dogs.map(dog => [dog.project_id, dog.project_name])).entries()];
             
             projects.forEach(([id, name]) => {
                 if (name) {
-                    projectSelect.append(`<option value="${id}">${name}</option>`);
+                    const option = document.createElement('option');
+                    option.value = id;
+                    option.textContent = name;
+                    projectSelect.appendChild(option);
                 }
             });
             
             // Populate dogs
             data.dogs.forEach(dog => {
-                dogSelect.append(`<option value="${dog.id}">${dog.name}</option>`);
+                const option = document.createElement('option');
+                option.value = dog.id;
+                option.textContent = dog.name;
+                dogSelect.appendChild(option);
             });
         })
         .catch(error => console.error('Error loading filter options:', error));
@@ -222,10 +246,10 @@ function loadFilterOptions() {
 
 function applyFilters() {
     currentFilters = {
-        project_id: $('#project_filter').val(),
-        date_from: $('#date_from').val(),
-        date_to: $('#date_to').val(),
-        dog_id: $('#dog_filter').val()
+        project_id: document.getElementById('project_filter').value,
+        date_from: document.getElementById('date_from').value,
+        date_to: document.getElementById('date_to').value,
+        dog_id: document.getElementById('dog_filter').value
     };
     currentPage = 1;
     loadExcretions();
@@ -258,89 +282,84 @@ function loadExcretions() {
 }
 
 function updateKPIs(kpis) {
-    $('#total-count').text(kpis.total || 0);
-    $('#constipation-count').text(kpis.stool?.constipation || 0);
-    $('#abnormal-stool').text(kpis.stool?.abnormal_consistency || 0);
-    $('#abnormal-urine').text(kpis.urine?.abnormal_color || 0);
-    $('#vomit-events').text(kpis.vomit?.total_events || 0);
+    document.getElementById('total-count').textContent = kpis.total || 0;
+    document.getElementById('constipation-count').textContent = kpis.stool?.constipation || 0;
+    document.getElementById('abnormal-stool').textContent = kpis.stool?.abnormal_consistency || 0;
+    document.getElementById('abnormal-urine').textContent = kpis.urine?.abnormal_color || 0;
+    document.getElementById('vomit-events').textContent = kpis.vomit?.total_events || 0;
 }
 
 function updateTable(items) {
-    const tbody = $('#excretion-table-body');
-    tbody.empty();
+    const tbody = document.getElementById('excretion-table-body');
+    tbody.innerHTML = '';
     
     if (items.length === 0) {
-        tbody.append(`
+        tbody.innerHTML = `
             <tr>
                 <td colspan="11" class="text-center py-4">لا توجد سجلات</td>
             </tr>
-        `);
+        `;
         return;
     }
     
     items.forEach(item => {
-        const row = `
-            <tr>
-                <td>${formatDate(item.date)}</td>
-                <td>${item.time}</td>
-                <td>${item.dog_name}</td>
-                <td>${item.project_name}</td>
-                <td>${item.stool_color ? `<span class="badge bg-secondary">${item.stool_color}</span>` : '-'}</td>
-                <td>${item.stool_consistency ? `<span class="badge bg-${getStoolColor(item.stool_consistency)}">${item.stool_consistency}</span>` : '-'}</td>
-                <td>${item.constipation ? '<span class="badge bg-danger">نعم</span>' : '<span class="badge bg-success">لا</span>'}</td>
-                <td>${item.urine_color ? `<span class="badge bg-${getUrineColor(item.urine_color)}">${item.urine_color}</span>` : '-'}</td>
-                <td>${item.vomit_color ? `<span class="badge bg-danger">${item.vomit_color}</span>` : '-'}</td>
-                <td>${item.vomit_count !== null ? item.vomit_count : '-'}</td>
-                <td>
-                    <div class="btn-group btn-group-sm">
-                        <a href="/breeding/excretion/${item.id}/edit" class="btn btn-outline-primary btn-sm" title="تعديل">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                        {% if current_user.role.name == 'GENERAL_ADMIN' or has_permission(current_user, 'Breeding', 'البراز / البول / القيء', 'DELETE') %}
-                        <button class="btn btn-outline-danger btn-sm" onclick="confirmDelete('${item.id}')" title="حذف">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                        {% endif %}
-                    </div>
-                </td>
-            </tr>
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${formatDate(item.date)}</td>
+            <td>${item.time}</td>
+            <td>${item.dog_name}</td>
+            <td>${item.project_name}</td>
+            <td>${item.stool_color ? `<span class="badge bg-secondary">${item.stool_color}</span>` : '-'}</td>
+            <td>${item.stool_consistency ? `<span class="badge bg-${getStoolColor(item.stool_consistency)}">${item.stool_consistency}</span>` : '-'}</td>
+            <td>${item.constipation ? '<span class="badge bg-danger">نعم</span>' : '<span class="badge bg-success">لا</span>'}</td>
+            <td>${item.urine_color ? `<span class="badge bg-${getUrineColor(item.urine_color)}">${item.urine_color}</span>` : '-'}</td>
+            <td>${item.vomit_color ? `<span class="badge bg-danger">${item.vomit_color}</span>` : '-'}</td>
+            <td>${item.vomit_count !== null ? item.vomit_count : '-'}</td>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    <a href="/breeding/excretion/${item.id}/edit" class="btn btn-outline-primary btn-sm" title="تعديل">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    {% if current_user.role.name == 'GENERAL_ADMIN' or has_permission(current_user, 'Breeding', 'البراز / البول / القيء', 'DELETE') %}
+                    <button class="btn btn-outline-danger btn-sm" onclick="confirmDelete('${item.id}')" title="حذف">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    {% endif %}
+                </div>
+            </td>
         `;
-        tbody.append(row);
+        tbody.appendChild(row);
     });
 }
 
 function updatePagination(pagination) {
-    const container = $('#pagination-container');
-    container.empty();
+    const container = document.getElementById('pagination-container');
+    container.innerHTML = '';
     
     if (pagination.pages <= 1) return;
     
     // Previous button
     if (pagination.page > 1) {
-        container.append(`
-            <li class="page-item">
-                <a class="page-link" href="#" onclick="changePage(${pagination.page - 1})">السابق</a>
-            </li>
-        `);
+        const prevItem = document.createElement('li');
+        prevItem.className = 'page-item';
+        prevItem.innerHTML = `<a class="page-link" href="#" onclick="changePage(${pagination.page - 1})">السابق</a>`;
+        container.appendChild(prevItem);
     }
     
     // Page numbers
     for (let i = 1; i <= pagination.pages; i++) {
-        const active = i === pagination.page ? 'active' : '';
-        container.append(`
-            <li class="page-item ${active}">
-                <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
-            </li>
-        `);
+        const pageItem = document.createElement('li');
+        pageItem.className = i === pagination.page ? 'page-item active' : 'page-item';
+        pageItem.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i})">${i}</a>`;
+        container.appendChild(pageItem);
     }
     
     // Next button
     if (pagination.page < pagination.pages) {
-        container.append(`
-            <li class="page-item">
-                <a class="page-link" href="#" onclick="changePage(${pagination.page + 1})">التالي</a>
-            </li>
-        `);
+        const nextItem = document.createElement('li');
+        nextItem.className = 'page-item';
+        nextItem.innerHTML = `<a class="page-link" href="#" onclick="changePage(${pagination.page + 1})">التالي</a>`;
+        container.appendChild(nextItem);
     }
 }
 
@@ -369,45 +388,31 @@ function formatDate(dateStr) {
 
 function confirmDelete(id) {
     excretionToDelete = id;
-    $('#deleteModal').modal('show');
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
 }
-
-$('#confirm-delete').click(function() {
-    if (excretionToDelete) {
-        fetch(`/api/breeding/excretion/${excretionToDelete}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                $('#deleteModal').modal('hide');
-                loadExcretions();
-                // Show success message
-                showAlert('تم حذف السجل بنجاح', 'success');
-            } else {
-                showAlert(data.error || 'حدث خطأ أثناء الحذف', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showAlert('حدث خطأ أثناء الحذف', 'error');
-        });
-    }
-});
 
 function showAlert(message, type) {
     const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-    const alert = `
-        <div class="alert ${alertClass} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert ${alertClass} alert-dismissible fade show`;
+    alertDiv.setAttribute('role', 'alert');
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.top = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    $('body').append(alert);
-    setTimeout(() => $('.alert').alert('close'), 3000);
+    document.body.appendChild(alertDiv);
+    
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 3000);
 }
 </script>
 
