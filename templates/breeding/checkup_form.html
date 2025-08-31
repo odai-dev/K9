@@ -272,12 +272,13 @@
 <script>
 $(document).ready(function() {
     // Set default date to today if creating new record
-    {% if not checkup %}
-    const today = new Date().toISOString().split('T')[0];
-    const now = new Date().toTimeString().split(' ')[0].slice(0,5);
-    $('#date').val(today);
-    $('#time').val(now);
-    {% endif %}
+    var isNewRecord = {{ 'true' if not checkup else 'false' }};
+    if (isNewRecord) {
+        const today = new Date().toISOString().split('T')[0];
+        const now = new Date().toTimeString().split(' ')[0].slice(0,5);
+        $('#date').val(today);
+        $('#time').val(now);
+    }
 
     // Form submission handler
     $('#checkup-form').on('submit', function(e) {
