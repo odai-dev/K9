@@ -6,6 +6,7 @@ from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
 from models import Project, Employee, Dog, EmployeeRole
 from app import db
+from permission_utils import require_sub_permission
 
 bp = Blueprint('trainer_daily_data_api', __name__)
 
@@ -97,6 +98,7 @@ def get_dogs():
 
 @bp.route('/api/dogs/accessible')
 @login_required
+@require_sub_permission('Breeding', 'البراز / البول / القيء', 'VIEW')
 def get_accessible_dogs():
     """Get list of accessible dogs and projects for breeding forms"""
     try:

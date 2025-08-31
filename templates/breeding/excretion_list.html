@@ -170,8 +170,18 @@ let currentPage = 1;
 let currentFilters = {};
 let excretionToDelete = null;
 
+// Wait for jQuery to load first
+function waitForJQuery(callback) {
+    if (typeof $ !== 'undefined') {
+        callback();
+    } else {
+        setTimeout(() => waitForJQuery(callback), 50);
+    }
+}
+
 // Initialize the page
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
+    waitForJQuery(function() {
     loadFilterOptions();
     loadExcretions();
     
@@ -182,6 +192,7 @@ $(document).ready(function() {
     
     $('#date_from').val(weekStart.toISOString().split('T')[0]);
     $('#date_to').val(weekEnd.toISOString().split('T')[0]);
+    });
 });
 
 function loadFilterOptions() {
