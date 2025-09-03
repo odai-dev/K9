@@ -4752,11 +4752,14 @@ def breeding_deworming_new():
     if not permissions['training']:
         abort(403)
         
-    from utils import get_user_assigned_projects, get_user_accessible_dogs
+    from utils import get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
     assigned_projects = get_user_assigned_projects(current_user)
     assigned_dogs = get_user_accessible_dogs(current_user)
     
-    from models import Employee, Route, Unit, Reaction
+    from models import Employee, Route, Unit, Reaction, EmployeeRole
+    # Get all accessible employees, then filter for VETs and other relevant roles
+    accessible_employees = get_user_accessible_employees(current_user)
+    # Also include all active employees for compatibility - can be refined later
     employees = Employee.query.filter_by(is_active=True).all()
     
     # Convert enums to list of dictionaries for JavaScript
@@ -4795,10 +4798,13 @@ def breeding_deworming_edit(id):
         if log.project_id not in assigned_project_ids:
             abort(403)
     
-    from utils import get_user_assigned_projects, get_user_accessible_dogs
+    from utils import get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
     assigned_projects = get_user_assigned_projects(current_user)
     assigned_dogs = get_user_accessible_dogs(current_user)
     
+    # Get all accessible employees
+    accessible_employees = get_user_accessible_employees(current_user)
+    # Also include all active employees for compatibility - can be refined later  
     employees = Employee.query.filter_by(is_active=True).all()
     
     # Convert enums to list of dictionaries for JavaScript

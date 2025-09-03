@@ -235,7 +235,7 @@
                                 <label for="people_involved" class="form-label">الموظفون المتورطون</label>
                                 <select class="form-select" id="people_involved" name="people_involved" multiple>
                                     {% for employee in project_employees %}
-                                    <option value="{{ employee.id }}">{{ employee.full_name }}</option>
+                                    <option value="{{ employee.id }}">{{ employee.name }}</option>
                                     {% endfor %}
                                 </select>
                                 <small class="form-text text-muted">يمكن اختيار أكثر من موظف باستخدام Ctrl</small>

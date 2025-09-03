@@ -71,7 +71,7 @@
                                     <option value="">لا يوجد</option>
                                     {% for employee in employees %}
                                     <option value="{{ employee.id }}" {% if mode == 'edit' and log and log.specialist_employee_id == employee.id %}selected{% endif %}>
-                                        {{ employee.full_name }}
+                                        {{ employee.name }}
                                     </option>
                                     {% endfor %}
                                 </select>

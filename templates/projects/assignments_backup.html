@@ -143,10 +143,10 @@
                                             <td>
                                                 <div class="d-flex align-items-center">
                                                     <div class="avatar bg-primary text-white rounded-circle me-2" style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
-                                                        {{ assignment.employee.full_name[:1] }}
+                                                        {{ assignment.employee.name[:1] }}
                                                     </div>
                                                     <div>
-                                                        <strong>{{ assignment.employee.full_name }}</strong><br>
+                                                        <strong>{{ assignment.employee.name }}</strong><br>
                                                         <small class="text-muted">{{ assignment.employee.employee_id }}</small>
                                                     </div>
                                                 </div>
@@ -310,7 +310,7 @@
                         <select class="form-select" id="employee_id" name="employee_id" required>
                             <option value="">اختر موظف...</option>
                             {% for employee in available_employees %}
-                            <option value="{{ employee.id }}">{{ employee.full_name }} - {{ employee.employee_id }}</option>
+                            <option value="{{ employee.id }}">{{ employee.name }} - {{ employee.employee_id }}</option>
                             {% endfor %}
                         </select>
                     </div>
