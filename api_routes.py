@@ -1260,17 +1260,19 @@ def grooming_create():
         if not all(k in data for k in ['date', 'time', 'dog_id']):
             return jsonify({'error': 'الحقول المطلوبة: التاريخ، الوقت، الكلب'}), 400
         
-        # Check PROJECT_MANAGER access to project
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # Check PROJECT_MANAGER access to project (only if project is specified)
+        project_id_value = data.get('project_id')
+        if current_user.role == UserRole.PROJECT_MANAGER and project_id_value and project_id_value.strip():
             assigned_projects = get_user_assigned_projects(current_user)
             project_ids = [p.id for p in assigned_projects]
-            if data['project_id'] not in project_ids:
+            if project_id_value not in project_ids:
                 return jsonify({'error': 'ليس لديك صلاحية لهذا المشروع'}), 403
         
-        # Validate project and dog exist
-        project = Project.query.get(data['project_id'])
-        if not project:
-            return jsonify({'error': 'المشروع غير موجود'}), 404
+        # Validate project exists (only if project is specified)
+        if project_id_value and project_id_value.strip():
+            project = Project.query.get(project_id_value)
+            if not project:
+                return jsonify({'error': 'المشروع غير موجود'}), 404
             
         dog = Dog.query.get(data['dog_id'])
         if not dog:
@@ -1306,7 +1308,11 @@ def grooming_create():
         
         # Create new grooming log
         grooming_log = GroomingLog()
-        grooming_log.project_id = int(data['project_id']) if data.get('project_id') else None
+        # Set project_id (already validated above)
+        if project_id_value and project_id_value.strip():
+            grooming_log.project_id = project_id_value
+        else:
+            grooming_log.project_id = None
         grooming_log.date = log_date
         grooming_log.time = log_time
         grooming_log.dog_id = data['dog_id']
