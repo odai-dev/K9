@@ -4752,15 +4752,9 @@ def breeding_deworming_new():
     if not permissions['training']:
         abort(403)
         
-    from utils import get_user_assigned_projects
+    from utils import get_user_assigned_projects, get_user_accessible_dogs
     assigned_projects = get_user_assigned_projects(current_user)
-    assigned_dogs = []
-    if assigned_projects:
-        from models import Dog
-        from models import project_dog_assignment
-        assigned_dogs = Dog.query.join(project_dog_assignment).filter(
-            project_dog_assignment.c.project_id.in_([p.id for p in assigned_projects])
-        ).all()
+    assigned_dogs = get_user_accessible_dogs(current_user)
     
     from models import Employee, Route, Unit, Reaction
     employees = Employee.query.filter_by(is_active=True).all()
@@ -4801,14 +4795,9 @@ def breeding_deworming_edit(id):
         if log.project_id not in assigned_project_ids:
             abort(403)
     
-    from utils import get_user_assigned_projects
+    from utils import get_user_assigned_projects, get_user_accessible_dogs
     assigned_projects = get_user_assigned_projects(current_user)
-    assigned_dogs = []
-    if assigned_projects:
-        from models import project_dog_assignment
-        assigned_dogs = Dog.query.join(project_dog_assignment).filter(
-            project_dog_assignment.c.project_id.in_([p.id for p in assigned_projects])
-        ).all()
+    assigned_dogs = get_user_accessible_dogs(current_user)
     
     employees = Employee.query.filter_by(is_active=True).all()
     
