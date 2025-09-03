@@ -4621,8 +4621,8 @@ def breeding_grooming_edit(id):
         projects = Project.query.filter(Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])).all()
     else:
         projects = get_user_assigned_projects(current_user)
-        # Verify user has access to this log's project
-        if grooming_log.project not in projects:
+        # Verify user has access to this log's project (allow if no project assigned)
+        if grooming_log.project is not None and grooming_log.project not in projects:
             abort(403)
     
     # Get accessible dogs
