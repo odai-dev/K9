@@ -14,7 +14,7 @@ bp = Blueprint('api_deworming', __name__)
 
 @bp.route('/api/breeding/deworming', methods=['POST'])
 @login_required
-@require_sub_permission('Breeding', 'جرعات الديدان', 'CREATE')
+@require_sub_permission('Breeding', 'عرض الفحص الظاهري اليومي', 'CREATE')
 def create_deworming_log():
     """Create new deworming log"""
     try:
@@ -25,6 +25,19 @@ def create_deworming_log():
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Handle empty project_id - assign default project if needed
+        if not data.get('project_id') or data.get('project_id') == '':
+            if current_user.role == UserRole.GENERAL_ADMIN:
+                default_project = Project.query.first()
+            else:
+                assigned_projects = get_user_assigned_projects(current_user)
+                default_project = assigned_projects[0] if assigned_projects else None
+            
+            if not default_project:
+                return jsonify({'error': 'لا يوجد مشروع متاح. يجب إنشاء مشروع أولاً أو تعيين المستخدم لمشروع'}), 400
+            
+            data['project_id'] = str(default_project.id)
         
         # Verify project access for PROJECT_MANAGER
         if current_user.role == UserRole.PROJECT_MANAGER:
@@ -110,7 +123,7 @@ def create_deworming_log():
 
 @bp.route('/api/breeding/deworming/<log_id>', methods=['PUT'])
 @login_required
-@require_sub_permission('Breeding', 'جرعات الديدان', 'EDIT')
+@require_sub_permission('Breeding', 'عرض الفحص الظاهري اليومي', 'EDIT')
 def update_deworming_log(log_id):
     """Update existing deworming log"""
     try:
