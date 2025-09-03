@@ -1639,7 +1639,7 @@ class GroomingLog(db.Model):
 
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
 
-    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False)
+    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=True)
     date = db.Column(db.Date, nullable=False)
     time = db.Column(db.Time, nullable=False)
 

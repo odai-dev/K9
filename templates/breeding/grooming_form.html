@@ -31,8 +31,8 @@
                         <hr>
                     </div>
                     <div class="col-md-4">
-                        <label for="project_id" class="form-label">المشروع <span class="text-danger">*</span></label>
-                        <select class="form-select" id="project_id" name="project_id" required>
+                        <label for="project_id" class="form-label">المشروع</label>
+                        <select class="form-select" id="project_id" name="project_id">
                             <option value="">اختر المشروع...</option>
                             {% for project in projects %}
                             <option value="{{ project.id }}" {% if grooming_log and grooming_log.project_id == project.id %}selected{% endif %}>
@@ -286,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Validate on field changes
-    const fieldsToWatch = ['project_id', 'dog_id', 'date', 'time'];
+    const fieldsToWatch = ['dog_id', 'date', 'time'];
     fieldsToWatch.forEach(fieldId => {
         const field = document.getElementById(fieldId);
         if (field) {
@@ -317,7 +317,7 @@ function submitForm() {
     };
 
     // Validate required fields
-    if (!formData.project_id || !formData.dog_id || !formData.date || !formData.time) {
+    if (!formData.dog_id || !formData.date || !formData.time) {
         showAlert('يرجى ملء جميع الحقول المطلوبة', 'error');
         return;
     }
@@ -388,12 +388,11 @@ function showAlert(message, type, duration = 3000) {
 
 // Real-time form validation
 function validateForm() {
-    const project = document.getElementById('project_id')?.value;
     const dog = document.getElementById('dog_id')?.value;
     const date = document.getElementById('date')?.value;
     const time = document.getElementById('time')?.value;
 
-    const isValid = project && dog && date && time;
+    const isValid = dog && date && time;
     const submitButton = document.querySelector('button[type="submit"]');
     if (submitButton) {
         submitButton.disabled = !isValid;

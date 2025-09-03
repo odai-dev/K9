@@ -1168,7 +1168,8 @@ def grooming_list():
                     'kpis': {'total': 0, 'washed_yes': 0, 'brushed_yes': 0, 'nails_yes': 0, 
                             'teeth_yes': 0, 'ear_yes': 0, 'eye_yes': 0, 'avg_cleanliness': 0}
                 })
-            query = query.filter(GroomingLog.project_id.in_(project_ids))
+            # For project managers, show records assigned to their projects OR records with no project
+            query = query.filter((GroomingLog.project_id.in_(project_ids)) | (GroomingLog.project_id.is_(None)))
         
         # Apply filters
         if project_id:
@@ -1350,7 +1351,8 @@ def grooming_update(id):
         if current_user.role == UserRole.PROJECT_MANAGER:
             assigned_projects = get_user_assigned_projects(current_user)
             project_ids = [p.id for p in assigned_projects]
-            if grooming_log.project_id not in project_ids:
+            # Allow access if project_id is None (no project) or if it's in assigned projects
+            if grooming_log.project_id is not None and grooming_log.project_id not in project_ids:
                 return jsonify({'error': 'ليس لديك صلاحية لهذا المشروع'}), 403
         
         data = request.json
@@ -1419,7 +1421,8 @@ def grooming_delete(id):
         if current_user.role == UserRole.PROJECT_MANAGER:
             assigned_projects = get_user_assigned_projects(current_user)
             project_ids = [p.id for p in assigned_projects]
-            if grooming_log.project_id not in project_ids:
+            # Allow access if project_id is None (no project) or if it's in assigned projects
+            if grooming_log.project_id is not None and grooming_log.project_id not in project_ids:
                 return jsonify({'error': 'ليس لديك صلاحية لهذا المشروع'}), 403
         
         db.session.delete(grooming_log)
