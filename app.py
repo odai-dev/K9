@@ -177,6 +177,10 @@ with app.app_context():
     try:
         from api_excretion import bp as excretion_api_bp
         app.register_blueprint(excretion_api_bp)
+        
+        # Register deworming API blueprint
+        from api_deworming import bp as deworming_api_bp
+        app.register_blueprint(deworming_api_bp)
         print("✓ Excretion API registered successfully")
         
     except Exception as e:
