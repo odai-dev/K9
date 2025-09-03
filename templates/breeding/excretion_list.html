@@ -175,13 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadFilterOptions();
     loadExcretions();
     
-    // Set default date range to current week
-    const now = new Date();
-    const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
-    const weekEnd = new Date(now.setDate(now.getDate() - now.getDay() + 6));
-    
-    document.getElementById('date_from').value = weekStart.toISOString().split('T')[0];
-    document.getElementById('date_to').value = weekEnd.toISOString().split('T')[0];
+    // Don't set default date range - show all records by default
     
     // Set up delete confirmation button
     document.getElementById('confirm-delete').addEventListener('click', function() {
@@ -214,34 +208,31 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadFilterOptions() {
-    // Load projects
-    fetch('/api/dogs/accessible')
-        .then(response => response.json())
-        .then(data => {
-            const projectSelect = document.getElementById('project_filter');
-            const dogSelect = document.getElementById('dog_filter');
-            
-            // Get unique projects from dogs data
-            const projects = [...new Map(data.dogs.map(dog => [dog.project_id, dog.project_name])).entries()];
-            
-            projects.forEach(([id, name]) => {
-                if (name) {
-                    const option = document.createElement('option');
-                    option.value = id;
-                    option.textContent = name;
-                    projectSelect.appendChild(option);
-                }
-            });
-            
-            // Populate dogs
-            data.dogs.forEach(dog => {
-                const option = document.createElement('option');
-                option.value = dog.id;
-                option.textContent = dog.name;
-                dogSelect.appendChild(option);
-            });
-        })
-        .catch(error => console.error('Error loading filter options:', error));
+    // Load projects and dogs
+    Promise.all([
+        fetch('/api/projects').then(r => r.json()),
+        fetch('/api/dogs').then(r => r.json())
+    ]).then(([projects, dogs]) => {
+        const projectSelect = document.getElementById('project_filter');
+        const dogSelect = document.getElementById('dog_filter');
+        
+        // Populate projects
+        projects.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project.id;
+            option.textContent = project.name;
+            projectSelect.appendChild(option);
+        });
+        
+        // Populate dogs
+        dogs.forEach(dog => {
+            const option = document.createElement('option');
+            option.value = dog.id;
+            option.textContent = `${dog.name} - ${dog.code}`;
+            dogSelect.appendChild(option);
+        });
+    })
+    .catch(error => console.error('Error loading filter options:', error));
 }
 
 function applyFilters() {
@@ -308,7 +299,7 @@ function updateTable(items) {
             <td>${formatDate(item.date)}</td>
             <td>${item.time}</td>
             <td>${item.dog_name}</td>
-            <td>${item.project_name}</td>
+            <td>${item.project_name || '-'}</td>
             <td>${item.stool_color ? `<span class="badge bg-secondary">${item.stool_color}</span>` : '-'}</td>
             <td>${item.stool_consistency ? `<span class="badge bg-${getStoolColor(item.stool_consistency)}">${item.stool_consistency}</span>` : '-'}</td>
             <td>${item.constipation ? '<span class="badge bg-danger">نعم</span>' : '<span class="badge bg-success">لا</span>'}</td>

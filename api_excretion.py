@@ -26,8 +26,8 @@ def list_excretion_logs():
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
         
-        # Base query with joins
-        query = ExcretionLog.query.join(Project).join(Dog, ExcretionLog.dog_id == Dog.id)
+        # Base query with optional joins (since project_id is nullable)
+        query = ExcretionLog.query.outerjoin(Project).join(Dog, ExcretionLog.dog_id == Dog.id)
         
         # Apply user access restrictions
         if current_user.role == UserRole.GENERAL_ADMIN:
