@@ -393,11 +393,19 @@ const ExcretionManager = {
             
             const method = isEdit ? 'PUT' : 'POST';
 
+            // Get CSRF token if needed
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+            
+            if (csrfToken) {
+                headers['X-CSRFToken'] = csrfToken;
+            }
+
             const response = await fetch(url, {
                 method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: headers,
                 body: JSON.stringify(formData),
             });
 

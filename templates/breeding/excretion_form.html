@@ -272,7 +272,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize form after both DOM and scripts are loaded
     if (typeof ExcretionManager !== 'undefined') {
-        const isEdit = {{ 'true' if excretion_log else 'false' }};
+        const isEdit = {% if excretion_log %}true{% else %}false{% endif %};
         ExcretionManager.initForm(isEdit);
     } else {
         console.error('ExcretionManager not found');

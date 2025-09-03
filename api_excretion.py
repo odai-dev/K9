@@ -144,15 +144,21 @@ def create_excretion_log():
                 if str(data['project_id']) not in project_ids:
                     return jsonify({'error': 'Access denied to this project'}), 403
         
-        # Verify project and dog exist
+        # Verify project and dog exist with better error handling
         if data.get('project_id'):
-            project = Project.query.get(data['project_id'])
-            if not project:
-                return jsonify({'error': 'Project not found'}), 404
+            try:
+                project = Project.query.get(data['project_id'])
+                if not project:
+                    return jsonify({'error': 'المشروع المحدد غير موجود'}), 404
+            except Exception as e:
+                return jsonify({'error': 'معرف المشروع غير صالح'}), 400
         
-        dog = Dog.query.get(data['dog_id'])
-        if not dog:
-            return jsonify({'error': 'Dog not found'}), 404
+        try:
+            dog = Dog.query.get(data['dog_id'])
+            if not dog:
+                return jsonify({'error': 'الكلب المحدد غير موجود'}), 404
+        except Exception as e:
+            return jsonify({'error': 'معرف الكلب غير صالح - يرجى إختيار كلب من القائمة'}), 400
         
         # Parse date and time
         try:
