@@ -63,7 +63,9 @@ async function loadProjects() {
             projectSelect.appendChild(option);
         });
     } catch (error) {
-        console.error('Error loading projects:', error);
+        if (error && error.message) {
+            console.error('Error loading projects:', error.message);
+        }
     }
 }
 
@@ -83,7 +85,9 @@ async function loadDogs() {
             dogSelect.appendChild(option);
         });
     } catch (error) {
-        console.error('Error loading dogs:', error);
+        if (error && error.message) {
+            console.error('Error loading dogs:', error.message);
+        }
     }
 }
 
@@ -126,8 +130,10 @@ async function loadCleaningData() {
             throw new Error(data.message || 'خطأ في تحميل البيانات');
         }
     } catch (error) {
-        console.error('Error loading cleaning data:', error);
-        showError('خطأ في تحميل بيانات النظافة: ' + error.message);
+        if (error && error.message) {
+            console.error('Error loading cleaning data:', error.message);
+            showError('خطأ في تحميل بيانات النظافة: ' + error.message);
+        }
     }
 }
 
@@ -255,8 +261,10 @@ async function deleteCleaning(id) {
             throw new Error(data.message || 'خطأ في حذف السجل');
         }
     } catch (error) {
-        console.error('Error deleting cleaning:', error);
-        showError('خطأ في حذف السجل: ' + error.message);
+        if (error && error.message) {
+            console.error('Error deleting cleaning:', error.message);
+            showError('خطأ في حذف السجل: ' + error.message);
+        }
     }
 }
 
@@ -397,8 +405,10 @@ async function submitForm() {
             throw new Error(result.message || 'خطأ في حفظ البيانات');
         }
     } catch (error) {
-        console.error('Error submitting form:', error);
-        showError(error.message);
+        if (error && error.message) {
+            console.error('Error submitting form:', error.message);
+            showError(error.message);
+        }
     }
 }
 

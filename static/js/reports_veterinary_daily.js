@@ -87,7 +87,9 @@ function loadVets() {
             });
         })
         .catch(error => {
-            console.error('Error loading vets:', error);
+            if (error && error.message) {
+                console.error('Error loading vets:', error.message);
+            }
         });
 }
 
@@ -111,7 +113,9 @@ function loadDogs() {
             });
         })
         .catch(error => {
-            console.error('Error loading dogs:', error);
+            if (error && error.message) {
+                console.error('Error loading dogs:', error.message);
+            }
         });
 }
 
@@ -154,8 +158,10 @@ function loadReport() {
     })
     .catch(error => {
         hideLoading();
-        console.error('Error loading report:', error);
-        alert('حدث خطأ أثناء تحميل التقرير');
+        if (error && error.message) {
+            console.error('Error loading report:', error.message);
+            alert('حدث خطأ أثناء تحميل التقرير');
+        }
     });
 }
 
@@ -258,7 +264,9 @@ function exportPDF() {
         window.URL.revokeObjectURL(url);
     })
     .catch(error => {
-        console.error('Error exporting PDF:', error);
-        alert('حدث خطأ أثناء تصدير PDF');
+        if (error && error.message) {
+            console.error('Error exporting PDF:', error.message);
+            alert('حدث خطأ أثناء تصدير PDF');
+        }
     });
 }
