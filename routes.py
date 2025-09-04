@@ -3346,7 +3346,7 @@ def get_user_permissions_api(user_id):
     
     try:
         project_id = request.args.get('project_id')
-        project_id = int(project_id) if project_id and project_id.strip() else None
+        project_id = project_id if project_id and project_id.strip() else None
         
         from permission_utils import get_user_permissions_for_project
         permissions = get_user_permissions_for_project(user_id, project_id)
