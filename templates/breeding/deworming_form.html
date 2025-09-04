@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error:', error.message);
                 alert('خطأ في حفظ البيانات: ' + error.message);
             } else if (error) {
-                if (error && error.message) { console.error(error.message); } else if (error) { console.error(String(error)); });
+                console.error('Error:', String(error));
                 alert('خطأ في حفظ البيانات: ' + String(error));
             }
         });
