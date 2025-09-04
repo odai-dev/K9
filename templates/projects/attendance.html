@@ -647,7 +647,7 @@ endblock %} {% block content %}
                 }
             })
             .catch((error) => {
-                console.error("Fetch error:", error);
+                if (error && error.message) { console.error("Fetch error:", error.message); }
                 showAlert("error", "حدث خطأ في حفظ البيانات: " + error.message);
             });
     }

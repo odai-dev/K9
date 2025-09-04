@@ -541,7 +541,7 @@ function loadPeriodData() {
             updateStats();
         })
         .catch(error => {
-            console.error('Error loading period data:', error);
+            if (error && error.message) { console.error('Error loading period data:', error.message); }
             showNotification('حدث خطأ أثناء تحميل البيانات', 'error');
         })
         .finally(() => hideLoading());
@@ -572,7 +572,7 @@ function toggleAttendance(assignmentId, isPresent) {
         }
     })
     .catch(error => {
-        console.error('Error toggling attendance:', error);
+        if (error && error.message) { console.error('Error toggling attendance:', error.message); }
         showNotification('حدث خطأ أثناء تحديث الحضور', 'error');
         // Revert the toggle
         document.querySelector(`[data-assignment-id="${assignmentId}"] input[type="checkbox"]`).checked = !isPresent;
@@ -618,7 +618,7 @@ function setLeave(assignmentId, leaveType) {
         }
     })
     .catch(error => {
-        console.error('Error setting leave:', error);
+        if (error && error.message) { console.error('Error setting leave:', error.message); }
         showNotification('حدث خطأ أثناء تسجيل الإجازة', 'error');
     })
     .finally(() => hideLoading());
@@ -740,7 +740,7 @@ function addAssignment(event) {
         }
     })
     .catch(error => {
-        console.error('Error adding assignment:', error);
+        if (error && error.message) { console.error('Error adding assignment:', error.message); }
         showNotification('حدث خطأ أثناء إضافة الموظف', 'error');
     })
     .finally(() => hideLoading());
@@ -784,7 +784,7 @@ function bulkUpdateAttendance(isPresent) {
         }
     })
     .catch(error => {
-        console.error('Error bulk updating attendance:', error);
+        if (error && error.message) { console.error('Error bulk updating attendance:', error.message); }
         showNotification('حدث خطأ أثناء التحديث الجماعي', 'error');
     })
     .finally(() => hideLoading());
@@ -828,7 +828,7 @@ function removeAssignment(assignmentId) {
             }
         })
         .catch(error => {
-            console.error('Error removing assignment:', error);
+            if (error && error.message) { console.error('Error removing assignment:', error.message); }
             showNotification('حدث خطأ أثناء إزالة التعيين', 'error');
         })
         .finally(() => hideLoading());

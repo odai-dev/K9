@@ -218,7 +218,7 @@ function loadDewormingData(page = 1) {
             hideLoading();
         })
         .catch(error => {
-            console.error('Error loading deworming data:', error);
+            if (error && error.message) { console.error('Error loading deworming data:', error.message); }
             hideLoading();
             alert('خطأ في تحميل البيانات: ' + error.message);
         });
@@ -352,7 +352,7 @@ function deleteDeworming(id) {
         loadDewormingData(currentPage);
     })
     .catch(error => {
-        console.error('Error deleting deworming:', error);
+        if (error && error.message) { console.error('Error deleting deworming:', error.message); }
         alert('خطأ في حذف السجل: ' + error.message);
     });
 }

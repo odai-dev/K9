@@ -732,7 +732,7 @@ function applyFilters() {
         updateTable();
     })
     .catch(error => {
-        console.error('Error:', error);
+        if (error && error.message) { console.error('Error:', error.message); }
         document.getElementById('dataTable').innerHTML = `<tbody><tr><td colspan="100%" class="text-center text-danger"><i class="fas fa-exclamation-triangle"></i> حدث خطأ: ${error.message}</td></tr></tbody>`;
     });
 }
@@ -856,7 +856,7 @@ function previewReport() {
         document.getElementById('previewData').innerHTML = html;
     })
     .catch(error => {
-        console.error('Error:', error);
+        if (error && error.message) { console.error('Error:', error.message); }
         document.getElementById('previewData').innerHTML = `<div class="alert alert-danger">حدث خطأ في تحميل المعاينة: ${error.message}</div>`;
     });
 }

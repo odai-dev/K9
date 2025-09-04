@@ -200,7 +200,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
+                if (error && error.message) { console.error('Error:', error.message); }
                 showAlert('حدث خطأ أثناء الحذف', 'error');
             });
         }
@@ -232,7 +232,7 @@ function loadFilterOptions() {
             dogSelect.appendChild(option);
         });
     })
-    .catch(error => console.error('Error loading filter options:', error));
+    .catch(error => if (error && error.message) { console.error(error.message); } else if (error) { console.error(String(error)); });
 }
 
 function applyFilters() {
@@ -267,7 +267,7 @@ function loadExcretions() {
             updatePagination(data.pagination);
         })
         .catch(error => {
-            console.error('Error loading excretions:', error);
+            if (error && error.message) { console.error('Error loading excretions:', error.message); }
             updateTable([]);
         });
 }

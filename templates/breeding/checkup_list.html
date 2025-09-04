@@ -221,7 +221,7 @@ function loadFilterOptions() {
         });
     })
     .catch(error => {
-        console.error('Error loading filter options:', error);
+        if (error && error.message) { console.error('Error loading filter options:', error.message); }
         // Show user-friendly error
         const projectSelect = document.getElementById('project_filter');
         const dogSelect = document.getElementById('dog_filter');
@@ -263,7 +263,7 @@ function loadCheckups() {
             updatePagination(data.pagination);
         })
         .catch(error => {
-            console.error('Error loading checkups:', error);
+            if (error && error.message) { console.error('Error loading checkups:', error.message); }
             updateTable([]);
         });
 }
@@ -410,7 +410,7 @@ document.getElementById('confirm-delete').addEventListener('click', function() {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
+            if (error && error.message) { console.error('Error:', error.message); }
             showAlert('حدث خطأ أثناء الحذف', 'error');
         });
     }

@@ -279,7 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             showAlert('danger', 'حدث خطأ في تسجيل الحضور');
-            console.error('Error:', error);
+            if (error && error.message) { console.error('Error:', error.message); }
         });
     }
     
@@ -322,7 +322,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             showAlert('danger', 'حدث خطأ في العملية المجمعة');
-            console.error('Error:', error);
+            if (error && error.message) { console.error('Error:', error.message); }
         });
     }
     
