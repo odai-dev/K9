@@ -541,11 +541,21 @@ def api_checkup_list():
         if current_user.role == UserRole.PROJECT_MANAGER:
             assigned_projects = get_user_assigned_projects(current_user)
             assigned_project_ids = [p.id for p in assigned_projects]
-            query = query.filter(DailyCheckupLog.project_id.in_(assigned_project_ids))
+            # Allow PROJECT_MANAGER to see logs from assigned projects OR logs without projects
+            query = query.filter(
+                or_(
+                    DailyCheckupLog.project_id.in_(assigned_project_ids),
+                    DailyCheckupLog.project_id.is_(None)
+                )
+            )
 
         # Apply filters
         if project_id:
-            query = query.filter(DailyCheckupLog.project_id == project_id)
+            if project_id == 'no_project':
+                # Filter for records without project assignment
+                query = query.filter(DailyCheckupLog.project_id.is_(None))
+            else:
+                query = query.filter(DailyCheckupLog.project_id == project_id)
         if date_from:
             query = query.filter(DailyCheckupLog.date >= datetime.strptime(date_from, '%Y-%m-%d').date())
         if date_to:
