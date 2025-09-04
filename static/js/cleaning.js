@@ -62,6 +62,9 @@ async function loadProjects() {
             option.textContent = project.name;
             projectSelect.appendChild(option);
         });
+        
+        // Add event listener for project change to update dogs
+        projectSelect.addEventListener('change', updateDogFilter);
     } catch (error) {
         if (error && error.message) {
             console.error('Error loading projects:', error.message);
@@ -71,8 +74,21 @@ async function loadProjects() {
 
 // Load dogs for filter
 async function loadDogs() {
+    await updateDogFilter();
+}
+
+// Update dog filter based on selected project
+async function updateDogFilter() {
     try {
-        const response = await fetch('/api/dogs');
+        const projectId = document.getElementById('projectFilter').value;
+        const url = projectId ? `/api/dogs?project_id=${projectId}` : '/api/dogs';
+        
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const dogs = await response.json();
         
         const dogSelect = document.getElementById('dogFilter');
@@ -85,9 +101,7 @@ async function loadDogs() {
             dogSelect.appendChild(option);
         });
     } catch (error) {
-        if (error && error.message) {
-            console.error('Error loading dogs:', error.message);
-        }
+        console.error('Error loading dogs:', error);
     }
 }
 

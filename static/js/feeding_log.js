@@ -143,21 +143,42 @@ class FeedingLogManager {
             if (projectsResponse.ok) {
                 const projectsData = await projectsResponse.json();
                 this.populateSelect('projectFilter', projectsData, 'id', 'name');
+                
+                // Add event listener for project change to update dogs
+                const projectFilter = document.getElementById('projectFilter');
+                projectFilter.addEventListener('change', () => {
+                    this.updateDogFilter();
+                });
             }
             
-            // Load dogs for filter
-            const dogsResponse = await fetch('/api/dogs', {
-                headers: { 'X-CSRFToken': this.csrfToken }
-            });
-            if (dogsResponse.ok) {
-                const dogsData = await dogsResponse.json();
-                this.populateSelect('dogFilter', dogsData, 'id', dog => `${dog.name} (${dog.code})`);
-            }
+            // Load dogs for filter (initially all dogs)
+            await this.updateDogFilter();
             
         } catch (error) {
             if (error && error.message) {
                 console.error('Error loading filter options:', error.message);
             }
+        }
+    }
+
+    async updateDogFilter() {
+        try {
+            const projectId = document.getElementById('projectFilter').value;
+            const url = projectId ? `/api/dogs?project_id=${projectId}` : '/api/dogs';
+            
+            const dogsResponse = await fetch(url, {
+                headers: { 'X-CSRFToken': this.csrfToken }
+            });
+            
+            if (dogsResponse.ok) {
+                const dogsData = await dogsResponse.json();
+                this.populateSelect('dogFilter', dogsData, 'id', dog => `${dog.name} (${dog.code})`);
+            } else {
+                console.error('Error loading dogs:', await dogsResponse.text());
+            }
+            
+        } catch (error) {
+            console.error('Error loading dogs:', error);
         }
     }
 
