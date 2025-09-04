@@ -4838,3 +4838,68 @@ def breeding_cleaning():
                          title="النظافة (البيئة/القفص)",
                          fields=["نوع التنظيف", "المواد المستخدمة", "وقت التنظيف", "حالة القفص", "تغيير الفراش", "تطهير الأواني", "حالة المنطقة", "ملاحظات"])
 
+@main_bp.route('/search')
+@login_required
+def search():
+    """Global search functionality"""
+    query = request.args.get('q', '').strip()
+    
+    if not query or len(query) < 2:
+        return jsonify({
+            'dogs': [],
+            'employees': []
+        })
+    
+    try:
+        # Search dogs
+        dogs_results = []
+        if current_user.role == UserRole.GENERAL_ADMIN:
+            dogs = Dog.query.filter(
+                Dog.name.ilike(f'%{query}%') | 
+                Dog.code.ilike(f'%{query}%')
+            ).limit(10).all()
+        else:
+            # PROJECT_MANAGER - only search accessible dogs
+            accessible_dogs = get_user_accessible_dogs(current_user)
+            dogs = [dog for dog in accessible_dogs 
+                   if query.lower() in dog.name.lower() or 
+                      query.lower() in dog.code.lower()][:10]
+        
+        dogs_results = [{
+            'id': str(dog.id),
+            'name': dog.name,
+            'code': dog.code
+        } for dog in dogs]
+        
+        # Search employees
+        employees_results = []
+        if current_user.role == UserRole.GENERAL_ADMIN:
+            employees = Employee.query.filter(
+                Employee.name.ilike(f'%{query}%') | 
+                Employee.employee_id.ilike(f'%{query}%')
+            ).limit(10).all()
+        else:
+            # PROJECT_MANAGER - only search accessible employees
+            accessible_employees = get_user_accessible_employees(current_user)
+            employees = [emp for emp in accessible_employees 
+                        if query.lower() in emp.name.lower() or 
+                           query.lower() in emp.employee_id.lower()][:10]
+        
+        employees_results = [{
+            'id': str(employee.id),
+            'name': employee.name,
+            'employee_id': employee.employee_id
+        } for employee in employees]
+        
+        return jsonify({
+            'dogs': dogs_results,
+            'employees': employees_results
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': 'Search failed',
+            'dogs': [],
+            'employees': []
+        }), 500
+
