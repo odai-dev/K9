@@ -232,7 +232,13 @@ function loadFilterOptions() {
             dogSelect.appendChild(option);
         });
     })
-    .catch(error => if (error && error.message) { console.error(error.message); } else if (error) { console.error(String(error)); });
+    .catch(error => {
+        if (error && error.message) { 
+            console.error(error.message); 
+        } else if (error) { 
+            console.error(String(error)); 
+        }
+    });
 }
 
 function applyFilters() {
