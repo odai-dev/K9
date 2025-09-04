@@ -14,7 +14,7 @@ bp = Blueprint('api_deworming', __name__)
 
 @bp.route('/api/breeding/deworming', methods=['POST'])
 @login_required
-@require_sub_permission('Breeding', 'عرض الفحص الظاهري اليومي', 'CREATE')
+@require_sub_permission('Breeding', 'جرعة الديدان', 'CREATE')
 def create_deworming_log():
     """Create new deworming log"""
     try:
@@ -128,7 +128,7 @@ def create_deworming_log():
 
 @bp.route('/api/breeding/deworming/<log_id>', methods=['PUT'])
 @login_required
-@require_sub_permission('Breeding', 'عرض الفحص الظاهري اليومي', 'EDIT')
+@require_sub_permission('Breeding', 'جرعة الديدان', 'EDIT')
 def update_deworming_log(log_id):
     """Update existing deworming log"""
     try:
@@ -200,4 +200,167 @@ def update_deworming_log(log_id):
         
     except Exception as e:
         db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/breeding/deworming/<log_id>', methods=['DELETE'])
+@login_required
+@require_sub_permission('Breeding', 'جرعة الديدان', 'DELETE')
+def delete_deworming_log(log_id):
+    """Delete deworming log"""
+    try:
+        deworming_log = DewormingLog.query.get_or_404(log_id)
+        
+        # Verify project access for PROJECT_MANAGER
+        if current_user.role == UserRole.PROJECT_MANAGER:
+            assigned_projects = get_user_assigned_projects(current_user)
+            if deworming_log.project not in assigned_projects:
+                return jsonify({'error': 'Access denied to this project'}), 403
+        
+        db.session.delete(deworming_log)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'تم حذف سجل جرعة الديدان بنجاح'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/breeding/deworming/list', methods=['GET'])
+@login_required
+@require_sub_permission('Breeding', 'جرعة الديدان', 'VIEW')
+def api_deworming_list():
+    """Get paginated list of deworming logs with KPIs"""
+    try:
+        from sqlalchemy import func
+        
+        # Query parameters
+        project_id = request.args.get('project_id')
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        dog_id = request.args.get('dog_id')
+        page = int(request.args.get('page', 1))
+        per_page = min(int(request.args.get('per_page', 50)), 100)
+        
+        # Base query with necessary joins
+        query = DewormingLog.query.join(Dog).join(Project)
+        
+        # Apply project scoping for PROJECT_MANAGER
+        if current_user.role == UserRole.PROJECT_MANAGER:
+            assigned_projects = get_user_assigned_projects(current_user)
+            assigned_project_ids = [p.id for p in assigned_projects]
+            query = query.filter(DewormingLog.project_id.in_(assigned_project_ids))
+        
+        # Apply filters
+        if project_id:
+            query = query.filter(DewormingLog.project_id == project_id)
+        if date_from:
+            try:
+                date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+                query = query.filter(DewormingLog.date >= date_from_obj)
+            except ValueError:
+                return jsonify({'error': 'Invalid date_from format. Use YYYY-MM-DD'}), 400
+        if date_to:
+            try:
+                date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+                query = query.filter(DewormingLog.date <= date_to_obj)
+            except ValueError:
+                return jsonify({'error': 'Invalid date_to format. Use YYYY-MM-DD'}), 400
+        if dog_id:
+            query = query.filter(DewormingLog.dog_id == dog_id)
+        
+        # Order by date and time (newest first)
+        query = query.order_by(DewormingLog.date.desc(), DewormingLog.time.desc())
+        
+        # Paginate
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        items = pagination.items
+        
+        # Build items list with joined data
+        items_data = []
+        for log in items:
+            specialist_name = log.specialist_employee.name if log.specialist_employee else None
+            
+            item_data = {
+                'id': str(log.id),
+                'project_id': str(log.project_id),
+                'project_name': log.project.name,
+                'date': log.date.strftime('%Y-%m-%d'),
+                'time': log.time.strftime('%H:%M'),
+                'dog_id': str(log.dog_id),
+                'dog_name': log.dog.name,
+                'dog_code': log.dog.code,
+                'specialist_employee_id': str(log.specialist_employee_id) if log.specialist_employee_id else None,
+                'specialist_name': specialist_name,
+                'dog_weight_kg': log.dog_weight_kg,
+                'product_name': log.product_name,
+                'active_ingredient': log.active_ingredient,
+                'standard_dose_mg_per_kg': log.standard_dose_mg_per_kg,
+                'calculated_dose_mg': log.calculated_dose_mg,
+                'administered_amount': log.administered_amount,
+                'amount_unit': log.amount_unit,
+                'administration_route': log.administration_route,
+                'batch_number': log.batch_number,
+                'expiry_date': log.expiry_date.strftime('%Y-%m-%d') if log.expiry_date else None,
+                'adverse_reaction': log.adverse_reaction,
+                'next_due_date': log.next_due_date.strftime('%Y-%m-%d') if log.next_due_date else None,
+                'notes': log.notes
+            }
+            items_data.append(item_data)
+        
+        # Calculate KPIs
+        total_query = DewormingLog.query
+        if current_user.role == UserRole.PROJECT_MANAGER:
+            assigned_projects = get_user_assigned_projects(current_user)
+            assigned_project_ids = [p.id for p in assigned_projects]
+            total_query = total_query.filter(DewormingLog.project_id.in_(assigned_project_ids))
+        
+        # Apply same filters to KPI calculations
+        if project_id:
+            total_query = total_query.filter(DewormingLog.project_id == project_id)
+        if date_from:
+            total_query = total_query.filter(DewormingLog.date >= datetime.strptime(date_from, '%Y-%m-%d').date())
+        if date_to:
+            total_query = total_query.filter(DewormingLog.date <= datetime.strptime(date_to, '%Y-%m-%d').date())
+        if dog_id:
+            total_query = total_query.filter(DewormingLog.dog_id == dog_id)
+        
+        total_count = total_query.count()
+        avg_mg_per_kg = total_query.filter(DewormingLog.standard_dose_mg_per_kg.isnot(None)).with_entities(func.avg(DewormingLog.standard_dose_mg_per_kg)).scalar()
+        with_next_due = total_query.filter(DewormingLog.next_due_date.isnot(None)).count()
+        
+        # Route distribution
+        route_distribution = {}
+        route_counts = total_query.filter(DewormingLog.administration_route.isnot(None)).with_entities(
+            DewormingLog.administration_route, func.count(DewormingLog.administration_route)
+        ).group_by(DewormingLog.administration_route).all()
+        
+        for route, count in route_counts:
+            route_distribution[route] = count
+        
+        kpis = {
+            'total': total_count,
+            'avg_mg_per_kg': round(float(avg_mg_per_kg), 2) if avg_mg_per_kg else 0,
+            'with_next_due': with_next_due,
+            'by_route': route_distribution
+        }
+        
+        return jsonify({
+            'items': items_data,
+            'pagination': {
+                'page': pagination.page,
+                'pages': pagination.pages,
+                'per_page': pagination.per_page,
+                'total': pagination.total,
+                'has_next': pagination.has_next,
+                'has_prev': pagination.has_prev,
+                'next_num': pagination.next_num,
+                'prev_num': pagination.prev_num
+            },
+            'kpis': kpis
+        })
+        
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
