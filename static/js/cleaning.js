@@ -385,12 +385,18 @@ async function submitForm() {
         const url = cleaningId ? `/api/breeding/cleaning/${cleaningId}` : '/api/breeding/cleaning';
         const method = cleaningId ? 'PUT' : 'POST';
         
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        // Add CSRF token if available
+        if (csrfToken) {
+            headers['X-CSRFToken'] = csrfToken;
+        }
+
         const response = await fetch(url, {
             method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
+            headers: headers,
             body: JSON.stringify(data)
         });
         
@@ -402,13 +408,13 @@ async function submitForm() {
                 window.location.href = '/breeding/cleaning';
             }, 1500);
         } else {
-            throw new Error(result.message || 'خطأ في حفظ البيانات');
+            const errorMessage = result.error || result.message || 'خطأ في حفظ البيانات';
+            console.error('Server error:', errorMessage);
+            showError(errorMessage);
         }
     } catch (error) {
-        if (error && error.message) {
-            console.error('Error submitting form:', error.message);
-            showError(error.message);
-        }
+        console.error('Error submitting form:', error.message || error);
+        showError(error.message || 'خطأ في حفظ البيانات');
     }
 }
 
