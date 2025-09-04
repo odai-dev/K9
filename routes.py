@@ -4722,9 +4722,8 @@ def cleaning_edit(id):
 def breeding_deworming():
     """List deworming logs"""
     # Check permissions
-    from utils import get_user_permissions
-    permissions = get_user_permissions(current_user)
-    if not permissions['training']:
+    from permission_utils import user_has_permission
+    if not user_has_permission(current_user, 'deworming:view'):
         abort(403)
     
     from utils import get_user_assigned_projects
@@ -4746,10 +4745,9 @@ def breeding_deworming():
 @login_required
 def breeding_deworming_new():
     """Add new deworming log"""
-    # Check permissions  
-    from utils import get_user_permissions
-    permissions = get_user_permissions(current_user)
-    if not permissions['training']:
+    # Check permissions
+    from permission_utils import user_has_permission
+    if not user_has_permission(current_user, 'deworming:create'):
         abort(403)
         
     from utils import get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
@@ -4783,9 +4781,8 @@ def breeding_deworming_edit(id):
     from models import DewormingLog, Employee, Dog, Route, Unit, Reaction
     
     # Check permissions
-    from utils import get_user_permissions
-    permissions = get_user_permissions(current_user)
-    if not permissions['training']:
+    from permission_utils import user_has_permission
+    if not user_has_permission(current_user, 'deworming:edit'):
         abort(403)
     
     log = DewormingLog.query.get_or_404(id)
