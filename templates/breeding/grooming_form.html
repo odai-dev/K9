@@ -19,7 +19,7 @@
 
     <div class="card">
         <div class="card-body">
-            <form id="grooming-form">
+            <form id="grooming-form" data-is-new="{% if not grooming_log %}true{% else %}false{% endif %}">
                 {% if grooming_log %}
                 <input type="hidden" id="grooming_id" value="{{ grooming_log.id }}">
                 {% endif %}
@@ -266,7 +266,8 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Set default date to today if creating new record
-    var isNewRecord = {% if not grooming_log %}true{% else %}false{% endif %};
+    const groomingForm = document.getElementById('grooming-form');
+    const isNewRecord = groomingForm && groomingForm.dataset.isNew === 'true';
     if (isNewRecord) {
         const today = new Date().toISOString().split('T')[0];
         const now = new Date().toTimeString().split(' ')[0].slice(0,5);
@@ -277,7 +278,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Form submission handler
-    const groomingForm = document.getElementById('grooming-form');
     if (groomingForm) {
         groomingForm.addEventListener('submit', function(e) {
             e.preventDefault();
