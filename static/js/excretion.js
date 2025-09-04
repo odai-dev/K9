@@ -92,7 +92,9 @@ const ExcretionManager = {
                 }
             }
         } catch (error) {
-            console.error('Error loading projects:', error);
+            if (error && error.message) {
+                console.error('Error loading projects:', error.message);
+            }
         }
     },
 
@@ -114,7 +116,9 @@ const ExcretionManager = {
                 }
             }
         } catch (error) {
-            console.error('Error loading dogs:', error);
+            if (error && error.message) {
+                console.error('Error loading dogs:', error.message);
+            }
         }
     },
 
@@ -171,8 +175,10 @@ const ExcretionManager = {
                 throw new Error('فشل في تحميل البيانات');
             }
         } catch (error) {
-            console.error('Error loading excretion data:', error);
-            this.showError('حدث خطأ في تحميل البيانات');
+            if (error && error.message) {
+                console.error('Error loading excretion data:', error.message);
+                this.showError('حدث خطأ في تحميل البيانات');
+            }
         } finally {
             this.showLoading(false);
         }
@@ -361,8 +367,10 @@ const ExcretionManager = {
                 throw new Error('فشل في حذف السجل');
             }
         } catch (error) {
-            console.error('Error deleting item:', error);
-            this.showError('حدث خطأ في حذف السجل');
+            if (error && error.message) {
+                console.error('Error deleting item:', error.message);
+                this.showError('حدث خطأ في حذف السجل');
+            }
         }
 
         this.deleteId = null;
@@ -421,8 +429,10 @@ const ExcretionManager = {
                 this.showFormErrors(result.error);
             }
         } catch (error) {
-            console.error('Error submitting form:', error);
-            this.showError('حدث خطأ في حفظ البيانات');
+            if (error && error.message) {
+                console.error('Error submitting form:', error.message);
+                this.showError('حدث خطأ في حفظ البيانات');
+            }
         } finally {
             // Hide loading state
             submitBtn.disabled = false;

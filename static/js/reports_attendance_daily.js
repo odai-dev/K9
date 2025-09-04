@@ -132,8 +132,10 @@ class DailyAttendanceReport {
             this.showReportArea();
 
         } catch (error) {
-            console.error('Error loading report:', error);
-            this.showError(error.message);
+            if (error && error.message) {
+                console.error('Error loading report:', error.message);
+                this.showError(error.message);
+            }
             this.hideReportArea();
         } finally {
             this.hideLoading();
@@ -328,9 +330,10 @@ class DailyAttendanceReport {
             }
 
         } catch (error) {
-            console.error('Error exporting PDF:', error);
-            console.error('Error stack:', error.stack);
-            this.showError(error.message || 'حدث خطأ في تصدير PDF');
+            if (error && error.message) {
+                console.error('Error exporting PDF:', error.message);
+                this.showError(error.message);
+            }
         } finally {
             this.hideLoading();
         }

@@ -71,8 +71,10 @@ class PMDailyReport {
             this.exportBtn.disabled = false;
             
         } catch (error) {
-            console.error('Error updating report:', error);
-            this.showError(error.message || 'حدث خطأ في تحميل التقرير');
+            if (error && error.message) {
+                console.error('Error updating report:', error.message);
+                this.showError(error.message || 'حدث خطأ في تحميل التقرير');
+            }
         }
     }
     
@@ -228,8 +230,10 @@ class PMDailyReport {
             window.open('/' + data.path, '_blank');
             
         } catch (error) {
-            console.error('Error exporting PDF:', error);
-            this.showError(error.message || 'حدث خطأ في تصدير PDF');
+            if (error && error.message) {
+                console.error('Error exporting PDF:', error.message);
+                this.showError(error.message || 'حدث خطأ في تصدير PDF');
+            }
         } finally {
             this.exportBtn.disabled = false;
             this.exportBtn.innerHTML = '<i class="fas fa-download ml-1"></i> تصدير PDF';

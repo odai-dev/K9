@@ -138,8 +138,10 @@ function performSearch(query) {
             searchModal.show();
         })
         .catch(error => {
-            console.error('Search error:', error);
-            showNotification('حدث خطأ أثناء البحث', 'error');
+            if (error && error.message) {
+                console.error('Search error:', error.message);
+                showNotification('حدث خطأ أثناء البحث', 'error');
+            }
         })
         .finally(() => {
             // Restore original state

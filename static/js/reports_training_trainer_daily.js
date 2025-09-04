@@ -39,7 +39,9 @@ class TrainerDailyReport {
                 });
             }
         } catch (error) {
-            console.error('Error loading projects:', error);
+            if (error && error.message) {
+                console.error('Error loading projects:', error.message);
+            }
         }
     }
 
@@ -57,7 +59,9 @@ class TrainerDailyReport {
                 });
             }
         } catch (error) {
-            console.error('Error loading trainers:', error);
+            if (error && error.message) {
+                console.error('Error loading trainers:', error.message);
+            }
         }
     }
 
@@ -75,7 +79,9 @@ class TrainerDailyReport {
                 });
             }
         } catch (error) {
-            console.error('Error loading dogs:', error);
+            if (error && error.message) {
+                console.error('Error loading dogs:', error.message);
+            }
         }
     }
 
@@ -147,7 +153,9 @@ class TrainerDailyReport {
             }
 
         } catch (error) {
-            this.showError(error.message);
+            if (error && error.message) {
+                this.showError(error.message);
+            }
         }
     }
 
@@ -246,7 +254,9 @@ class TrainerDailyReport {
             window.open(`/${data.path}`, '_blank');
 
         } catch (error) {
-            this.showError(error.message);
+            if (error && error.message) {
+                this.showError(error.message);
+            }
         }
     }
 }

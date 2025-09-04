@@ -126,8 +126,10 @@ class FeedingLogManager {
             this.hideLoading();
             
         } catch (error) {
-            console.error('Error loading feeding logs:', error);
-            this.showError('خطأ في تحميل سجلات التغذية');
+            if (error && error.message) {
+                console.error('Error loading feeding logs:', error.message);
+                this.showError('خطأ في تحميل سجلات التغذية');
+            }
             this.hideLoading();
         }
     }
@@ -153,7 +155,9 @@ class FeedingLogManager {
             }
             
         } catch (error) {
-            console.error('Error loading filter options:', error);
+            if (error && error.message) {
+                console.error('Error loading filter options:', error.message);
+            }
         }
     }
 
@@ -316,8 +320,10 @@ class FeedingLogManager {
             }
             
         } catch (error) {
-            console.error('Error deleting feeding log:', error);
-            this.showError('خطأ في حذف سجل التغذية');
+            if (error && error.message) {
+                console.error('Error deleting feeding log:', error.message);
+                this.showError('خطأ في حذف سجل التغذية');
+            }
         }
     }
 
@@ -363,8 +369,10 @@ class FeedingLogManager {
             }
             
         } catch (error) {
-            console.error('Error submitting form:', error);
-            this.showError('خطأ في إرسال البيانات');
+            if (error && error.message) {
+                console.error('Error submitting form:', error.message);
+                this.showError('خطأ في إرسال البيانات');
+            }
         }
     }
 

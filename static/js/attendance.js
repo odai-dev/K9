@@ -98,8 +98,10 @@ class AttendanceManager {
             }
             
         } catch (error) {
-            console.error('Error loading attendance data:', error);
-            this.showError(error.message);
+            if (error && error.message) {
+                console.error('Error loading attendance data:', error.message);
+                this.showError(error.message);
+            }
         } finally {
             this.showLoading(false);
         }
@@ -117,7 +119,9 @@ class AttendanceManager {
                 this.updateStatistics(data.stats);
             }
         } catch (error) {
-            console.error('Error loading statistics:', error);
+            if (error && error.message) {
+                console.error('Error loading statistics:', error.message);
+            }
         }
     }
     
@@ -338,8 +342,10 @@ class AttendanceManager {
             }
             
         } catch (error) {
-            console.error('Error saving attendance:', error);
-            this.showError(error.message);
+            if (error && error.message) {
+                console.error('Error saving attendance:', error.message);
+                this.showError(error.message);
+            }
         } finally {
             saveButton.disabled = false;
             saveButton.textContent = originalText;
