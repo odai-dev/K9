@@ -50,7 +50,7 @@ function initializeFormPage() {
 // Load projects for filter
 async function loadProjects() {
     try {
-        const response = await fetch('/api/projects/dropdown');
+        const response = await fetch('/api/projects');
         const projects = await response.json();
         
         const projectSelect = document.getElementById('projectFilter');
@@ -72,7 +72,7 @@ async function loadProjects() {
 // Load dogs for filter
 async function loadDogs() {
     try {
-        const response = await fetch('/api/dogs/dropdown');
+        const response = await fetch('/api/dogs');
         const dogs = await response.json();
         
         const dogSelect = document.getElementById('dogFilter');
