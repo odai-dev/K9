@@ -13,9 +13,35 @@ from datetime import datetime, date, time, timedelta
 from sqlalchemy import func, and_, or_
 from permission_decorators import require_permission
 import json
+import re
 
 # Create blueprint
 bp = Blueprint('api_cleaning', __name__)
+
+# Text sanitization function
+def sanitize_text(text):
+    """Sanitize text to prevent encoding issues with PostgreSQL"""
+    if not text:
+        return text
+    
+    try:
+        # Convert to string if not already
+        text_str = str(text)
+        
+        # Remove or replace problematic characters
+        # Remove null bytes
+        text_str = text_str.replace('\x00', '')
+        
+        # Ensure valid UTF-8 encoding
+        text_str = text_str.encode('utf-8', errors='ignore').decode('utf-8')
+        
+        # Remove any remaining control characters except newlines and tabs
+        text_str = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]', '', text_str)
+        
+        return text_str
+    except Exception as e:
+        print(f"Error sanitizing text: {e}")
+        return str(text) if text else ''
 
 @bp.route('/api/breeding/cleaning/list')
 @login_required
@@ -192,22 +218,37 @@ def create_cleaning_log():
         if existing:
             return jsonify({'error': 'A cleaning log already exists for this dog, project, date, and time'}), 400
         
-        # Create new log
+        # Create new log with sanitized text fields
         cleaning_log = CleaningLog()
         cleaning_log.project_id = data['project_id'] if data.get('project_id') else None
         cleaning_log.dog_id = data['dog_id']
         cleaning_log.date = log_date
         cleaning_log.time = log_time
-        cleaning_log.area_type = data.get('area_type')
-        cleaning_log.cage_house_number = data.get('cage_house_number')
-        cleaning_log.alternate_place = data.get('alternate_place')
-        cleaning_log.cleaned_house = data.get('cleaned_house')
-        cleaning_log.washed_house = data.get('washed_house')
-        cleaning_log.disinfected_house = data.get('disinfected_house')
-        cleaning_log.group_disinfection = data.get('group_disinfection')
-        cleaning_log.group_description = data.get('group_description')
-        cleaning_log.materials_used = data.get('materials_used')
-        cleaning_log.notes = data.get('notes')
+        cleaning_log.area_type = sanitize_text(data.get('area_type'))
+        cleaning_log.cage_house_number = sanitize_text(data.get('cage_house_number'))
+        cleaning_log.alternate_place = sanitize_text(data.get('alternate_place'))
+        cleaning_log.cleaned_house = sanitize_text(data.get('cleaned_house'))
+        cleaning_log.washed_house = sanitize_text(data.get('washed_house'))
+        cleaning_log.disinfected_house = sanitize_text(data.get('disinfected_house'))
+        cleaning_log.group_disinfection = sanitize_text(data.get('group_disinfection'))
+        cleaning_log.group_description = sanitize_text(data.get('group_description'))
+        
+        # Sanitize materials_used if it's a list
+        materials = data.get('materials_used')
+        if materials and isinstance(materials, list):
+            sanitized_materials = []
+            for material in materials:
+                if isinstance(material, dict):
+                    sanitized_material = {
+                        'name': sanitize_text(material.get('name')),
+                        'qty': sanitize_text(material.get('qty'))
+                    }
+                    sanitized_materials.append(sanitized_material)
+            cleaning_log.materials_used = sanitized_materials
+        else:
+            cleaning_log.materials_used = materials
+            
+        cleaning_log.notes = sanitize_text(data.get('notes'))
         cleaning_log.created_by_user_id = current_user.id
         
         db.session.add(cleaning_log)
