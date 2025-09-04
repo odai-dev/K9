@@ -364,8 +364,8 @@ async function submitForm() {
             notes: formData.get('notes') || null
         };
         
-        // Validate required fields
-        if (!data.project_id || !data.date || !data.time || !data.dog_id) {
+        // Validate required fields (project_id is optional in some contexts)
+        if (!data.date || !data.time || !data.dog_id) {
             throw new Error('يرجى ملء جميع الحقول المطلوبة');
         }
         

@@ -316,8 +316,12 @@ function submitForm() {
         notes: document.getElementById('notes')?.value
     };
 
-    // Validate required fields
-    if (!formData.dog_id || !formData.date || !formData.time) {
+    // Validate required fields - check elements exist and have values
+    const dogElement = document.getElementById('dog_id');
+    const dateElement = document.getElementById('date');
+    const timeElement = document.getElementById('time');
+    
+    if (!dogElement || !dogElement.value || !dateElement || !dateElement.value || !timeElement || !timeElement.value) {
         showAlert('يرجى ملء جميع الحقول المطلوبة', 'error');
         return;
     }
