@@ -70,22 +70,35 @@ def get_employees():
 @bp.route('/api/dogs')
 @login_required
 def get_dogs():
-    """Get list of dogs for dropdown"""
+    """Get list of dogs for dropdown, optionally filtered by project"""
     try:
-        # GENERAL_ADMIN sees all dogs, PROJECT_MANAGER sees assigned dogs
-        if current_user.role.value == "GENERAL_ADMIN":
-            dogs = db.session.query(Dog).filter(
-                Dog.current_status.in_(['ACTIVE', 'TRAINING'])
-            ).all()
-        else:
-            # PROJECT_MANAGER - get dogs assigned to their projects
+        # Get optional project_id parameter
+        project_id = request.args.get('project_id')
+        
+        if project_id:
+            # Filter dogs by specific project
             from models import project_dog_assignment
             dogs = db.session.query(Dog).join(
                 project_dog_assignment
-            ).join(Project).filter(
+            ).filter(
                 Dog.current_status.in_(['ACTIVE', 'TRAINING']),
-                Project.manager_id == current_user.id
+                project_dog_assignment.c.project_id == project_id
             ).all()
+        else:
+            # No project filter - apply role-based filtering
+            if current_user.role.value == "GENERAL_ADMIN":
+                dogs = db.session.query(Dog).filter(
+                    Dog.current_status.in_(['ACTIVE', 'TRAINING'])
+                ).all()
+            else:
+                # PROJECT_MANAGER - get dogs assigned to their projects
+                from models import project_dog_assignment
+                dogs = db.session.query(Dog).join(
+                    project_dog_assignment
+                ).join(Project).filter(
+                    Dog.current_status.in_(['ACTIVE', 'TRAINING']),
+                    Project.manager_id == current_user.id
+                ).all()
         
         return jsonify([{
             'id': str(dog.id),

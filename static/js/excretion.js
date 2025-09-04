@@ -89,6 +89,9 @@ const ExcretionManager = {
                         option.textContent = project.name;
                         select.appendChild(option);
                     });
+                    
+                    // Add event listener for project change
+                    select.addEventListener('change', () => this.updateDogFilter());
                 }
             }
         } catch (error) {
@@ -100,25 +103,34 @@ const ExcretionManager = {
 
     // Load dogs for dropdown
     async loadDogs() {
+        await this.updateDogFilter();
+    },
+
+    // Update dog filter based on selected project
+    async updateDogFilter() {
         try {
-            const response = await fetch('/api/dogs');
-            if (response.ok) {
-                const dogs = await response.json();
-                const select = document.getElementById('dogFilter');
-                if (select) {
-                    select.innerHTML = '<option value="">جميع الكلاب</option>';
-                    dogs.forEach(dog => {
-                        const option = document.createElement('option');
-                        option.value = dog.id;
-                        option.textContent = `${dog.name} - ${dog.code}`;
-                        select.appendChild(option);
-                    });
-                }
+            const projectId = document.getElementById('projectFilter').value;
+            const url = projectId ? `/api/dogs?project_id=${projectId}` : '/api/dogs';
+            
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const dogs = await response.json();
+            const select = document.getElementById('dogFilter');
+            if (select) {
+                select.innerHTML = '<option value="">جميع الكلاب</option>';
+                dogs.forEach(dog => {
+                    const option = document.createElement('option');
+                    option.value = dog.id;
+                    option.textContent = `${dog.name} - ${dog.code}`;
+                    select.appendChild(option);
+                });
             }
         } catch (error) {
-            if (error && error.message) {
-                console.error('Error loading dogs:', error.message);
-            }
+            console.error('Error loading dogs:', error);
         }
     },
 
