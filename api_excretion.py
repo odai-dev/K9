@@ -34,21 +34,28 @@ def list_excretion_logs():
             # Admin can see all logs
             pass
         else:
-            # PROJECT_MANAGER can only see logs from assigned projects
+            # PROJECT_MANAGER can see logs from assigned projects + logs without projects
             assigned_projects = get_user_assigned_projects(current_user)
             if not assigned_projects:
-                return jsonify({
-                    'items': [],
-                    'pagination': {'page': 1, 'pages': 1, 'per_page': per_page, 'total': 0, 'has_prev': False, 'has_next': False},
-                    'kpis': {'total': 0, 'stool': {'constipation': 0, 'abnormal_consistency': 0}, 'urine': {'abnormal_color': 0}, 'vomit': {'total_events': 0}}
-                })
-            
-            project_ids = [p.id for p in assigned_projects]
-            query = query.filter(ExcretionLog.project_id.in_(project_ids))
+                # If no assigned projects, only show logs without projects
+                query = query.filter(ExcretionLog.project_id.is_(None))
+            else:
+                # Show logs from assigned projects OR logs without projects
+                project_ids = [p.id for p in assigned_projects]
+                query = query.filter(
+                    or_(
+                        ExcretionLog.project_id.in_(project_ids),
+                        ExcretionLog.project_id.is_(None)
+                    )
+                )
         
         # Apply filters
         if project_id:
-            query = query.filter(ExcretionLog.project_id == project_id)
+            if project_id == 'no_project':
+                # Filter for records without project assignment
+                query = query.filter(ExcretionLog.project_id.is_(None))
+            else:
+                query = query.filter(ExcretionLog.project_id == project_id)
         
         if dog_id:
             query = query.filter(ExcretionLog.dog_id == dog_id)
