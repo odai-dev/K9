@@ -57,8 +57,8 @@ def list_cleaning_logs():
         date_from = request.args.get('date_from')
         date_to = request.args.get('date_to')
         
-        # Base query with joins
-        query = CleaningLog.query.join(Project).join(Dog, CleaningLog.dog_id == Dog.id)
+        # Base query with joins (LEFT JOIN for project to handle NULL project_id)
+        query = CleaningLog.query.outerjoin(Project).join(Dog, CleaningLog.dog_id == Dog.id)
         
         # Apply user access restrictions
         if current_user.role == UserRole.GENERAL_ADMIN:
@@ -76,6 +76,7 @@ def list_cleaning_logs():
                 })
             
             project_ids = [p.id for p in assigned_projects]
+            # PROJECT_MANAGER only sees logs from assigned projects (not logs without projects)
             query = query.filter(CleaningLog.project_id.in_(project_ids))
         
         # Apply filters
@@ -255,7 +256,7 @@ def create_cleaning_log():
         db.session.commit()
         
         # Log audit
-        log_audit('CREATE', 'CleaningLog', str(cleaning_log.id), f'Created cleaning log for dog {dog.name}')
+        log_audit(current_user.id, 'CREATE', 'CleaningLog', str(cleaning_log.id), f'Created cleaning log for dog {dog.name}')
         
         return jsonify({
             'message': 'Cleaning log created successfully',
