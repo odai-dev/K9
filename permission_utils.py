@@ -108,7 +108,7 @@ PERMISSION_STRUCTURE = {
         "الفحص الظاهري اليومي": ["VIEW", "CREATE", "EDIT"],
         "البراز والبول والقيء": ["VIEW", "CREATE", "EDIT"],
         "العناية والاستحمام": ["VIEW", "CREATE", "EDIT"],
-        "جرعة الديدان": ["VIEW", "CREATE", "EDIT"],
+        "جرعة الديدان": ["VIEW", "CREATE", "EDIT", "DELETE"],
         "تدريب الأنشطة اليومية": ["VIEW", "CREATE", "EDIT"],
         "النظافة والبيئة": ["VIEW", "CREATE", "EDIT"],
     }
