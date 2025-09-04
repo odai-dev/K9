@@ -4841,65 +4841,107 @@ def breeding_cleaning():
 @main_bp.route('/search')
 @login_required
 def search():
-    """Global search functionality"""
+    """Global search functionality - works independently of projects"""
     query = request.args.get('q', '').strip()
     
     if not query or len(query) < 2:
         return jsonify({
             'dogs': [],
-            'employees': []
+            'employees': [],
+            'projects': []
         })
     
     try:
-        # Search dogs
+        # Search ALL dogs globally (no project restriction)
         dogs_results = []
         if current_user.role == UserRole.GENERAL_ADMIN:
+            # Admin can search all dogs regardless of project assignment
             dogs = Dog.query.filter(
                 Dog.name.ilike(f'%{query}%') | 
                 Dog.code.ilike(f'%{query}%')
-            ).limit(10).all()
+            ).limit(15).all()
         else:
-            # PROJECT_MANAGER - only search accessible dogs
+            # PROJECT_MANAGER - search accessible dogs but also include unassigned dogs
             accessible_dogs = get_user_accessible_dogs(current_user)
-            dogs = [dog for dog in accessible_dogs 
+            # Also include dogs not assigned to any project
+            unassigned_dogs = Dog.query.outerjoin(ProjectDog).filter(
+                ProjectDog.dog_id.is_(None),
+                Dog.name.ilike(f'%{query}%') | Dog.code.ilike(f'%{query}%')
+            ).all()
+            
+            # Combine accessible and unassigned dogs
+            all_searchable_dogs = list(accessible_dogs) + unassigned_dogs
+            dogs = [dog for dog in all_searchable_dogs 
                    if query.lower() in dog.name.lower() or 
-                      query.lower() in dog.code.lower()][:10]
+                      query.lower() in dog.code.lower()][:15]
         
         dogs_results = [{
             'id': str(dog.id),
             'name': dog.name,
-            'code': dog.code
+            'code': dog.code,
+            'status': dog.current_status.value if dog.current_status else 'غير محدد',
+            'assigned_project': 'غير مُعين' if not hasattr(dog, 'project_assignments') or not dog.project_assignments else 'مُعين لمشروع'
         } for dog in dogs]
         
-        # Search employees
+        # Search ALL employees globally 
         employees_results = []
         if current_user.role == UserRole.GENERAL_ADMIN:
             employees = Employee.query.filter(
                 Employee.name.ilike(f'%{query}%') | 
                 Employee.employee_id.ilike(f'%{query}%')
-            ).limit(10).all()
+            ).filter_by(is_active=True).limit(15).all()
         else:
-            # PROJECT_MANAGER - only search accessible employees
+            # PROJECT_MANAGER - search accessible employees + unassigned ones
             accessible_employees = get_user_accessible_employees(current_user)
-            employees = [emp for emp in accessible_employees 
+            # Also include employees not assigned to any specific project
+            all_employees = Employee.query.filter(
+                Employee.name.ilike(f'%{query}%') | 
+                Employee.employee_id.ilike(f'%{query}%'),
+                Employee.is_active == True
+            ).all()
+            
+            employees = [emp for emp in all_employees 
                         if query.lower() in emp.name.lower() or 
-                           query.lower() in emp.employee_id.lower()][:10]
+                           query.lower() in emp.employee_id.lower()][:15]
         
         employees_results = [{
             'id': str(employee.id),
             'name': employee.name,
-            'employee_id': employee.employee_id
+            'employee_id': employee.employee_id,
+            'role': employee.role.value if employee.role else 'غير محدد'
         } for employee in employees]
+        
+        # Search projects (for completeness)
+        projects_results = []
+        if current_user.role == UserRole.GENERAL_ADMIN:
+            projects = Project.query.filter(
+                Project.name.ilike(f'%{query}%') | 
+                Project.code.ilike(f'%{query}%')
+            ).limit(10).all()
+        else:
+            assigned_projects = get_user_assigned_projects(current_user)
+            projects = [proj for proj in assigned_projects 
+                       if query.lower() in proj.name.lower() or 
+                          query.lower() in proj.code.lower()][:10]
+        
+        projects_results = [{
+            'id': str(project.id),
+            'name': project.name,
+            'code': project.code,
+            'status': project.status.value if project.status else 'غير محدد'
+        } for project in projects]
         
         return jsonify({
             'dogs': dogs_results,
-            'employees': employees_results
+            'employees': employees_results,
+            'projects': projects_results
         })
         
     except Exception as e:
         return jsonify({
             'error': 'Search failed',
             'dogs': [],
-            'employees': []
+            'employees': [],
+            'projects': []
         }), 500
 

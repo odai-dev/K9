@@ -160,20 +160,27 @@ function displaySearchResults(data) {
     }
     let html = '';
     
-    if (data.dogs.length === 0 && data.employees.length === 0) {
-        html = '<div class="text-center py-4"><i class="fas fa-search fa-3x text-muted mb-3"></i><p class="text-muted">لم يتم العثور على نتائج</p></div>';
+    if (data.dogs.length === 0 && data.employees.length === 0 && (data.projects || []).length === 0) {
+        html = '<div class="text-center py-4"><i class="fas fa-search fa-3x text-muted mb-3"></i><p class="text-muted">لم يتم العثور على نتائج</p><p class="text-sm text-muted">البحث شامل لجميع الكلاب والموظفين والمشاريع بدون قيود</p></div>';
     } else {
-        // Dogs results
+        // Dogs results - show more details
         if (data.dogs.length > 0) {
-            html += '<h6 class="border-bottom pb-2 mb-3"><i class="fas fa-dog me-2"></i>الكلاب</h6>';
+            html += '<h6 class="border-bottom pb-2 mb-3"><i class="fas fa-dog me-2"></i>الكلاب (' + data.dogs.length + ')</h6>';
             html += '<div class="row mb-4">';
             data.dogs.forEach(dog => {
+                const statusBadge = dog.status === 'ACTIVE' ? 'success' : 'secondary';
                 html += `
                     <div class="col-md-6 mb-2">
                         <a href="/dogs/${dog.id}" class="text-decoration-none">
                             <div class="search-result-item">
-                                <strong>${dog.name}</strong>
-                                <small class="text-muted d-block">${dog.code}</small>
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>${dog.name}</strong>
+                                        <small class="text-muted d-block">${dog.code}</small>
+                                    </div>
+                                    <span class="badge bg-${statusBadge} small">${dog.status || 'غير محدد'}</span>
+                                </div>
+                                <small class="text-muted">${dog.assigned_project || 'غير مُعين لمشروع'}</small>
                             </div>
                         </a>
                     </div>
@@ -182,17 +189,46 @@ function displaySearchResults(data) {
             html += '</div>';
         }
         
-        // Employees results
+        // Employees results - show role info
         if (data.employees.length > 0) {
-            html += '<h6 class="border-bottom pb-2 mb-3"><i class="fas fa-users me-2"></i>الموظفين</h6>';
-            html += '<div class="row">';
+            html += '<h6 class="border-bottom pb-2 mb-3"><i class="fas fa-users me-2"></i>الموظفين (' + data.employees.length + ')</h6>';
+            html += '<div class="row mb-4">';
             data.employees.forEach(employee => {
                 html += `
                     <div class="col-md-6 mb-2">
-                        <div class="search-result-item">
-                            <strong>${employee.name}</strong>
-                            <small class="text-muted d-block">${employee.employee_id}</small>
-                        </div>
+                        <a href="/employees/${employee.id}" class="text-decoration-none">
+                            <div class="search-result-item">
+                                <strong>${employee.name}</strong>
+                                <small class="text-muted d-block">رقم: ${employee.employee_id}</small>
+                                <small class="text-primary">${employee.role || 'غير محدد'}</small>
+                            </div>
+                        </a>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        // Projects results
+        if (data.projects && data.projects.length > 0) {
+            html += '<h6 class="border-bottom pb-2 mb-3"><i class="fas fa-project-diagram me-2"></i>المشاريع (' + data.projects.length + ')</h6>';
+            html += '<div class="row">';
+            data.projects.forEach(project => {
+                const statusBadge = project.status === 'ACTIVE' ? 'success' : 
+                                  project.status === 'PLANNED' ? 'warning' : 'secondary';
+                html += `
+                    <div class="col-md-6 mb-2">
+                        <a href="/projects/${project.id}" class="text-decoration-none">
+                            <div class="search-result-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>${project.name}</strong>
+                                        <small class="text-muted d-block">${project.code}</small>
+                                    </div>
+                                    <span class="badge bg-${statusBadge} small">${project.status || 'غير محدد'}</span>
+                                </div>
+                            </div>
+                        </a>
                     </div>
                 `;
             });
