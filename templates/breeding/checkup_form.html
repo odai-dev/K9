@@ -19,7 +19,7 @@
 
     <div class="card">
         <div class="card-body">
-            <form id="checkup-form">
+            <form id="checkup-form" data-is-new="{% if not checkup %}true{% else %}false{% endif %}">
                 {% if checkup %}
                 <input type="hidden" id="checkup_id" value="{{ checkup.id }}">
                 {% endif %}
@@ -271,7 +271,8 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Set default date to today if creating new record
-    var isNewRecord = {% if not checkup %}true{% else %}false{% endif %};
+    const checkupForm = document.getElementById('checkup-form');
+    const isNewRecord = checkupForm && checkupForm.dataset.isNew === 'true';
     if (isNewRecord) {
         const today = new Date().toISOString().split('T')[0];
         const now = new Date().toTimeString().split(' ')[0].slice(0,5);
@@ -320,7 +321,11 @@ function submitForm() {
     };
 
     // Validate required fields (project_id is optional)
-    if (!formData.dog_id || !formData.date || !formData.time) {
+    const dogElement = document.getElementById('dog_id');
+    const dateElement = document.getElementById('date');
+    const timeElement = document.getElementById('time');
+    
+    if (!dogElement || !dogElement.value || !dateElement || !dateElement.value || !timeElement || !timeElement.value) {
         showAlert('يرجى ملء جميع الحقول المطلوبة', 'error');
         return;
     }
