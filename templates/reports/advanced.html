@@ -68,6 +68,7 @@
                                         <option value="employees" {% if pre_selected_type == 'employees' %}selected{% endif %}>تقرير الموظفين</option>
                                         <option value="training" {% if pre_selected_type == 'training' %}selected{% endif %}>تقرير التدريب</option>
                                         <option value="veterinary" {% if pre_selected_type == 'veterinary' %}selected{% endif %}>تقرير الطبابة</option>
+                                        <option value="breeding" {% if pre_selected_type == 'breeding' %}selected{% endif %}>تقرير التربية</option>
                                         <optgroup label="نظام الإنتاج">
                                             <option value="production_maturity">البلوغ</option>
                                             <option value="production_heat_cycles">الدورة</option>
@@ -289,6 +290,43 @@
                                     </div>
                                 </div>
                                 
+                                <!-- Breeding Filters -->
+                                <div class="breeding-filters" style="display: none;">
+                                    <div class="col-md-3">
+                                        <label class="form-label">نوع السجل</label>
+                                        <select class="form-select" name="breeding_type" multiple>
+                                            <option value="feeding">التغذية</option>
+                                            <option value="checkup">الفحص اليومي</option>
+                                            <option value="grooming">التنظيف والعناية</option>
+                                            <option value="deworming">مكافحة الديدان</option>
+                                            <option value="excretion">الإخراج</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">طريقة الإطعام</label>
+                                        <select class="form-select" name="feeding_method" multiple>
+                                            <option value="BOWL">وعاء</option>
+                                            <option value="HAND">يدوي</option>
+                                            <option value="AUTOMATIC">تلقائي</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">حالة الجسم</label>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <input type="number" class="form-control" name="body_condition_min" placeholder="من" min="1" max="9">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="number" class="form-control" name="body_condition_max" placeholder="إلى" min="1" max="9">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">ملاحظات خاصة</label>
+                                        <input type="text" class="form-control" name="breeding_notes" placeholder="ابحث في الملاحظات">
+                                    </div>
+                                </div>
+
                                 <!-- Production Filters -->
                                 <div class="production-filters" style="display: none;">
                                     <div class="col-md-3">
