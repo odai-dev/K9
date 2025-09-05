@@ -1,50 +1,44 @@
 """
 Arabic date utilities
 """
-from datetime import date
 
-DAY_NAMES_AR = {
-    0: "الاثنين",
-    1: "الثلاثاء", 
-    2: "الأربعاء",
-    3: "الخميس",
-    4: "الجمعة",
-    5: "السبت",
-    6: "الأحد"
-}
+from datetime import datetime, date
 
-def get_arabic_day_name(date_obj: date) -> str:
-    """
-    Get Arabic day name for a given date
+def get_arabic_day_name(date_obj):
+    """Get Arabic name for day of week"""
+    if isinstance(date_obj, str):
+        date_obj = datetime.strptime(date_obj, '%Y-%m-%d').date()
     
-    Args:
-        date_obj: Date object
-        
-    Returns:
-        Arabic day name
-    """
-    return DAY_NAMES_AR.get(date_obj.weekday(), "")
+    arabic_days = [
+        "الاثنين",   # Monday
+        "الثلاثاء",  # Tuesday  
+        "الأربعاء",  # Wednesday
+        "الخميس",    # Thursday
+        "الجمعة",    # Friday
+        "السبت",     # Saturday
+        "الأحد"      # Sunday
+    ]
+    
+    return arabic_days[date_obj.weekday()]
 
-def format_arabic_date(date_obj) -> str:
-    """
-    Format a date object into Arabic numerals and format
+def get_arabic_month_name(date_obj):
+    """Get Arabic name for month"""
+    if isinstance(date_obj, str):
+        date_obj = datetime.strptime(date_obj, '%Y-%m-%d').date()
     
-    Args:
-        date_obj: Python date object
-        
-    Returns:
-        Formatted date string in Arabic style (dd/mm/yyyy)
-    """
-    if not date_obj:
-        return ""
+    arabic_months = [
+        "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+        "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+    ]
     
-    # Convert to Arabic numerals
-    arabic_numerals = str.maketrans('0123456789', '٠١٢٣٤٥٦٧٨٩')
+    return arabic_months[date_obj.month - 1]
+
+def format_arabic_date(date_obj):
+    """Format date in Arabic"""
+    if isinstance(date_obj, str):
+        date_obj = datetime.strptime(date_obj, '%Y-%m-%d').date()
     
-    # Format as dd/mm/yyyy
-    formatted_date = date_obj.strftime("%d/%m/%Y")
+    day_name = get_arabic_day_name(date_obj)
+    month_name = get_arabic_month_name(date_obj)
     
-    # Convert to Arabic numerals
-    arabic_date = formatted_date.translate(arabic_numerals)
-    
-    return arabic_date
+    return f"{day_name} {date_obj.day} {month_name} {date_obj.year}"
