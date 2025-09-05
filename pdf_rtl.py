@@ -1,99 +1,57 @@
 """
-Arabic RTL PDF generation utilities for PM Daily Report
-Provides helper functions for generating RTL Arabic text in PDFs using ReportLab
+RTL PDF utilities for Arabic text
 """
 
-import os
-from reportlab.lib.fonts import addMapping
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.lib.units import inch, cm
+import arabic_reshaper
+from bidi.algorithm import get_display
 
-# Try to import Arabic text processing libraries
-try:
-    import arabic_reshaper
-    from bidi.algorithm import get_display
-    ARABIC_SUPPORT = True
-except ImportError:
-    arabic_reshaper = None
-    get_display = None
-    ARABIC_SUPPORT = False
-    print("Warning: arabic_reshaper or python-bidi not available. Arabic text may not display correctly.")
+def fix_arabic_text_for_pdf(text):
+    """Fix Arabic text for proper display in PDFs"""
+    if not text:
+        return text
+    
+    try:
+        reshaped_text = arabic_reshaper.reshape(str(text))
+        bidi_text = get_display(reshaped_text)
+        return bidi_text
+    except:
+        return str(text)
 
-# Font registration status
-_FONTS_REGISTERED = False
+def format_arabic_date(date_obj):
+    """Format date in Arabic"""
+    from dates_ar import get_arabic_day_name, get_arabic_month_name
+    
+    day_name = get_arabic_day_name(date_obj)
+    month_name = get_arabic_month_name(date_obj)
+    
+    return f"{day_name} {date_obj.day} {month_name} {date_obj.year}"
 
 def register_arabic_fonts():
-    """
-    Register Arabic-compatible fonts for ReportLab
-    Tries to find and register DejaVu Sans or falls back to default fonts
-    """
-    global _FONTS_REGISTERED
-    
-    if _FONTS_REGISTERED:
-        return True
-    
+    """Register Arabic fonts for PDF generation"""
     try:
-        # Try to find DejaVu Sans fonts (commonly available)
-        font_paths = [
-            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-            '/usr/share/fonts/dejavu/DejaVuSans.ttf',
-            '/System/Library/Fonts/DejaVuSans.ttf',
-            'C:\\Windows\\Fonts\\DejaVuSans.ttf'
-        ]
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        import os
         
-        dejavu_path = None
-        for path in font_paths:
-            if os.path.exists(path):
-                dejavu_path = path
-                break
+        # Try to register Amiri font if available
+        font_path = os.path.join("static", "fonts", "Amiri-Regular.ttf")
+        if os.path.exists(font_path):
+            pdfmetrics.registerFont(TTFont('Amiri', font_path))
         
-        if dejavu_path:
-            # Register DejaVu Sans font
-            pdfmetrics.registerFont(TTFont('DejaVuSans', dejavu_path))
-            addMapping('DejaVuSans', 0, 0, 'DejaVuSans')  # normal
-            print(f"Successfully registered DejaVu Sans font from: {dejavu_path}")
-            _FONTS_REGISTERED = True
-            return True
-        else:
-            print("DejaVu Sans font not found. Using default fonts (Arabic may not display correctly)")
-            return False
+        # Try to register Noto Sans Arabic if available
+        font_path = os.path.join("static", "fonts", "NotoSansArabic-Regular.ttf")
+        if os.path.exists(font_path):
+            pdfmetrics.registerFont(TTFont('NotoSansArabic', font_path))
             
+        return True
     except Exception as e:
-        print(f"Error registering Arabic fonts: {e}")
+        print(f"Warning: Could not register Arabic fonts: {e}")
         return False
 
-def rtl(text: str) -> str:
-    """
-    Process Arabic text for RTL display in PDFs
-    
-    Args:
-        text: Arabic text string
-        
-    Returns:
-        Processed text ready for RTL display
-    """
-    if not text or not ARABIC_SUPPORT or not arabic_reshaper or not get_display:
-        return text or ""
-    
-    try:
-        # Reshape Arabic text (connects letters properly)
-        reshaped_text = arabic_reshaper.reshape(text)
-        
-        # Apply bidirectional algorithm for RTL display
-        bidi_text = get_display(reshaped_text)
-        
-        return str(bidi_text)
-    except Exception as e:
-        print(f"Error processing RTL text '{text}': {e}")
-        return text or ""
+def rtl(text):
+    """Alias for fix_arabic_text_for_pdf for backwards compatibility"""
+    return fix_arabic_text_for_pdf(text)
 
 def get_arabic_font():
-    """
-    Get the name of the registered Arabic font
-    
-    Returns:
-        Font name string or 'Helvetica' as fallback
-    """
-    register_arabic_fonts()
-    return 'DejaVuSans' if _FONTS_REGISTERED else 'Helvetica'
+    """Get the default Arabic font name"""
+    return 'Amiri'  # Default Arabic font
