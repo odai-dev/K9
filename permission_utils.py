@@ -82,13 +82,15 @@ PERMISSION_STRUCTURE = {
     }
 }
 
-def has_permission(user, permission_key: str) -> bool:
+def has_permission(user, permission_key: str, sub_permission=None, action=None) -> bool:
     """
     Check if user has specific permission
     
     Args:
         user: User object
-        permission_key: Permission string key
+        permission_key: Permission string key (or category for backward compatibility)
+        sub_permission: Sub-permission (for backward compatibility)
+        action: Action type (for backward compatibility)
         
     Returns:
         Boolean indicating if user has permission
@@ -100,6 +102,20 @@ def has_permission(user, permission_key: str) -> bool:
     if user.role.value == "GENERAL_ADMIN":
         return True
         
+    # Handle backward compatibility with old 4-argument format
+    if sub_permission is not None and action is not None:
+        # Old format: has_permission(user, "Breeding", "التغذية - السجل اليومي", "VIEW")
+        # Convert to simplified permission check
+        category = permission_key.lower()
+        if category in ["breeding", "تربية"]:
+            return user.role.value == "GENERAL_ADMIN"  # Only admin can access breeding for now
+        elif category in ["training", "تدريب"]:
+            return True  # Allow project managers to access training
+        elif category in ["veterinary", "طبي"]:
+            return True  # Allow project managers to access veterinary
+        else:
+            return user.role.value == "GENERAL_ADMIN"
+    
     # PROJECT_MANAGER permissions are more limited
     if user.role.value == "PROJECT_MANAGER":
         # Define allowed permissions for project managers
