@@ -12,8 +12,8 @@ from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
-from utils_pdf_rtl import rtl
-from veterinary_daily_constants import PDF_HEADERS
+from k9.utils.utils_pdf_rtl import rtl
+from k9.utils.veterinary_daily_constants import PDF_HEADERS
 
 
 def register_arabic_fonts():

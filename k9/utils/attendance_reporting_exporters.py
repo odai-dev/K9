@@ -13,11 +13,11 @@ from reportlab.lib.units import inch
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
 
-from utils_pdf_rtl import rtl, register_arabic_fonts, get_arabic_font_name, format_arabic_date
-from attendance_reporting_constants import (
+from k9.utils.utils_pdf_rtl import rtl, register_arabic_fonts, get_arabic_font_name, format_arabic_date
+from k9.utils.attendance_reporting_constants import (
     GROUP_1_HEADERS, GROUP_2_HEADERS, LEAVE_TABLE_HEADERS, REPORT_LABELS
 )
-from models import Project
+from k9.models.models import Project
 
 
 def ensure_reports_directory() -> str:

@@ -1,6 +1,6 @@
 import os
 from flask import request, current_app
-from models import AuditLog
+from k9.models.models import AuditLog
 from app import db
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -65,7 +65,7 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
     :param filters: optional dict with keys appropriate to report_type
     :return: filename of generated PDF
     """
-    from models import Dog, Employee, TrainingSession, VeterinaryVisit, ProductionCycle, Project
+    from k9.models.models import Dog, Employee, TrainingSession, VeterinaryVisit, ProductionCycle, Project
     filters = filters or {}
 
     # Try to register an Arabic-capable font, fall back to default if not available
@@ -519,7 +519,7 @@ def generate_excel_report(report_type, start_date, end_date, user, filters=None)
     :param filters: optional dict with keys appropriate to report_type
     :return: filename of generated Excel file
     """
-    from models import Dog, Employee, TrainingSession, VeterinaryVisit, ProductionCycle, Project
+    from k9.models.models import Dog, Employee, TrainingSession, VeterinaryVisit, ProductionCycle, Project
     from openpyxl import Workbook
     from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
     from openpyxl.utils import get_column_letter
@@ -729,7 +729,7 @@ def get_user_permissions(user):
         }
     else:  # PROJECT_MANAGER
         # Load permissions from SubPermission table for PROJECT_MANAGER
-        from models import SubPermission, Project
+        from k9.models.models import SubPermission, Project
         permissions = {section: False for section in ['dogs', 'employees', 'training', 'veterinary', 'production', 'projects', 'attendance', 'reports', 'admin']}
         
         # Check if user has any granted permissions in SubPermission table
@@ -763,7 +763,7 @@ def get_user_permissions(user):
 
 def get_project_manager_permissions(user, project_id):
     """Get granular permissions for a PROJECT_MANAGER user on a specific project"""
-    from models import ProjectManagerPermission, UserRole
+    from k9.models.models import ProjectManagerPermission, UserRole
     
     if user.role == UserRole.GENERAL_ADMIN:
         # GENERAL_ADMIN has all permissions
@@ -838,7 +838,7 @@ def get_project_manager_permissions(user, project_id):
 
 def get_user_assigned_projects(user):
     """Get projects with data that PROJECT_MANAGER can access based on SubPermission"""
-    from models import Project, UserRole, SubPermission
+    from k9.models.models import Project, UserRole, SubPermission
     
     if user.role == UserRole.GENERAL_ADMIN:
         return Project.query.all()
@@ -865,7 +865,7 @@ def get_user_assigned_projects(user):
 
 def get_user_accessible_dogs(user):
     """Get dogs that PROJECT_MANAGER can access based on SubPermission and project assignments"""
-    from models import Dog, UserRole, SubPermission, ProjectAssignment, Project, PermissionType
+    from k9.models.models import Dog, UserRole, SubPermission, ProjectAssignment, Project, PermissionType
     
     if user.role == UserRole.GENERAL_ADMIN:
         return Dog.query.all()
@@ -896,7 +896,7 @@ def get_user_accessible_dogs(user):
 
 def get_user_accessible_employees(user):
     """Get employees that PROJECT_MANAGER can access based on SubPermission and project assignments"""
-    from models import Employee, UserRole, SubPermission, ProjectAssignment, Project, PermissionType
+    from k9.models.models import Employee, UserRole, SubPermission, ProjectAssignment, Project, PermissionType
     
     if user.role == UserRole.GENERAL_ADMIN:
         return Employee.query.all()
@@ -927,7 +927,7 @@ def get_user_accessible_employees(user):
 
 def get_user_projects(user):
     """Get projects assigned to a PROJECT_MANAGER user"""
-    from models import Project, UserRole, Employee, EmployeeRole
+    from k9.models.models import Project, UserRole, Employee, EmployeeRole
     
     if user.role == UserRole.GENERAL_ADMIN:
         return Project.query.all()
@@ -949,7 +949,7 @@ def get_user_projects(user):
 
 def check_project_access(user, project_id):
     """Check if user has access to a specific project"""
-    from models import Project, UserRole
+    from k9.models.models import Project, UserRole
     
     if user.role == UserRole.GENERAL_ADMIN:
         return True
@@ -963,7 +963,7 @@ def check_project_access(user, project_id):
 
 def filter_data_by_project_access(user, query, model_class):
     """Filter query results based on user's project access"""
-    from models import UserRole
+    from k9.models.models import UserRole
     
     if user.role == UserRole.GENERAL_ADMIN:
         return query
@@ -982,7 +982,7 @@ def filter_data_by_project_access(user, query, model_class):
 
 def ensure_employee_user_linkage():
     """Ensure all PROJECT_MANAGER employees have linked user accounts"""
-    from models import Employee, User, EmployeeRole, UserRole
+    from k9.models.models import Employee, User, EmployeeRole, UserRole
     from werkzeug.security import generate_password_hash
     import secrets
     
@@ -1022,13 +1022,13 @@ def ensure_employee_user_linkage():
 
 def get_employee_profile_for_user(user):
     """Get the employee profile for a PROJECT_MANAGER user"""
-    from models import Employee, EmployeeRole
+    from k9.models.models import Employee, EmployeeRole
     
     return Employee.query.filter_by(user_account_id=user.id, role=EmployeeRole.PROJECT_MANAGER).first()
 
 def get_user_active_projects(user):
     """Get active projects for a PROJECT_MANAGER user"""
-    from models import Project, UserRole, Employee, EmployeeRole, ProjectStatus
+    from k9.models.models import Project, UserRole, Employee, EmployeeRole, ProjectStatus
     
     if user.role == UserRole.GENERAL_ADMIN:
         return Project.query.filter_by(status=ProjectStatus.ACTIVE).all()
@@ -1050,7 +1050,7 @@ def get_user_active_projects(user):
 
 def get_user_all_projects(user):
     """Get ALL projects (regardless of status) for a PROJECT_MANAGER user"""
-    from models import Project, UserRole, Employee, EmployeeRole
+    from k9.models.models import Project, UserRole, Employee, EmployeeRole
     
     if user.role == UserRole.GENERAL_ADMIN:
         return Project.query.all()
@@ -1082,7 +1082,7 @@ def validate_project_manager_assignment(employee_id, project):
     Returns:
         tuple: (can_assign: bool, error_message: str)
     """
-    from models import Project, Employee, ProjectStatus
+    from k9.models.models import Project, Employee, ProjectStatus
     
     # Check if this employee has any existing active/planned projects
     existing_projects_query = Project.query.filter(
@@ -1111,12 +1111,12 @@ def validate_project_status_change(project, new_status, current_user=None):
     - If changing to ACTIVE or PLANNED, ensure the project manager doesn't have other ongoing projects
     - If project manager is being changed while project is ACTIVE/PLANNED, validate the new manager
     """
-    from models import ProjectStatus, UserRole
+    from k9.models.models import ProjectStatus, UserRole
     
     # If changing to ACTIVE or PLANNED status, validate project manager
     if new_status in [ProjectStatus.ACTIVE, ProjectStatus.PLANNED] and project.project_manager_id:
         # Get the project manager user
-        from models import Employee, EmployeeRole
+        from k9.models.models import Employee, EmployeeRole
         employee = Employee.query.get(project.project_manager_id)
         
         if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
@@ -1136,7 +1136,7 @@ def validate_project_status_change(project, new_status, current_user=None):
 
 def get_dog_active_project(dog_id, activity_date=None):
     """Get the active project for a dog at a specific date"""
-    from models import ProjectAssignment
+    from k9.models.models import ProjectAssignment
     from datetime import datetime
     
     if activity_date is None:
@@ -1166,7 +1166,7 @@ def auto_link_dog_activity_to_project(dog_id, activity_date=None):
 
 def get_project_linked_activities(project_id, start_date=None, end_date=None):
     """Get all activities linked to a project within a date range"""
-    from models import TrainingSession, VeterinaryVisit, Incident, Suspicion, ProjectAssignment
+    from k9.models.models import TrainingSession, VeterinaryVisit, Incident, Suspicion, ProjectAssignment
     from datetime import datetime
     
     activities = {

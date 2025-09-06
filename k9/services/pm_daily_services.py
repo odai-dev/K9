@@ -11,10 +11,10 @@ from sqlalchemy.orm import joinedload
 from flask import current_app
 
 from app import db
-from models import Project, Employee, Dog, UserRole
-from models_attendance_reporting import PMDailyEvaluation, ProjectAttendanceReporting, LeaveType
-from dates_ar import get_arabic_day_name
-from utils import check_project_access, get_project_manager_permissions
+from k9.models.models import Project, Employee, Dog, UserRole
+from k9.models.models_attendance_reporting import PMDailyEvaluation, ProjectAttendanceReporting, LeaveType
+from k9.utils.dates_ar import get_arabic_day_name
+from k9.utils.utils import check_project_access, get_project_manager_permissions
 
 
 def get_pm_daily(project_id: str, date_str: str, user) -> Dict[str, Any]:

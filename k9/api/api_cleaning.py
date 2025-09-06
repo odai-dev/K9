@@ -7,11 +7,11 @@ Provides CRUD operations and listing functionality
 from flask import Blueprint, request, jsonify, abort
 from flask_login import login_required, current_user
 from app import db
-from models import (CleaningLog, Project, Dog, Employee, User, UserRole, ProjectStatus)
-from utils import get_user_assigned_projects, get_user_accessible_dogs, log_audit
+from k9.models.models import (CleaningLog, Project, Dog, Employee, User, UserRole, ProjectStatus)
+from k9.utils.utils import get_user_assigned_projects, get_user_accessible_dogs, log_audit
 from datetime import datetime, date, time, timedelta
 from sqlalchemy import func, and_, or_
-from permission_decorators import require_permission
+from k9.utils.permission_decorators import require_permission
 import json
 import re
 

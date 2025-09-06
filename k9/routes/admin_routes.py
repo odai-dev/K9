@@ -5,15 +5,15 @@ Provides comprehensive permission control interface for GENERAL_ADMIN users
 
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, send_file
 from flask_login import login_required, current_user
-from permission_decorators import admin_required
-from permission_utils import (
+from k9.utils.permission_decorators import admin_required
+from k9.utils.permission_utils import (
     PERMISSION_STRUCTURE, get_user_permissions_matrix, update_permission, 
     bulk_update_permissions, get_project_managers, get_all_projects,
     initialize_default_permissions, export_permissions_matrix
 )
-from models import User, Project, SubPermission, PermissionAuditLog, PermissionType, UserRole
+from k9.models.models import User, Project, SubPermission, PermissionAuditLog, PermissionType, UserRole
 from app import db
-from utils import log_audit
+from k9.utils.utils import log_audit
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle

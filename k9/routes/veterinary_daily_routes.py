@@ -4,8 +4,8 @@ Veterinary daily report UI routes
 from flask import Blueprint, render_template, request
 from flask_login import login_required, current_user
 
-from permission_decorators import admin_required
-from models import Project
+from k9.utils.permission_decorators import admin_required
+from k9.models.models import Project
 
 bp = Blueprint('veterinary_daily_ui', __name__)
 

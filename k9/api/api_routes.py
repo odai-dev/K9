@@ -2,16 +2,16 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
 from datetime import datetime, date
 from sqlalchemy import func
-from models import (
+from k9.models.models import (
     db, Project, Employee, Dog, UserRole, AttendanceStatus,
     FeedingLog, PrepMethod, BodyConditionScale, DailyCheckupLog, PermissionType, DogStatus,
     ExcretionLog, StoolColor, StoolConsistency, StoolContent, UrineColor, VomitColor, ExcretionPlace,
     GroomingLog, GroomingYesNo, GroomingCleanlinessScore
 )
-from utils import get_user_permissions, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
-from permission_decorators import require_sub_permission
+from k9.utils.utils import get_user_permissions, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
+from k9.utils.permission_decorators import require_sub_permission
 import uuid
-from attendance_service import (
+from k9.services.attendance_service import (
     resolve_project_control, get_attendance_day, set_attendance_global,
     get_globally_editable_employees, get_attendance_stats, ProjectOwnershipError
 )
@@ -195,8 +195,8 @@ def get_attendance_statistics():
 # BREEDING FEEDING LOG API ENDPOINTS
 # =============================================
 
-from permission_utils import has_permission
-from utils import get_user_assigned_projects, get_user_accessible_dogs
+from k9.utils.permission_utils import has_permission
+from k9.utils.utils import get_user_assigned_projects, get_user_accessible_dogs
 from sqlalchemy.orm import joinedload
 from sqlalchemy import and_, func
 import json

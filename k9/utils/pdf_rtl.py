@@ -19,7 +19,7 @@ def fix_arabic_text_for_pdf(text):
 
 def format_arabic_date(date_obj):
     """Format date in Arabic"""
-    from dates_ar import get_arabic_day_name, get_arabic_month_name
+    from k9.utils.dates_ar import get_arabic_day_name, get_arabic_month_name
     
     day_name = get_arabic_day_name(date_obj)
     month_name = get_arabic_month_name(date_obj)

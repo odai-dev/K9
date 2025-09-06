@@ -4,9 +4,9 @@ Data API endpoints for trainer daily report dropdowns
 
 from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
-from models import Project, Employee, Dog, EmployeeRole
+from k9.models.models import Project, Employee, Dog, EmployeeRole
 from app import db
-from permission_decorators import require_sub_permission
+from k9.utils.permission_decorators import require_sub_permission
 
 bp = Blueprint('trainer_daily_data_api', __name__)
 
@@ -77,7 +77,7 @@ def get_dogs():
         
         if project_id:
             # Filter dogs by specific project
-            from models import project_dog_assignment
+            from k9.models.models import project_dog_assignment
             dogs = db.session.query(Dog).join(
                 project_dog_assignment
             ).filter(
@@ -92,7 +92,7 @@ def get_dogs():
                 ).all()
             else:
                 # PROJECT_MANAGER - get dogs assigned to their projects
-                from models import project_dog_assignment
+                from k9.models.models import project_dog_assignment
                 dogs = db.session.query(Dog).join(
                     project_dog_assignment
                 ).join(Project).filter(
@@ -125,7 +125,7 @@ def get_accessible_dogs():
             ).all()
         else:
             # PROJECT_MANAGER - get dogs assigned to their projects
-            from models import project_dog_assignment
+            from k9.models.models import project_dog_assignment
             dogs = db.session.query(Dog).join(
                 project_dog_assignment
             ).join(Project).filter(
@@ -142,7 +142,7 @@ def get_accessible_dogs():
         # Get project assignments for dogs
         dog_projects = {}
         if dogs:
-            from models import project_dog_assignment
+            from k9.models.models import project_dog_assignment
             assignments = db.session.query(project_dog_assignment).all()
             for assignment in assignments:
                 if assignment.dog_id not in dog_projects:

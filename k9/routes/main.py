@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app import db
-from models import (Dog, Employee, TrainingSession, VeterinaryVisit, ProductionCycle, 
+from k9.models.models import (Dog, Employee, TrainingSession, VeterinaryVisit, ProductionCycle, 
                    Project, AuditLog, UserRole, DogStatus, 
                    EmployeeRole, TrainingCategory, VisitType, ProductionCycleType, 
                    ProductionResult, ProjectStatus, AuditAction, DogGender, User,
@@ -25,8 +25,8 @@ from models import (Dog, Employee, TrainingSession, VeterinaryVisit, ProductionC
                    GroomingLog, GroomingCleanlinessScore, GroomingYesNo,
                    # Cleaning models
                    CleaningLog)
-from utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
-from permission_decorators import require_sub_permission
+from k9.utils.utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
+from k9.utils.permission_decorators import require_sub_permission
 import os
 from datetime import datetime, date, timedelta
 import uuid
@@ -380,7 +380,7 @@ def training_list():
 def training_add():
     if request.method == 'POST':
         try:
-            from utils import auto_link_dog_activity_to_project
+            from k9.utils.utils import auto_link_dog_activity_to_project
             from datetime import datetime
             import logging
             
@@ -463,7 +463,7 @@ def veterinary_list():
 def veterinary_add():
     if request.method == 'POST':
         try:
-            from utils import auto_link_dog_activity_to_project
+            from k9.utils.utils import auto_link_dog_activity_to_project
             from datetime import datetime
             
             # Create veterinary visit with proper model construction
@@ -587,7 +587,7 @@ def production_add():
 @main_bp.route('/production/maturity')
 @login_required
 def maturity_list():
-    from models import DogMaturity
+    from k9.models.models import DogMaturity
     if current_user.role == UserRole.GENERAL_ADMIN:
         maturity_records = DogMaturity.query.order_by(DogMaturity.created_at.desc()).all()
     else:
@@ -602,7 +602,7 @@ def maturity_list():
 def maturity_add():
     if request.method == 'POST':
         try:
-            from models import DogMaturity, MaturityStatus
+            from k9.models.models import DogMaturity, MaturityStatus
             maturity = DogMaturity()
             maturity.dog_id = request.form['dog_id']
             maturity.maturity_date = datetime.strptime(request.form['maturity_date'], '%Y-%m-%d').date()
@@ -617,8 +617,8 @@ def maturity_add():
             db.session.commit()
             
             # Log audit
-            from utils import log_audit
-            from models import AuditAction
+            from k9.utils.utils import log_audit
+            from k9.models.models import AuditAction
             log_audit(current_user.id, AuditAction.CREATE, 'DogMaturity', maturity.id, 
                      f'تسجيل بلوغ جديد للكلب {maturity.dog.name}', None, {'maturity_date': str(maturity.maturity_date)})
             
@@ -642,7 +642,7 @@ def maturity_add():
 @main_bp.route('/production/heat-cycles')
 @login_required  
 def heat_cycles_list():
-    from models import HeatCycle
+    from k9.models.models import HeatCycle
     if current_user.role == UserRole.GENERAL_ADMIN:
         heat_cycles = HeatCycle.query.order_by(HeatCycle.created_at.desc()).all()
     else:
@@ -657,7 +657,7 @@ def heat_cycles_list():
 def heat_cycles_add():
     if request.method == 'POST':
         try:
-            from models import HeatCycle, HeatStatus
+            from k9.models.models import HeatCycle, HeatStatus
             heat_cycle = HeatCycle()
             heat_cycle.dog_id = request.form['dog_id']
             # Auto-increment cycle number for this dog
@@ -678,8 +678,8 @@ def heat_cycles_add():
             db.session.commit()
             
             # Log audit
-            from utils import log_audit
-            from models import AuditAction
+            from k9.utils.utils import log_audit
+            from k9.models.models import AuditAction
             log_audit(current_user.id, AuditAction.CREATE, 'HeatCycle', heat_cycle.id, 
                      f'تسجيل دورة حرارية جديدة للكلب {heat_cycle.dog.name}', None, {'cycle_number': heat_cycle.cycle_number})
             
@@ -705,7 +705,7 @@ def heat_cycles_add():
 @main_bp.route('/production/mating')
 @login_required
 def mating_list():
-    from models import MatingRecord
+    from k9.models.models import MatingRecord
     if current_user.role == UserRole.GENERAL_ADMIN:
         mating_records = MatingRecord.query.order_by(MatingRecord.created_at.desc()).all()
     else:
@@ -722,7 +722,7 @@ def mating_list():
 def mating_add():
     if request.method == 'POST':
         try:
-            from models import MatingRecord, MatingResult
+            from k9.models.models import MatingRecord, MatingResult
             mating = MatingRecord()
             mating.female_id = request.form['female_id']
             mating.male_id = request.form['male_id']
@@ -751,8 +751,8 @@ def mating_add():
             db.session.commit()
             
             # Log audit
-            from utils import log_audit
-            from models import AuditAction
+            from k9.utils.utils import log_audit
+            from k9.models.models import AuditAction
             log_audit(current_user.id, AuditAction.CREATE, 'MatingRecord', mating.id, 
                      f'تسجيل تزاوج جديد: {mating.female.name} × {mating.male.name}', None, {'mating_date': str(mating.mating_date)})
             
@@ -781,7 +781,7 @@ def mating_add():
 @main_bp.route('/production/pregnancy')
 @login_required
 def pregnancy_list():
-    from models import PregnancyRecord
+    from k9.models.models import PregnancyRecord
     if current_user.role == UserRole.GENERAL_ADMIN:
         pregnancy_records = PregnancyRecord.query.order_by(PregnancyRecord.created_at.desc()).all()
     else:
@@ -796,7 +796,7 @@ def pregnancy_list():
 def pregnancy_add():
     if request.method == 'POST':
         try:
-            from models import PregnancyRecord, PregnancyStatus
+            from k9.models.models import PregnancyRecord, PregnancyStatus
             pregnancy = PregnancyRecord()
             pregnancy.dog_id = request.form['dog_id']  # This comes from the hidden field updated by JavaScript
             pregnancy.mating_record_id = request.form['mating_record_id']
@@ -813,8 +813,8 @@ def pregnancy_add():
             db.session.commit()
             
             # Log audit
-            from utils import log_audit
-            from models import AuditAction
+            from k9.utils.utils import log_audit
+            from k9.models.models import AuditAction
             log_audit(current_user.id, AuditAction.CREATE, 'PregnancyRecord', pregnancy.id, 
                      f'تسجيل حمل جديد للكلبة {pregnancy.dog.name}', None, {'confirmed_date': str(pregnancy.confirmed_date)})
             
@@ -828,7 +828,7 @@ def pregnancy_add():
             flash(f'حدث خطأ: {str(e)}', 'error')
     
     # Get available females and mating records for pregnancy
-    from models import MatingRecord
+    from k9.models.models import MatingRecord
     if current_user.role == UserRole.GENERAL_ADMIN:
         all_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
         mating_records = MatingRecord.query.order_by(MatingRecord.created_at.desc()).all()
@@ -846,7 +846,7 @@ def pregnancy_add():
 @main_bp.route('/production/delivery')
 @login_required
 def delivery_list():
-    from models import DeliveryRecord
+    from k9.models.models import DeliveryRecord
     try:
         if current_user.role == UserRole.GENERAL_ADMIN:
             delivery_records = DeliveryRecord.query.order_by(DeliveryRecord.created_at.desc()).all()
@@ -871,7 +871,7 @@ def delivery_list():
 def delivery_add():
     if request.method == 'POST':
         try:
-            from models import DeliveryRecord, PregnancyRecord, PregnancyStatus
+            from k9.models.models import DeliveryRecord, PregnancyRecord, PregnancyStatus
             delivery = DeliveryRecord()
             delivery.pregnancy_record_id = request.form.get('pregnancy_record_id') or request.form.get('pregnancy_id')
             delivery.delivery_date = datetime.strptime(request.form['delivery_date'], '%Y-%m-%d').date()
@@ -908,8 +908,8 @@ def delivery_add():
             db.session.commit()
             
             # Log audit
-            from utils import log_audit
-            from models import AuditAction
+            from k9.utils.utils import log_audit
+            from k9.models.models import AuditAction
             log_audit(current_user.id, AuditAction.CREATE, 'DeliveryRecord', delivery.id, 
                      f'تسجيل ولادة جديدة للكلبة {delivery.pregnancy_record.dog.name}', None, {'delivery_date': str(delivery.delivery_date)})
             
@@ -923,7 +923,7 @@ def delivery_add():
             flash(f'حدث خطأ: {str(e)}', 'error')
     
     # Get available pregnancies and employees for delivery
-    from models import PregnancyRecord, PregnancyStatus
+    from k9.models.models import PregnancyRecord, PregnancyStatus
     if current_user.role == UserRole.GENERAL_ADMIN:
         pregnancies = PregnancyRecord.query.filter_by(status=PregnancyStatus.PREGNANT).order_by(PregnancyRecord.expected_delivery_date.asc()).all()
         employees = Employee.query.filter_by(is_active=True).all()
@@ -937,7 +937,7 @@ def delivery_add():
 @main_bp.route('/production/puppies')
 @login_required
 def puppies_list():
-    from models import PuppyRecord, DeliveryRecord
+    from k9.models.models import PuppyRecord, DeliveryRecord
     try:
         if current_user.role == UserRole.GENERAL_ADMIN:
             puppies = PuppyRecord.query.order_by(PuppyRecord.created_at.desc()).all()
@@ -962,7 +962,7 @@ def puppies_list():
 def puppies_add():
     if request.method == 'POST':
         try:
-            from models import PuppyRecord, DeliveryRecord
+            from k9.models.models import PuppyRecord, DeliveryRecord
             puppy = PuppyRecord()
             puppy.delivery_record_id = request.form['delivery_record_id']
             puppy.puppy_number = int(request.form['puppy_number'])
@@ -999,7 +999,7 @@ def puppies_add():
             flash(f'حدث خطأ أثناء تسجيل الجرو: {str(e)}', 'error')
     
     # Get delivery records for puppies dropdown
-    from models import DeliveryRecord, PregnancyRecord
+    from k9.models.models import DeliveryRecord, PregnancyRecord
     try:
         if current_user.role == UserRole.GENERAL_ADMIN:
             deliveries = DeliveryRecord.query.order_by(DeliveryRecord.delivery_date.desc()).all()
@@ -1027,7 +1027,7 @@ def puppies_add():
 @main_bp.route('/production/maturity/view/<id>')
 @login_required
 def maturity_view(id):
-    from models import DogMaturity
+    from k9.models.models import DogMaturity
     maturity = DogMaturity.query.get_or_404(id)
     
     # Check permissions
@@ -1042,7 +1042,7 @@ def maturity_view(id):
 @main_bp.route('/production/heat-cycles/view/<id>')
 @login_required
 def heat_cycles_view(id):
-    from models import HeatCycle
+    from k9.models.models import HeatCycle
     heat_cycle = HeatCycle.query.get_or_404(id)
     
     # Check permissions
@@ -1057,7 +1057,7 @@ def heat_cycles_view(id):
 @main_bp.route('/production/mating/view/<id>')
 @login_required
 def mating_view(id):
-    from models import MatingRecord
+    from k9.models.models import MatingRecord
     mating = MatingRecord.query.get_or_404(id)
     
     # Check permissions
@@ -1072,7 +1072,7 @@ def mating_view(id):
 @main_bp.route('/production/pregnancy/view/<id>')
 @login_required
 def pregnancy_view(id):
-    from models import PregnancyRecord
+    from k9.models.models import PregnancyRecord
     pregnancy = PregnancyRecord.query.get_or_404(id)
     
     # Check permissions
@@ -1087,7 +1087,7 @@ def pregnancy_view(id):
 @main_bp.route('/production/delivery/view/<id>')
 @login_required
 def delivery_view(id):
-    from models import DeliveryRecord
+    from k9.models.models import DeliveryRecord
     delivery = DeliveryRecord.query.get_or_404(id)
     
     # Check permissions
@@ -1102,7 +1102,7 @@ def delivery_view(id):
 @main_bp.route('/production/puppies/view/<id>')
 @login_required
 def puppies_view(id):
-    from models import PuppyRecord
+    from k9.models.models import PuppyRecord
     puppy = PuppyRecord.query.get_or_404(id)
     
     # Check permissions
@@ -2216,7 +2216,7 @@ def reports_generate():
     
     try:
         if export_format == 'excel':
-            from utils import generate_excel_report
+            from k9.utils.utils import generate_excel_report
             filename = generate_excel_report(report_type, start_date, end_date, current_user, filters)
         else:
             # Map new report types to existing system for PDF generation
@@ -2245,7 +2245,7 @@ def reports_generate():
 @login_required
 def reports_preview():
     """Get filtered data for live preview in advanced reports"""
-    from models import Dog, Employee, TrainingSession, VeterinaryVisit, ProductionCycle, Project
+    from k9.models.models import Dog, Employee, TrainingSession, VeterinaryVisit, ProductionCycle, Project
     
     report_type = request.form.get('report_type')
     start_date_str = request.form.get('start_date')
@@ -2365,7 +2365,7 @@ def reports_preview():
             # Activity filters
             if filters.get('activity_filter') == 'no_activity_30':
                 # Check if dog has no training sessions in last 30 days
-                from models import TrainingSession
+                from k9.models.models import TrainingSession
                 thirty_days_ago = datetime.now().date() - timedelta(days=30)
                 recent_sessions = TrainingSession.query.filter(
                     TrainingSession.dog_id == dog.id,
@@ -2537,7 +2537,7 @@ def reports_preview():
     elif report_type == 'attendance_daily':
         # Get attendance daily sheet data
         try:
-            from attendance_reporting_services import get_daily_sheet_summary
+            from k9.services.attendance_reporting_services import get_daily_sheet_summary
             summary_data = get_daily_sheet_summary(start_date, end_date, current_user)
             for item in summary_data:
                 records.append({
@@ -2553,7 +2553,7 @@ def reports_preview():
     elif report_type == 'attendance_pm_daily':
         # Get PM daily data
         try:
-            from pm_daily_services import get_pm_daily_summary
+            from k9.services.pm_daily_services import get_pm_daily_summary
             summary_data = get_pm_daily_summary(start_date, end_date, current_user)
             for item in summary_data:
                 records.append({
@@ -2569,7 +2569,7 @@ def reports_preview():
     elif report_type == 'training_trainer_daily':
         # Get trainer daily data
         try:
-            from trainer_daily_services import get_trainer_daily_summary
+            from k9.services.trainer_daily_services import get_trainer_daily_summary
             summary_data = get_trainer_daily_summary(start_date, end_date, current_user)
             for item in summary_data:
                 records.append({
@@ -3238,8 +3238,8 @@ def edit_shift_assignment(project_id, shift_id, assignment_id):
 @login_required
 def admin_panel():
     """Unified admin interface for user and permission management with enhanced granular permissions"""
-    from models import ProjectManagerPermission, SubPermission, PermissionAuditLog
-    from permission_utils import PERMISSION_STRUCTURE, get_user_permissions_for_project, initialize_default_permissions
+    from k9.models.models import ProjectManagerPermission, SubPermission, PermissionAuditLog
+    from k9.utils.permission_utils import PERMISSION_STRUCTURE, get_user_permissions_for_project, initialize_default_permissions
     from werkzeug.security import generate_password_hash
     
     # Check admin access
@@ -3348,7 +3348,7 @@ def get_user_permissions_api(user_id):
         project_id = request.args.get('project_id')
         project_id = project_id if project_id and project_id.strip() else None
         
-        from permission_utils import get_user_permissions_for_project
+        from k9.utils.permission_utils import get_user_permissions_for_project
         permissions = get_user_permissions_for_project(user_id, project_id)
         
         return jsonify({
@@ -3384,8 +3384,8 @@ def update_user_permissions_api():
         if not target_user:
             return jsonify({'error': 'User not found'}), 404
         
-        from permission_utils import update_permission
-        from models import PermissionType
+        from k9.utils.permission_utils import update_permission
+        from k9.models.models import PermissionType
         
         update_count = 0
         
@@ -3426,7 +3426,7 @@ def sync_project_managers():
         return redirect(url_for('main.dashboard'))
     
     try:
-        from utils import ensure_employee_user_linkage
+        from k9.utils.utils import ensure_employee_user_linkage
         
         created_users = ensure_employee_user_linkage()
         
@@ -3521,7 +3521,7 @@ def update_user_credentials():
 @login_required
 def update_permissions():
     """Update PROJECT_MANAGER permissions"""
-    from models import ProjectManagerPermission
+    from k9.models.models import ProjectManagerPermission
     
     # Check admin access
     if current_user.role != UserRole.GENERAL_ADMIN:
@@ -4149,7 +4149,7 @@ def attendance_assignments_remove(assignment_id):
 # BREEDING SECTION ROUTES (Arabic RTL)
 # =============================================
 
-from permission_utils import has_permission
+from k9.utils.permission_utils import has_permission
 from sqlalchemy.orm import joinedload
 
 @main_bp.route('/breeding/feeding/log')
@@ -4722,15 +4722,15 @@ def cleaning_edit(id):
 def breeding_deworming():
     """List deworming logs"""
     # Check permissions
-    from permission_utils import has_permission
-    from models import PermissionType
+    from k9.utils.permission_utils import has_permission
+    from k9.models.models import PermissionType
     if not has_permission(current_user, 'Breeding', 'جرعة الديدان', PermissionType.VIEW):
         abort(403)
     
-    from utils import get_user_assigned_projects
+    from k9.utils.utils import get_user_assigned_projects
     assigned_projects = get_user_assigned_projects(current_user)
     
-    from models import Route, Unit, Reaction
+    from k9.models.models import Route, Unit, Reaction
     # Convert enums to list of dictionaries for JavaScript
     route_choices = [{"value": choice.value, "text": choice.value} for choice in Route]
     unit_choices = [{"value": choice.value, "text": choice.value} for choice in Unit]
@@ -4747,16 +4747,16 @@ def breeding_deworming():
 def breeding_deworming_new():
     """Add new deworming log"""
     # Check permissions
-    from permission_utils import has_permission
-    from models import PermissionType
+    from k9.utils.permission_utils import has_permission
+    from k9.models.models import PermissionType
     if not has_permission(current_user, 'Breeding', 'جرعة الديدان', PermissionType.CREATE):
         abort(403)
         
-    from utils import get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
+    from k9.utils.utils import get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
     assigned_projects = get_user_assigned_projects(current_user)
     assigned_dogs = get_user_accessible_dogs(current_user)
     
-    from models import Employee, Route, Unit, Reaction, EmployeeRole
+    from k9.models.models import Employee, Route, Unit, Reaction, EmployeeRole
     # Get all accessible employees, then filter for VETs and other relevant roles
     accessible_employees = get_user_accessible_employees(current_user)
     # Also include all active employees for compatibility - can be refined later
@@ -4780,11 +4780,11 @@ def breeding_deworming_new():
 @login_required
 def breeding_deworming_edit(id):
     """Edit deworming log"""
-    from models import DewormingLog, Employee, Dog, Route, Unit, Reaction
+    from k9.models.models import DewormingLog, Employee, Dog, Route, Unit, Reaction
     
     # Check permissions
-    from permission_utils import has_permission
-    from models import PermissionType
+    from k9.utils.permission_utils import has_permission
+    from k9.models.models import PermissionType
     if not has_permission(current_user, 'Breeding', 'جرعة الديدان', PermissionType.EDIT):
         abort(403)
     
@@ -4792,13 +4792,13 @@ def breeding_deworming_edit(id):
     
     # Check project access for project managers
     if current_user.role.value == "PROJECT_MANAGER":
-        from utils import get_user_assigned_projects
+        from k9.utils.utils import get_user_assigned_projects
         assigned_projects = get_user_assigned_projects(current_user)
         assigned_project_ids = [p.id for p in assigned_projects]
         if log.project_id not in assigned_project_ids:
             abort(403)
     
-    from utils import get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
+    from k9.utils.utils import get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
     assigned_projects = get_user_assigned_projects(current_user)
     assigned_dogs = get_user_accessible_dogs(current_user)
     

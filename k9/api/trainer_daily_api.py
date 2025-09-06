@@ -6,9 +6,9 @@ import os
 from datetime import datetime, date
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from permission_decorators import admin_required
-from trainer_daily_services import get_trainer_daily
-from trainer_daily_exporters import export_trainer_daily_pdf
+from k9.utils.permission_decorators import admin_required
+from k9.services.trainer_daily_services import get_trainer_daily
+from k9.utils.trainer_daily_exporters import export_trainer_daily_pdf
 
 bp = Blueprint('reports_training_trainer_daily_api', __name__)
 

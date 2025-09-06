@@ -1,9 +1,9 @@
 from functools import wraps
 from flask import abort, request, flash, redirect, url_for
 from flask_login import current_user
-from utils import get_project_manager_permissions, check_project_access
-from models import UserRole, PermissionType
-from permission_utils import has_permission
+from k9.utils.utils import get_project_manager_permissions, check_project_access
+from k9.models.models import UserRole, PermissionType
+from k9.utils.permission_utils import has_permission
 
 def require_permission(permission_type, project_id_param='project_id'):
     """
