@@ -24,4 +24,6 @@ dependencies = [
     "pytest-mock>=3.14.1",
     "factory-boy>=3.3.3",
     "coverage>=7.10.5",
+    "pyotp>=2.9.0",
+    "qrcode[pil]>=8.2",
 ]
