@@ -126,6 +126,7 @@ class AuditAction(Enum):
     EXPORT = "EXPORT"
     LOGIN = "LOGIN"
     LOGOUT = "LOGOUT"
+    SECURITY_EVENT = "SECURITY_EVENT"
 
 # New enums for attendance system
 class EntityType(Enum):
