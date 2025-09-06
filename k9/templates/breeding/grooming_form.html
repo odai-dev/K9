@@ -300,7 +300,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function submitForm() {
     const formData = {
-        project_id: document.getElementById('project_id')?.value,
+        project_id: document.getElementById('project_id')?.value || null,
         dog_id: document.getElementById('dog_id')?.value,
         recorder_employee_id: document.getElementById('recorder_employee_id')?.value || null,
         date: document.getElementById('date')?.value,
