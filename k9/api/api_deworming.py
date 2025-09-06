@@ -245,7 +245,11 @@ def api_deworming_list():
         
         # Apply filters
         if project_id:
-            query = query.filter(DewormingLog.project_id == project_id)
+            if project_id == 'no_project':
+                # Filter for records without project assignment
+                query = query.filter(DewormingLog.project_id.is_(None))
+            else:
+                query = query.filter(DewormingLog.project_id == project_id)
         if date_from:
             try:
                 date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()

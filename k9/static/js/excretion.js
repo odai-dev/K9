@@ -82,7 +82,7 @@ const ExcretionManager = {
                 const projects = await response.json();
                 const select = document.getElementById('projectFilter');
                 if (select) {
-                    select.innerHTML = '<option value="">جميع المشاريع</option>';
+                    select.innerHTML = '<option value="">جميع المشاريع</option><option value="no_project">بدون مشروع</option>';
                     projects.forEach(project => {
                         const option = document.createElement('option');
                         option.value = project.id;
