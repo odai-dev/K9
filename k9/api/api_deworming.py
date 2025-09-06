@@ -26,23 +26,16 @@ def create_deworming_log():
             if not data.get(field):
                 return jsonify({'error': f'Missing required field: {field}'}), 400
         
-        # Validate required project_id field
-        if not data.get('project_id') or data.get('project_id') == '' or data.get('project_id') == 'null':
-            if current_user.role == UserRole.GENERAL_ADMIN:
-                default_project = Project.query.first()
-            else:
-                assigned_projects = get_user_assigned_projects(current_user)
-                default_project = assigned_projects[0] if assigned_projects else None
-            
-            if not default_project:
-                return jsonify({'error': 'لا يوجد مشروع متاح. يجب إنشاء مشروع أولاً أو تعيين المستخدم لمشروع'}), 400
-            
-            data['project_id'] = str(default_project.id)
-            print(f'Auto-assigned project: {default_project.id} to deworming log')
+        # Handle optional project_id (allow "No Project" entries)
+        project_id = data.get('project_id')
+        if not project_id or project_id == '' or project_id == 'null':
+            project_id = None
+            data['project_id'] = None
+            print('Deworming log created without project assignment')
         
         # Verify project access for PROJECT_MANAGER
         if current_user.role == UserRole.PROJECT_MANAGER:
-            if data.get('project_id'):
+            if data.get('project_id'):  # Only check if project is assigned
                 assigned_projects = get_user_assigned_projects(current_user)
                 project_ids = [str(p.id) for p in assigned_projects]
                 if str(data['project_id']) not in project_ids:
@@ -87,11 +80,8 @@ def create_deworming_log():
         
         # Create new deworming log
         deworming_log = DewormingLog()
-        # Ensure project_id is not None (required field)
-        project_id = data.get('project_id')
-        if not project_id:
-            return jsonify({'error': 'معرف المشروع مطلوب'}), 400
-        deworming_log.project_id = project_id
+        # Set project_id (can be None for "No Project" entries)
+        deworming_log.project_id = data.get('project_id')
         deworming_log.dog_id = data['dog_id']
         deworming_log.specialist_employee_id = data.get('specialist_employee_id')
         deworming_log.date = log_date
