@@ -230,6 +230,16 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
     
+    # Security enhancements
+    failed_login_attempts = db.Column(db.Integer, default=0)
+    account_locked_until = db.Column(db.DateTime)
+    password_changed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # MFA fields
+    mfa_enabled = db.Column(db.Boolean, default=False)
+    mfa_secret = db.Column(db.String(32))
+    backup_codes = db.Column(JSON, default=list)
+    
     # For project managers - which sections they can access
     allowed_sections = db.Column(JSON, default=list)
     
