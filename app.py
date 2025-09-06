@@ -96,30 +96,11 @@ with app.app_context():
     import k9.models.models  # noqa: F401
     import k9.models.models_attendance_reporting  # noqa: F401
 
-    # In production, migrations handle schema creation
-    # In development, create tables automatically for convenience
-    if flask_env != "production":
-        db.create_all()
-        
-        # Create default admin user only in development
-        from k9.models.models import User, UserRole
-        from werkzeug.security import generate_password_hash
-        
-        admin_user = User.query.filter_by(username='admin').first()
-        if not admin_user:
-            admin_user = User()
-            admin_user.username = 'admin'
-            admin_user.email = 'admin@k9ops.com'
-            admin_user.password_hash = generate_password_hash('admin123')
-            admin_user.role = UserRole.GENERAL_ADMIN
-            admin_user.full_name = 'System Administrator'
-            admin_user.active = True
-            db.session.add(admin_user)
-            db.session.commit()
-            print("✓ Default admin user created successfully (username: admin, password: admin123)")
-    else:
-        print("Production mode: Skipping automatic table creation and default user setup")
-        print("Use 'flask db upgrade' for migrations and create admin user manually")
+    # Always skip automatic table creation, use migrations instead
+    # db.create_all() - disabled for proper migration handling
+    
+    # User creation is handled via migrations and manual setup
+    # No automatic user creation during app initialization
 
     # User loader
     @login_manager.user_loader
