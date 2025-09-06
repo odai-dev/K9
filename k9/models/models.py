@@ -216,7 +216,7 @@ project_employee_assignment = db.Table('project_employee_assignment',
 )
 
 class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
@@ -261,7 +261,7 @@ class Dog(db.Model):
     medical_records = db.Column(JSON, default=list)
     
     # Relationships
-    assigned_to_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    assigned_to_user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'))
     assigned_to_user = db.relationship('User', backref='assigned_dogs')
     
     # Parent relationships for breeding
@@ -297,11 +297,11 @@ class Employee(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    assigned_to_user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    assigned_to_user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'))
     assigned_to_user = db.relationship('User', foreign_keys=[assigned_to_user_id], backref='assigned_employees')
     
     # For project managers - link to their user account
-    user_account_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_account_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'))
     user_account = db.relationship('User', foreign_keys=[user_account_id], backref='employee_profile')
     
     # Many-to-many relationships
@@ -1048,7 +1048,7 @@ class ProjectAttendance(db.Model):
     check_out_time = db.Column(db.Time, nullable=True)
     
     # Recorded by
-    recorded_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    recorded_by_user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'), nullable=False)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -1127,7 +1127,7 @@ class SubPermission(db.Model):
     """Ultra-granular permissions for PROJECT_MANAGER users"""
     __tablename__ = 'sub_permissions'
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'), nullable=False)
     section = db.Column(db.String(50), nullable=False)       # e.g., "Dogs", "Employees", "Projects"
     subsection = db.Column(db.String(100), nullable=False)   # e.g., "View Dog List", "Upload Medical Records"
     permission_type = db.Column(db.Enum(PermissionType), nullable=False)  # VIEW/CREATE/EDIT/DELETE/EXPORT/ASSIGN/APPROVE
@@ -1157,10 +1157,10 @@ class PermissionAuditLog(db.Model):
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     
     # Who made the change
-    changed_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    changed_by_user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'), nullable=False)
     
     # Target user whose permissions were changed
-    target_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    target_user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'), nullable=False)
     
     # Permission details
     section = db.Column(db.String(50), nullable=False)
@@ -1189,7 +1189,7 @@ class PermissionAuditLog(db.Model):
 class ProjectManagerPermission(db.Model):
     """Legacy granular permissions for PROJECT_MANAGER users per project"""
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'), nullable=False)
     project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
     
     # Permission toggles - all default to True for PROJECT_MANAGER
@@ -1219,7 +1219,7 @@ class ProjectManagerPermission(db.Model):
 class AuditLog(db.Model):
     """Comprehensive audit logging for all user actions"""
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'), nullable=False)
     action = db.Column(db.Enum(AuditAction), nullable=False)
     
     # Target information
@@ -1364,7 +1364,7 @@ class Attendance(db.Model):
     check_out_time = db.Column(db.Time, nullable=True)
     
     # Recorded by
-    recorded_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    recorded_by_user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'), nullable=False)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -1471,7 +1471,7 @@ class FeedingLog(db.Model):
     body_condition = db.Column(db.Enum(BodyConditionScale), nullable=True) # كتلة الجسم (Arabic values)
     notes = db.Column(db.Text, nullable=True)
 
-    created_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
+    created_by_user_id = db.Column(get_uuid_column(), db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -1518,7 +1518,7 @@ class DailyCheckupLog(db.Model):
     suggested_treatment = db.Column(db.Text, nullable=True) # علاج أو إجراء مقترح
     notes = db.Column(db.Text, nullable=True)              # ملاحظات
 
-    created_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
+    created_by_user_id = db.Column(get_uuid_column(), db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -1614,7 +1614,7 @@ class ExcretionLog(db.Model):
     vomit_notes = db.Column(db.Text, nullable=True)
 
     # Audit
-    created_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
+    created_by_user_id = db.Column(get_uuid_column(), db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -1658,7 +1658,7 @@ class GroomingLog(db.Model):
     cleanliness_score = db.Column(db.Enum(GroomingCleanlinessScore), nullable=True) # نظافة عامة 1-5
     notes = db.Column(db.Text, nullable=True)                                    # ملاحظات
 
-    created_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
+    created_by_user_id = db.Column(get_uuid_column(), db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -1709,7 +1709,7 @@ class DewormingLog(db.Model):
 
     next_due_date = db.Column(db.Date, nullable=True)                         # تاريخ الجرعة القادمة - next due date (optional)
 
-    created_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
+    created_by_user_id = db.Column(get_uuid_column(), db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -1759,7 +1759,7 @@ class CleaningLog(db.Model):
     notes = db.Column(Text, nullable=True)                                # ملاحظات
 
     # For cadence computation (not persisted as enums, computed in API)
-    created_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
+    created_by_user_id = db.Column(get_uuid_column(), db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
