@@ -106,7 +106,15 @@ with app.app_context():
     @login_manager.user_loader
     def load_user(user_id):
         from k9.models.models import User
-        return User.query.get(user_id)
+        import uuid
+        
+        # Validate that user_id is a valid UUID
+        try:
+            uuid.UUID(str(user_id))
+            return User.query.get(user_id)
+        except (ValueError, TypeError):
+            # Invalid UUID format, return None
+            return None
     
     # Register template functions
     from k9.utils.utils import get_user_permissions
