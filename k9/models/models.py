@@ -240,6 +240,12 @@ class User(UserMixin, db.Model):
         return f'<User {self.username}>'
 
 class Dog(db.Model):
+    __table_args__ = (
+        db.Index('idx_dog_status_breed', 'current_status', 'breed'),
+        db.Index('idx_dog_gender_status', 'gender', 'current_status'),
+        db.Index('idx_dog_birth_date', 'birth_date'),
+    )
+    
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     name = db.Column(db.String(100), nullable=False)
     code = db.Column(db.String(20), unique=True, nullable=False)
@@ -281,6 +287,11 @@ class Dog(db.Model):
         return f'<Dog {self.name} ({self.code})>'
 
 class Employee(db.Model):
+    __table_args__ = (
+        db.Index('idx_employee_role_active', 'role', 'is_active'),
+        db.Index('idx_employee_email', 'email'),
+    )
+    
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     name = db.Column(db.String(100), nullable=False)
     employee_id = db.Column(db.String(20), unique=True, nullable=False)
