@@ -10,10 +10,10 @@ from sqlalchemy import and_, or_
 from flask_login import current_user
 
 from app import db
-from models import Project, Employee, Dog, ProjectShift, UserRole
-from models_attendance_reporting import ProjectAttendanceReporting, AttendanceDayLeave
-from attendance_reporting_constants import ARABIC_DAY_NAMES, LEAVE_TYPE_ARABIC
-from utils import check_project_access
+from k9.models.models import Project, Employee, Dog, ProjectShift, UserRole
+from k9.models.models_attendance_reporting import ProjectAttendanceReporting, AttendanceDayLeave
+from k9.utils.attendance_reporting_constants import ARABIC_DAY_NAMES, LEAVE_TYPE_ARABIC
+from k9.utils.utils import check_project_access
 
 
 def get_daily_sheet(project_id: str, target_date: date, user) -> Dict:
@@ -181,7 +181,7 @@ def get_user_accessible_projects(user) -> List[Dict]:
             ).order_by(Project.name).all()
         else:
             # PROJECT_MANAGER can only see assigned projects
-            from permission_utils import get_user_accessible_projects as get_accessible
+            from k9.utils.permission_utils import get_user_accessible_projects as get_accessible
             accessible_project_ids = get_accessible(user)
             
             if accessible_project_ids:

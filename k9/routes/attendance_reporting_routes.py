@@ -7,9 +7,9 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from datetime import datetime, date
 
-from attendance_reporting_services import get_user_accessible_projects, validate_project_date_access
-from permission_decorators import require_sub_permission
-from models import PermissionType, UserRole
+from k9.services.attendance_reporting_services import get_user_accessible_projects, validate_project_date_access
+from k9.utils.permission_decorators import require_sub_permission
+from k9.models.models import PermissionType, UserRole
 
 # Create blueprint
 bp = Blueprint('reports_attendance_ui', __name__)

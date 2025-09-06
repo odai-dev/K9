@@ -6,11 +6,11 @@ from typing import Dict, List, Optional, Any
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import joinedload
 
-from models import VeterinaryVisit, Dog, Employee, Project, EmployeeRole, VisitType
+from k9.models.models import VeterinaryVisit, Dog, Employee, Project, EmployeeRole, VisitType
 from app import db
-from dates_ar import get_arabic_day_name
-from utils_pdf_rtl import format_arabic_date
-from veterinary_daily_constants import VISIT_TYPE_LABELS
+from k9.utils.dates_ar import get_arabic_day_name
+from k9.utils.utils_pdf_rtl import format_arabic_date
+from k9.utils.veterinary_daily_constants import VISIT_TYPE_LABELS
 
 
 def get_vet_daily(

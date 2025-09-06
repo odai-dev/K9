@@ -6,9 +6,9 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import and_, or_
 from datetime import datetime, date
-from models import db, ExcretionLog, Project, Dog, Employee, UserRole
-from permission_decorators import require_sub_permission
-from utils import get_user_assigned_projects
+from k9.models.models import db, ExcretionLog, Project, Dog, Employee, UserRole
+from k9.utils.permission_decorators import require_sub_permission
+from k9.utils.utils import get_user_assigned_projects
 
 bp = Blueprint('api_excretion', __name__)
 

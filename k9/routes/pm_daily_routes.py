@@ -7,9 +7,9 @@ from flask import Blueprint, render_template, request, current_app
 from flask_login import login_required, current_user
 from datetime import date
 
-from permission_decorators import require_permission
-from models import Project, UserRole, ProjectStatus
-from utils import get_user_permissions
+from k9.utils.permission_decorators import require_permission
+from k9.models.models import Project, UserRole, ProjectStatus
+from k9.utils.utils import get_user_permissions
 
 # Create blueprint
 bp = Blueprint('reports_attendance_pm_daily_ui', __name__)

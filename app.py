@@ -22,7 +22,7 @@ login_manager = LoginManager()
 migrate = Migrate()
 
 # Create the app
-app = Flask(__name__)
+app = Flask(__name__, template_folder='k9/templates', static_folder='k9/static')
 app.secret_key = os.environ.get("SESSION_SECRET") or "k9-operations-development-secret-key-2025"
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1) # needed for url_for to generate with https
 
@@ -93,8 +93,8 @@ login_manager.login_message_category = 'info'
 
 with app.app_context():
     # Make sure to import the models here or their tables won't be created
-    import models  # noqa: F401
-    import models_attendance_reporting  # noqa: F401
+    import k9.models.models  # noqa: F401
+    import k9.models.models_attendance_reporting  # noqa: F401
 
     # In production, migrations handle schema creation
     # In development, create tables automatically for convenience
@@ -102,7 +102,7 @@ with app.app_context():
         db.create_all()
         
         # Create default admin user only in development
-        from models import User, UserRole
+        from k9.models.models import User, UserRole
         from werkzeug.security import generate_password_hash
         
         admin_user = User.query.filter_by(username='admin').first()
@@ -124,11 +124,11 @@ with app.app_context():
     # User loader
     @login_manager.user_loader
     def load_user(user_id):
-        from models import User
+        from k9.models.models import User
         return User.query.get(user_id)
     
     # Register template functions
-    from utils import get_user_permissions
+    from k9.utils.utils import get_user_permissions
     from datetime import date, datetime
     app.jinja_env.globals.update(
         get_user_permissions=get_user_permissions,
@@ -137,10 +137,10 @@ with app.app_context():
     )
     
     # Register blueprints
-    from routes import main_bp
-    from auth import auth_bp
-    from api_routes import api_bp
-    from admin_routes import admin_bp
+    from k9.routes.main import main_bp
+    from k9.routes.auth import auth_bp
+    from k9.api.api_routes import api_bp
+    from k9.routes.admin_routes import admin_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -148,22 +148,22 @@ with app.app_context():
     app.register_blueprint(admin_bp)
     
     # Register attendance reporting blueprints
-    from attendance_reporting_routes import bp as reports_attendance_ui_bp
-    from attendance_reporting_api import bp as reports_attendance_api_bp
+    from k9.routes.attendance_reporting_routes import bp as reports_attendance_ui_bp
+    from k9.api.attendance_reporting_api import bp as reports_attendance_api_bp
     app.register_blueprint(reports_attendance_ui_bp, url_prefix='/reports/attendance')
     app.register_blueprint(reports_attendance_api_bp, url_prefix='/api/reports/attendance')
     
     # Register PM Daily Report blueprints
-    from pm_daily_routes import bp as pm_daily_ui_bp
-    from pm_daily_api import bp as pm_daily_api_bp
+    from k9.routes.pm_daily_routes import bp as pm_daily_ui_bp
+    from k9.api.pm_daily_api import bp as pm_daily_api_bp
     app.register_blueprint(pm_daily_ui_bp, url_prefix='/reports/attendance')
     app.register_blueprint(pm_daily_api_bp, url_prefix='/api/reports/attendance')
     
     # Register Training Report blueprints
     try:
-        from trainer_daily_routes import bp as training_trainer_daily_ui_bp
-        from trainer_daily_api import bp as training_trainer_daily_api_bp
-        from trainer_daily_data_api import bp as training_data_api_bp
+        from k9.routes.trainer_daily_routes import bp as training_trainer_daily_ui_bp
+        from k9.api.trainer_daily_api import bp as training_trainer_daily_api_bp
+        from k9.api.trainer_daily_data_api import bp as training_data_api_bp
         
         app.register_blueprint(training_trainer_daily_ui_bp, url_prefix='/reports/training')
         app.register_blueprint(training_trainer_daily_api_bp, url_prefix='/api/reports/training')
@@ -178,7 +178,7 @@ with app.app_context():
         
     # Register Cleaning API blueprint
     try:
-        from api_cleaning import bp as cleaning_api_bp
+        from k9.api.api_cleaning import bp as cleaning_api_bp
         app.register_blueprint(cleaning_api_bp)
         print("✓ Cleaning API registered successfully")
         
@@ -188,7 +188,7 @@ with app.app_context():
     
     # Register Excretion API blueprint
     try:
-        from api_excretion import bp as excretion_api_bp
+        from k9.api.api_excretion import bp as excretion_api_bp
         app.register_blueprint(excretion_api_bp)
         print("✓ Excretion API registered successfully")
         
@@ -198,7 +198,7 @@ with app.app_context():
     
     # Register Deworming API blueprint
     try:
-        from api_deworming import bp as deworming_api_bp
+        from k9.api.api_deworming import bp as deworming_api_bp
         app.register_blueprint(deworming_api_bp)
         print("✓ Deworming API registered successfully")
         

@@ -7,10 +7,10 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
 import logging
 
-from pm_daily_services import get_pm_daily
-from pm_daily_exporters import export_pm_daily_pdf
-from permission_decorators import require_permission
-from models import Project
+from k9.services.pm_daily_services import get_pm_daily
+from k9.utils.pm_daily_exporters import export_pm_daily_pdf
+from k9.utils.permission_decorators import require_permission
+from k9.models.models import Project
 
 # Create blueprint
 bp = Blueprint('reports_attendance_pm_daily_api', __name__)

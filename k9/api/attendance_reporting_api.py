@@ -8,13 +8,13 @@ from flask_login import login_required, current_user
 from datetime import datetime, date
 import os
 
-from attendance_reporting_services import get_daily_sheet, validate_project_date_access
-from attendance_reporting_exporters import export_daily_attendance_pdf
-from attendance_reporting_constants import PERMISSION_KEYS
-from permission_decorators import require_sub_permission
-from models import PermissionType
-from utils import log_audit
-from models import AuditAction
+from k9.services.attendance_reporting_services import get_daily_sheet, validate_project_date_access
+from k9.utils.attendance_reporting_exporters import export_daily_attendance_pdf
+from k9.utils.attendance_reporting_constants import PERMISSION_KEYS
+from k9.utils.permission_decorators import require_sub_permission
+from k9.models.models import PermissionType
+from k9.utils.utils import log_audit
+from k9.models.models import AuditAction
 
 # Create blueprint
 bp = Blueprint('reports_attendance_api', __name__)
@@ -179,7 +179,7 @@ def get_accessible_projects():
     }
     """
     try:
-        from attendance_reporting_services import get_user_accessible_projects
+        from k9.services.attendance_reporting_services import get_user_accessible_projects
         
         projects = get_user_accessible_projects(current_user)
         

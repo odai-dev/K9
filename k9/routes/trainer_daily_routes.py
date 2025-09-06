@@ -4,7 +4,7 @@ UI routes for trainer daily reports
 
 from flask import Blueprint, render_template, request
 from flask_login import login_required
-from permission_decorators import admin_required
+from k9.utils.permission_decorators import admin_required
 
 bp = Blueprint('reports_training_trainer_daily_ui', __name__)
 

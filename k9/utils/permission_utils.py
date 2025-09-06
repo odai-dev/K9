@@ -5,7 +5,7 @@ Permission management utilities for K9 Operations Management System
 from functools import wraps
 from flask import abort, request, flash, redirect, url_for
 from flask_login import current_user
-from models import User, Project, SubPermission, PermissionAuditLog, PermissionType, UserRole
+from k9.models.models import User, Project, SubPermission, PermissionAuditLog, PermissionType, UserRole
 from app import db
 import json
 from datetime import datetime

@@ -2,8 +2,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from app import db
-from models import User, UserRole, AuditLog
-from utils import log_audit
+from k9.models.models import User, UserRole, AuditLog
+from k9.utils.utils import log_audit
 from datetime import datetime
 
 auth_bp = Blueprint('auth', __name__)
@@ -103,7 +103,7 @@ def create_manager():
             
             # Link the employee to the user account if employee was selected
             if request.form.get('employee_id'):
-                from models import Employee
+                from k9.models.models import Employee
                 employee = Employee.query.get(request.form['employee_id'])
                 if employee:
                     employee.user_account_id = manager.id
@@ -133,7 +133,7 @@ def create_manager():
     ]
     
     # Get employees who are project managers and don't have user accounts yet
-    from models import Employee, EmployeeRole
+    from k9.models.models import Employee, EmployeeRole
     employees_without_accounts = Employee.query.filter_by(
         role=EmployeeRole.PROJECT_MANAGER,
         user_account_id=None, 
