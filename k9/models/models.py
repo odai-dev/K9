@@ -490,7 +490,7 @@ class Project(db.Model):
     priority = db.Column(db.String(20), default='MEDIUM')
     
     # Management
-    manager_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    manager_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'))
     manager = db.relationship('User', foreign_keys=[manager_id], backref='managed_projects')
     
     # Project manager assignment (Employee with PROJECT_MANAGER role)
@@ -654,7 +654,7 @@ class PerformanceEvaluation(db.Model):
     """Performance evaluation for employees and dogs in projects"""
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
-    evaluator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    evaluator_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'), nullable=False)
     target_type = db.Column(db.Enum(TargetType), nullable=False)  # EMPLOYEE or DOG
     
     # Target identification (generic approach)
