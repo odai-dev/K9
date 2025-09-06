@@ -26,6 +26,14 @@ app = Flask(__name__, template_folder='k9/templates', static_folder='k9/static')
 app.secret_key = os.environ.get("SESSION_SECRET") or "k9-operations-development-secret-key-2025"
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1) # needed for url_for to generate with https
 
+# Enhanced security configuration
+app.config['WTF_CSRF_ENABLED'] = True
+app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
+app.config['SESSION_COOKIE_SECURE'] = flask_env == 'production'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
+
 # Configure database - enforce PostgreSQL in production
 database_url = os.environ.get("DATABASE_URL")
 flask_env = os.environ.get("FLASK_ENV", "development")
@@ -204,6 +212,26 @@ with app.app_context():
     except Exception as e:
         print(f"⚠ Warning: Could not register MFA routes: {e}")
         # Continue without MFA routes for now
+    
+    # Register Password Reset routes blueprint
+    try:
+        from k9.routes.password_reset_routes import password_reset_bp
+        app.register_blueprint(password_reset_bp)
+        print("✓ Password reset routes registered successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Could not register password reset routes: {e}")
+        # Continue without password reset routes for now
+    
+    # Initialize Security Middleware
+    try:
+        from k9.utils.security_middleware import SecurityMiddleware
+        SecurityMiddleware(app)
+        print("✓ Security middleware initialized successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Could not initialize security middleware: {e}")
+        # Continue without enhanced security middleware for now
     
     
     
