@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+
+{% block title %}إعدادات الأمان{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shield-alt"></i> إعدادات الأمان
+                    </h4>
+                </div>
+                
+                <div class="card-body">
+                    <!-- MFA Status Section -->
+                    <div class="security-section mb-4">
+                        <h5>المصادقة الثنائية</h5>
+                        {% if current_user.mfa_enabled %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> المصادقة الثنائية مفعلة
+                            <small class="d-block mt-1">حسابك محمي بطبقة أمان إضافية</small>
+                        </div>
+                        
+                        <div class="mfa-actions">
+                            <h6>إجراءات المصادقة الثنائية:</h6>
+                            
+                            <!-- Regenerate Backup Codes -->
+                            <div class="action-item mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>الرموز الاحتياطية</strong>
+                                        <p class="text-muted mb-0">إنشاء رموز احتياطية جديدة للاستعادة</p>
+                                    </div>
+                                    <button type="button" 
+                                            class="btn btn-outline-primary" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#regenerateCodesModal">
+                                        <i class="fas fa-sync"></i> إنشاء رموز جديدة
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Disable MFA -->
+                            <div class="action-item mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>إلغاء تفعيل المصادقة الثنائية</strong>
+                                        <p class="text-muted mb-0">إيقاف المصادقة الثنائية (غير مستحسن)</p>
+                                    </div>
+                                    <button type="button" 
+                                            class="btn btn-outline-danger" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#disableMfaModal">
+                                        <i class="fas fa-times"></i> إلغاء التفعيل
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> المصادقة الثنائية غير مفعلة
+                            <small class="d-block mt-1">حسابك أقل أماناً بدون المصادقة الثنائية</small>
+                        </div>
+                        
+                        <a href="{{ url_for('mfa.setup') }}" class="btn btn-primary">
+                            <i class="fas fa-shield-alt"></i> تفعيل المصادقة الثنائية
+                        </a>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Password Section -->
+                    <div class="security-section mb-4">
+                        <h5>كلمة المرور</h5>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="mb-1">آخر تغيير: 
+                                    {% if current_user.password_changed_at %}
+                                        {{ current_user.password_changed_at.strftime('%Y-%m-%d %H:%M') }}
+                                    {% else %}
+                                        غير محدد
+                                    {% endif %}
+                                </p>
+                                <small class="text-muted">يُنصح بتغيير كلمة المرور دورياً</small>
+                            </div>
+                            <a href="{{ url_for('mfa.change_password') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-key"></i> تغيير كلمة المرور
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Account Security Info -->
+                    <div class="security-section">
+                        <h5>معلومات الحساب</h5>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <strong>آخر تسجيل دخول:</strong>
+                                {% if current_user.last_login %}
+                                    {{ current_user.last_login.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                    لم يتم تسجيل الدخول من قبل
+                                {% endif %}
+                            </div>
+                            <div class="info-item">
+                                <strong>حالة الحساب:</strong>
+                                {% if current_user.active %}
+                                    <span class="badge bg-success">نشط</span>
+                                {% else %}
+                                    <span class="badge bg-danger">غير نشط</span>
+                                {% endif %}
+                            </div>
+                            <div class="info-item">
+                                <strong>مستوى الصلاحيات:</strong>
+                                {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                                    <span class="badge bg-primary">مدير عام</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">مدير مشروع</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> العودة للوحة التحكم
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Regenerate Backup Codes Modal -->
+{% if current_user.mfa_enabled %}
+<div class="modal fade" id="regenerateCodesModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">إنشاء رموز احتياطية جديدة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('mfa.regenerate_backup_codes') }}">
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        سيؤدي هذا إلى إلغاء جميع الرموز الاحتياطية الحالية وإنشاء رموز جديدة.
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="regenerate_token">أدخل رمز المصادقة الثنائية للتأكيد:</label>
+                        <input type="text" 
+                               id="regenerate_token" 
+                               name="token" 
+                               class="form-control text-center" 
+                               placeholder="123456" 
+                               maxlength="6" 
+                               pattern="[0-9]{6}"
+                               required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sync"></i> إنشاء رموز جديدة
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Disable MFA Modal -->
+<div class="modal fade" id="disableMfaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">إلغاء تفعيل المصادقة الثنائية</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('mfa.disable') }}">
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        تحذير: إلغاء المصادقة الثنائية سيجعل حسابك أقل أماناً.
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="disable_password">أدخل كلمة المرور الحالية للتأكيد:</label>
+                        <input type="password" 
+                               id="disable_password" 
+                               name="password" 
+                               class="form-control" 
+                               required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times"></i> إلغاء التفعيل
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.security-section {
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 1.5rem;
+}
+
+.security-section:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.action-item {
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    background-color: #f8f9fa;
+}
+
+.info-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+@media (max-width: 768px) {
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    .d-flex.justify-content-between .btn {
+        margin-top: 0.5rem;
+        align-self: stretch;
+    }
+    
+    .info-item {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+}
+</style>
+{% endblock %}
