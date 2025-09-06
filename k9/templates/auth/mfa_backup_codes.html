@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+
+{% block title %}رموز الاستعادة الاحتياطية{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-check-circle"></i> تم تفعيل المصادقة الثنائية بنجاح
+                    </h4>
+                </div>
+                
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h5>
+                            <i class="fas fa-exclamation-triangle"></i> هام جداً: احفظ هذه الرموز الاحتياطية
+                        </h5>
+                        <p class="mb-0">
+                            هذه الرموز ستساعدك على الوصول لحسابك في حالة فقدان الهاتف أو تطبيق المصادقة.
+                            <strong>كل رمز يمكن استخدامه مرة واحدة فقط.</strong>
+                        </p>
+                    </div>
+                    
+                    <div class="backup-codes-container">
+                        <h6>رموز الاستعادة الاحتياطية:</h6>
+                        <div class="codes-grid">
+                            {% for code in backup_codes %}
+                            <div class="code-item">
+                                <code>{{ code }}</code>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <button onclick="printCodes()" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-print"></i> طباعة الرموز
+                        </button>
+                        <button onclick="copyCodes()" class="btn btn-outline-secondary me-2">
+                            <i class="fas fa-copy"></i> نسخ الرموز
+                        </button>
+                        <button onclick="downloadCodes()" class="btn btn-outline-info">
+                            <i class="fas fa-download"></i> تحميل كملف نصي
+                        </button>
+                    </div>
+                    
+                    <div class="alert alert-info mt-4">
+                        <h6>نصائح أمنية:</h6>
+                        <ul class="mb-0">
+                            <li>احفظ هذه الرموز في مكان آمن ومنفصل عن حسابك</li>
+                            <li>لا تشارك هذه الرموز مع أي شخص آخر</li>
+                            <li>يمكنك إنشاء رموز جديدة في أي وقت من إعدادات الحساب</li>
+                            <li>في حالة استخدام جميع الرموز، تأكد من إنشاء رموز جديدة</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="card-footer text-center">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="codesConfirm">
+                        <label class="form-check-label" for="codesConfirm">
+                            أؤكد أنني حفظت هذه الرموز في مكان آمن
+                        </label>
+                    </div>
+                    
+                    <a href="{{ url_for('main.dashboard') }}" 
+                       class="btn btn-primary" 
+                       id="continueBtn" 
+                       style="display: none;">
+                        <i class="fas fa-arrow-left"></i> المتابعة للوحة التحكم
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.backup-codes-container {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #dee2e6;
+    margin: 1rem 0;
+}
+
+.codes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.code-item {
+    text-align: center;
+    padding: 0.5rem;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 0.25rem;
+}
+
+.code-item code {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #007bff;
+}
+
+@media print {
+    .card-header, .card-footer, .btn, .alert-info {
+        display: none !important;
+    }
+    
+    .codes-grid {
+        display: block;
+    }
+    
+    .code-item {
+        display: inline-block;
+        margin: 0.25rem;
+        page-break-inside: avoid;
+    }
+}
+</style>
+
+<script>
+// Show continue button when checkbox is checked
+document.getElementById('codesConfirm').addEventListener('change', function() {
+    const continueBtn = document.getElementById('continueBtn');
+    if (this.checked) {
+        continueBtn.style.display = 'inline-block';
+    } else {
+        continueBtn.style.display = 'none';
+    }
+});
+
+function printCodes() {
+    window.print();
+}
+
+function copyCodes() {
+    const codes = {{ backup_codes|tojson }};
+    const codesText = codes.join('\\n');
+    
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(codesText).then(function() {
+            alert('تم نسخ الرموز إلى الحافظة');
+        });
+    } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = codesText;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('تم نسخ الرموز إلى الحافظة');
+    }
+}
+
+function downloadCodes() {
+    const codes = {{ backup_codes|tojson }};
+    const codesText = 'رموز الاستعادة الاحتياطية - نظام إدارة عمليات K9\\n' +
+                     '======================================\\n\\n' +
+                     codes.join('\\n') +
+                     '\\n\\nتنبيه: احفظ هذه الرموز في مكان آمن ولا تشاركها مع أي شخص آخر.\\n' +
+                     'كل رمز يمكن استخدامه مرة واحدة فقط.';
+    
+    const blob = new Blob([codesText], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'k9-backup-codes.txt';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
+</script>
+{% endblock %}

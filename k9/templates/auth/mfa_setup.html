@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}إعداد المصادقة الثنائية{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shield-alt"></i> إعداد المصادقة الثنائية
+                    </h4>
+                </div>
+                
+                <div class="card-body">
+                    {% if step == 'start' %}
+                    <div class="text-center">
+                        <h5>تأمين حسابك بالمصادقة الثنائية</h5>
+                        <p class="text-muted">
+                            المصادقة الثنائية تضيف طبقة أمان إضافية لحسابك. ستحتاج إلى تطبيق مصادقة مثل Google Authenticator.
+                        </p>
+                        
+                        <div class="alert alert-info">
+                            <h6>تطبيقات المصادقة المدعومة:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fab fa-google"></i> Google Authenticator</li>
+                                <li><i class="fas fa-mobile-alt"></i> Microsoft Authenticator</li>
+                                <li><i class="fas fa-key"></i> Authy</li>
+                            </ul>
+                        </div>
+                        
+                        <form method="POST">
+                            <input type="hidden" name="action" value="generate_secret">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-qrcode"></i> البدء في الإعداد
+                            </button>
+                        </form>
+                    </div>
+                    
+                    {% elif step == 'verify' %}
+                    <div class="row">
+                        <div class="col-md-6 text-center">
+                            <h5>امسح رمز QR</h5>
+                            <div class="qr-code-container mb-3">
+                                <img src="{{ qr_code }}" alt="QR Code" class="img-fluid" style="max-width: 200px;">
+                            </div>
+                            
+                            <div class="alert alert-secondary">
+                                <small>
+                                    <strong>المفتاح السري:</strong><br>
+                                    <code>{{ secret }}</code><br>
+                                    <em>احفظ هذا المفتاح في مكان آمن</em>
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5>تأكيد الإعداد</h5>
+                            <ol class="setup-steps">
+                                <li>افتح تطبيق المصادقة على هاتفك</li>
+                                <li>امسح رمز QR أو أدخل المفتاح السري يدوياً</li>
+                                <li>أدخل الرمز المكون من 6 أرقام أدناه</li>
+                            </ol>
+                            
+                            <form method="POST">
+                                <input type="hidden" name="action" value="verify_and_enable">
+                                
+                                <div class="form-group">
+                                    <label for="token">رمز التحقق:</label>
+                                    <input type="text" id="token" name="token" 
+                                           class="form-control text-center" 
+                                           placeholder="123456" 
+                                           maxlength="6" 
+                                           pattern="[0-9]{6}"
+                                           style="font-size: 1.2rem; letter-spacing: 0.1rem; font-family: 'Courier New', monospace;"
+                                           required>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-success btn-block">
+                                    <i class="fas fa-check"></i> تفعيل المصادقة الثنائية
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> العودة للوحة التحكم
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.qr-code-container {
+    padding: 1rem;
+    background-color: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    display: inline-block;
+}
+
+.setup-steps {
+    padding-right: 1rem;
+}
+
+.setup-steps li {
+    margin-bottom: 0.5rem;
+}
+</style>
+
+<script>
+// Auto-submit when 6 digits are entered
+document.getElementById('token')?.addEventListener('input', function(e) {
+    if (e.target.value.length === 6 && /^\d{6}$/.test(e.target.value)) {
+        // Small delay to allow user to see the complete code
+        setTimeout(() => e.target.form.submit(), 500);
+    }
+});
+</script>
+{% endblock %}

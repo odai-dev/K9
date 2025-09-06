@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}التحقق من المصادقة الثنائية{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>التحقق من المصادقة الثنائية</h2>
+            <p>يرجى إدخال رمز التحقق من تطبيق المصادقة</p>
+        </div>
+        
+        <form method="POST" class="auth-form">
+            <input type="hidden" name="username" value="{{ user.username }}">
+            <input type="hidden" name="password" value="{{ request.form.password }}">
+            
+            <div class="form-group">
+                <label for="mfa_token">رمز التحقق:</label>
+                <input type="text" id="mfa_token" name="mfa_token" 
+                       class="form-control text-center" 
+                       placeholder="123456" 
+                       maxlength="6" 
+                       pattern="[0-9]{6}"
+                       required>
+                <small class="form-text text-muted">
+                    أدخل الرمز المكون من 6 أرقام من تطبيق المصادقة
+                </small>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+            </button>
+        </form>
+        
+        <div class="auth-footer">
+            <details class="backup-code-section">
+                <summary>استخدام رمز احتياطي</summary>
+                <form method="POST" class="mt-3">
+                    <input type="hidden" name="username" value="{{ user.username }}">
+                    <input type="hidden" name="password" value="{{ request.form.password }}">
+                    
+                    <div class="form-group">
+                        <label for="backup_code">الرمز الاحتياطي:</label>
+                        <input type="text" id="backup_code" name="mfa_token" 
+                               class="form-control text-center" 
+                               placeholder="XXXX-XXXX"
+                               pattern="backup-[A-Z0-9]{4}-[A-Z0-9]{4}"
+                               oninput="this.value = 'backup-' + this.value.replace('backup-', '').toUpperCase()">
+                        <small class="form-text text-muted">
+                            أدخل أحد الرموز الاحتياطية المحفوظة لديك
+                        </small>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-warning btn-block">
+                        <i class="fas fa-key"></i> استخدام الرمز الاحتياطي
+                    </button>
+                </form>
+            </details>
+        </div>
+        
+        <div class="text-center mt-3">
+            <a href="{{ url_for('auth.logout') }}" class="text-muted">
+                <i class="fas fa-arrow-left"></i> إلغاء وتسجيل الخروج
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.backup-code-section {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 0.25rem;
+}
+
+.backup-code-section summary {
+    cursor: pointer;
+    color: #007bff;
+    font-weight: 500;
+}
+
+.backup-code-section summary:hover {
+    text-decoration: underline;
+}
+
+#mfa_token, #backup_code {
+    font-size: 1.2rem;
+    letter-spacing: 0.1rem;
+    font-family: 'Courier New', monospace;
+}
+</style>
+
+<script>
+// Auto-submit when 6 digits are entered
+document.getElementById('mfa_token').addEventListener('input', function(e) {
+    if (e.target.value.length === 6 && /^\d{6}$/.test(e.target.value)) {
+        e.target.form.submit();
+    }
+});
+
+// Format backup code input
+document.getElementById('backup_code').addEventListener('input', function(e) {
+    let value = e.target.value.replace('backup-', '').replace(/[^A-Z0-9]/g, '');
+    if (value.length > 4) {
+        value = value.slice(0, 4) + '-' + value.slice(4, 8);
+    }
+    e.target.value = 'backup-' + value;
+});
+</script>
+{% endblock %}

@@ -195,6 +195,16 @@ with app.app_context():
         print(f"⚠ Warning: Could not register deworming API: {e}")
         # Continue without deworming API for now
     
+    # Register MFA routes blueprint
+    try:
+        from k9.routes.mfa_routes import mfa_bp
+        app.register_blueprint(mfa_bp)
+        print("✓ MFA routes registered successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Could not register MFA routes: {e}")
+        # Continue without MFA routes for now
+    
     
     
     # Add route to serve uploaded files
