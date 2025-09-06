@@ -183,7 +183,7 @@ class SecurityHelper:
         """Log security-related events."""
         from k9.utils.utils import log_audit
         
-        log_audit(user_id, 'SECURITY', 'Security', str(user_id), {
+        log_audit(user_id, 'SECURITY_EVENT', 'Security', str(user_id), {
             'event_type': event_type,
             'details': details,
             'timestamp': datetime.utcnow().isoformat()
