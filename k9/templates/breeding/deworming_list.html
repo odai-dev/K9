@@ -26,6 +26,7 @@
                         <label class="form-label">المشروع</label>
                         <select class="form-select" id="project_filter">
                             <option value="">جميع المشاريع</option>
+                            <option value="no_project">بدون مشروع</option>
                             {% for project in assigned_projects %}
                             <option value="{{ project.id }}">{{ project.name }}</option>
                             {% endfor %}

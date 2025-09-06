@@ -241,7 +241,11 @@ def feeding_log_list():
         
         # Apply filters
         if project_id:
-            query = query.filter(FeedingLog.project_id == project_id)
+            if project_id == 'no_project':
+                # Filter for records without project assignment
+                query = query.filter(FeedingLog.project_id.is_(None))
+            else:
+                query = query.filter(FeedingLog.project_id == project_id)
         if date_from:
             query = query.filter(FeedingLog.date >= datetime.strptime(date_from, '%Y-%m-%d').date())
         if date_to:
@@ -1183,7 +1187,11 @@ def grooming_list():
         
         # Apply filters
         if project_id:
-            query = query.filter(GroomingLog.project_id == project_id)
+            if project_id == 'no_project':
+                # Filter for records without project assignment
+                query = query.filter(GroomingLog.project_id.is_(None))
+            else:
+                query = query.filter(GroomingLog.project_id == project_id)
         if date_from:
             query = query.filter(GroomingLog.date >= datetime.strptime(date_from, '%Y-%m-%d').date())
         if date_to:

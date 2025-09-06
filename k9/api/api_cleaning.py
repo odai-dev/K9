@@ -81,7 +81,11 @@ def list_cleaning_logs():
         
         # Apply filters
         if project_id:
-            query = query.filter(CleaningLog.project_id == project_id)
+            if project_id == 'no_project':
+                # Filter for records without project assignment
+                query = query.filter(CleaningLog.project_id.is_(None))
+            else:
+                query = query.filter(CleaningLog.project_id == project_id)
         
         if dog_id:
             query = query.filter(CleaningLog.dog_id == dog_id)

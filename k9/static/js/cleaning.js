@@ -54,7 +54,7 @@ async function loadProjects() {
         const projects = await response.json();
         
         const projectSelect = document.getElementById('projectFilter');
-        projectSelect.innerHTML = '<option value="">جميع المشاريع</option>';
+        projectSelect.innerHTML = '<option value="">جميع المشاريع</option><option value="no_project">بدون مشروع</option>';
         
         projects.forEach(project => {
             const option = document.createElement('option');
