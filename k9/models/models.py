@@ -228,6 +228,11 @@ class User(UserMixin, db.Model):
     @property
     def is_active(self):
         return self.active
+    
+    @is_active.setter
+    def is_active(self, value):
+        self.active = value
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
     
