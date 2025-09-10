@@ -1,0 +1,498 @@
+{% extends "base.html" %}
+{% block title %}{% if activity %}تعديل نشاط التدريب{% else %}إضافة نشاط تدريب جديد{% endif %} - التربية{% endblock %}
+
+{% block content %}
+<div class="breeding-training-activity-form" dir="rtl">
+    <div class="header-section mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2>{% if activity %}تعديل نشاط التدريب{% else %}إضافة نشاط تدريب جديد{% endif %}</h2>
+                <p class="text-muted">إدارة أنشطة التدريب اليومية للكلاب</p>
+            </div>
+            <div>
+                <a href="{{ url_for('main.breeding_training_activity_list') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right"></i> العودة للقائمة
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <form id="training-activity-form" onsubmit="submitForm(event)">
+                        {% if activity %}
+                        <input type="hidden" id="activity_id" value="{{ activity.id }}">
+                        {% endif %}
+                        
+                        <!-- Basic Information -->
+                        <div class="section-header mb-3">
+                            <h5>المعلومات الأساسية</h5>
+                        </div>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="session_date" class="form-label required">تاريخ الجلسة</label>
+                                <input type="datetime-local" class="form-control" id="session_date" required
+                                       value="{% if activity %}{{ activity.session_date.strftime('%Y-%m-%dT%H:%M') }}{% endif %}">
+                                <div class="invalid-feedback"></div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="project_id" class="form-label">المشروع</label>
+                                <select class="form-select" id="project_id">
+                                    <option value="">بدون مشروع</option>
+                                    {% for project in assigned_projects %}
+                                    <option value="{{ project.id }}" 
+                                            {% if activity and activity.project_id == project.id %}selected{% endif %}>
+                                        {{ project.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="dog_id" class="form-label required">الكلب</label>
+                                <select class="form-select" id="dog_id" required>
+                                    <option value="">اختر الكلب</option>
+                                </select>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="trainer_id" class="form-label required">المدرب</label>
+                                <select class="form-select" id="trainer_id" required>
+                                    <option value="">اختر المدرب</option>
+                                </select>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+
+                        <!-- Training Details -->
+                        <div class="section-header mb-3">
+                            <h5>تفاصيل التدريب</h5>
+                        </div>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="category" class="form-label required">فئة التدريب</label>
+                                <select class="form-select" id="category" required onchange="handleCategoryChange()">
+                                    <option value="">اختر الفئة</option>
+                                    <option value="طاعة" {% if activity and activity.category.value == 'طاعة' %}selected{% endif %}>طاعة</option>
+                                    <option value="كشف" {% if activity and activity.category.value == 'كشف' %}selected{% endif %}>كشف</option>
+                                    <option value="رشاقة" {% if activity and activity.category.value == 'رشاقة' %}selected{% endif %}>رشاقة</option>
+                                    <option value="هجوم" {% if activity and activity.category.value == 'هجوم' %}selected{% endif %}>هجوم</option>
+                                    <option value="لياقة" {% if activity and activity.category.value == 'لياقة' %}selected{% endif %}>لياقة</option>
+                                    <option value="تطبيع" {% if activity and activity.category.value == 'تطبيع' %}selected{% endif %}>تطبيع</option>
+                                    <option value="تدريب الكرة" {% if activity and activity.category.value == 'تدريب الكرة' %}selected{% endif %}>تدريب الكرة</option>
+                                    <option value="أخرى" {% if activity and activity.category.value == 'أخرى' %}selected{% endif %}>أخرى</option>
+                                </select>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="subject" class="form-label required">موضوع التدريب</label>
+                                <input type="text" class="form-control" id="subject" required
+                                       value="{% if activity %}{{ activity.subject }}{% endif %}"
+                                       placeholder="أدخل موضوع التدريب">
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+
+                        <!-- Subtype Sections (shown conditionally) -->
+                        <div id="socialization-section" class="row g-3 mb-4" style="display: none;">
+                            <div class="col-md-6">
+                                <label for="subtype_socialization" class="form-label">نوع التطبيع</label>
+                                <select class="form-select" id="subtype_socialization">
+                                    <option value="">اختر نوع التطبيع</option>
+                                    <option value="تفاعل مع البشر" {% if activity and activity.subtype_socialization and activity.subtype_socialization.value == 'تفاعل مع البشر' %}selected{% endif %}>تفاعل مع البشر</option>
+                                    <option value="تفاعل مع الحيوانات" {% if activity and activity.subtype_socialization and activity.subtype_socialization.value == 'تفاعل مع الحيوانات' %}selected{% endif %}>تفاعل مع الحيوانات</option>
+                                    <option value="التعرض للمركبات" {% if activity and activity.subtype_socialization and activity.subtype_socialization.value == 'التعرض للمركبات' %}selected{% endif %}>التعرض للمركبات</option>
+                                    <option value="إزالة الحساسية للأصوات" {% if activity and activity.subtype_socialization and activity.subtype_socialization.value == 'إزالة الحساسية للأصوات' %}selected{% endif %}>إزالة الحساسية للأصوات</option>
+                                    <option value="استكشاف البيئة" {% if activity and activity.subtype_socialization and activity.subtype_socialization.value == 'استكشاف البيئة' %}selected{% endif %}>استكشاف البيئة</option>
+                                    <option value="تفاعل مع الحشود" {% if activity and activity.subtype_socialization and activity.subtype_socialization.value == 'تفاعل مع الحشود' %}selected{% endif %}>تفاعل مع الحشود</option>
+                                </select>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+
+                        <div id="ball-work-section" class="row g-3 mb-4" style="display: none;">
+                            <div class="col-md-6">
+                                <label for="subtype_ball" class="form-label">نوع تدريب الكرة</label>
+                                <select class="form-select" id="subtype_ball">
+                                    <option value="">اختر نوع تدريب الكرة</option>
+                                    <option value="تدريب الإحضار" {% if activity and activity.subtype_ball and activity.subtype_ball.value == 'تدريب الإحضار' %}selected{% endif %}>تدريب الإحضار</option>
+                                    <option value="تدريب المسك" {% if activity and activity.subtype_ball and activity.subtype_ball.value == 'تدريب المسك' %}selected{% endif %}>تدريب المسك</option>
+                                    <option value="كرة الرشاقة" {% if activity and activity.subtype_ball and activity.subtype_ball.value == 'كرة الرشاقة' %}selected{% endif %}>كرة الرشاقة</option>
+                                    <option value="كرة التناسق" {% if activity and activity.subtype_ball and activity.subtype_ball.value == 'كرة التناسق' %}selected{% endif %}>كرة التناسق</option>
+                                    <option value="كرة المكافأة" {% if activity and activity.subtype_ball and activity.subtype_ball.value == 'كرة المكافأة' %}selected{% endif %}>كرة المكافأة</option>
+                                </select>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="duration" class="form-label required">المدة (بالدقائق)</label>
+                                <input type="number" class="form-control" id="duration" required min="1" max="480"
+                                       value="{% if activity %}{{ activity.duration }}{% endif %}"
+                                       placeholder="المدة بالدقائق">
+                                <div class="invalid-feedback"></div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="success_rating" class="form-label required">تقييم النجاح</label>
+                                <select class="form-select" id="success_rating" required>
+                                    <option value="">اختر التقييم</option>
+                                    <option value="1" {% if activity and activity.success_rating == 1 %}selected{% endif %}>1 - ضعيف جداً</option>
+                                    <option value="2" {% if activity and activity.success_rating == 2 %}selected{% endif %}>2 - ضعيف</option>
+                                    <option value="3" {% if activity and activity.success_rating == 3 %}selected{% endif %}>3 - متوسط</option>
+                                    <option value="4" {% if activity and activity.success_rating == 4 %}selected{% endif %}>4 - جيد</option>
+                                    <option value="5" {% if activity and activity.success_rating == 5 %}selected{% endif %}>5 - ممتاز</option>
+                                </select>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Details -->
+                        <div class="section-header mb-3">
+                            <h5>تفاصيل إضافية</h5>
+                        </div>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="location" class="form-label">مكان التدريب</label>
+                                <input type="text" class="form-control" id="location"
+                                       value="{% if activity %}{{ activity.location or '' }}{% endif %}"
+                                       placeholder="أدخل مكان التدريب">
+                                <div class="invalid-feedback"></div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="weather_conditions" class="form-label">الأحوال الجوية</label>
+                                <input type="text" class="form-control" id="weather_conditions"
+                                       value="{% if activity %}{{ activity.weather_conditions or '' }}{% endif %}"
+                                       placeholder="أدخل الأحوال الجوية">
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label for="equipment_used" class="form-label">المعدات المستخدمة</label>
+                                <div id="equipment-container">
+                                    {% if activity and activity.equipment_used %}
+                                        {% for equipment in activity.equipment_used %}
+                                        <div class="equipment-item mb-2">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control equipment-input" value="{{ equipment }}" placeholder="أدخل المعدة">
+                                                <button type="button" class="btn btn-outline-danger" onclick="removeEquipment(this)">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addEquipment()">
+                                    <i class="fas fa-plus"></i> إضافة معدة
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label for="notes" class="form-label">ملاحظات</label>
+                                <textarea class="form-control" id="notes" rows="4" 
+                                          placeholder="أدخل أي ملاحظات إضافية">{% if activity %}{{ activity.notes or '' }}{% endif %}</textarea>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Section -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
+                                إلغاء
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="submit-btn">
+                                <i class="fas fa-save"></i> 
+                                {% if activity %}تحديث النشاط{% else %}إنشاء النشاط{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Help Sidebar -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">إرشادات</h5>
+                </div>
+                <div class="card-body">
+                    <h6>فئات التدريب:</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>طاعة:</strong> تدريب على الأوامر الأساسية</li>
+                        <li><strong>كشف:</strong> تدريب على كشف المواد</li>
+                        <li><strong>رشاقة:</strong> تدريب على الحركة والرشاقة</li>
+                        <li><strong>هجوم:</strong> تدريب دفاعي وهجومي</li>
+                        <li><strong>لياقة:</strong> تدريب بدني ولياقة</li>
+                        <li><strong>تطبيع:</strong> تدريب اجتماعي وتكيف</li>
+                        <li><strong>تدريب الكرة:</strong> تدريب باستخدام الكرة</li>
+                    </ul>
+                    
+                    <h6>تقييم النجاح:</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>1:</strong> ضعيف جداً - لم يؤدِ المطلوب</li>
+                        <li><strong>2:</strong> ضعيف - أداء محدود</li>
+                        <li><strong>3:</strong> متوسط - أداء مقبول</li>
+                        <li><strong>4:</strong> جيد - أداء جيد</li>
+                        <li><strong>5:</strong> ممتاز - أداء متقن</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load data when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadDogOptions();
+    loadTrainerOptions();
+    handleCategoryChange(); // Initialize subtype sections
+});
+
+function loadDogOptions() {
+    fetch('/api/dogs')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('dog_id');
+            const currentValue = select.value;
+            
+            select.innerHTML = '<option value="">اختر الكلب</option>';
+            data.forEach(dog => {
+                const option = document.createElement('option');
+                option.value = dog.id;
+                option.textContent = dog.name;
+                {% if activity %}
+                if (dog.id === '{{ activity.dog_id }}') {
+                    option.selected = true;
+                }
+                {% endif %}
+                select.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error loading dogs:', error));
+}
+
+function loadTrainerOptions() {
+    fetch('/api/employees?role=TRAINER')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('trainer_id');
+            
+            select.innerHTML = '<option value="">اختر المدرب</option>';
+            data.forEach(trainer => {
+                const option = document.createElement('option');
+                option.value = trainer.id;
+                option.textContent = trainer.name;
+                {% if activity %}
+                if (trainer.id === '{{ activity.trainer_id }}') {
+                    option.selected = true;
+                }
+                {% endif %}
+                select.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error loading trainers:', error));
+}
+
+function handleCategoryChange() {
+    const category = document.getElementById('category').value;
+    const socializationSection = document.getElementById('socialization-section');
+    const ballWorkSection = document.getElementById('ball-work-section');
+    
+    // Hide all subsections first
+    socializationSection.style.display = 'none';
+    ballWorkSection.style.display = 'none';
+    
+    // Clear subtype values when hiding
+    document.getElementById('subtype_socialization').value = '';
+    document.getElementById('subtype_ball').value = '';
+    
+    // Show relevant subsection
+    if (category === 'SOCIALIZATION') {
+        socializationSection.style.display = 'block';
+    } else if (category === 'BALL_WORK') {
+        ballWorkSection.style.display = 'block';
+    }
+}
+
+function addEquipment() {
+    const container = document.getElementById('equipment-container');
+    const equipmentItem = document.createElement('div');
+    equipmentItem.className = 'equipment-item mb-2';
+    equipmentItem.innerHTML = `
+        <div class="input-group">
+            <input type="text" class="form-control equipment-input" placeholder="أدخل المعدة">
+            <button type="button" class="btn btn-outline-danger" onclick="removeEquipment(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(equipmentItem);
+}
+
+function removeEquipment(button) {
+    button.closest('.equipment-item').remove();
+}
+
+function collectEquipment() {
+    const equipmentInputs = document.querySelectorAll('.equipment-input');
+    const equipment = [];
+    
+    equipmentInputs.forEach(input => {
+        if (input.value.trim()) {
+            equipment.push(input.value.trim());
+        }
+    });
+    
+    return equipment;
+}
+
+function submitForm(event) {
+    event.preventDefault();
+    
+    const submitBtn = document.getElementById('submit-btn');
+    const originalText = submitBtn.innerHTML;
+    
+    // Disable submit button and show loading
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+    
+    // Clear previous validation errors
+    clearValidationErrors();
+    
+    // Collect form data
+    const formData = {
+        session_date: document.getElementById('session_date').value,
+        project_id: document.getElementById('project_id').value || null,
+        dog_id: document.getElementById('dog_id').value,
+        trainer_id: document.getElementById('trainer_id').value,
+        category: document.getElementById('category').value,
+        subject: document.getElementById('subject').value.trim(),
+        duration: parseInt(document.getElementById('duration').value),
+        success_rating: parseInt(document.getElementById('success_rating').value),
+        location: document.getElementById('location').value.trim() || null,
+        weather_conditions: document.getElementById('weather_conditions').value.trim() || null,
+        equipment_used: collectEquipment(),
+        notes: document.getElementById('notes').value.trim() || null
+    };
+    
+    // Add subtype data based on category
+    if (formData.category === 'SOCIALIZATION') {
+        formData.subtype_socialization = document.getElementById('subtype_socialization').value || null;
+    } else if (formData.category === 'BALL_WORK') {
+        formData.subtype_ball = document.getElementById('subtype_ball').value || null;
+    }
+    
+    const activityId = document.getElementById('activity_id')?.value;
+    const method = activityId ? 'PUT' : 'POST';
+    const url = activityId ? `/api/breeding/training-activity/${activityId}` : '/api/breeding/training-activity';
+    
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        showSuccess(data.message);
+        
+        // Redirect to list after short delay
+        setTimeout(() => {
+            window.location.href = '{{ url_for("main.breeding_training_activity_list") }}';
+        }, 1500);
+    })
+    .catch(error => {
+        console.error('Error submitting form:', error);
+        showError('حدث خطأ: ' + error.message);
+        
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
+}
+
+function clearValidationErrors() {
+    const invalidFeedbacks = document.querySelectorAll('.invalid-feedback');
+    invalidFeedbacks.forEach(feedback => {
+        feedback.textContent = '';
+        feedback.style.display = 'none';
+    });
+    
+    const formControls = document.querySelectorAll('.form-control, .form-select');
+    formControls.forEach(control => {
+        control.classList.remove('is-invalid');
+    });
+}
+
+function showValidationError(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    const feedback = field.nextElementSibling;
+    
+    field.classList.add('is-invalid');
+    feedback.textContent = message;
+    feedback.style.display = 'block';
+}
+
+function showError(message) {
+    // You can implement a toast notification system here
+    alert(message);
+}
+
+function showSuccess(message) {
+    // You can implement a toast notification system here
+    alert(message);
+}
+</script>
+
+<style>
+.section-header {
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.section-header h5 {
+    color: #495057;
+    margin-bottom: 0;
+}
+
+.required::after {
+    content: " *";
+    color: #dc3545;
+}
+
+.equipment-item {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+{% endblock %}

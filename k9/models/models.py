@@ -51,24 +51,24 @@ class TrainingCategory(Enum):
     AGILITY = "رشاقة"
     ATTACK = "هجوم"
     FITNESS = "لياقة"
-    BEHAVIOR_IMPROVEMENT = "تحسين سلوك"
+    SOCIALIZATION = "تطبيع"
+    BALL_WORK = "تدريب الكرة"
+    OTHER = "أخرى"
 
 class SocializationType(Enum):
-    SOUNDS = "أصوات"
-    CROWDS = "ازدحام"
-    VEHICLES = "مركبات"
-    SURFACES = "أسطح"
-    PEOPLE = "أشخاص"
-    ANIMALS = "حيوانات"
-    HANDLING = "مناولة"
-    OTHER = "أخرى"
+    HUMAN_INTERACTION = "تفاعل مع البشر"
+    ANIMAL_INTERACTION = "تفاعل مع الحيوانات"
+    VEHICLE_EXPOSURE = "التعرض للمركبات"
+    SOUND_DESENSITIZATION = "إزالة الحساسية للأصوات"
+    ENVIRONMENT_EXPLORATION = "استكشاف البيئة"
+    CROWD_INTERACTION = "تفاعل مع الحشود"
 
 class BallWorkType(Enum):
-    CHASE = "مطاردة"
-    FETCH = "إحضار"
-    SEARCH = "بحث عن كرة"
-    STAY_WITH_BALL = "ثبات مع كرة"
-    OTHER = "أخرى"
+    FETCH_TRAINING = "تدريب الإحضار"
+    CATCH_TRAINING = "تدريب المسك"
+    AGILITY_BALL = "كرة الرشاقة"
+    COORDINATION_BALL = "كرة التناسق"
+    REWARD_BALL = "كرة المكافأة"
 
 class VisitType(Enum):
     ROUTINE = "ROUTINE"
