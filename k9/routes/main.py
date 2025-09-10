@@ -4824,11 +4824,81 @@ def breeding_deworming_edit(id):
 
 @main_bp.route('/breeding/training-activity')
 @login_required
-def breeding_training_activity():
-    """Daily training activity placeholder page"""
-    return render_template('breeding/_placeholder.html',
-                         title="تدريب — أنشطة يومية",
-                         fields=["نوع التمرين", "المدة", "الشدة", "الأداء", "الاستجابة", "المكافآت المستخدمة", "السلوك", "ملاحظات"])
+def breeding_training_activity_list():
+    """List training activities"""
+    # Check permissions
+    from k9.utils.permission_utils import has_permission
+    from k9.models.models import PermissionType
+    if not has_permission(current_user, 'Breeding', 'تدريب — أنشطة يومية', PermissionType.VIEW):
+        abort(403)
+    
+    from k9.utils.utils import get_user_assigned_projects
+    assigned_projects = get_user_assigned_projects(current_user)
+    
+    return render_template('breeding/training_activity_list.html',
+                          assigned_projects=assigned_projects)
+
+@main_bp.route('/breeding/training-activity/new')
+@login_required
+def breeding_training_activity_new():
+    """Add new training activity"""
+    # Check permissions
+    from k9.utils.permission_utils import has_permission
+    from k9.models.models import PermissionType
+    if not has_permission(current_user, 'Breeding', 'تدريب — أنشطة يومية', PermissionType.CREATE):
+        abort(403)
+        
+    from k9.utils.utils import get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
+    assigned_projects = get_user_assigned_projects(current_user)
+    assigned_dogs = get_user_accessible_dogs(current_user)
+    
+    from k9.models.models import Employee, EmployeeRole
+    # Get trainers and other relevant employees
+    accessible_employees = get_user_accessible_employees(current_user)
+    # Also include all active trainers for compatibility
+    trainers = Employee.query.filter_by(is_active=True, role=EmployeeRole.TRAINER).all()
+    
+    return render_template('breeding/training_activity_form.html',
+                          assigned_projects=assigned_projects,
+                          assigned_dogs=assigned_dogs,
+                          trainers=trainers,
+                          activity=None)
+
+@main_bp.route('/breeding/training-activity/<id>/edit')
+@login_required
+def breeding_training_activity_edit(id):
+    """Edit training activity"""
+    from k9.models.models import BreedingTrainingActivity, Employee, EmployeeRole
+    
+    # Check permissions
+    from k9.utils.permission_utils import has_permission
+    from k9.models.models import PermissionType
+    if not has_permission(current_user, 'Breeding', 'تدريب — أنشطة يومية', PermissionType.EDIT):
+        abort(403)
+    
+    activity = BreedingTrainingActivity.query.get_or_404(id)
+    
+    # Check project access for project managers
+    if current_user.role.value == "PROJECT_MANAGER":
+        from k9.utils.utils import get_user_assigned_projects
+        assigned_projects = get_user_assigned_projects(current_user)
+        assigned_project_ids = [p.id for p in assigned_projects]
+        if activity.project_id and activity.project_id not in assigned_project_ids:
+            abort(403)
+    
+    from k9.utils.utils import get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
+    assigned_projects = get_user_assigned_projects(current_user)
+    assigned_dogs = get_user_accessible_dogs(current_user)
+    
+    # Get trainers
+    accessible_employees = get_user_accessible_employees(current_user)
+    trainers = Employee.query.filter_by(is_active=True, role=EmployeeRole.TRAINER).all()
+    
+    return render_template('breeding/training_activity_form.html',
+                          assigned_projects=assigned_projects,
+                          assigned_dogs=assigned_dogs,
+                          trainers=trainers,
+                          activity=activity)
 
 @main_bp.route('/breeding/cleaning')
 @login_required
