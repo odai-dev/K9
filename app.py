@@ -205,6 +205,16 @@ with app.app_context():
         print(f"⚠ Warning: Could not register deworming API: {e}")
         # Continue without deworming API for now
     
+    # Register Breeding Training Activity API blueprint
+    try:
+        from k9.api.api_breeding_training_activity import bp as breeding_training_api_bp
+        app.register_blueprint(breeding_training_api_bp)
+        print("✓ Breeding Training Activity API registered successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Could not register breeding training activity API: {e}")
+        # Continue without breeding training activity API for now
+    
     # Register MFA routes blueprint
     try:
         from k9.routes.mfa_routes import mfa_bp
