@@ -4824,7 +4824,7 @@ def breeding_deworming_edit(id):
 
 @main_bp.route('/breeding/training-activity')
 @login_required
-def breeding_training_activity_list():
+def breeding_training_activity():
     """List training activities"""
     # Check permissions
     from k9.utils.permission_utils import has_permission
