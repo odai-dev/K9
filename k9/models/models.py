@@ -53,6 +53,23 @@ class TrainingCategory(Enum):
     FITNESS = "لياقة"
     BEHAVIOR_IMPROVEMENT = "تحسين سلوك"
 
+class SocializationType(Enum):
+    SOUNDS = "أصوات"
+    CROWDS = "ازدحام"
+    VEHICLES = "مركبات"
+    SURFACES = "أسطح"
+    PEOPLE = "أشخاص"
+    ANIMALS = "حيوانات"
+    HANDLING = "مناولة"
+    OTHER = "أخرى"
+
+class BallWorkType(Enum):
+    CHASE = "مطاردة"
+    FETCH = "إحضار"
+    SEARCH = "بحث عن كرة"
+    STAY_WITH_BALL = "ثبات مع كرة"
+    OTHER = "أخرى"
+
 class VisitType(Enum):
     ROUTINE = "ROUTINE"
     EMERGENCY = "EMERGENCY"
@@ -1804,5 +1821,62 @@ class CleaningLog(db.Model):
 
     def __repr__(self):
         return f'<CleaningLog {self.id}: {self.dog_id} on {self.date} at {self.time}>'
+
+
+# ---------- BreedingTrainingActivity (Training activities under Breeding module) ----------
+class BreedingTrainingActivity(db.Model):
+    __tablename__ = "breeding_training_activity"
+
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+
+    # Optional project assignment (nullable for compatibility with PROJECT_MANAGER scoping)
+    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=True)
+    
+    # Core training session data
+    dog_id = db.Column(get_uuid_column(), db.ForeignKey("dog.id", ondelete="CASCADE"), nullable=False)
+    trainer_id = db.Column(get_uuid_column(), db.ForeignKey("employee.id", ondelete="SET NULL"), nullable=False)
+    
+    session_date = db.Column(db.DateTime, nullable=False)
+    
+    # Training classification
+    category = db.Column(db.Enum(TrainingCategory), nullable=False)
+    
+    # Training subtypes (Arabic-first enums)
+    subtype_socialization = db.Column(db.Enum(SocializationType), nullable=True)  # التطبيع
+    subtype_ball = db.Column(db.Enum(BallWorkType), nullable=True)               # الكرة
+    
+    # Session details
+    subject = db.Column(Text, nullable=False)                    # موضوع التدريب
+    duration = db.Column(db.Integer, nullable=False)             # minutes - مدة التدريب بالدقائق
+    success_rating = db.Column(db.Integer, nullable=False)       # 1-5 scale - تقييم النجاح
+    
+    # Environment and context
+    location = db.Column(db.String(100), nullable=True)          # مكان التدريب
+    weather_conditions = db.Column(db.String(100), nullable=True) # أحوال الطقس
+    equipment_used = db.Column(JSON, default=list, nullable=True) # المعدات المستخدمة
+    notes = db.Column(Text, nullable=True)                       # ملاحظات
+    
+    # Audit trail
+    created_by_user_id = db.Column(get_uuid_column(), db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    project = db.relationship('Project', backref='breeding_training_activities')
+    dog = db.relationship('Dog', backref='breeding_training_activities')
+    trainer = db.relationship('Employee', backref='breeding_training_activities')
+    created_by_user = db.relationship('User', backref='breeding_training_activities')
+
+    # Database constraints and indexes
+    __table_args__ = (
+        db.Index("ix_breeding_training_project_date", "project_id", "session_date"),
+        db.Index("ix_breeding_training_dog_date", "dog_id", "session_date"),
+        db.Index("ix_breeding_training_trainer_date", "trainer_id", "session_date"),
+        db.CheckConstraint('success_rating >= 1 AND success_rating <= 5', name='valid_success_rating'),
+        db.CheckConstraint('duration > 0', name='positive_duration'),
+    )
+
+    def __repr__(self):
+        return f'<BreedingTrainingActivity {self.id}: {self.dog.name if self.dog else "N/A"} - {self.subject[:50]}>'
 
 
