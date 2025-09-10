@@ -367,84 +367,14 @@ def employees_edit(employee_id):
 @main_bp.route('/training')
 @login_required
 def training_list():
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        sessions = TrainingSession.query.order_by(TrainingSession.created_at.desc()).all()
-    else:
-        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
-        sessions = TrainingSession.query.filter(TrainingSession.dog_id.in_(assigned_dog_ids)).order_by(TrainingSession.created_at.desc()).all()
-    
-    return render_template('training/list.html', sessions=sessions)
+    """Redirect legacy training list to new breeding training activity"""
+    return redirect(url_for('main.breeding_training_activity'), code=301)
 
 @main_bp.route('/training/add', methods=['GET', 'POST'])
 @login_required
 def training_add():
-    if request.method == 'POST':
-        try:
-            from k9.utils.utils import auto_link_dog_activity_to_project
-            from datetime import datetime
-            import logging
-            
-            # Debug: Print form data
-            logging.info(f"Form data: {dict(request.form)}")
-            
-            # Validate required fields
-            if not request.form.get('dog_id'):
-                flash('يجب اختيار كلب', 'error')
-                raise ValueError("Dog ID is required")
-            if not request.form.get('trainer_id'):
-                flash('يجب اختيار مدرب', 'error')
-                raise ValueError("Trainer ID is required")
-            if not request.form.get('category'):
-                flash('يجب اختيار نوع التدريب', 'error')
-                raise ValueError("Category is required")
-            
-            # Create training session with proper model construction
-            session = TrainingSession()
-            session.dog_id = request.form['dog_id']
-            session.trainer_id = request.form['trainer_id']
-            
-            # Handle enum by getting the enum member by name
-            category_name = request.form['category']
-            session.category = getattr(TrainingCategory, category_name)
-            session.subject = request.form.get('subject', 'جلسة تدريب')
-            session.session_date = datetime.strptime(request.form['session_date'], '%Y-%m-%dT%H:%M') if request.form.get('session_date') else datetime.utcnow()
-            session.duration = int(request.form['duration']) if request.form.get('duration') else 60
-            session.success_rating = int(request.form['success_rating']) if request.form.get('success_rating') else 5
-            session.location = request.form.get('location')
-            session.notes = request.form.get('notes')
-            session.weather_conditions = request.form.get('weather_conditions')
-            
-            # Automatically link to project based on dog assignment
-            session.project_id = auto_link_dog_activity_to_project(session.dog_id, session.session_date)
-            
-            logging.info(f"Training session created: {session.__dict__}")
-            
-            db.session.add(session)
-            db.session.commit()
-            
-            logging.info(f"Training session saved with ID: {session.id}")
-            
-            project_info = f" (مرتبط بالمشروع: {session.project.name})" if session.project else " (غير مرتبط بمشروع)"
-            log_audit(current_user.id, AuditAction.CREATE, 'TrainingSession', session.id, f'جلسة تدريب جديدة للكلب {session.dog.name}{project_info}', None, {'category': session.category.value})
-            flash('تم تسجيل جلسة التدريب بنجاح', 'success')
-            return redirect(url_for('main.training_list'))
-            
-        except Exception as e:
-            db.session.rollback()
-            logging.error(f"Training session save error: {str(e)}")
-            import traceback
-            logging.error(f"Full traceback: {traceback.format_exc()}")
-            flash(f'حدث خطأ أثناء تسجيل جلسة التدريب: {str(e)}', 'error')
-    
-    # Get available dogs and employees for the form
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
-        trainers = Employee.query.filter_by(is_active=True).all()
-    else:
-        dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
-        trainers = Employee.query.filter_by(assigned_to_user_id=current_user.id, is_active=True).all()
-    
-    return render_template('training/add.html', dogs=dogs, trainers=trainers, categories=TrainingCategory)
+    """Redirect legacy training add to new breeding training activity"""
+    return redirect(url_for('main.breeding_training_activity_new'), code=301)
 
 # Veterinary routes
 @main_bp.route('/veterinary')
