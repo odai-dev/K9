@@ -23,7 +23,9 @@ migrate = Migrate()
 
 # Create the app
 app = Flask(__name__, template_folder='k9/templates', static_folder='k9/static')
-app.secret_key = os.environ.get("SESSION_SECRET") or "k9-operations-development-secret-key-2025"
+app.secret_key = os.environ.get("SESSION_SECRET")
+if not app.secret_key:
+    raise RuntimeError("SESSION_SECRET environment variable is required but not set")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1) # needed for url_for to generate with https
 
 # Enhanced security configuration
