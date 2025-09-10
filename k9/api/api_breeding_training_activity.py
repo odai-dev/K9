@@ -28,7 +28,7 @@ def create_training_activity():
         required_fields = ['session_date', 'dog_id', 'trainer_id', 'category', 'subject', 'duration', 'success_rating']
         for field in required_fields:
             if not data.get(field):
-                return jsonify({'error': f'Missing required field: {field}'}), 400
+                return jsonify({'error': f'الحقل المطلوب مفقود: {field}'}), 400
         
         # Handle optional project_id (allow entries without project assignment)
         project_id = data.get('project_id')
@@ -42,7 +42,7 @@ def create_training_activity():
                 assigned_projects = get_user_assigned_projects(current_user)
                 project_ids = [str(p.id) for p in assigned_projects]
                 if str(data['project_id']) not in project_ids:
-                    return jsonify({'error': 'Access denied to this project'}), 403
+                    return jsonify({'error': 'غير مصرح بالوصول إلى هذا المشروع'}), 403
         
         # Verify entities exist
         if data.get('project_id'):

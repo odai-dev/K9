@@ -1,0 +1,570 @@
+{% extends "base.html" %}
+{% block title %}أنشطة التدريب اليومية - التربية{% endblock %}
+
+{% block content %}
+<div class="breeding-training-activity-list" dir="rtl">
+    <div class="header-section mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2>أنشطة التدريب اليومية</h2>
+                <p class="text-muted">إدارة وتتبع أنشطة التدريب اليومية للكلاب</p>
+            </div>
+            <div>
+                <a href="{{ url_for('main.breeding_training_activity_new') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> إضافة نشاط جديد
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs Section -->
+    <div class="kpis-section mb-4">
+        <div class="row" id="kpis-container">
+            <!-- KPI cards will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filters-section mb-4">
+        <div class="card">
+            <div class="card-body">
+                <form id="filters-form" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">المشروع</label>
+                        <select class="form-select" id="project_filter">
+                            <option value="">جميع المشاريع</option>
+                            <option value="no_project">بدون مشروع</option>
+                            {% for project in assigned_projects %}
+                            <option value="{{ project.id }}">{{ project.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">من تاريخ</label>
+                        <input type="date" class="form-control" id="date_from">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">إلى تاريخ</label>
+                        <input type="date" class="form-control" id="date_to">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">الكلب</label>
+                        <select class="form-select" id="dog_filter">
+                            <option value="">جميع الكلاب</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-outline-primary" onclick="applyFilters()">
+                                <i class="fas fa-search"></i> بحث
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                
+                <!-- Advanced Filters Row -->
+                <div class="row g-3 mt-2">
+                    <div class="col-md-3">
+                        <label class="form-label">المدرب</label>
+                        <select class="form-select" id="trainer_filter">
+                            <option value="">جميع المدربين</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">فئة التدريب</label>
+                        <select class="form-select" id="category_filter">
+                            <option value="">جميع الفئات</option>
+                            <option value="طاعة">طاعة</option>
+                            <option value="كشف">كشف</option>
+                            <option value="رشاقة">رشاقة</option>
+                            <option value="هجوم">هجوم</option>
+                            <option value="لياقة">لياقة</option>
+                            <option value="تطبيع">تطبيع</option>
+                            <option value="تدريب الكرة">تدريب الكرة</option>
+                            <option value="أخرى">أخرى</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">نوع التطبيع</label>
+                        <select class="form-select" id="subtype_socialization_filter">
+                            <option value="">جميع الأنواع</option>
+                            <option value="تفاعل مع البشر">تفاعل مع البشر</option>
+                            <option value="تفاعل مع الحيوانات">تفاعل مع الحيوانات</option>
+                            <option value="التعرض للمركبات">التعرض للمركبات</option>
+                            <option value="إزالة الحساسية للأصوات">إزالة الحساسية للأصوات</option>
+                            <option value="استكشاف البيئة">استكشاف البيئة</option>
+                            <option value="تفاعل مع الحشود">تفاعل مع الحشود</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">نوع تدريب الكرة</label>
+                        <select class="form-select" id="subtype_ball_filter">
+                            <option value="">جميع الأنواع</option>
+                            <option value="تدريب الإحضار">تدريب الإحضار</option>
+                            <option value="تدريب المسك">تدريب المسك</option>
+                            <option value="كرة الرشاقة">كرة الرشاقة</option>
+                            <option value="كرة التناسق">كرة التناسق</option>
+                            <option value="كرة المكافأة">كرة المكافأة</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table Section -->
+    <div class="data-section">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>الكلب</th>
+                                <th>المدرب</th>
+                                <th>المشروع</th>
+                                <th>الفئة</th>
+                                <th>الموضوع</th>
+                                <th>المدة (دقيقة)</th>
+                                <th>التقييم</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activities-table-body">
+                            <!-- Data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Loading Spinner -->
+                <div id="loading-spinner" class="text-center p-4" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">جاري التحميل...</span>
+                    </div>
+                </div>
+                
+                <!-- No Data Message -->
+                <div id="no-data-message" class="text-center p-4" style="display: none;">
+                    <i class="fas fa-exclamation-circle text-muted"></i>
+                    <p class="text-muted mt-2">لا توجد أنشطة تدريب للعرض</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination Section -->
+    <div class="pagination-section mt-3 d-flex justify-content-between align-items-center">
+        <div class="page-info">
+            <span id="page-info-text" class="text-muted"></span>
+        </div>
+        <nav aria-label="صفحات النتائج">
+            <ul class="pagination mb-0" id="pagination-controls">
+                <!-- Pagination will be generated here -->
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Activity Detail Modal -->
+<div class="modal fade" id="activityDetailModal" tabindex="-1" aria-labelledby="activityDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="activityDetailModalLabel">تفاصيل نشاط التدريب</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body" id="activityDetailBody">
+                <!-- Activity details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                <button type="button" class="btn btn-primary" id="editActivityBtn" onclick="editActivity()">
+                    <i class="fas fa-edit"></i> تعديل
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPage = 1;
+let currentFilters = {};
+let currentActivityId = null;
+
+// Load data when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadData();
+    loadDogOptions();
+    loadTrainerOptions();
+});
+
+function loadData() {
+    showLoading();
+    
+    const params = new URLSearchParams({
+        page: currentPage,
+        per_page: 50,
+        ...currentFilters
+    });
+    
+    fetch(`/api/breeding/training-activity/list?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            displayKPIs(data.kpis);
+            displayActivities(data.items);
+            displayPagination(data.pagination);
+            updatePageInfo(data.pagination);
+            hideLoading();
+        })
+        .catch(error => {
+            console.error('Error loading data:', error);
+            showError('حدث خطأ في تحميل البيانات: ' + error.message);
+            hideLoading();
+        });
+}
+
+function displayKPIs(kpis) {
+    const container = document.getElementById('kpis-container');
+    container.innerHTML = `
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">إجمالي الأنشطة</h5>
+                    <h3 class="mb-0">${kpis.total_activities}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">متوسط التقييم</h5>
+                    <h3 class="mb-0">${kpis.avg_success_rating}/5</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">إجمالي المدة</h5>
+                    <h3 class="mb-0">${kpis.total_duration_minutes} دقيقة</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">عدد الكلاب</h5>
+                    <h3 class="mb-0">${kpis.unique_dogs}</h3>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function displayActivities(activities) {
+    const tbody = document.getElementById('activities-table-body');
+    
+    if (activities.length === 0) {
+        tbody.innerHTML = '';
+        document.getElementById('no-data-message').style.display = 'block';
+        return;
+    }
+    
+    document.getElementById('no-data-message').style.display = 'none';
+    
+    tbody.innerHTML = activities.map(activity => `
+        <tr>
+            <td>${formatDate(activity.session_date)}</td>
+            <td>${activity.dog_name}</td>
+            <td>${activity.trainer_name}</td>
+            <td>${activity.project_name}</td>
+            <td>${getCategoryLabel(activity.category)}</td>
+            <td>${activity.subject}</td>
+            <td>${activity.duration}</td>
+            <td>${getRatingStars(activity.success_rating)}</td>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" onclick="viewActivity('${activity.id}')" title="عرض">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="editActivity('${activity.id}')" title="تعديل">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="deleteActivity('${activity.id}')" title="حذف">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function getCategoryLabel(category) {
+    const categories = {
+        'OBEDIENCE': 'طاعة',
+        'DETECTION': 'كشف',
+        'AGILITY': 'رشاقة',
+        'ATTACK': 'هجوم',
+        'FITNESS': 'لياقة',
+        'SOCIALIZATION': 'تطبيع',
+        'BALL_WORK': 'تدريب الكرة',
+        'OTHER': 'أخرى'
+    };
+    return categories[category] || category;
+}
+
+function getRatingStars(rating) {
+    let stars = '';
+    for (let i = 1; i <= 5; i++) {
+        if (i <= rating) {
+            stars += '<i class="fas fa-star text-warning"></i>';
+        } else {
+            stars += '<i class="far fa-star text-muted"></i>';
+        }
+    }
+    return stars;
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ar-SA', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+}
+
+function applyFilters() {
+    currentFilters = {
+        project_id: document.getElementById('project_filter').value,
+        dog_id: document.getElementById('dog_filter').value,
+        trainer_id: document.getElementById('trainer_filter').value,
+        category: document.getElementById('category_filter').value,
+        subtype_socialization: document.getElementById('subtype_socialization_filter').value,
+        subtype_ball: document.getElementById('subtype_ball_filter').value,
+        date_from: document.getElementById('date_from').value,
+        date_to: document.getElementById('date_to').value
+    };
+    
+    // Remove empty filters
+    Object.keys(currentFilters).forEach(key => {
+        if (!currentFilters[key]) {
+            delete currentFilters[key];
+        }
+    });
+    
+    currentPage = 1;
+    loadData();
+}
+
+function loadDogOptions() {
+    fetch('/api/dogs')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('dog_filter');
+            select.innerHTML = '<option value="">جميع الكلاب</option>';
+            
+            data.forEach(dog => {
+                select.innerHTML += `<option value="${dog.id}">${dog.name}</option>`;
+            });
+        })
+        .catch(error => console.error('Error loading dogs:', error));
+}
+
+function loadTrainerOptions() {
+    fetch('/api/employees?role=TRAINER')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('trainer_filter');
+            select.innerHTML = '<option value="">جميع المدربين</option>';
+            
+            data.forEach(trainer => {
+                select.innerHTML += `<option value="${trainer.id}">${trainer.name}</option>`;
+            });
+        })
+        .catch(error => console.error('Error loading trainers:', error));
+}
+
+function viewActivity(activityId) {
+    currentActivityId = activityId;
+    
+    fetch(`/api/breeding/training-activity/${activityId}`)
+        .then(response => response.json())
+        .then(activity => {
+            if (activity.error) {
+                throw new Error(activity.error);
+            }
+            
+            const modalBody = document.getElementById('activityDetailBody');
+            modalBody.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>معلومات أساسية</h6>
+                        <p><strong>التاريخ:</strong> ${formatDate(activity.session_date)}</p>
+                        <p><strong>الكلب:</strong> ${activity.dog_name}</p>
+                        <p><strong>المدرب:</strong> ${activity.trainer_name}</p>
+                        <p><strong>المشروع:</strong> ${activity.project_name}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>تفاصيل التدريب</h6>
+                        <p><strong>الفئة:</strong> ${getCategoryLabel(activity.category)}</p>
+                        <p><strong>الموضوع:</strong> ${activity.subject}</p>
+                        <p><strong>المدة:</strong> ${activity.duration} دقيقة</p>
+                        <p><strong>التقييم:</strong> ${getRatingStars(activity.success_rating)}</p>
+                    </div>
+                </div>
+                
+                ${activity.subtype_socialization || activity.subtype_ball ? `
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>أنواع فرعية</h6>
+                        ${activity.subtype_socialization ? `<p><strong>نوع التطبيع:</strong> ${activity.subtype_socialization}</p>` : ''}
+                        ${activity.subtype_ball ? `<p><strong>نوع تدريب الكرة:</strong> ${activity.subtype_ball}</p>` : ''}
+                    </div>
+                </div>
+                ` : ''}
+                
+                ${activity.location || activity.weather_conditions ? `
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>ظروف التدريب</h6>
+                        ${activity.location ? `<p><strong>المكان:</strong> ${activity.location}</p>` : ''}
+                        ${activity.weather_conditions ? `<p><strong>الأحوال الجوية:</strong> ${activity.weather_conditions}</p>` : ''}
+                    </div>
+                </div>
+                ` : ''}
+                
+                ${activity.equipment_used && activity.equipment_used.length > 0 ? `
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>المعدات المستخدمة</h6>
+                        <ul>
+                            ${activity.equipment_used.map(item => `<li>${item}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+                ` : ''}
+                
+                ${activity.notes ? `
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>ملاحظات</h6>
+                        <p>${activity.notes}</p>
+                    </div>
+                </div>
+                ` : ''}
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('activityDetailModal'));
+            modal.show();
+        })
+        .catch(error => {
+            showError('حدث خطأ في تحميل تفاصيل النشاط: ' + error.message);
+        });
+}
+
+function editActivity(activityId = null) {
+    const id = activityId || currentActivityId;
+    if (id) {
+        window.location.href = `/breeding/training-activity/edit/${id}`;
+    }
+}
+
+function deleteActivity(activityId) {
+    if (!confirm('هل أنت متأكد من حذف نشاط التدريب هذا؟')) {
+        return;
+    }
+    
+    fetch(`/api/breeding/training-activity/${activityId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        showSuccess('تم حذف نشاط التدريب بنجاح');
+        loadData();
+    })
+    .catch(error => {
+        showError('حدث خطأ في حذف النشاط: ' + error.message);
+    });
+}
+
+function displayPagination(pagination) {
+    const container = document.getElementById('pagination-controls');
+    container.innerHTML = '';
+    
+    if (pagination.pages <= 1) return;
+    
+    // Previous page
+    if (pagination.has_prev) {
+        container.innerHTML += `
+            <li class="page-item">
+                <a class="page-link" href="#" onclick="changePage(${pagination.page - 1})">السابق</a>
+            </li>
+        `;
+    }
+    
+    // Page numbers
+    for (let i = Math.max(1, pagination.page - 2); i <= Math.min(pagination.pages, pagination.page + 2); i++) {
+        const isActive = i === pagination.page ? 'active' : '';
+        container.innerHTML += `
+            <li class="page-item ${isActive}">
+                <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+            </li>
+        `;
+    }
+    
+    // Next page
+    if (pagination.has_next) {
+        container.innerHTML += `
+            <li class="page-item">
+                <a class="page-link" href="#" onclick="changePage(${pagination.page + 1})">التالي</a>
+            </li>
+        `;
+    }
+}
+
+function updatePageInfo(pagination) {
+    const start = ((pagination.page - 1) * pagination.per_page) + 1;
+    const end = Math.min(pagination.page * pagination.per_page, pagination.total);
+    document.getElementById('page-info-text').textContent = 
+        `عرض ${start} إلى ${end} من ${pagination.total} نتيجة`;
+}
+
+function changePage(page) {
+    currentPage = page;
+    loadData();
+}
+
+function showLoading() {
+    document.getElementById('loading-spinner').style.display = 'block';
+    document.getElementById('activities-table-body').innerHTML = '';
+}
+
+function hideLoading() {
+    document.getElementById('loading-spinner').style.display = 'none';
+}
+
+function showError(message) {
+    // You can implement a toast notification system here
+    alert(message);
+}
+
+function showSuccess(message) {
+    // You can implement a toast notification system here
+    alert(message);
+}
+</script>
+{% endblock %}
