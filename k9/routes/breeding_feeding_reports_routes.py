@@ -21,7 +21,7 @@ def feeding_daily():
     projects = get_user_projects(current_user)
     
     return render_template('reports/breeding/feeding_daily.html', 
-                         projects=projects,
+                         accessible_projects=projects,
                          title='تقرير التغذية اليومي')
 
 
@@ -33,5 +33,5 @@ def feeding_weekly():
     projects = get_user_projects(current_user)
     
     return render_template('reports/breeding/feeding_weekly.html',
-                         projects=projects,
+                         accessible_projects=projects,
                          title='تقرير التغذية الأسبوعي')
