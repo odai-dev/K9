@@ -8,7 +8,7 @@ from datetime import datetime, date, timedelta
 from collections import defaultdict
 from flask import Blueprint, jsonify, request, current_app, send_file
 from flask_login import login_required, current_user
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, case
 from sqlalchemy.orm import selectinload, joinedload
 
 from k9.utils.permission_decorators import require_sub_permission
@@ -70,6 +70,10 @@ def feeding_daily_data():
     date_str = request.args.get('date')
     dog_id = request.args.get('dog_id')  # optional filter
     
+    # Performance optimization: Add pagination
+    page = request.args.get('page', 1, type=int)
+    per_page = min(request.args.get('per_page', 50, type=int), 100)  # Max 100 records to match existing patterns
+    
     if not project_id or not date_str:
         return jsonify({'error': 'مشروع وتاريخ مطلوبان'}), 400
     
@@ -82,38 +86,76 @@ def feeding_daily_data():
     except ValueError:
         return jsonify({'error': 'تنسيق التاريخ غير صالح'}), 400
     
-    # Build query with joins
-    query = db.session.query(FeedingLog).options(
-        joinedload(FeedingLog.dog),
-        joinedload(FeedingLog.project)
+    # Performance optimization: Use selectinload for better query performance
+    base_query = db.session.query(FeedingLog).options(
+        selectinload(FeedingLog.dog),
+        selectinload(FeedingLog.project)
     ).filter(
         FeedingLog.project_id == project_id,
         FeedingLog.date == target_date
     )
     
     if dog_id:
-        query = query.filter(FeedingLog.dog_id == dog_id)
+        base_query = base_query.filter(FeedingLog.dog_id == dog_id)
     
-    feeding_logs = query.order_by(FeedingLog.time.desc()).all()
+    # Get total count for pagination
+    total_count = base_query.count()
     
-    # Calculate KPIs
-    total_meals = len(feeding_logs)
-    total_grams = sum(log.grams or 0 for log in feeding_logs)
-    total_water_ml = sum(log.water_ml or 0 for log in feeding_logs)
+    # Apply pagination and ordering
+    feeding_logs = base_query.order_by(FeedingLog.time.desc()).offset(
+        (page - 1) * per_page
+    ).limit(per_page).all()
     
-    # Count by meal type
-    by_meal_type = {"طازج": 0, "مجفف": 0, "مختلط": 0}
+    # Performance optimization: Calculate KPIs using database aggregations for all data  
+    kpi_query = db.session.query(
+        func.count(FeedingLog.id).label('total_meals'),
+        func.sum(FeedingLog.grams).label('total_grams'),
+        func.sum(FeedingLog.water_ml).label('total_water_ml'),
+        func.count(func.distinct(FeedingLog.dog_id)).label('unique_dogs'),
+        func.sum(case([(FeedingLog.meal_type_fresh == True, 1)], else_=0)).label('fresh_meals'),
+        func.sum(case([(FeedingLog.meal_type_dry == True, 1)], else_=0)).label('dry_meals')
+    ).filter(
+        FeedingLog.project_id == project_id,
+        FeedingLog.date == target_date
+    )
+    
+    if dog_id:
+        kpi_query = kpi_query.filter(FeedingLog.dog_id == dog_id)
+    
+    kpi_result = kpi_query.first()
+    
+    # Extract KPI values
+    total_meals_all = kpi_result.total_meals or 0
+    total_grams = kpi_result.total_grams or 0
+    total_water_ml = kpi_result.total_water_ml or 0
+    unique_dogs = kpi_result.unique_dogs or 0
+    fresh_meals = kpi_result.fresh_meals or 0
+    dry_meals = kpi_result.dry_meals or 0
+    
+    # Calculate additional metrics (backward compatible)
+    avg_quantity = (total_grams / total_meals_all) if total_meals_all > 0 else 0
+    
+    # Count by meal type and BCS distribution for backward compatibility
+    by_meal_type = {"طازج": fresh_meals, "مجفف": dry_meals, "مختلط": 0}
     bcs_dist = defaultdict(int)
+    poor_conditions = 0
     
+    # Get BCS distribution separately to maintain compatibility
     for log in feeding_logs:
         meal_type = get_meal_type_display(log.meal_type_fresh, log.meal_type_dry)
-        if meal_type in by_meal_type:
-            by_meal_type[meal_type] += 1
+        if meal_type == "مختلط":
+            by_meal_type["مختلط"] += 1
         
         if log.body_condition:
             bcs_num = get_bcs_numeric(log.body_condition)
             if bcs_num:
                 bcs_dist[str(bcs_num)] += 1
+                if bcs_num <= 3:  # Consider 1-3 as poor conditions
+                    poor_conditions += 1
+    
+    # Get project name for response
+    project = db.session.query(Project).filter(Project.id == project_id).first()
+    project_name = project.name if project else ""
     
     # Format rows for frontend
     rows = []
@@ -135,19 +177,35 @@ def feeding_daily_data():
         })
     
     return jsonify({
+        "success": True,
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total": total_count,
+            "pages": (total_count + per_page - 1) // per_page,
+            "has_next": page * per_page < total_count,
+            "has_prev": page > 1
+        },
         "filters": {
             "project_id": project_id,
             "date": date_str,
             "dog_id": dog_id
         },
         "kpis": {
-            "total_meals": total_meals,
+            "total_meals": total_meals_all,
+            "total_dogs": unique_dogs,
             "total_grams": total_grams,
             "total_water_ml": total_water_ml,
+            "fresh_meals": fresh_meals,
+            "dry_meals": dry_meals,
+            "poor_conditions": poor_conditions,
+            "avg_quantity": round(avg_quantity, 2),
             "by_meal_type": by_meal_type,
             "bcs_dist": dict(bcs_dist)
         },
-        "rows": rows
+        "rows": rows,
+        "date": date_str,
+        "project_name": project_name
     })
 
 
@@ -159,6 +217,10 @@ def feeding_weekly_data():
     project_id = request.args.get('project_id')
     week_start_str = request.args.get('week_start')
     dog_id = request.args.get('dog_id')  # optional filter
+    
+    # Performance optimization: Add pagination for weekly reports  
+    page = request.args.get('page', 1, type=int)
+    per_page = min(request.args.get('per_page', 50, type=int), 100)  # Max 100 dogs per page
     
     if not project_id or not week_start_str:
         return jsonify({'error': 'مشروع وبداية الأسبوع مطلوبان'}), 400
