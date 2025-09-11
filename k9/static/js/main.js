@@ -532,25 +532,22 @@ function showNotification(message, type = 'info', duration = 4000) {
 }
 
 function formatDate(date, options = {}) {
-    const defaultOptions = {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        ...options
-    };
+    // Format as DD/MM/YYYY with standard numerals
+    const dateObj = new Date(date);
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const year = dateObj.getFullYear();
     
-    return new Intl.DateTimeFormat('ar-SA', defaultOptions).format(new Date(date));
+    return `${day}/${month}/${year}`;
 }
 
 function formatTime(date, options = {}) {
-    const defaultOptions = {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-        ...options
-    };
+    // Format as HH:MM with standard numerals
+    const dateObj = new Date(date);
+    const hours = String(dateObj.getHours()).padStart(2, '0');
+    const minutes = String(dateObj.getMinutes()).padStart(2, '0');
     
-    return new Intl.DateTimeFormat('ar-SA', defaultOptions).format(new Date(date));
+    return `${hours}:${minutes}`;
 }
 
 function validateForm(form) {

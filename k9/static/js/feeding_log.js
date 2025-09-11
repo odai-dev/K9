@@ -503,8 +503,9 @@ class FeedingLogManager {
 
     // Utility methods
     formatDate(dateStr) {
-        const date = new Date(dateStr);
-        return date.toLocaleDateString('ar-SA');
+        // Split the string to avoid timezone issues and format as DD/MM/YYYY
+        const [year, month, day] = dateStr.split('-');
+        return `${day}/${month}/${year}`;
     }
 
     showLoading() {
