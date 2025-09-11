@@ -74,25 +74,47 @@ def feeding_daily_data():
     page = request.args.get('page', 1, type=int)
     per_page = min(request.args.get('per_page', 50, type=int), 100)  # Max 100 records to match existing patterns
     
-    if not project_id or not date_str:
-        return jsonify({'error': 'مشروع وتاريخ مطلوبان'}), 400
+    if not date_str:
+        return jsonify({'error': 'التاريخ مطلوب'}), 400
     
-    # Verify project access
-    if not check_project_access(current_user, project_id):
-        return jsonify({'error': 'ليس لديك صلاحية للوصول لهذا المشروع'}), 403
+    # Input validation: Ensure project_id and dog_id are numeric when provided
+    if project_id is not None:
+        try:
+            project_id = int(project_id)
+        except (ValueError, TypeError):
+            return jsonify({'error': 'معرف المشروع يجب أن يكون رقماً'}), 400
+    
+    if dog_id is not None:
+        try:
+            dog_id = int(dog_id)
+        except (ValueError, TypeError):
+            return jsonify({'error': 'معرف الكلب يجب أن يكون رقماً'}), 400
+    
+    # Security fix: Get user's authorized projects when project_id is omitted
+    if project_id is not None:
+        # Verify project access for specific project
+        if not check_project_access(current_user, project_id):
+            return jsonify({'error': 'ليس لديك صلاحية للوصول لهذا المشروع'}), 403
+        authorized_project_ids = [project_id]
+    else:
+        # Get all authorized projects for the user
+        authorized_projects = get_user_projects(current_user)
+        authorized_project_ids = [p.id for p in authorized_projects]
+        if not authorized_project_ids:
+            return jsonify({'error': 'ليس لديك صلاحية للوصول لأي مشروع'}), 403
     
     try:
         target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
     except ValueError:
         return jsonify({'error': 'تنسيق التاريخ غير صالح'}), 400
     
-    # Performance optimization: Use selectinload for better query performance
+    # Security fix: Scope queries to authorized projects only
     base_query = db.session.query(FeedingLog).options(
         selectinload(FeedingLog.dog),
         selectinload(FeedingLog.project)
     ).filter(
-        FeedingLog.project_id == project_id,
-        FeedingLog.date == target_date
+        FeedingLog.date == target_date,
+        FeedingLog.project_id.in_(authorized_project_ids)
     )
     
     if dog_id:
@@ -106,7 +128,7 @@ def feeding_daily_data():
         (page - 1) * per_page
     ).limit(per_page).all()
     
-    # Performance optimization: Calculate KPIs using database aggregations for all data  
+    # Security fix: KPI query must match base query filters
     kpi_query = db.session.query(
         func.count(FeedingLog.id).label('total_meals'),
         func.sum(FeedingLog.grams).label('total_grams'),
@@ -115,8 +137,8 @@ def feeding_daily_data():
         func.sum(case([(FeedingLog.meal_type_fresh == True, 1)], else_=0)).label('fresh_meals'),
         func.sum(case([(FeedingLog.meal_type_dry == True, 1)], else_=0)).label('dry_meals')
     ).filter(
-        FeedingLog.project_id == project_id,
-        FeedingLog.date == target_date
+        FeedingLog.date == target_date,
+        FeedingLog.project_id.in_(authorized_project_ids)
     )
     
     if dog_id:
@@ -222,12 +244,34 @@ def feeding_weekly_data():
     page = request.args.get('page', 1, type=int)
     per_page = min(request.args.get('per_page', 50, type=int), 100)  # Max 100 dogs per page
     
-    if not project_id or not week_start_str:
-        return jsonify({'error': 'مشروع وبداية الأسبوع مطلوبان'}), 400
+    if not week_start_str:
+        return jsonify({'error': 'بداية الأسبوع مطلوبة'}), 400
     
-    # Verify project access
-    if not check_project_access(current_user, project_id):
-        return jsonify({'error': 'ليس لديك صلاحية للوصول لهذا المشروع'}), 403
+    # Input validation: Ensure project_id and dog_id are numeric when provided
+    if project_id is not None:
+        try:
+            project_id = int(project_id)
+        except (ValueError, TypeError):
+            return jsonify({'error': 'معرف المشروع يجب أن يكون رقماً'}), 400
+    
+    if dog_id is not None:
+        try:
+            dog_id = int(dog_id)
+        except (ValueError, TypeError):
+            return jsonify({'error': 'معرف الكلب يجب أن يكون رقماً'}), 400
+    
+    # Security fix: Get user's authorized projects when project_id is omitted
+    if project_id is not None:
+        # Verify project access for specific project
+        if not check_project_access(current_user, project_id):
+            return jsonify({'error': 'ليس لديك صلاحية للوصول لهذا المشروع'}), 403
+        authorized_project_ids = [project_id]
+    else:
+        # Get all authorized projects for the user
+        authorized_projects = get_user_projects(current_user)
+        authorized_project_ids = [p.id for p in authorized_projects]
+        if not authorized_project_ids:
+            return jsonify({'error': 'ليس لديك صلاحية للوصول لأي مشروع'}), 403
     
     try:
         week_start = datetime.strptime(week_start_str, '%Y-%m-%d').date()
@@ -235,12 +279,12 @@ def feeding_weekly_data():
     except ValueError:
         return jsonify({'error': 'تنسيق التاريخ غير صالح'}), 400
     
-    # Build query
+    # Security fix: Scope query to authorized projects only
     query = db.session.query(FeedingLog).options(
         joinedload(FeedingLog.dog),
         joinedload(FeedingLog.project)
     ).filter(
-        FeedingLog.project_id == project_id,
+        FeedingLog.project_id.in_(authorized_project_ids),
         FeedingLog.date >= week_start,
         FeedingLog.date <= week_end
     )
@@ -367,12 +411,34 @@ def export_daily_pdf():
     date_str = request.args.get('date')
     dog_id = request.args.get('dog_id')
     
-    if not project_id or not date_str:
-        return jsonify({'error': 'مشروع وتاريخ مطلوبان'}), 400
+    if not date_str:
+        return jsonify({'error': 'التاريخ مطلوب'}), 400
     
-    # Verify project access
-    if not check_project_access(current_user, project_id):
-        return jsonify({'error': 'ليس لديك صلاحية للوصول لهذا المشروع'}), 403
+    # Input validation: Ensure project_id and dog_id are numeric when provided
+    if project_id is not None:
+        try:
+            project_id = int(project_id)
+        except (ValueError, TypeError):
+            return jsonify({'error': 'معرف المشروع يجب أن يكون رقماً'}), 400
+    
+    if dog_id is not None:
+        try:
+            dog_id = int(dog_id)
+        except (ValueError, TypeError):
+            return jsonify({'error': 'معرف الكلب يجب أن يكون رقماً'}), 400
+    
+    # Security fix: Get user's authorized projects when project_id is omitted
+    if project_id is not None:
+        # Verify project access for specific project
+        if not check_project_access(current_user, project_id):
+            return jsonify({'error': 'ليس لديك صلاحية للوصول لهذا المشروع'}), 403
+        authorized_project_ids = [project_id]
+    else:
+        # Get all authorized projects for the user
+        authorized_projects = get_user_projects(current_user)
+        authorized_project_ids = [p.id for p in authorized_projects]
+        if not authorized_project_ids:
+            return jsonify({'error': 'ليس لديك صلاحية للوصول لأي مشروع'}), 403
     
     # Get data by directly calling the same logic
     try:
@@ -380,13 +446,13 @@ def export_daily_pdf():
     except ValueError:
         return jsonify({'error': 'تنسيق التاريخ غير صالح'}), 400
     
-    # Build query with joins - reuse same logic as daily endpoint
+    # Security fix: Scope query to authorized projects only
     query = db.session.query(FeedingLog).options(
         joinedload(FeedingLog.dog),
         joinedload(FeedingLog.project)
     ).filter(
-        FeedingLog.project_id == project_id,
-        FeedingLog.date == target_date
+        FeedingLog.date == target_date,
+        FeedingLog.project_id.in_(authorized_project_ids)
     )
     
     if dog_id:
@@ -420,7 +486,9 @@ def export_daily_pdf():
     
     # Generate PDF
     try:
-        filename = f"feeding_daily_{date_str}_{project_id}.pdf"
+        # Security fix: Use 'all' instead of None for filename when project_id is omitted
+        project_suffix = str(project_id) if project_id else "all"
+        filename = f"feeding_daily_{date_str}_{project_suffix}.pdf"
         file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'reports', 'feeding', date_str)
         os.makedirs(file_path, exist_ok=True)
         full_path = os.path.join(file_path, filename)
@@ -452,12 +520,34 @@ def export_weekly_pdf():
     week_start_str = request.args.get('week_start')
     dog_id = request.args.get('dog_id')
     
-    if not project_id or not week_start_str:
-        return jsonify({'error': 'مشروع وبداية الأسبوع مطلوبان'}), 400
+    if not week_start_str:
+        return jsonify({'error': 'بداية الأسبوع مطلوبة'}), 400
     
-    # Verify project access
-    if not check_project_access(current_user, project_id):
-        return jsonify({'error': 'ليس لديك صلاحية للوصول لهذا المشروع'}), 403
+    # Input validation: Ensure project_id and dog_id are numeric when provided
+    if project_id is not None:
+        try:
+            project_id = int(project_id)
+        except (ValueError, TypeError):
+            return jsonify({'error': 'معرف المشروع يجب أن يكون رقماً'}), 400
+    
+    if dog_id is not None:
+        try:
+            dog_id = int(dog_id)
+        except (ValueError, TypeError):
+            return jsonify({'error': 'معرف الكلب يجب أن يكون رقماً'}), 400
+    
+    # Security fix: Get user's authorized projects when project_id is omitted
+    if project_id is not None:
+        # Verify project access for specific project
+        if not check_project_access(current_user, project_id):
+            return jsonify({'error': 'ليس لديك صلاحية للوصول لهذا المشروع'}), 403
+        authorized_project_ids = [project_id]
+    else:
+        # Get all authorized projects for the user
+        authorized_projects = get_user_projects(current_user)
+        authorized_project_ids = [p.id for p in authorized_projects]
+        if not authorized_project_ids:
+            return jsonify({'error': 'ليس لديك صلاحية للوصول لأي مشروع'}), 403
     
     # Get data by directly calling the same logic
     try:
@@ -466,12 +556,12 @@ def export_weekly_pdf():
     except ValueError:
         return jsonify({'error': 'تنسيق التاريخ غير صالح'}), 400
     
-    # Build query - reuse same logic as weekly endpoint
+    # Security fix: Scope query to authorized projects only
     query = db.session.query(FeedingLog).options(
         joinedload(FeedingLog.dog),
         joinedload(FeedingLog.project)
     ).filter(
-        FeedingLog.project_id == project_id,
+        FeedingLog.project_id.in_(authorized_project_ids),
         FeedingLog.date >= week_start,
         FeedingLog.date <= week_end
     )
@@ -511,7 +601,9 @@ def export_weekly_pdf():
     
     # Generate PDF
     try:
-        filename = f"feeding_weekly_{week_start_str}_{project_id}.pdf"
+        # Security fix: Use 'all' instead of None for filename when project_id is omitted
+        project_suffix = str(project_id) if project_id else "all"
+        filename = f"feeding_weekly_{week_start_str}_{project_suffix}.pdf"
         file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'reports', 'feeding', week_start_str)
         os.makedirs(file_path, exist_ok=True)
         full_path = os.path.join(file_path, filename)
