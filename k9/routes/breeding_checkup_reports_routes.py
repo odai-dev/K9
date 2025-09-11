@@ -17,21 +17,25 @@ bp = Blueprint('breeding_checkup_reports_ui', __name__)
 @login_required
 @require_sub_permission("Reports", "Checkup Daily", PermissionType.VIEW)
 def checkup_daily():
-    """Arabic/RTL daily checkup reports page"""
-    projects = get_user_projects(current_user)
+    """Redirect legacy daily checkup reports to unified checkup reports with daily range"""
+    # Preserve all original query parameters
+    params = dict(request.args)
+    # Set range type to daily
+    params['range_type'] = 'daily'
     
-    return render_template('reports/breeding/checkup_daily.html', 
-                         accessible_projects=projects,
-                         title='تقرير الفحص الظاهري اليومي')
+    flash('تم الانتقال إلى تقرير الفحص الظاهري الموحد', 'info')
+    return redirect(url_for('unified_checkup_reports_ui.checkup', **params))
 
 
 @bp.route('/weekly')
 @login_required
 @require_sub_permission("Reports", "Checkup Weekly", PermissionType.VIEW)
 def checkup_weekly():
-    """Arabic/RTL weekly checkup reports page"""
-    projects = get_user_projects(current_user)
+    """Redirect legacy weekly checkup reports to unified checkup reports with weekly range"""
+    # Preserve all original query parameters
+    params = dict(request.args)
+    # Set range type to weekly
+    params['range_type'] = 'weekly'
     
-    return render_template('reports/breeding/checkup_weekly.html',
-                         accessible_projects=projects,
-                         title='تقرير الفحص الظاهري الأسبوعي')
+    flash('تم الانتقال إلى تقرير الفحص الظاهري الموحد', 'info')
+    return redirect(url_for('unified_checkup_reports_ui.checkup', **params))

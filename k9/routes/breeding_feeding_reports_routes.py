@@ -17,21 +17,25 @@ bp = Blueprint('breeding_feeding_reports_ui', __name__)
 @login_required
 @require_sub_permission("Reports", "Feeding Daily", PermissionType.VIEW)
 def feeding_daily():
-    """Arabic/RTL daily feeding reports page"""
-    projects = get_user_projects(current_user)
+    """Redirect legacy daily feeding reports to unified feeding reports with daily range"""
+    # Preserve all original query parameters
+    params = dict(request.args)
+    # Set range type to daily
+    params['range_type'] = 'daily'
     
-    return render_template('reports/breeding/feeding_daily.html', 
-                         accessible_projects=projects,
-                         title='تقرير التغذية اليومي')
+    flash('تم الانتقال إلى تقرير التغذية الموحد', 'info')
+    return redirect(url_for('unified_feeding_reports_ui.feeding', **params))
 
 
 @bp.route('/weekly')
 @login_required
 @require_sub_permission("Reports", "Feeding Weekly", PermissionType.VIEW)
 def feeding_weekly():
-    """Arabic/RTL weekly feeding reports page"""
-    projects = get_user_projects(current_user)
+    """Redirect legacy weekly feeding reports to unified feeding reports with weekly range"""
+    # Preserve all original query parameters
+    params = dict(request.args)
+    # Set range type to weekly
+    params['range_type'] = 'weekly'
     
-    return render_template('reports/breeding/feeding_weekly.html',
-                         accessible_projects=projects,
-                         title='تقرير التغذية الأسبوعي')
+    flash('تم الانتقال إلى تقرير التغذية الموحد', 'info')
+    return redirect(url_for('unified_feeding_reports_ui.feeding', **params))
