@@ -34,11 +34,8 @@ def get_arabic_month_name(date_obj):
     return arabic_months[date_obj.month - 1]
 
 def format_arabic_date(date_obj):
-    """Format date in Arabic"""
+    """Format date in DD/MM/YYYY format"""
     if isinstance(date_obj, str):
         date_obj = datetime.strptime(date_obj, '%Y-%m-%d').date()
     
-    day_name = get_arabic_day_name(date_obj)
-    month_name = get_arabic_month_name(date_obj)
-    
-    return f"{day_name} {date_obj.day} {month_name} {date_obj.year}"
+    return f"{date_obj.day:02d}/{date_obj.month:02d}/{date_obj.year}"

@@ -127,51 +127,35 @@ def get_arabic_font_name() -> str:
 
 def format_arabic_date(date_obj) -> str:
     """
-    Format a date object into Arabic numerals and format
+    Format a date object into DD/MM/YYYY format with standard numerals
     
     Args:
         date_obj: Python date object
         
     Returns:
-        Formatted date string in Arabic style (dd/mm/yyyy)
+        Formatted date string in DD/MM/YYYY format
     """
     if not date_obj:
         return ""
     
-    # Convert to Arabic numerals
-    arabic_numerals = str.maketrans('0123456789', '٠١٢٣٤٥٦٧٨٩')
-    
-    # Format as dd/mm/yyyy
-    formatted_date = date_obj.strftime("%d/%m/%Y")
-    
-    # Convert to Arabic numerals
-    arabic_date = formatted_date.translate(arabic_numerals)
-    
-    return arabic_date
+    # Format as dd/mm/yyyy with standard numerals
+    return date_obj.strftime("%d/%m/%Y")
 
 def format_arabic_time(time_obj) -> str:
     """
-    Format a time object into Arabic numerals
+    Format a time object with standard numerals
     
     Args:
         time_obj: Python time object
         
     Returns:
-        Formatted time string in Arabic numerals (HH:MM)
+        Formatted time string with standard numerals (HH:MM)
     """
     if not time_obj:
         return ""
     
-    # Convert to Arabic numerals
-    arabic_numerals = str.maketrans('0123456789', '٠١٢٣٤٥٦٧٨٩')
-    
-    # Format as HH:MM
-    formatted_time = time_obj.strftime("%H:%M")
-    
-    # Convert to Arabic numerals
-    arabic_time = formatted_time.translate(arabic_numerals)
-    
-    return arabic_time
+    # Format as HH:MM with standard numerals
+    return time_obj.strftime("%H:%M")
 
 def get_page_dimensions():
     """
