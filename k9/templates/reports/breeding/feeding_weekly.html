@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+
+{% block title %}التقرير الأسبوعي للتغذية{% endblock %}
+
+{% block content %}
+<div class="container-fluid" dir="rtl">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-calendar-week text-primary me-2"></i>
+                        التقرير الأسبوعي للتغذية
+                    </h1>
+                    <p class="text-muted mb-0">تقرير ملخص أسبوعي لتغذية الكلاب مجمعة حسب الكلب</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        العودة للوحة التحكم
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    {% set report_type = 'weekly' %}
+    {% include 'reports/breeding/_filters.html' %}
+
+    <!-- Report Content Area -->
+    <div class="row" id="report-content-area" style="display: none;">
+        
+        <!-- KPIs Row -->
+        <div class="col-12 mb-4">
+            <div class="row" id="kpi-cards">
+                <div class="col-md-2">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">إجمالي الوجبات</div>
+                                    <div class="h4 mb-0" id="total-meals">0</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-utensils fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">عدد الكلاب</div>
+                                    <div class="h4 mb-0" id="total-dogs">0</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-dog fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">أيام التغذية</div>
+                                    <div class="h4 mb-0" id="feeding-days">0</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-calendar-day fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">متوسط الوجبات/يوم</div>
+                                    <div class="h4 mb-0" id="avg-meals-per-day">0</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-chart-line fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">حالات سيئة</div>
+                                    <div class="h4 mb-0" id="poor-conditions">0</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-exclamation-triangle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-secondary text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">إجمالي الكمية</div>
+                                    <div class="h4 mb-0" id="total-quantity">0 كغ</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-weight fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Data Table -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0" id="report-title">ملخص التغذية الأسبوعي</h5>
+                        <small class="text-muted" id="report-subtitle"></small>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="refresh-report-btn">
+                            <i class="fas fa-sync-alt me-1"></i>
+                            تحديث
+                        </button>
+                        <button type="button" class="btn btn-sm btn-success" id="download-pdf-btn">
+                            <i class="fas fa-download me-1"></i>
+                            تحميل PDF
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive" id="feeding-table-container">
+                        <table class="table table-bordered table-striped table-hover" id="feeding-table">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th width="20%">الكلب</th>
+                                    <th width="12%">رقم البطاقة</th>
+                                    <th width="10%">عدد الوجبات</th>
+                                    <th width="12%">الكمية الإجمالية</th>
+                                    <th width="10%">متوسط الكمية</th>
+                                    <th width="12%">الطعام الطازج</th>
+                                    <th width="12%">الطعام الجاف</th>
+                                    <th width="12%">متوسط حالة الجسم</th>
+                                </tr>
+                            </thead>
+                            <tbody id="feeding-table-body">
+                                <!-- Data will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div class="text-center py-5 d-none" id="empty-state">
+                        <i class="fas fa-calendar-week fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">لا توجد سجلات تغذية لهذا الأسبوع</h5>
+                        <p class="text-muted">يرجى التأكد من اختيار المشروع وتاريخ بداية الأسبوع الصحيحين</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Weekly Feeding Report -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loadReportBtn = document.getElementById('load-report-btn');
+    const exportPdfBtn = document.getElementById('export-pdf-btn');
+    const refreshReportBtn = document.getElementById('refresh-report-btn');
+    const downloadPdfBtn = document.getElementById('download-pdf-btn');
+    
+    // Report loading functionality
+    function loadFeedingReport() {
+        const projectId = document.getElementById('project-select').value;
+        const weekStart = document.getElementById('week-start-select').value;
+        const dogId = document.getElementById('dog-select').value;
+        
+        if (!projectId || !weekStart) {
+            alert('يرجى اختيار المشروع وتاريخ بداية الأسبوع');
+            return;
+        }
+        
+        showLoading(true);
+        
+        // Build URL with parameters
+        const params = new URLSearchParams({
+            project_id: projectId,
+            week_start: weekStart
+        });
+        
+        if (dogId) {
+            params.append('dog_id', dogId);
+        }
+        
+        // Load report data
+        fetch(`/api/reports/breeding/feeding/weekly?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                displayReportData(data);
+                showReportContent(true);
+            })
+            .catch(error => {
+                console.error('Error loading report:', error);
+                alert('خطأ في تحميل التقرير: ' + error.message);
+            })
+            .finally(() => {
+                showLoading(false);
+            });
+    }
+    
+    // Display report data
+    function displayReportData(data) {
+        // Update KPIs
+        document.getElementById('total-meals').textContent = data.kpis.total_meals || 0;
+        document.getElementById('total-dogs').textContent = data.kpis.total_dogs || 0;
+        document.getElementById('feeding-days').textContent = data.kpis.feeding_days || 0;
+        document.getElementById('avg-meals-per-day').textContent = (data.kpis.avg_meals_per_day || 0).toFixed(1);
+        document.getElementById('poor-conditions').textContent = data.kpis.poor_conditions || 0;
+        document.getElementById('total-quantity').textContent = (data.kpis.total_quantity || 0).toFixed(2) + ' كغ';
+        
+        // Update report title
+        const reportTitle = document.getElementById('report-title');
+        const reportSubtitle = document.getElementById('report-subtitle');
+        reportTitle.textContent = 'ملخص التغذية الأسبوعي';
+        reportSubtitle.textContent = `من ${data.week_start} إلى ${data.week_end} | المشروع: ${data.project_name}`;
+        
+        // Populate table
+        const tbody = document.getElementById('feeding-table-body');
+        tbody.innerHTML = '';
+        
+        if (data.rows && data.rows.length > 0) {
+            data.rows.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${row.dog_name}</strong></td>
+                    <td><span class="badge bg-secondary">${row.dog_tag_number}</span></td>
+                    <td><strong>${row.total_meals}</strong></td>
+                    <td><strong>${row.total_quantity} كغ</strong></td>
+                    <td>${row.avg_quantity} كغ</td>
+                    <td>
+                        <span class="badge bg-success">
+                            ${row.fresh_meals} (${row.fresh_percentage}%)
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge bg-warning">
+                            ${row.dry_meals} (${row.dry_percentage}%)
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge ${getConditionBadgeClass(row.avg_body_condition)}">
+                            ${row.avg_body_condition_arabic}
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            document.getElementById('empty-state').classList.add('d-none');
+            document.getElementById('feeding-table-container').classList.remove('d-none');
+        } else {
+            document.getElementById('empty-state').classList.remove('d-none');
+            document.getElementById('feeding-table-container').classList.add('d-none');
+        }
+    }
+    
+    // Helper function for condition badge colors
+    function getConditionBadgeClass(condition) {
+        switch (condition) {
+            case 'EXCELLENT': return 'bg-success';
+            case 'GOOD': return 'bg-info';
+            case 'FAIR': return 'bg-warning';
+            case 'POOR': return 'bg-danger';
+            default: return 'bg-secondary';
+        }
+    }
+    
+    // Export PDF functionality
+    function exportPDF() {
+        const projectId = document.getElementById('project-select').value;
+        const weekStart = document.getElementById('week-start-select').value;
+        const dogId = document.getElementById('dog-select').value;
+        
+        if (!projectId || !weekStart) {
+            alert('يرجى اختيار المشروع وتاريخ بداية الأسبوع');
+            return;
+        }
+        
+        showLoading(true);
+        
+        const params = new URLSearchParams({
+            project_id: projectId,
+            week_start: weekStart
+        });
+        
+        if (dogId) {
+            params.append('dog_id', dogId);
+        }
+        
+        fetch(`/api/reports/breeding/feeding/weekly/export.pdf?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                // Create download link
+                const link = document.createElement('a');
+                link.href = `/${data.path}`;
+                link.download = data.path.split('/').pop();
+                link.click();
+            })
+            .catch(error => {
+                console.error('Error exporting PDF:', error);
+                alert('خطأ في تصدير PDF: ' + error.message);
+            })
+            .finally(() => {
+                showLoading(false);
+            });
+    }
+    
+    // Utility functions
+    function showLoading(show) {
+        const indicator = document.getElementById('loading-indicator');
+        if (show) {
+            indicator.classList.remove('d-none');
+        } else {
+            indicator.classList.add('d-none');
+        }
+    }
+    
+    function showReportContent(show) {
+        const contentArea = document.getElementById('report-content-area');
+        if (show) {
+            contentArea.style.display = 'block';
+        } else {
+            contentArea.style.display = 'none';
+        }
+    }
+    
+    // Event listeners
+    loadReportBtn.addEventListener('click', loadFeedingReport);
+    exportPdfBtn.addEventListener('click', exportPDF);
+    refreshReportBtn.addEventListener('click', loadFeedingReport);
+    downloadPdfBtn.addEventListener('click', exportPDF);
+});
+</script>
+
+{% endblock %}
