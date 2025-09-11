@@ -235,29 +235,33 @@ with app.app_context():
         print(f"⚠ Warning: Could not register password reset routes: {e}")
         # Continue without password reset routes for now
     
-    # Register Breeding Feeding Reports blueprints
+    # Register Unified Breeding Reports blueprints
     try:
-        from k9.routes.breeding_feeding_reports_routes import bp as breeding_feeding_reports_ui_bp
-        from k9.api.breeding_feeding_reports_api import bp as breeding_feeding_reports_api_bp
-        app.register_blueprint(breeding_feeding_reports_ui_bp, url_prefix='/reports/breeding/feeding')
-        app.register_blueprint(breeding_feeding_reports_api_bp, url_prefix='/api/reports/breeding/feeding')
-        print("✓ Breeding feeding reports registered successfully")
+        from k9.routes.unified_feeding_reports_routes import bp as unified_feeding_reports_ui_bp
+        app.register_blueprint(unified_feeding_reports_ui_bp, url_prefix='/reports/breeding/feeding')
+        print("✓ Unified breeding feeding reports registered successfully")
         
     except Exception as e:
-        print(f"⚠ Warning: Could not register breeding feeding reports: {e}")
-        # Continue without breeding feeding reports for now
+        print(f"⚠ Warning: Could not register unified feeding reports: {e}")
     
-    # Register Breeding Checkup Reports blueprints
     try:
-        from k9.routes.breeding_checkup_reports_routes import bp as breeding_checkup_reports_ui_bp
-        from k9.api.breeding_checkup_reports_api import bp as breeding_checkup_reports_api_bp
-        app.register_blueprint(breeding_checkup_reports_ui_bp, url_prefix='/reports/breeding/checkup')
-        app.register_blueprint(breeding_checkup_reports_api_bp, url_prefix='/api/reports/breeding/checkup')
-        print("✓ Breeding checkup reports registered successfully")
+        from k9.routes.unified_checkup_reports_routes import bp as unified_checkup_reports_ui_bp
+        app.register_blueprint(unified_checkup_reports_ui_bp, url_prefix='/reports/breeding/checkup')
+        print("✓ Unified breeding checkup reports registered successfully")
         
     except Exception as e:
-        print(f"⚠ Warning: Could not register breeding checkup reports: {e}")
-        # Continue without breeding checkup reports for now
+        print(f"⚠ Warning: Could not register unified checkup reports: {e}")
+    
+    # Keep legacy API blueprints for backward compatibility during transition
+    try:
+        from k9.api.breeding_feeding_reports_api import bp as breeding_feeding_reports_api_bp
+        from k9.api.breeding_checkup_reports_api import bp as breeding_checkup_reports_api_bp
+        app.register_blueprint(breeding_feeding_reports_api_bp, url_prefix='/api/reports/breeding/feeding')
+        app.register_blueprint(breeding_checkup_reports_api_bp, url_prefix='/api/reports/breeding/checkup')
+        print("✓ Legacy breeding reports APIs registered successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Could not register legacy breeding reports APIs: {e}")
     
     # Initialize Security Middleware
     try:
