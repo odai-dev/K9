@@ -408,7 +408,7 @@ def feeding_weekly_data():
             "water_sum_ml": water_sum_ml,
             "avg_bcs": round(avg_bcs, 1) if avg_bcs else None
         },
-        "table": table
+        "rows": table
     })
 
 
