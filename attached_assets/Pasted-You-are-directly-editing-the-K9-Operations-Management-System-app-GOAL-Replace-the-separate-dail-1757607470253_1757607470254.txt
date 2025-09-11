@@ -1,0 +1,259 @@
+You are directly editing the K9 Operations Management System app.
+
+GOAL
+Replace the separate daily/weekly report pages for **Checkup** and **Feeding** with ONE page per module:
+- /reports/breeding/checkup
+- /reports/breeding/feeding
+Each page has a **Range** selector: Daily / Weekly / Monthly / Custom, and the UI shows the right date inputs. 
+The server API takes a **range_type** and returns the correct aggregation. 
+Keep Arabic UI (RTL) and reverse table columns (right→left). 
+Add redirects from the old daily/weekly URLs to the new unified URLs while preserving filters.
+
+================================================================================
+STEP 1 — PERMISSIONS (collapse daily/weekly into single keys)
+================================================================================
+- Remove the need for separate daily/weekly view/export permissions; introduce unified keys:
+  • "reports:checkup:view",  "reports:checkup:export"
+  • "reports:feeding:view",  "reports:feeding:export"
+- Seed defaults:
+  • GENERAL_ADMIN: all four
+  • PROJECT_MANAGER: view/export limited to assigned projects
+- Keep backward compat by treating any legacy daily/weekly permissions as granting the unified ones if they exist in DB (optional: map during seeding).
+
+================================================================================
+STEP 2 — UNIFIED ROUTES (pages)
+================================================================================
+Create/adjust blueprints:
+
+1) CHECKUP (replace both pages with one)
+- GET `/reports/breeding/checkup`
+  → render `templates/reports/breeding/checkup.html`
+  → @login_required + has("reports:checkup:view")
+
+2) FEEDING (replace both pages with one)
+- GET `/reports/breeding/feeding`
+  → render `templates/reports/breeding/feeding.html`
+  → @login_required + has("reports:feeding:view")
+
+================================================================================
+STEP 3 — RANGE RESOLVER (shared utility)
+================================================================================
+Create a helper `k9/reporting/range_utils.py`:
+
+```python
+from datetime import date, datetime, timedelta
+import calendar
+
+# Returns (date_from, date_to, granularity) where granularity ∈ {"day","week","month","custom"}
+def resolve_range(range_type: str, params: dict):
+    today = date.today()
+
+    if range_type == "daily":
+        d = params.get("date")
+        if not d: raise ValueError("date required for daily")
+        return (d, d, "day")
+
+    if range_type == "weekly":
+        week_start = params.get("week_start")
+        if not week_start: raise ValueError("week_start (Monday) required for weekly")
+        # inclusive
+        return (week_start, week_start + timedelta(days=6), "week")
+
+    if range_type == "monthly":
+        ym = params.get("year_month")  # "YYYY-MM"
+        if not ym: raise ValueError("year_month required for monthly")
+        year, month = map(int, ym.split("-"))
+        last_day = calendar.monthrange(year, month)[1]
+        return (date(year, month, 1), date(year, month, last_day), "month")
+
+    if range_type == "custom":
+        date_from = params.get("date_from")
+        date_to   = params.get("date_to")
+        if not date_from or not date_to: raise ValueError("date_from & date_to required for custom")
+        if date_from > date_to: date_from, date_to = date_to, date_from
+        return (date_from, date_to, "custom")
+
+    raise ValueError("invalid range_type")
+Parse incoming strings to date on the API layer before calling this helper.
+
+================================================================================
+STEP 4 — UNIFIED APIs (data providers)
+A) CHECKUP unified API blueprint: breeding_checkup_reports_api
+
+GET /api/reports/breeding/checkup?project_id=&range_type=&date=&week_start=&year_month=&date_from=&date_to=&dog_id=
+Guards: login + has("reports:checkup:view") + PM scoping on project_id
+Steps:
+
+Parse params; call resolve_range(range_type, params) → (d_from, d_to, granularity)
+
+Query DailyCheckupLog filtered by project_id, dog_id (optional) and date ∈ [d_from..d_to]
+
+Build the SAME JSON shape as before, but choose aggregation based on granularity:
+
+If granularity == "day": produce the previous “daily” KPIs & rows (no change)
+
+If granularity ∈ {"week","month","custom"}: produce the previous “weekly” style (per-dog roll-up with daily mini-cells for week; for month/custom:
+• show mini-cells grouped by weeks inside range OR show totals + per-day breakdown dictionary — choose the simpler approach:
+- For week: daily mini-cells (Mon..Sun).
+- For month/custom: daily mini-cells keyed by ISO weekday names in Arabic ("الإثنين", ... "الأحد") WITH calendar date in the cell header, or just a totals row + per-part flags.)
+
+Keep Arabic labels; ensure data joins are efficient.
+
+Response keys:
+{
+"filters": {"project_id":..., "range_type":..., "date_from":"YYYY-MM-DD", "date_to":"YYYY-MM-DD", "dog_id":...},
+"granularity":"day|week|month|custom",
+"kpis": {...}, # daily-style or weekly-style aggregates
+"table": [...], # per-dog table for non-daily; daily returns "rows": [...]
+"rows": [...], # present only for daily granularity
+}
+
+PDF export:
+GET /api/reports/breeding/checkup/export.pdf?project_id=&range_type=&date=&week_start=&year_month=&date_from=&date_to=&dog_id=
+Guards: has("reports:checkup:export")
+
+Re-use the same builder; choose layout:
+• daily → use the daily PDF layout
+• non-daily → use the weekly layout (per-dog aggregates)
+
+Save to uploads/reports/checkup/<YYYY-MM-DD>/breeding_checkup_<project>_<range>.pdf
+
+B) FEEDING unified API blueprint: breeding_feeding_reports_api
+
+GET /api/reports/breeding/feeding?project_id=&range_type=&date=&week_start=&year_month=&date_from=&date_to=&dog_id=
+Guards: login + has("reports:feeding:view") + PM scoping
+Steps:
+
+Resolve (d_from, d_to, granularity)
+
+Query FeedingLog within range (+ dog optional)
+
+Build JSON:
+
+daily granularity → previous daily KPIs + rows array (per meal records)
+
+non-daily (week/month/custom) → previous weekly-style aggregates:
+{
+"kpis": { dogs_count, meals_count, grams_sum, water_sum_ml, avg_bcs },
+"table": [ per-dog totals & by_type & per-day/mini-cells (for week); for month/custom: show per-dog totals and by_type, optional per-day dictionary keyed by date ]
+}
+
+PDF export:
+GET /api/reports/breeding/feeding/export.pdf?project_id=&range_type=&date=&week_start=&year_month=&date_from=&date_to=&dog_id=
+Guards: has("reports:feeding:export")
+
+Layout:
+• daily → original daily layout
+• non-daily → original weekly layout (per-dog aggregates)
+
+Save to uploads/reports/feeding/<YYYY-MM-DD>/breeding_feeding_<project>_<range>.pdf
+
+NOTES
+
+For “monthly/custom”, you may reuse the weekly table design but with more columns; to keep it readable:
+• Prefer per-dog totals + by_type and omit daily mini-cells for month/custom (or show a compact per-day summary under a collapsible section in the web UI only; not in PDF).
+
+Arabic weekdays: الإثنين، الثلاثاء، الأربعاء، الخميس، الجمعة، السبت، الأحد.
+
+================================================================================
+STEP 5 — UNIFIED TEMPLATES (Arabic RTL, single page per module)
+A) templates/reports/breeding/checkup.html
+
+Filter bar (RTL):
+• المشروع (required)
+• نوع المدة (select): يومي / أسبوعي / شهري / مخصص
+• Inputs that appear based on selection:
+
+يومي: التاريخ (date)
+
+أسبوعي: بداية الأسبوع (الإثنين)
+
+شهري: الشهر (YYYY-MM)
+
+مخصص: من تاريخ / إلى تاريخ
+• الكلب (optional)
+• أزرار: تحديث / تصدير PDF
+
+Results:
+• If granularity == "day":
+
+KPI cards (daily style)
+
+Daily table (RIGHT→LEFT columns), same as before
+• Else:
+
+KPI cards (roll-up style)
+
+Per-dog table (RIGHT→LEFT), weekly-style aggregates (for month/custom show totals + flags and omit daily mini-cells)
+
+Load /static/js/reports_checkup_unified.js
+
+B) templates/reports/breeding/feeding.html
+
+Same filter bar pattern and conditional inputs
+
+Results:
+• If daily → KPI cards + detailed per-meal Daily table (RIGHT→LEFT)
+• Else → KPI cards + Per-dog aggregate table (RIGHT→LEFT)
+
+Load /static/js/reports_feeding_unified.js
+
+IMPORTANT: For every table, reverse the column headers array before render so the first Arabic header appears on the right edge.
+
+================================================================================
+STEP 6 — FRONT-END JS (two files)
+A) /static/js/reports_checkup_unified.js
+
+Read filters, show/hide date inputs based on range_type.
+
+Build query for /api/reports/breeding/checkup.
+
+Render KPI cards and either rows (daily) or table (non-daily).
+
+“Export PDF” calls the export endpoint with identical params and shows the download link.
+
+B) /static/js/reports_feeding_unified.js
+
+Same behavior for Feeding.
+
+Both: reuse the app’s CSRF pattern; keep RTL; ensure column arrays are reversed before DOM render.
+
+================================================================================
+STEP 7 — NAVIGATION & LABELS
+Reports → Breeding menu should now contain:
+• "تقرير الفحص الظاهري" → /reports/breeding/checkup
+• "تقرير التغذية" → /reports/breeding/feeding
+
+Remove (or hide) the old daily/weekly items.
+
+================================================================================
+STEP 8 — LEGACY REDIRECTS (keep old links working)
+Create k9/reports_unified_redirects.py blueprint:
+
+/reports/breeding/checkup/daily → 301 → /reports/breeding/checkup?range_type=daily&project_id=...&date=...&dog_id=...
+
+/reports/breeding/checkup/weekly → 301 → /reports/breeding/checkup?range_type=weekly&project_id=...&week_start=...&dog_id=...
+
+/reports/breeding/feeding/daily → 301 → /reports/breeding/feeding?range_type=daily&project_id=...&date=...&dog_id=...
+
+/reports/breeding/feeding/weekly → 301 → /reports/breeding/feeding?range_type=weekly&project_id=...&week_start=...&dog_id=...
+
+Register after main report routes so url_for targets exist.
+
+================================================================================
+STEP 9 — CACHING & PERFORMANCE
+Add 60s in-process cache for both unified JSON endpoints keyed by (user_id, project_id, range_type, date/period params, dog_id).
+
+Ensure DB queries use indices on (project_id, date) and (dog_id, date).
+
+Use selectinload/joinedload for Dog/Project lookups.
+
+================================================================================
+STEP 10 — TESTS (update + new)
+Update existing report tests to point at unified endpoints/pages.
+
+New tests:
+• /api/reports/breeding/checkup with range_type=daily/week/month/custom → assert shapes & KPI math.
+• /api/reports/breeding/feeding with all range types → assert shapes & KPI math.
+• Export endpoints for both modules return JSON + file path exists.
+• Redirects from old daily/weekly URLs return 301 to unified with preserved params.
