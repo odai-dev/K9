@@ -12,6 +12,12 @@ from sqlalchemy import and_, func, case
 from sqlalchemy.orm import selectinload, joinedload
 
 from k9.utils.permission_decorators import require_sub_permission
+from k9.utils.permission_utils import has_permission
+from k9.reporting.range_utils import (
+    resolve_range, get_aggregation_strategy, 
+    parse_date_string, format_date_range_for_display,
+    generate_export_filename, validate_range_params
+)
 from k9.models.models import (
     FeedingLog, Dog, Project, PermissionType, BodyConditionScale, PrepMethod
 )
@@ -764,3 +770,480 @@ def _generate_feeding_pdf(title: str, data: dict, output_path: str):
     
     # Build PDF
     doc.build(story)
+
+
+# ==============================================================================
+# UNIFIED ENDPOINTS (New Range-Based API)
+# ==============================================================================
+
+@bp.route('/unified')
+@login_required
+def feeding_unified_data():
+    """Unified feeding report data with range selector and smart aggregation"""
+    
+    # Check unified permission
+    if not has_permission(current_user, "reports.breeding.feeding.view"):
+        return jsonify({'error': 'ليس لديك صلاحية لعرض تقارير التغذية'}), 403
+    
+    # Get parameters
+    range_type = request.args.get('range_type', 'daily')
+    project_id = request.args.get('project_id', '').strip() or None
+    dog_id = request.args.get('dog_id', '').strip() or None
+    
+    # Input validation: Handle dog_id (UUID) when provided  
+    if dog_id:
+        try:
+            # Validate UUID format - dog_id should be a valid UUID string
+            import uuid
+            uuid.UUID(dog_id)  # This will raise ValueError if invalid UUID format
+        except (ValueError, TypeError):
+            return jsonify({'error': 'معرف الكلب يجب أن يكون UUID صحيح'}), 400
+    else:
+        dog_id = None
+    
+    # Performance optimization: Add pagination
+    page = request.args.get('page', 1, type=int)
+    per_page = min(request.args.get('per_page', 50, type=int), 100)
+    
+    # Collect range parameters
+    range_params = {
+        'date': request.args.get('date'),
+        'week_start': request.args.get('week_start'), 
+        'year_month': request.args.get('year_month'),
+        'date_from': request.args.get('date_from'),
+        'date_to': request.args.get('date_to')
+    }
+    
+    try:
+        # Validate parameters
+        validation_errors = validate_range_params(range_type, range_params)
+        if validation_errors:
+            return jsonify({'error': 'معاملات غير صالحة', 'details': validation_errors}), 400
+        
+        # Resolve date range and aggregation strategy
+        date_from, date_to, granularity = resolve_range(range_type, range_params)
+        aggregation = get_aggregation_strategy(date_from, date_to, range_type)
+        
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    
+    # Security: Get user's authorized projects
+    if project_id is not None:
+        if not check_project_access(current_user, project_id):
+            return jsonify({'error': 'ليس لديك صلاحية للوصول لهذا المشروع'}), 403
+        authorized_project_ids = [project_id]
+    else:
+        authorized_projects = get_user_projects(current_user)
+        authorized_project_ids = [p.id for p in authorized_projects]
+        if not authorized_project_ids:
+            return jsonify({'error': 'ليس لديك صلاحية للوصول لأي مشروع'}), 403
+    
+    # Build base query with date range
+    base_query = db.session.query(FeedingLog).options(
+        selectinload(FeedingLog.dog),
+        selectinload(FeedingLog.project),
+        selectinload(FeedingLog.recorder_employee)
+    ).filter(
+        FeedingLog.date >= date_from,
+        FeedingLog.date <= date_to,
+        FeedingLog.project_id.in_(authorized_project_ids)
+    )
+    
+    if dog_id:
+        base_query = base_query.filter(FeedingLog.dog_id == dog_id)
+    
+    # Apply aggregation strategy
+    if aggregation == "daily":
+        # Daily: Show individual feeding records with pagination
+        total_count = base_query.count()
+        feeding_logs = base_query.order_by(
+            FeedingLog.date.desc(),
+            FeedingLog.time.desc()
+        ).offset((page - 1) * per_page).limit(per_page).all()
+        
+        # Build daily response format
+        rows = []
+        for log in feeding_logs:
+            meal_type = get_meal_type_display(log.meal_type_fresh, log.meal_type_dry)
+            bcs_numeric = get_bcs_numeric(log.body_condition)
+            
+            rows.append({
+                'id': str(log.id),
+                'date': log.date.strftime('%Y-%m-%d'),
+                'time': log.time.strftime('%H:%M'),
+                'dog_name': log.dog.name if log.dog else 'غير معروف',
+                'dog_microchip': log.dog.microchip_id if log.dog else '',
+                'feeder': log.recorder_employee.name if log.recorder_employee else 'غير محدد',
+                'project': log.project.name if log.project else 'غير محدد',
+                'meal_type': meal_type,
+                'grams': log.grams or 0,
+                'water_ml': log.water_ml or 0,
+                'prep_method': log.prep_method.value if log.prep_method else 'غير محدد',
+                'body_condition_scale': bcs_numeric,
+                'notes': log.notes or ''
+            })
+        
+    elif aggregation == "weekly":
+        # Weekly: Aggregate by dog and week
+        feeding_logs = base_query.all()
+        
+        # Group by dog and week
+        dogs_data = {}
+        total_count = 0
+        
+        for log in feeding_logs:
+            # Calculate which week this log belongs to
+            days_since_start = (log.date - date_from).days
+            week_num = days_since_start // 7
+            
+            dog_key = str(log.dog_id)
+            week_key = f"week_{week_num}"
+            
+            if dog_key not in dogs_data:
+                dogs_data[dog_key] = {
+                    'dog_name': log.dog.name if log.dog else 'غير معروف',
+                    'dog_microchip': log.dog.microchip_id if log.dog else '',
+                    'weeks': {}
+                }
+            
+            if week_key not in dogs_data[dog_key]['weeks']:
+                dogs_data[dog_key]['weeks'][week_key] = {
+                    'meals': 0,
+                    'total_grams': 0,
+                    'total_water_ml': 0,
+                    'bcs_values': [],
+                    'logs': []
+                }
+            
+            # Aggregate data for this week
+            week_data = dogs_data[dog_key]['weeks'][week_key]
+            week_data['meals'] += 1
+            week_data['total_grams'] += log.grams or 0
+            week_data['total_water_ml'] += log.water_ml or 0
+            
+            bcs_numeric = get_bcs_numeric(log.body_condition)
+            if bcs_numeric:
+                week_data['bcs_values'].append(bcs_numeric)
+            
+            week_data['logs'].append({
+                'date': log.date.strftime('%Y-%m-%d'),
+                'meal_type': get_meal_type_display(log.meal_type_fresh, log.meal_type_dry),
+                'grams': log.grams or 0,
+                'water_ml': log.water_ml or 0
+            })
+        
+        # Convert to paginated rows format
+        rows = []
+        for dog_key, dog_data in list(dogs_data.items())[(page-1)*per_page:page*per_page]:
+            for week_key, week_data in dog_data['weeks'].items():
+                avg_bcs = sum(week_data['bcs_values']) / len(week_data['bcs_values']) if week_data['bcs_values'] else None
+                rows.append({
+                    'dog_name': dog_data['dog_name'],
+                    'dog_microchip': dog_data['dog_microchip'],
+                    'week': week_key,
+                    'meals': week_data['meals'],
+                    'total_grams': week_data['total_grams'],
+                    'total_water_ml': week_data['total_water_ml'],
+                    'avg_bcs': round(avg_bcs, 1) if avg_bcs else None,
+                    'logs': week_data['logs']
+                })
+        
+        total_count = len(dogs_data)
+        
+    elif aggregation == "monthly":
+        # Monthly: Aggregate by dog and month
+        feeding_logs = base_query.all()
+        
+        # Group by dog and month
+        dogs_data = {}
+        total_count = 0
+        
+        for log in feeding_logs:
+            # Calculate which month this log belongs to (relative to date_from)
+            days_since_start = (log.date - date_from).days
+            month_num = days_since_start // 30  # Approximate monthly grouping
+            
+            dog_key = str(log.dog_id)
+            month_key = f"month_{month_num}"
+            
+            if dog_key not in dogs_data:
+                dogs_data[dog_key] = {
+                    'dog_name': log.dog.name if log.dog else 'غير معروف',
+                    'dog_microchip': log.dog.microchip_id if log.dog else '',
+                    'months': {}
+                }
+            
+            if month_key not in dogs_data[dog_key]['months']:
+                dogs_data[dog_key]['months'][month_key] = {
+                    'meals': 0,
+                    'total_grams': 0,
+                    'total_water_ml': 0,
+                    'bcs_values': [],
+                    'logs': []
+                }
+            
+            # Aggregate data for this month
+            month_data = dogs_data[dog_key]['months'][month_key]
+            month_data['meals'] += 1
+            month_data['total_grams'] += log.grams or 0
+            month_data['total_water_ml'] += log.water_ml or 0
+            
+            bcs_numeric = get_bcs_numeric(log.body_condition)
+            if bcs_numeric:
+                month_data['bcs_values'].append(bcs_numeric)
+            
+            month_data['logs'].append({
+                'date': log.date.strftime('%Y-%m-%d'),
+                'meal_type': get_meal_type_display(log.meal_type_fresh, log.meal_type_dry),
+                'grams': log.grams or 0,
+                'water_ml': log.water_ml or 0
+            })
+        
+        # Convert to paginated rows format
+        rows = []
+        for dog_key, dog_data in list(dogs_data.items())[(page-1)*per_page:page*per_page]:
+            for month_key, month_data in dog_data['months'].items():
+                avg_bcs = sum(month_data['bcs_values']) / len(month_data['bcs_values']) if month_data['bcs_values'] else None
+                rows.append({
+                    'dog_name': dog_data['dog_name'],
+                    'dog_microchip': dog_data['dog_microchip'],
+                    'month': month_key,
+                    'meals': month_data['meals'],
+                    'total_grams': month_data['total_grams'],
+                    'total_water_ml': month_data['total_water_ml'],
+                    'avg_bcs': round(avg_bcs, 1) if avg_bcs else None,
+                    'logs': month_data['logs']
+                })
+        
+        total_count = len(dogs_data)
+        
+    else:
+        return jsonify({'error': 'إستراتيجية التجميع غير مدعومة'}), 400
+    
+    # Calculate KPIs from full dataset
+    kpi_query = db.session.query(
+        func.count(FeedingLog.id).label('total_feedings'),
+        func.count(func.distinct(FeedingLog.dog_id)).label('unique_dogs'),
+        func.sum(FeedingLog.grams).label('total_grams'),
+        func.sum(FeedingLog.water_ml).label('total_water_ml')
+    ).filter(
+        FeedingLog.date >= date_from,
+        FeedingLog.date <= date_to,
+        FeedingLog.project_id.in_(authorized_project_ids)
+    )
+    
+    if dog_id:
+        kpi_query = kpi_query.filter(FeedingLog.dog_id == dog_id)
+    
+    kpi_result = kpi_query.first()
+    
+    # Get project name for display
+    project_name = "جميع المشاريع"
+    if project_id:
+        project = Project.query.get(project_id)
+        if project:
+            project_name = project.name
+    
+    return jsonify({
+        'pagination': {
+            'page': page,
+            'per_page': per_page,
+            'total': total_count,
+            'pages': (total_count + per_page - 1) // per_page,
+            'has_next': page * per_page < total_count,
+            'has_prev': page > 1
+        },
+        'filters': {
+            'project_id': project_id,
+            'range_type': range_type,
+            'date_from': date_from.strftime('%Y-%m-%d'),
+            'date_to': date_to.strftime('%Y-%m-%d'),
+            'aggregation': aggregation,
+            'dog_id': dog_id
+        },
+        'kpis': {
+            'total_feedings': kpi_result.total_feedings if kpi_result else 0,
+            'unique_dogs': kpi_result.unique_dogs if kpi_result else 0,
+            'total_grams': float(kpi_result.total_grams or 0) if kpi_result else 0,
+            'total_water_ml': float(kpi_result.total_water_ml or 0) if kpi_result else 0,
+            'date_range_display': format_date_range_for_display(date_from, date_to, range_type, "ar")
+        },
+        'rows': rows,
+        'project_name': project_name
+    })
+
+
+@bp.route('/unified/export.pdf')
+@login_required
+def feeding_unified_export_pdf():
+    """Export unified feeding report as PDF with proper naming"""
+    
+    # Check export permission
+    if not has_permission(current_user, "reports.breeding.feeding.export"):
+        return jsonify({'error': 'ليس لديك صلاحية لتصدير تقارير التغذية'}), 403
+    
+    # Get parameters (same as data endpoint)
+    range_type = request.args.get('range_type', 'daily')
+    project_id = request.args.get('project_id', '').strip() or None
+    dog_id = request.args.get('dog_id', '').strip() or None
+    
+    range_params = {
+        'date': request.args.get('date'),
+        'week_start': request.args.get('week_start'),
+        'year_month': request.args.get('year_month'),
+        'date_from': request.args.get('date_from'),
+        'date_to': request.args.get('date_to')
+    }
+    
+    try:
+        # Validate parameters
+        validation_errors = validate_range_params(range_type, range_params)
+        if validation_errors:
+            return jsonify({'error': 'معاملات غير صالحة', 'details': validation_errors}), 400
+        
+        # Resolve date range
+        date_from, date_to, granularity = resolve_range(range_type, range_params)
+        
+        # Get project code for filename
+        project_code = "all"
+        if project_id:
+            if not check_project_access(current_user, project_id):
+                return jsonify({'error': 'ليس لديك صلاحية للوصول لهذا المشروع'}), 403
+            project = Project.query.get(project_id)
+            if project and project.code:
+                project_code = project.code
+        
+        # Generate filename using unified format
+        filename = generate_export_filename("feeding", project_code, date_from, date_to, "pdf")
+        filepath = os.path.join(current_app.config.get('UPLOAD_FOLDER', 'uploads'), filename)
+        
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        
+        # Get unified data using same logic as data endpoint
+        import uuid
+        
+        # Validate dog_id if provided
+        if dog_id:
+            try:
+                uuid.UUID(dog_id)  # Validate UUID format
+            except (ValueError, TypeError):
+                return jsonify({'error': 'معرف الكلب يجب أن يكون UUID صحيح'}), 400
+        else:
+            dog_id = None
+        
+        # Get user's authorized projects
+        if project_id is not None:
+            if not check_project_access(current_user, project_id):
+                return jsonify({'error': 'ليس لديك صلاحية للوصول لهذا المشروع'}), 403
+            authorized_project_ids = [project_id]
+        else:
+            authorized_projects = get_user_projects(current_user)
+            authorized_project_ids = [p.id for p in authorized_projects]
+            if not authorized_project_ids:
+                return jsonify({'error': 'ليس لديك صلاحية للوصول لأي مشروع'}), 403
+        
+        # Get aggregation strategy
+        aggregation = get_aggregation_strategy(date_from, date_to, range_type)
+        
+        # Build query with date range
+        base_query = db.session.query(FeedingLog).options(
+            selectinload(FeedingLog.dog),
+            selectinload(FeedingLog.project),
+            selectinload(FeedingLog.recorder_employee)
+        ).filter(
+            FeedingLog.date >= date_from,
+            FeedingLog.date <= date_to,
+            FeedingLog.project_id.in_(authorized_project_ids)
+        )
+        
+        if dog_id:
+            base_query = base_query.filter(FeedingLog.dog_id == dog_id)
+        
+        feeding_logs = base_query.order_by(FeedingLog.date.desc(), FeedingLog.time.desc()).all()
+        
+        # Calculate KPIs
+        total_feedings = len(feeding_logs)
+        unique_dogs = len(set(str(log.dog_id) for log in feeding_logs))
+        total_grams = sum(log.grams or 0 for log in feeding_logs)
+        total_water_ml = sum(log.water_ml or 0 for log in feeding_logs)
+        
+        # Group by meal type
+        meal_type_counts = defaultdict(int)
+        for log in feeding_logs:
+            meal_type = get_meal_type_display(log.meal_type_fresh, log.meal_type_dry)
+            meal_type_counts[meal_type] += 1
+        
+        # Prepare data for existing PDF generation
+        pdf_data = {
+            'kpis': {
+                'total_meals': total_feedings,
+                'total_grams': total_grams,
+                'total_water_ml': total_water_ml,
+                'dogs_count': unique_dogs,
+                'meals_count': total_feedings
+            }
+        }
+        
+        # Prepare rows data for PDF - limit to first 50 for readability
+        if aggregation == "daily":
+            pdf_data['rows'] = []
+            for log in feeding_logs[:50]:
+                pdf_data['rows'].append({
+                    'date': log.date.strftime('%Y-%m-%d'),
+                    'dog_name': log.dog.name if log.dog else 'غير معروف',
+                    'نوع_الوجبة': get_meal_type_display(log.meal_type_fresh, log.meal_type_dry),
+                    'كمية_الوجبة_غرام': log.grams or 0,
+                    'ماء_الشرب_مل': log.water_ml or 0
+                })
+        else:
+            # For weekly/monthly aggregation, create summary table
+            dogs_summary = {}
+            for log in feeding_logs:
+                dog_key = str(log.dog_id)
+                if dog_key not in dogs_summary:
+                    dogs_summary[dog_key] = {
+                        'dog_name': log.dog.name if log.dog else 'غير معروف',
+                        'meals': 0,
+                        'grams_sum': 0,
+                        'water_sum_ml': 0,
+                        'bcs_values': []
+                    }
+                
+                dogs_summary[dog_key]['meals'] += 1
+                dogs_summary[dog_key]['grams_sum'] += log.grams or 0
+                dogs_summary[dog_key]['water_sum_ml'] += log.water_ml or 0
+                
+                bcs_numeric = get_bcs_numeric(log.body_condition)
+                if bcs_numeric:
+                    dogs_summary[dog_key]['bcs_values'].append(bcs_numeric)
+            
+            pdf_data['table'] = []
+            for dog_data in dogs_summary.values():
+                avg_bcs = sum(dog_data['bcs_values']) / len(dog_data['bcs_values']) if dog_data['bcs_values'] else None
+                pdf_data['table'].append({
+                    'dog_name': dog_data['dog_name'],
+                    'meals': dog_data['meals'],
+                    'grams_sum': dog_data['grams_sum'],
+                    'water_sum_ml': dog_data['water_sum_ml'],
+                    'bcs_avg': round(avg_bcs, 1) if avg_bcs else None
+                })
+        
+        # Generate title based on range type
+        range_display = format_date_range_for_display(date_from, date_to, range_type, "ar")
+        title = f"تقرير التغذية الموحد - {range_display}"
+        
+        # Use existing PDF generation function
+        _generate_feeding_pdf(title, pdf_data, filepath)
+        
+        return jsonify({
+            'success': True,
+            'file': filepath,
+            'filename': filename
+        })
+        
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        current_app.logger.error(f"Error generating unified feeding PDF: {str(e)}")
+        return jsonify({'error': f'خطأ في إنشاء ملف PDF: {str(e)}'}), 500
