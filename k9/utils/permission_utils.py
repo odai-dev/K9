@@ -87,6 +87,14 @@ PERMISSION_STRUCTURE = {
             "feeding_weekly": {
                 "view": "View feeding weekly reports", 
                 "export": "Export feeding weekly reports"
+            },
+            "checkup_daily": {
+                "view": "View checkup daily reports",
+                "export": "Export checkup daily reports"
+            },
+            "checkup_weekly": {
+                "view": "View checkup weekly reports",
+                "export": "Export checkup weekly reports"
             }
         }
     }
@@ -137,6 +145,10 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
                     perm_key = f"reports.breeding.feeding_daily.{action_lower}"
                 elif "feeding weekly" in subsection_lower:
                     perm_key = f"reports.breeding.feeding_weekly.{action_lower}"
+                elif "checkup daily" in subsection_lower:
+                    perm_key = f"reports.breeding.checkup_daily.{action_lower}"
+                elif "checkup weekly" in subsection_lower:
+                    perm_key = f"reports.breeding.checkup_weekly.{action_lower}"
                 elif "trainer daily" in subsection_lower:
                     perm_key = f"reports.training.trainer_daily.{action_lower}"
                 elif "veterinary daily" in subsection_lower:
@@ -155,7 +167,11 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
                     "reports.breeding.feeding_daily.view",
                     "reports.breeding.feeding_daily.export",
                     "reports.breeding.feeding_weekly.view",
-                    "reports.breeding.feeding_weekly.export"
+                    "reports.breeding.feeding_weekly.export",
+                    "reports.breeding.checkup_daily.view",
+                    "reports.breeding.checkup_daily.export",
+                    "reports.breeding.checkup_weekly.view",
+                    "reports.breeding.checkup_weekly.export"
                 ]
                 return perm_key in allowed_permissions
             else:
@@ -186,7 +202,11 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
             "reports.breeding.feeding_daily.view",
             "reports.breeding.feeding_daily.export",
             "reports.breeding.feeding_weekly.view",
-            "reports.breeding.feeding_weekly.export"
+            "reports.breeding.feeding_weekly.export",
+            "reports.breeding.checkup_daily.view",
+            "reports.breeding.checkup_daily.export",
+            "reports.breeding.checkup_weekly.view",
+            "reports.breeding.checkup_weekly.export"
         ]
         return permission_key in allowed_permissions
         
