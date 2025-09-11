@@ -235,10 +235,10 @@ class FeedingLogManager {
         if (item.meal_type_dry) mealTypes.push('<span class="badge bg-warning">مجفف</span>');
         const mealTypeDisplay = mealTypes.join(' ');
         
-        // Format supplements display
-        const supplementsDisplay = item.supplements && item.supplements.length > 0 
-            ? item.supplements.map(s => `${s.name} (${s.qty})`).join('، ')
-            : '-';
+        // Format supplements display - handle undefined properly
+        const supplementsDisplay = item.supplements && Array.isArray(item.supplements) && item.supplements.length > 0 
+            ? item.supplements.map(s => `${s.name || ''} (${s.qty || ''})`).join('، ')
+            : 'لا يوجد';
         
         // Create row HTML (RTL order: Actions → Project → Dog → Notes → etc.)
         row.innerHTML = `

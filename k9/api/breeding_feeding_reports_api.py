@@ -867,6 +867,9 @@ def feeding_unified_data():
             meal_type = get_meal_type_display(log.meal_type_fresh, log.meal_type_dry)
             bcs_numeric = get_bcs_numeric(log.body_condition)
             
+            # Handle supplements properly - return empty list if None
+            supplements = log.supplements if log.supplements else []
+            
             rows.append({
                 'id': str(log.id),
                 'date': log.date.strftime('%Y-%m-%d'),
@@ -880,6 +883,7 @@ def feeding_unified_data():
                 'water_ml': log.water_ml or 0,
                 'prep_method': log.prep_method.value if log.prep_method else 'غير محدد',
                 'body_condition_scale': bcs_numeric,
+                'supplements': supplements,
                 'notes': log.notes or ''
             })
         
