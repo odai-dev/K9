@@ -252,6 +252,19 @@ with app.app_context():
     except Exception as e:
         print(f"⚠ Warning: Could not register unified checkup reports: {e}")
     
+    # Register Unified Veterinary Reports blueprints
+    try:
+        from k9.routes.veterinary_reports_routes import bp as veterinary_reports_ui_bp
+        from k9.api.veterinary_reports_api import bp as veterinary_reports_api_bp
+        from k9.routes.veterinary_legacy_routes import bp as veterinary_legacy_bp
+        app.register_blueprint(veterinary_reports_ui_bp, url_prefix='/reports/breeding/veterinary')
+        app.register_blueprint(veterinary_reports_api_bp, url_prefix='/api/reports/breeding/veterinary')
+        app.register_blueprint(veterinary_legacy_bp, url_prefix='/reports/veterinary')
+        print("✓ Unified veterinary reports registered successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Could not register unified veterinary reports: {e}")
+    
     # Keep legacy API blueprints for backward compatibility during transition
     try:
         from k9.api.breeding_feeding_reports_api import bp as breeding_feeding_reports_api_bp
