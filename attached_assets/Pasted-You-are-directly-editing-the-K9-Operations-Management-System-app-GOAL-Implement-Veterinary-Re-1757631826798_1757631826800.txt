@@ -1,0 +1,229 @@
+You are directly editing the K9 Operations Management System app.
+
+GOAL
+Implement **Veterinary Reports** as ONE unified page with range selector (Daily / Weekly / Monthly / Custom), optional project filter (not required), optional KPIs (toggle), and Arabic RTL PDF export.
+
+ASSUMED MODEL (adapt field names if they differ)
+VeterinaryVisit:
+- id (UUID), project_id (UUID|null), dog_id (UUID), vet_id (UUID|null)
+- visit_date (DateTime), visit_type ∈ {"روتيني","طارئ","تطعيم"}    # Arabic stored strings
+- diagnosis (Text), treatment (Text)
+- medications (JSON list of {"name": str, "dose": str}|null)
+- cost (Float|null), duration_min (Integer|null)
+- notes (Text|null)
+
+If actual names differ, keep **Arabic labels** in UI/PDF but map selectors accordingly.
+
+================================================
+STEP 1 — PERMISSIONS (unified)
+================================================
+Add permission keys (seed defaults):
+- "reports:veterinary:view"
+- "reports:veterinary:export"
+
+Grants:
+- GENERAL_ADMIN: both
+- PROJECT_MANAGER: both, restricted to projects they own (but still allow off-project visits to show when project filter is empty — see API notes).
+
+================================================
+STEP 2 — RANGE RESOLVER (reuse or create)
+================================================
+If not present, create `k9/reporting/range_utils.py` with:
+- resolve_range(range_type, params) → (date_from, date_to, granularity: "day"|"week"|"month"|"custom")
+- Rules:
+  • daily → `date` required (same start/end)
+  • weekly → `week_start` (Monday) required; end = +6 days
+  • monthly → `year_month` ("YYYY-MM"); end = last day of month
+  • custom → `date_from` & `date_to` required (swap if reversed)
+
+================================================
+STEP 3 — ROUTES (single page)
+================================================
+Create blueprint `veterinary_reports_routes`:
+
+GET `/reports/breeding/veterinary`
+- Renders `templates/reports/breeding/veterinary.html`
+- Guards: @login_required + has("reports:veterinary:view")
+
+Register in app factory.
+
+================================================
+STEP 4 — API (unified data provider + export)
+================================================
+Create blueprint `veterinary_reports_api`:
+
+A) GET `/api/reports/breeding/veterinary`
+Query params:
+- `range_type` = daily|weekly|monthly|custom (required)
+- daily: `date`
+- weekly: `week_start`
+- monthly: `year_month` (YYYY-MM)
+- custom: `date_from`, `date_to`
+- `project_id` (optional)  # if given → filter; if empty → include both project and off-project
+- `dog_id` (optional)
+- `show_kpis` = 0|1 (optional; default 1)
+
+Guards:
+- @login_required + has("reports:veterinary:view")
+- PM scoping: if user is PROJECT_MANAGER and `project_id` is provided, enforce ownership. If `project_id` is empty, allow visits for projects the PM owns **plus off-project visits**. (Admins see all.)
+
+Processing:
+1) Parse params; use `resolve_range`.
+2) Query VeterinaryVisit with date between [date_from..date_to], optional dog filter.
+   - Project filter logic:
+     • if project_id provided → `project_id = param`
+     • if project_id omitted/empty:
+          - Admin: no project filter (include off-project and all projects)
+          - PM: filter to (`project_id IN pm_projects` OR `project_id IS NULL`)
+3) Build JSON:
+{
+  "filters": {
+    "project_id": "<uuid|null|\"\">",
+    "dog_id": "<uuid|null>",
+    "range_type": "daily|weekly|monthly|custom",
+    "date_from": "YYYY-MM-DD",
+    "date_to": "YYYY-MM-DD",
+    "show_kpis": true|false
+  },
+  "granularity": "day|week|month|custom",
+  "kpis": {                 // present only if show_kpis=true
+    "total_visits": N,
+    "by_visit_type": {"روتيني":a,"طارئ":b,"تطعيم":c},
+    "total_medications": M, // total count of medication entries
+    "total_cost": C,        // sum of cost (null→0)
+    "avg_duration_min": f|null
+  },
+  // For "day": return detailed rows (one row per visit)
+  "rows": [{
+    "date":"YYYY-MM-DD","time":"HH:MM:SS",
+    "dog_id":"..","dog_code":"..","dog_name":"..",
+    "vet_id":"..","vet_name":"..",
+    "visit_type":"روتيني|طارئ|تطعيم",
+    "diagnosis":"..","treatment":"..",
+    "medications":[{"name":"..","dose":".."}],
+    "cost": 120.0,
+    "duration_min": 25,
+    "notes":"..",
+    "project_id":"..|null","project_name":"(خارج مشروع)" or name
+  }],
+  // For non-daily (week/month/custom): return per-dog aggregates
+  "table": [{
+    "dog_id":"..","dog_code":"..","dog_name":"..",
+    "visits": n_total,
+    "by_visit_type": {"روتيني":x,"طارئ":y,"تطعيم":z},
+    "medications_count": m_total,
+    "cost_sum": c_sum,
+    "avg_duration_min": f|null
+  }]
+}
+
+Notes:
+- For **monthly view**, show monthly totals (no daily mini-cells). Optionally include a per-day breakdown in **web JSON only** under `"per_day"` if you want, but **omit in PDF** for readability.
+- For **custom ranges > 31 days**, aggregate weekly or monthly internally to keep tables manageable (weekly is fine); but still return the per-dog totals above. (We don’t need daily cells.)
+
+B) PDF export:
+GET `/api/reports/breeding/veterinary/export.pdf` with the same params as the JSON endpoint.
+Guards: has("reports:veterinary:export")
+
+- Build the same data as JSON.
+- Render Arabic RTL PDF (use existing ReportLab Arabic stack).
+- **Layout**:
+  • Header: عنوان "التقرير البيطري" + project (or "خارج مشاريع" / "الكل") + date range + dog (if filtered)
+  • If show_kpis=true: a compact KPI row (total_visits, by_visit_type summary, total_medications, total_cost)
+  • For daily: a detailed table (see table columns below) + footer area:
+      - ملاحظات عامة (multi-line)
+      - **اسم الطبيب البيطري** ________ **التوقيع** ________
+      - **مسؤول المشروع** ________ **التوقيع** ________
+  • For non-daily: a per-dog aggregate table + (optional) small note section
+- Save path:
+  `uploads/reports/veterinary/<YYYY-MM-DD>/breeding_veterinary_<projectCode_or_all>_<YYYY-MM-DD>_to_<YYYY-MM-DD>.pdf`
+- Return `{ "success": true, "file": "<download_path>" }`
+
+================================================
+STEP 5 — TEMPLATES (Arabic, RTL, reversed columns)
+================================================
+Create `templates/reports/breeding/veterinary.html` with:
+
+Filter bar (RTL):
+- المشروع (اختياري)  — select; include "(الكل/خارج مشاريع)" option
+- نوع المدة — select: يومي / أسبوعي / شهري / مخصص
+  • يومي: التاريخ (date)
+  • أسبوعي: بداية الأسبوع (الإثنين)
+  • شهري: الشهر (YYYY-MM)
+  • مخصص: من تاريخ / إلى تاريخ
+- الكلب (اختياري)
+- إظهار مؤشرات الأداء (KPIs) — checkbox (default ON)
+- أزرار: تحديث / تصدير PDF
+
+Results section:
+- If `granularity == "day"`:
+  • (Optional) KPI cards if enabled.
+  • **Daily detailed table** — **RIGHT→LEFT column order**:
+    [
+      "التاريخ","الوقت",
+      "نوع الزيارة","التشخيص","العلاج",
+      "الأدوية","التكلفة","المدة (دقيقة)","ملاحظات",
+      "اسم الطبيب","الكلب","المشروع"
+    ]
+    Render reversed(headers) so "التاريخ" appears at the right edge.
+- Else (week/month/custom):
+  • (Optional) KPI cards if enabled.
+  • **Per-dog aggregate table** — **RIGHT→LEFT**:
+    [
+      "متوسط المدة (دقيقة)","مجموع التكلفة","عدد الأدوية",
+      "حسب النوع (روتيني/طارئ/تطعيم)","عدد الزيارات",
+      "الكلب","الكود"
+    ]
+  • (Optional web-only) collapsible per-day summary for month/custom (skip in PDF).
+
+Include `/static/js/reports_veterinary_unified.js`.
+
+================================================
+STEP 6 — STATIC JS
+================================================
+Create `/static/js/reports_veterinary_unified.js`:
+- Read UI filters; show/hide date inputs based on range_type.
+- Build GET to `/api/reports/breeding/veterinary` with identical params.
+- Render KPI cards (if show_kpis=true).
+- Render either daily `rows` table or non-daily `table` (remember to **reverse column arrays** before DOM inject).
+- “Export PDF” → call `/api/reports/breeding/veterinary/export.pdf` with the same params; show download link.
+
+Use existing CSRF injection approach.
+
+================================================
+STEP 7 — NAVIGATION
+================================================
+In **التقارير → Breeding** add:
+- **"التقرير البيطري (موحّد)"** → `/reports/breeding/veterinary`
+Show only if the user has "reports:veterinary:view".
+
+================================================
+STEP 8 — PERFORMANCE & CACHING
+================================================
+- Add indices on VeterinaryVisit `(project_id, visit_date)` and `(dog_id, visit_date)` if not present.
+- Use `selectinload/joinedload` to fetch dog, vet, and project names.
+- Add a 60-second in-process cache for the JSON endpoint keyed by (user_id, project_id or "all", dog_id or "all", range_type, normalized date range, show_kpis).
+
+================================================
+STEP 9 — LEGACY (optional)
+================================================
+If you previously had separate veterinary daily/weekly routes, add a small redirect blueprint:
+- `/reports/breeding/veterinary/daily`  → 301 → `/reports/breeding/veterinary?range_type=daily&...`
+- `/reports/breeding/veterinary/weekly` → 301 → `/reports/breeding/veterinary?range_type=weekly&...`
+
+================================================
+STEP 10 — TESTS
+================================================
+Create `tests/test_reports_breeding_veterinary.py`:
+- Seed: admin + PM (owns project A), 3 dogs (one off-project), 1–2 vets.
+- Insert visits across date ranges with mixed visit_type, costs, meds, durations (include some with `project_id=NULL`).
+- JSON endpoint:
+  • daily: assert `rows` present, kpis math, Arabic labels preserved.
+  • weekly/monthly/custom: assert `table` present, aggregated counts/sums, off-project inclusion when project filter empty.
+  • PM scoping: PM sees only (project A + off-project) when project filter empty.
+- Export endpoint: returns JSON and file path exists; filename includes date range and project/all indicator.
+
+================================================
+IMPORTANT RTL NOTE
+================================================
+In **all** veterinary report tables (web + PDF), **reverse the column arrays** so the first Arabic header is on the **right edge** for best Arabic reading.
