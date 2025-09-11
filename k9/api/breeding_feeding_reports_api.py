@@ -138,8 +138,8 @@ def feeding_daily_data():
         func.sum(FeedingLog.grams).label('total_grams'),
         func.sum(FeedingLog.water_ml).label('total_water_ml'),
         func.count(func.distinct(FeedingLog.dog_id)).label('unique_dogs'),
-        func.sum(case([(FeedingLog.meal_type_fresh == True, 1)], else_=0)).label('fresh_meals'),
-        func.sum(case([(FeedingLog.meal_type_dry == True, 1)], else_=0)).label('dry_meals')
+        func.sum(case((FeedingLog.meal_type_fresh == True, 1), else_=0)).label('fresh_meals'),
+        func.sum(case((FeedingLog.meal_type_dry == True, 1), else_=0)).label('dry_meals')
     ).filter(
         FeedingLog.date == target_date,
         FeedingLog.project_id.in_(authorized_project_ids)
