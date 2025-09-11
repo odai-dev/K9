@@ -199,8 +199,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const date = document.getElementById('date-select').value;
         const dogId = document.getElementById('dog-select').value;
         
-        if (!projectId || !date) {
-            alert('يرجى اختيار المشروع والتاريخ');
+        if (!date) {
+            alert('يرجى اختيار التاريخ');
             return;
         }
         
@@ -208,9 +208,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Build URL with parameters
         const params = new URLSearchParams({
-            project_id: projectId,
             date: date
         });
+        
+        if (projectId) {
+            params.append('project_id', projectId);
+        }
         
         if (dogId) {
             params.append('dog_id', dogId);
@@ -249,7 +252,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const reportTitle = document.getElementById('report-title');
         const reportSubtitle = document.getElementById('report-subtitle');
         reportTitle.textContent = 'سجل التغذية اليومي';
-        reportSubtitle.textContent = `التاريخ: ${data.date} | المشروع: ${data.project_name}`;
+        const projectText = data.project_name ? ` | المشروع: ${data.project_name}` : ' | جميع المشاريع';
+        reportSubtitle.textContent = `التاريخ: ${data.date}${projectText}`;
         
         // Populate table
         const tbody = document.getElementById('feeding-table-body');
@@ -304,17 +308,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const date = document.getElementById('date-select').value;
         const dogId = document.getElementById('dog-select').value;
         
-        if (!projectId || !date) {
-            alert('يرجى اختيار المشروع والتاريخ');
+        if (!date) {
+            alert('يرجى اختيار التاريخ');
             return;
         }
         
         showLoading(true);
         
         const params = new URLSearchParams({
-            project_id: projectId,
             date: date
         });
+        
+        if (projectId) {
+            params.append('project_id', projectId);
+        }
         
         if (dogId) {
             params.append('dog_id', dogId);

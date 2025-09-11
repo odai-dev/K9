@@ -11,7 +11,7 @@
             <!-- Project Selection -->
             <div class="col-md-4">
                 <label for="project-select" class="form-label">المشروع</label>
-                <select class="form-select" id="project-select" name="project_id" required>
+                <select class="form-select" id="project-select" name="project_id">
                     <option value="">اختر المشروع...</option>
                     {% for project in accessible_projects %}
                     <option value="{{ project.id }}" 
@@ -21,7 +21,7 @@
                     {% endfor %}
                 </select>
                 <div class="invalid-feedback">
-                    يرجى اختيار مشروع
+                    خطأ في اختيار المشروع
                 </div>
             </div>
             
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
             hasDateOrWeek = weekStartSelect.value.trim() !== '';
         }
         
-        const isValid = hasProject && hasDateOrWeek;
+        const isValid = hasDateOrWeek; // Only require date/week, project is optional
         
         loadBtn.disabled = !isValid;
         exportBtn.disabled = !isValid;
@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update button states on change
     projectSelect.addEventListener('change', function() {
         updateButtonStates();
-        // Load dogs for selected project
+        // Load dogs for selected project (or all dogs if no project)
         loadDogsForProject(this.value);
     });
     
@@ -147,26 +147,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initial check
     updateButtonStates();
     
-    // Load dogs for initially selected project
-    if (projectSelect.value) {
-        loadDogsForProject(projectSelect.value);
-    }
+    // Load dogs initially (all dogs if no project selected)
+    loadDogsForProject(projectSelect.value || '');
 });
 
-// Function to load dogs for selected project
+// Function to load dogs for selected project (or all dogs)
 function loadDogsForProject(projectId) {
     const dogSelect = document.getElementById('dog-select');
-    
-    if (!projectId) {
-        dogSelect.innerHTML = '<option value="">جميع الكلاب</option>';
-        return;
-    }
     
     // Clear existing options
     dogSelect.innerHTML = '<option value="">جاري التحميل...</option>';
     
-    // Load dogs for the selected project using the main dogs API
-    fetch(`/api/dogs?project_id=${projectId}&status=ACTIVE&limit=100`)
+    // Build API URL - if no project selected, get all dogs
+    let apiUrl = '/api/dogs?status=ACTIVE&limit=100';
+    if (projectId) {
+        apiUrl += `&project_id=${projectId}`;
+    }
+    
+    // Load dogs using the main dogs API
+    fetch(apiUrl)
         .then(response => response.json())
         .then(data => {
             dogSelect.innerHTML = '<option value="">جميع الكلاب</option>';
@@ -174,7 +173,7 @@ function loadDogsForProject(projectId) {
                 data.data.forEach(dog => {
                     const option = document.createElement('option');
                     option.value = dog.id;
-                    option.textContent = `${dog.name} (${dog.microchip_id || dog.id.substring(0,8)})`;
+                    option.textContent = `${dog.name} (${dog.code || dog.id.substring(0,8)})`;
                     dogSelect.appendChild(option);
                 });
             }
