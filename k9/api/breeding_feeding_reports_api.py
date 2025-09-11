@@ -77,12 +77,10 @@ def feeding_daily_data():
     if not date_str:
         return jsonify({'error': 'التاريخ مطلوب'}), 400
     
-    # Input validation: Ensure project_id and dog_id are numeric when provided
+    # Input validation: Handle project_id (UUID) and dog_id (integer) when provided
     if project_id and project_id.strip():
-        try:
-            project_id = int(project_id)
-        except (ValueError, TypeError):
-            return jsonify({'error': 'معرف المشروع يجب أن يكون رقماً'}), 400
+        # project_id is a UUID string - keep as string for database queries
+        project_id = project_id.strip()
     else:
         project_id = None
     
@@ -251,12 +249,10 @@ def feeding_weekly_data():
     if not week_start_str:
         return jsonify({'error': 'بداية الأسبوع مطلوبة'}), 400
     
-    # Input validation: Ensure project_id and dog_id are numeric when provided
+    # Input validation: Handle project_id (UUID) and dog_id (integer) when provided
     if project_id and project_id.strip():
-        try:
-            project_id = int(project_id)
-        except (ValueError, TypeError):
-            return jsonify({'error': 'معرف المشروع يجب أن يكون رقماً'}), 400
+        # project_id is a UUID string - keep as string for database queries
+        project_id = project_id.strip()
     else:
         project_id = None
     
@@ -422,12 +418,10 @@ def export_daily_pdf():
     if not date_str:
         return jsonify({'error': 'التاريخ مطلوب'}), 400
     
-    # Input validation: Ensure project_id and dog_id are numeric when provided
+    # Input validation: Handle project_id (UUID) and dog_id (integer) when provided
     if project_id and project_id.strip():
-        try:
-            project_id = int(project_id)
-        except (ValueError, TypeError):
-            return jsonify({'error': 'معرف المشروع يجب أن يكون رقماً'}), 400
+        # project_id is a UUID string - keep as string for database queries
+        project_id = project_id.strip()
     else:
         project_id = None
     
@@ -535,12 +529,10 @@ def export_weekly_pdf():
     if not week_start_str:
         return jsonify({'error': 'بداية الأسبوع مطلوبة'}), 400
     
-    # Input validation: Ensure project_id and dog_id are numeric when provided
+    # Input validation: Handle project_id (UUID) and dog_id (integer) when provided
     if project_id and project_id.strip():
-        try:
-            project_id = int(project_id)
-        except (ValueError, TypeError):
-            return jsonify({'error': 'معرف المشروع يجب أن يكون رقماً'}), 400
+        # project_id is a UUID string - keep as string for database queries
+        project_id = project_id.strip()
     else:
         project_id = None
     
