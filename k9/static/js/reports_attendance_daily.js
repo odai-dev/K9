@@ -398,21 +398,11 @@ class DailyAttendanceReport {
     }
 
     formatDateArabic(dateStr) {
-        // Convert date to Arabic format (dd/mm/yyyy with Arabic numerals)
-        const date = new Date(dateStr);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
+        // Convert date to DD/MM/YYYY format with standard numerals
+        // Split the string to avoid timezone issues with Date constructor
+        const [year, month, day] = dateStr.split('-');
         
-        const englishDate = `${day}/${month}/${year}`;
-        
-        // Convert to Arabic numerals
-        const arabicNumerals = {
-            '0': '٠', '1': '١', '2': '٢', '3': '٣', '4': '٤',
-            '5': '٥', '6': '٦', '7': '٧', '8': '٨', '9': '٩'
-        };
-        
-        return englishDate.replace(/[0-9]/g, (digit) => arabicNumerals[digit] || digit);
+        return `${day}/${month}/${year}`;
     }
 
     escapeHtml(text) {
