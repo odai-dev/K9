@@ -4647,6 +4647,149 @@ def cleaning_edit(id):
                          cleaning_log=cleaning_log,
                          today=date.today())
 
+# Feeding Routes (Breeding Module)
+@main_bp.route('/breeding/feeding')
+@login_required 
+@require_sub_permission('Breeding', 'التغذية', PermissionType.VIEW)
+def breeding_feeding():
+    """Feeding logs main page"""
+    # Get projects accessible by user
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        projects = Project.query.filter(Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])).all()
+    else:
+        projects = get_user_assigned_projects(current_user)
+    
+    # Get accessible dogs
+    accessible_dogs = get_user_accessible_dogs(current_user)
+    
+    # Get accessible employees for recorder field
+    accessible_employees = get_user_accessible_employees(current_user)
+    
+    # Arabic display mappings for enums
+    prep_method_display = {
+        PrepMethod.BOILED.value: "مسلوق",
+        PrepMethod.STEAMED.value: "مطبوخ بالبخار", 
+        PrepMethod.SOAKED.value: "منقوع",
+        PrepMethod.OTHER.value: "أخرى"
+    }
+    
+    body_condition_display = {
+        BodyConditionScale.VERY_THIN.value: "نحيف جداً",
+        BodyConditionScale.THIN.value: "نحيف",
+        BodyConditionScale.BELOW_IDEAL.value: "أقل من المثالي",
+        BodyConditionScale.NEAR_IDEAL.value: "قريب من المثالي",
+        BodyConditionScale.IDEAL.value: "مثالي",
+        BodyConditionScale.ABOVE_IDEAL.value: "أعلى من المثالي",
+        BodyConditionScale.FULL.value: "ممتلئ",
+        BodyConditionScale.OBESE.value: "بدين",
+        BodyConditionScale.VERY_OBESE.value: "بدين جداً"
+    }
+    
+    return render_template('breeding/feeding_list.html',
+                         projects=projects,
+                         dogs=accessible_dogs,
+                         employees=accessible_employees,
+                         prep_method_display=prep_method_display,
+                         body_condition_display=body_condition_display)
+
+@main_bp.route('/breeding/feeding/new')
+@login_required
+@require_sub_permission('Breeding', 'التغذية', PermissionType.CREATE)
+def breeding_feeding_new():
+    """Create new feeding log entry"""
+    # Get projects accessible by user  
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        projects = Project.query.filter(Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])).all()
+    else:
+        projects = get_user_assigned_projects(current_user)
+    
+    # Get accessible dogs
+    accessible_dogs = get_user_accessible_dogs(current_user)
+    
+    # Get accessible employees for recorder field
+    accessible_employees = get_user_accessible_employees(current_user)
+    
+    # Arabic choices for enums
+    prep_method_choices = [
+        (PrepMethod.BOILED.value, "مسلوق"),
+        (PrepMethod.STEAMED.value, "مطبوخ بالبخار"),
+        (PrepMethod.SOAKED.value, "منقوع"),
+        (PrepMethod.OTHER.value, "أخرى")
+    ]
+    
+    body_condition_choices = [
+        (BodyConditionScale.VERY_THIN.value, "نحيف جداً"),
+        (BodyConditionScale.THIN.value, "نحيف"),
+        (BodyConditionScale.BELOW_IDEAL.value, "أقل من المثالي"),
+        (BodyConditionScale.NEAR_IDEAL.value, "قريب من المثالي"),
+        (BodyConditionScale.IDEAL.value, "مثالي"),
+        (BodyConditionScale.ABOVE_IDEAL.value, "أعلى من المثالي"),
+        (BodyConditionScale.FULL.value, "ممتلئ"),
+        (BodyConditionScale.OBESE.value, "بدين"),
+        (BodyConditionScale.VERY_OBESE.value, "بدين جداً")
+    ]
+    
+    return render_template('breeding/feeding_log_form.html',
+                         projects=projects,
+                         dogs=accessible_dogs,
+                         employees=accessible_employees,
+                         prep_method_choices=prep_method_choices,
+                         body_condition_choices=body_condition_choices,
+                         feeding_log=None,
+                         today=date.today())
+
+@main_bp.route('/breeding/feeding/<id>/edit')
+@login_required
+@require_sub_permission('Breeding', 'التغذية', PermissionType.EDIT)
+def breeding_feeding_edit(id):
+    """Edit existing feeding log entry"""
+    feeding_log = FeedingLog.query.get_or_404(id)
+    
+    # Get projects accessible by user
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        projects = Project.query.filter(Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])).all()
+    else:
+        projects = get_user_assigned_projects(current_user)
+        # Verify user has access to this log's project (allow if no project assigned)
+        if feeding_log.project is not None and feeding_log.project not in projects:
+            abort(403)
+    
+    # Get accessible dogs
+    accessible_dogs = get_user_accessible_dogs(current_user)
+    
+    # Get accessible employees 
+    accessible_employees = get_user_accessible_employees(current_user)
+    
+    # Arabic choices for enums
+    prep_method_choices = [
+        (PrepMethod.BOILED.value, "مسلوق"),
+        (PrepMethod.STEAMED.value, "مطبوخ بالبخار"),
+        (PrepMethod.SOAKED.value, "منقوع"),
+        (PrepMethod.OTHER.value, "أخرى")
+    ]
+    
+    body_condition_choices = [
+        (BodyConditionScale.VERY_THIN.value, "نحيف جداً"),
+        (BodyConditionScale.THIN.value, "نحيف"),
+        (BodyConditionScale.BELOW_IDEAL.value, "أقل من المثالي"),
+        (BodyConditionScale.NEAR_IDEAL.value, "قريب من المثالي"),
+        (BodyConditionScale.IDEAL.value, "مثالي"),
+        (BodyConditionScale.ABOVE_IDEAL.value, "أعلى من المثالي"),
+        (BodyConditionScale.FULL.value, "ممتلئ"),
+        (BodyConditionScale.OBESE.value, "بدين"),
+        (BodyConditionScale.VERY_OBESE.value, "بدين جداً")
+    ]
+    
+    return render_template('breeding/feeding_log_form.html',
+                         projects=projects,
+                         dogs=accessible_dogs,
+                         employees=accessible_employees,
+                         prep_method_choices=prep_method_choices,
+                         body_condition_choices=body_condition_choices,
+                         feeding_log=feeding_log,
+                         today=date.today())
+
+
 @main_bp.route('/breeding/deworming')
 @login_required
 def breeding_deworming():
