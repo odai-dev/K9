@@ -1,0 +1,205 @@
+You are directly editing the K9 Operations Management System app.
+
+GOAL
+Add Arabic/RTL **Daily Checkup reports** under Reports → Breeding to summarize data from the Daily Checkup module (الفحص الظاهري اليومي). Provide:
+- Daily report (by project, day, optional dog).
+- Weekly roll-up (by project, week start, optional dog).
+- PDF export for both, with Arabic fonts, RTL, and signature blocks (caretaker & PM).
+- Tables must render **right→left** (reverse columns array before rendering).
+
+ASSUMED DailyCheckupLog FIELDS (adapt selectors to actual field names)
+- project_id (UUID), dog_id (UUID), date (Date), time (Time)
+- العين، الأذن، الأنف، الأطراف_الأمامية، الأطراف_الخلفية، الشعر، الذيل  (enum Arabic: "طبيعي", "احمرار", "تورم", "جروح", ... — whatever we stored)
+- ملاحظات_فحص (Text)
+- شدة_الحالة (enum Arabic: "خفيف","متوسط","شديد")  // derived or stored
+- recorder_employee_id (UUID)  // المربي/السائس الذي سجّل الفحص
+
+If names differ, keep **Arabic labels** in UI/PDF but map to the actual model fields.
+
+================================================
+STEP 1 — PERMISSIONS
+================================================
+Add & seed:
+- "reports:checkup_daily:view"
+- "reports:checkup_daily:export"
+- "reports:checkup_weekly:view"
+- "reports:checkup_weekly:export"
+
+Grant GENERAL_ADMIN: all. PROJECT_MANAGER: view/export only for their projects.
+
+================================================
+STEP 2 — ROUTES (pages)
+================================================
+Create blueprint `breeding_checkup_reports_routes`:
+
+GET `/reports/breeding/checkup/daily`
+  - Renders `templates/reports/breeding/checkup_daily.html`
+  - Guard: login + has("reports:checkup_daily:view")
+
+GET `/reports/breeding/checkup/weekly`
+  - Renders `templates/reports/breeding/checkup_weekly.html`
+  - Guard: login + has("reports:checkup_weekly:view")
+
+Register in app factory.
+
+================================================
+STEP 3 — APIs (data providers)
+================================================
+Create blueprint `breeding_checkup_reports_api`:
+
+1) GET `/api/reports/breeding/checkup/daily?project_id=&date=&dog_id=`
+- Guard: login + permission + PM scoping.
+- Return JSON:
+{
+  "filters": {...},
+  "kpis": {
+    "total_checks": N,
+    "by_severity": {"خفيف":a,"متوسط":b,"شديد":c},
+    "flags": {  // count of non-"طبيعي" findings by body part
+      "العين":n1,"الأذن":n2,"الأنف":n3,"الأطراف الأمامية":n4,"الأطراف الخلفية":n5,"الشعر":n6,"الذيل":n7
+    }
+  },
+  "rows": [{
+    "date":"YYYY-MM-DD","time":"HH:MM:SS",
+    "dog_id":"..","dog_code":"..","dog_name":"..",
+    "المربي":"<employee name or role>",
+    "العين":"طبيعي|احمرار|تورم|...",
+    "الأذن":"..","الأنف":"..","الأطراف الأمامية":"..","الأطراف الخلفية":"..","الشعر":"..","الذيل":"..",
+    "شدة الحالة":"خفيف|متوسط|شديد",
+    "ملاحظات":"..."
+  }]
+}
+
+Implementation notes:
+- Query DailyCheckupLog filtered by project_id (required), date (required), optional dog_id.
+- Join Dog/Project/Employee for names; use selectinload/joinedload.
+- Treat "non-normal" as every enum value ≠ "طبيعي" (or actual normal label).
+
+2) GET `/api/reports/breeding/checkup/weekly?project_id=&week_start=&dog_id=`
+- week_start = Monday (YYYY-MM-DD). Range = [week_start .. week_start+6].
+- Return JSON:
+{
+  "filters": {...},
+  "kpis": {
+    "dogs_count": D,
+    "checks_count": N,
+    "by_severity": {"خفيف":a,"متوسط":b,"شديد":c},
+    "flagged_dogs": K  // dogs with any non-normal flag during the week
+  },
+  "table": [{
+    "dog_id":"..","dog_code":"..","dog_name":"..",
+    "checks": n_checks,
+    "severity_max":"خفيف|متوسط|شديد", // max severity seen for that dog in the week (order: شديد>متوسط>خفيف)
+    "flags_total": t, // total non-normal flags in the week across all parts
+    "flags_by_part": {"العين":x,"الأذن":y,"الأنف":z,"الأطراف الأمامية":a,"الأطراف الخلفية":b,"الشعر":c,"الذيل":d},
+    "days": {
+      "Mon": {"severity":"…","flags":m},
+      "Tue": {...}, ..., "Sun": {...}
+    }
+  }]
+}
+
+Implementation notes:
+- Compute per-dog aggregates and daily mini-cells.
+- For severity_max: define ordering array ["خفيف","متوسط","شديد"] and take the max by index.
+
+3) PDF export endpoints:
+- GET `/api/reports/breeding/checkup/daily/export.pdf?project_id=&date=&dog_id=`
+  Guard: has("reports:checkup_daily:export")
+- GET `/api/reports/breeding/checkup/weekly/export.pdf?project_id=&week_start=&dog_id=`
+  Guard: has("reports:checkup_weekly:export")
+
+Both:
+- Reuse the JSON builders above.
+- Render Arabic RTL PDF (ReportLab + arabic-reshaper + bidi).
+- Save under `uploads/reports/checkup/<YYYY-MM-DD>/...pdf`
+- Return `{ "success": true, "file": "<download_path>" }`
+
+================================================
+STEP 4 — TEMPLATES (Arabic RTL, reversed columns)
+================================================
+Create:
+
+1) `templates/reports/breeding/checkup_daily.html`
+- Filter bar (RTL): المشروع (required), التاريخ (required), الكلب (optional), أزرار (تحديث/تصدير PDF)
+- KPI cards: إجمالي الفحوصات، شدة الحالات (خفيف/متوسط/شديد)، أكثر الأجزاء ملاحظةً (top 3)
+- **Table headers (RIGHT→LEFT order)**:
+  [
+    "التاريخ","الوقت",
+    "العين","الأذن","الأنف","الأطراف الأمامية","الأطراف الخلفية","الشعر","الذيل",
+    "شدة الحالة","ملاحظات",
+    "المربي","الكلب","المشروع"
+  ]
+  Render reversed(headers) so "التاريخ" appears at the RIGHT edge.
+- Footer (print-friendly), Arabic RTL, to match your caretaker sheet style:
+  - **ملاحظات عامة:** (multi-line)
+  - **اسم المربي:** __________ **التوقيع:** __________
+  - **مسؤول المشروع:** ________ **التوقيع:** __________
+  (Style consistent with the daily caretaker form layout you shared.)  // (Reference: adopt the visual conventions of the caretaker daily sheet.)  // 
+
+2) `templates/reports/breeding/checkup_weekly.html`
+- Filter bar: المشروع، بداية الأسبوع (الاثنين)، الكلب (اختياري)، أزرار التحديث/تصدير PDF
+- KPI cards: عدد الكلاب المفحوصة، إجمالي الفحوصات، توزيع الشدة، عدد الكلاب ذات ملاحظات
+- Main table per dog, **RIGHT→LEFT headers**:
+  [
+    "مجموع الملاحظات","أقصى شدة خلال الأسبوع",
+    "الأحد","السبت","الجمعة","الخميس","الأربعاء","الثلاثاء","الاثنين",
+    "العين","الأذن","الأنف","الأطراف الأمامية","الأطراف الخلفية","الشعر","الذيل",
+    "عدد الفحوصات","الكلب","الكود"
+  ]
+- Day cells show a tiny badge: severity letter (خ/م/ش) + a small number for flags that day.
+
+================================================
+STEP 5 — STATIC JS
+================================================
+Create `/static/js/reports_checkup.js` used by both pages:
+- On load and filter change, call the respective API, then render:
+  - KPI cards (aggregate counts)
+  - Tables (remember to **reverse columns** arrays)
+  - “Export PDF” calls the export endpoint; show a download link
+- Use the same CSRF pattern as the rest of the app.
+
+================================================
+STEP 6 — PDF (server)
+================================================
+- Use existing Arabic PDF stack.
+- DAILY PDF layout:
+  - Header: المشروع، التاريخ (and dog if filtered)
+  - KPI row
+  - Table (same columns; RTL; reversed header order)
+  - Notes & signature block (caretaker + PM), mirroring your paper format
+- WEEKLY PDF layout:
+  - Header: المشروع، نطاق الأسبوع
+  - KPI row
+  - Per-dog table
+  - Optional notes & signature block
+
+================================================
+STEP 7 — NAVIGATION
+================================================
+In the Reports → Breeding group, add:
+- **"تقرير الفحص الظاهري اليومي"** → `/reports/breeding/checkup/daily`
+- **"تقرير الفحص الظاهري الأسبوعي"** → `/reports/breeding/checkup/weekly`
+Show items only if the matching view permission is granted.
+
+================================================
+STEP 8 — PERFORMANCE
+================================================
+- Add indexes if needed on (project_id, date) and (dog_id, date).
+- Use selectinload/joinedload for names to avoid N+1.
+- Add a 60s in-process cache on JSON responses keyed by (user_id, project_id, date or week_start, dog_id).
+
+================================================
+STEP 9 — TESTS
+================================================
+Create `tests/test_reports_breeding_checkup.py`:
+- Seed: 1 project, 3 dogs, PM user.
+- Insert DailyCheckupLog rows across a day and a week with varied severities and flags.
+- DAILY: assert by_severity counts, flags counts, and row shaping.
+- WEEKLY: assert per-dog aggregates, severity_max ordering, daily mini-cells, flags totals.
+- Export endpoints: assert JSON ok and file path exists.
+
+================================================
+IMPORTANT RTL NOTE
+================================================
+In **all** Daily Checkup report tables, reverse the columns array before rendering so the first Arabic header is on the **right**.
