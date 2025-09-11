@@ -808,6 +808,19 @@ def feeding_unified_data():
     project_id = request.args.get('project_id', '').strip() or None
     dog_id = request.args.get('dog_id', '').strip() or None
     
+    # Handle "no_project" special case
+    no_project_filter = False
+    if project_id and project_id.strip():
+        if project_id.strip() == "no_project":
+            # Special case: filter for records with NULL project_id
+            no_project_filter = True
+            project_id = None
+        else:
+            # project_id is a UUID string - keep as string for database queries
+            project_id = project_id.strip()
+    else:
+        project_id = None
+    
     # Input validation: Handle dog_id (UUID) when provided  
     if dog_id:
         try:
@@ -846,15 +859,20 @@ def feeding_unified_data():
         return jsonify({'error': str(e)}), 400
     
     # Security: Get user's authorized projects
-    if project_id is not None:
+    if project_id is not None and not no_project_filter:
+        # Verify project access for specific project
         if not check_project_access(current_user, project_id):
             return jsonify({'error': 'ليس لديك صلاحية للوصول لهذا المشروع'}), 403
         authorized_project_ids = [project_id]
-    else:
+    elif not no_project_filter:
+        # Get all authorized projects for the user
         authorized_projects = get_user_projects(current_user)
         authorized_project_ids = [p.id for p in authorized_projects]
         if not authorized_project_ids:
             return jsonify({'error': 'ليس لديك صلاحية للوصول لأي مشروع'}), 403
+    else:
+        # no_project_filter case: no project authorization needed
+        authorized_project_ids = []
     
     # Build base query with date range
     base_query = db.session.query(FeedingLog).options(
@@ -863,9 +881,19 @@ def feeding_unified_data():
         selectinload(FeedingLog.recorder_employee)
     ).filter(
         FeedingLog.date >= date_from,
-        FeedingLog.date <= date_to,
-        FeedingLog.project_id.in_(authorized_project_ids)
+        FeedingLog.date <= date_to
     )
+    
+    # Apply project filtering based on the filter type
+    if no_project_filter:
+        # Special case: only records with NULL project_id
+        base_query = base_query.filter(FeedingLog.project_id.is_(None))
+    elif project_id is not None:
+        # Specific project filter
+        base_query = base_query.filter(FeedingLog.project_id == project_id)
+    else:
+        # All authorized projects (default behavior)
+        base_query = base_query.filter(FeedingLog.project_id.in_(authorized_project_ids))
     
     if dog_id:
         base_query = base_query.filter(FeedingLog.dog_id == dog_id)
