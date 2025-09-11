@@ -23,7 +23,7 @@ def create_admin_user():
     # Import Flask app and models
     try:
         from app import app, db
-        from models import User, UserRole
+        from k9.models.models import User, UserRole
     except ImportError as e:
         print(f"Error importing application modules: {e}")
         print("Make sure you're running this script from the application directory.")
