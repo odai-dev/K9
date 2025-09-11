@@ -78,17 +78,21 @@ def feeding_daily_data():
         return jsonify({'error': 'التاريخ مطلوب'}), 400
     
     # Input validation: Ensure project_id and dog_id are numeric when provided
-    if project_id is not None:
+    if project_id and project_id.strip():
         try:
             project_id = int(project_id)
         except (ValueError, TypeError):
             return jsonify({'error': 'معرف المشروع يجب أن يكون رقماً'}), 400
+    else:
+        project_id = None
     
-    if dog_id is not None:
+    if dog_id and dog_id.strip():
         try:
             dog_id = int(dog_id)
         except (ValueError, TypeError):
             return jsonify({'error': 'معرف الكلب يجب أن يكون رقماً'}), 400
+    else:
+        dog_id = None
     
     # Security fix: Get user's authorized projects when project_id is omitted
     if project_id is not None:
@@ -248,17 +252,21 @@ def feeding_weekly_data():
         return jsonify({'error': 'بداية الأسبوع مطلوبة'}), 400
     
     # Input validation: Ensure project_id and dog_id are numeric when provided
-    if project_id is not None:
+    if project_id and project_id.strip():
         try:
             project_id = int(project_id)
         except (ValueError, TypeError):
             return jsonify({'error': 'معرف المشروع يجب أن يكون رقماً'}), 400
+    else:
+        project_id = None
     
-    if dog_id is not None:
+    if dog_id and dog_id.strip():
         try:
             dog_id = int(dog_id)
         except (ValueError, TypeError):
             return jsonify({'error': 'معرف الكلب يجب أن يكون رقماً'}), 400
+    else:
+        dog_id = None
     
     # Security fix: Get user's authorized projects when project_id is omitted
     if project_id is not None:
@@ -415,17 +423,21 @@ def export_daily_pdf():
         return jsonify({'error': 'التاريخ مطلوب'}), 400
     
     # Input validation: Ensure project_id and dog_id are numeric when provided
-    if project_id is not None:
+    if project_id and project_id.strip():
         try:
             project_id = int(project_id)
         except (ValueError, TypeError):
             return jsonify({'error': 'معرف المشروع يجب أن يكون رقماً'}), 400
+    else:
+        project_id = None
     
-    if dog_id is not None:
+    if dog_id and dog_id.strip():
         try:
             dog_id = int(dog_id)
         except (ValueError, TypeError):
             return jsonify({'error': 'معرف الكلب يجب أن يكون رقماً'}), 400
+    else:
+        dog_id = None
     
     # Security fix: Get user's authorized projects when project_id is omitted
     if project_id is not None:
@@ -524,17 +536,21 @@ def export_weekly_pdf():
         return jsonify({'error': 'بداية الأسبوع مطلوبة'}), 400
     
     # Input validation: Ensure project_id and dog_id are numeric when provided
-    if project_id is not None:
+    if project_id and project_id.strip():
         try:
             project_id = int(project_id)
         except (ValueError, TypeError):
             return jsonify({'error': 'معرف المشروع يجب أن يكون رقماً'}), 400
+    else:
+        project_id = None
     
-    if dog_id is not None:
+    if dog_id and dog_id.strip():
         try:
             dog_id = int(dog_id)
         except (ValueError, TypeError):
             return jsonify({'error': 'معرف الكلب يجب أن يكون رقماً'}), 400
+    else:
+        dog_id = None
     
     # Security fix: Get user's authorized projects when project_id is omitted
     if project_id is not None:
