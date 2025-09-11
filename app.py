@@ -247,6 +247,18 @@ with app.app_context():
         print(f"⚠ Warning: Could not register breeding feeding reports: {e}")
         # Continue without breeding feeding reports for now
     
+    # Register Breeding Checkup Reports blueprints
+    try:
+        from k9.routes.breeding_checkup_reports_routes import bp as breeding_checkup_reports_ui_bp
+        from k9.api.breeding_checkup_reports_api import bp as breeding_checkup_reports_api_bp
+        app.register_blueprint(breeding_checkup_reports_ui_bp, url_prefix='/reports/breeding/checkup')
+        app.register_blueprint(breeding_checkup_reports_api_bp, url_prefix='/api/reports/breeding/checkup')
+        print("✓ Breeding checkup reports registered successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Could not register breeding checkup reports: {e}")
+        # Continue without breeding checkup reports for now
+    
     # Initialize Security Middleware
     try:
         from k9.utils.security_middleware import SecurityMiddleware
