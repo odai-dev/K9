@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}التغذية — السجل اليومي - نظام إدارة عمليات الكلاب البوليسية{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-2 text-gray-800">
+                        <i class="fas fa-utensils text-success me-2"></i>التغذية — السجل اليومي
+                    </h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">الرئيسية</a></li>
+                            <li class="breadcrumb-item">التربية</li>
+                            <li class="breadcrumb-item active" aria-current="page">التغذية — السجل اليومي</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="{{ url_for('main.breeding_feeding_new') }}" class="btn btn-success">
+                        <i class="fas fa-plus me-2"></i>إضافة سجل تغذية
+                    </a>
+                </div>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="row mb-4" id="kpiCards">
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card border-right-primary shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col me-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        إجمالي السجلات
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalRecords">0</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-list-alt fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card border-right-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col me-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        مجموع الغرامات
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalGrams">0 غم</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-weight fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card border-right-info shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col me-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                        مجموع ماء الشرب
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalWater">0 مل</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-tint fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card border-right-warning shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col me-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                        عدد المكملات
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalSupplements">0</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-pills fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">فلتر البيانات</h6>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="clearFilters">
+                        <i class="fas fa-times me-1"></i>مسح الفلاتر
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label for="projectFilter" class="form-label">المشروع</label>
+                            <select class="form-select" id="projectFilter">
+                                <option value="">جميع المشاريع</option>
+                                <option value="no_project">بدون مشروع</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="dateFromFilter" class="form-label">من تاريخ</label>
+                            <input type="date" class="form-control" id="dateFromFilter">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="dateToFilter" class="form-label">إلى تاريخ</label>
+                            <input type="date" class="form-control" id="dateToFilter">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="dogFilter" class="form-label">الكلب</label>
+                            <select class="form-select" id="dogFilter">
+                                <option value="">جميع الكلاب</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <button type="button" class="btn btn-primary" id="applyFilters">
+                                <i class="fas fa-search me-2"></i>تطبيق الفلاتر
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">سجلات التغذية</h6>
+                </div>
+                <div class="card-body">
+                    <!-- Loading Spinner -->
+                    <div id="loadingSpinner" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">جاري التحميل...</span>
+                        </div>
+                        <p class="mt-2 text-muted">جاري تحميل البيانات...</p>
+                    </div>
+
+                    <!-- Table Container -->
+                    <div class="table-responsive" id="tableContainer" style="display: none;">
+                        <table class="table table-bordered" id="feedingLogTable">
+                            <thead class="table-light">
+                                <tr style="direction: rtl;">
+                                    <!-- Headers in RIGHT → LEFT order (Arabic RTL) -->
+                                    <th>إجراءات</th>
+                                    <th>المشروع</th>
+                                    <th>الكلب</th>
+                                    <th>ملاحظات</th>
+                                    <th>كتلة الجسم</th>
+                                    <th>مكملات غذائية</th>
+                                    <th>ماء الشرب (مل)</th>
+                                    <th>الكمية (غم)</th>
+                                    <th>طريقة التحضير</th>
+                                    <th>اسم الوجبة</th>
+                                    <th>نوع الوجبة (طازج/مجفف)</th>
+                                    <th>الوقت</th>
+                                    <th>التاريخ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <nav aria-label="Pagination" id="paginationContainer" style="display: none;">
+                        <ul class="pagination justify-content-center" id="pagination">
+                        </ul>
+                    </nav>
+
+                    <!-- Empty State -->
+                    <div id="emptyState" class="text-center py-5" style="display: none;">
+                        <i class="fas fa-utensils fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">لا توجد سجلات تغذية</h5>
+                        <p class="text-muted">ابدأ بإضافة أول سجل تغذية للكلاب</p>
+                        <a href="{{ url_for('main.breeding_feeding_new') }}" class="btn btn-success">
+                            <i class="fas fa-plus me-2"></i>إضافة سجل تغذية
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">تأكيد الحذف</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                هل أنت متأكد من حذف سجل التغذية هذا؟ لا يمكن التراجع عن هذا الإجراء.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">حذف</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/feeding_log.js') }}"></script>
+{% endblock %}
