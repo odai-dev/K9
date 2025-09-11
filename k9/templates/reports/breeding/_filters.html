@@ -165,18 +165,19 @@ function loadDogsForProject(projectId) {
     // Clear existing options
     dogSelect.innerHTML = '<option value="">جاري التحميل...</option>';
     
-    // Here you would make an AJAX call to load dogs for the project
-    // For now, we'll add a placeholder
-    fetch(`/api/projects/${projectId}/dogs`)
+    // Load dogs for the selected project using the main dogs API
+    fetch(`/api/dogs?project_id=${projectId}&status=ACTIVE&limit=100`)
         .then(response => response.json())
         .then(data => {
             dogSelect.innerHTML = '<option value="">جميع الكلاب</option>';
-            data.dogs.forEach(dog => {
-                const option = document.createElement('option');
-                option.value = dog.id;
-                option.textContent = `${dog.name} (${dog.tag_number})`;
-                dogSelect.appendChild(option);
-            });
+            if (data.success && data.data) {
+                data.data.forEach(dog => {
+                    const option = document.createElement('option');
+                    option.value = dog.id;
+                    option.textContent = `${dog.name} (${dog.microchip_id || dog.id.substring(0,8)})`;
+                    dogSelect.appendChild(option);
+                });
+            }
         })
         .catch(error => {
             console.error('Error loading dogs:', error);
