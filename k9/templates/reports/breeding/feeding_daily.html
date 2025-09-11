@@ -335,8 +335,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 // Create download link
                 const link = document.createElement('a');
-                link.href = `/${data.path}`;
-                link.download = data.path.split('/').pop();
+                link.href = data.file;
+                link.download = data.file.split('/').pop();
                 link.click();
             })
             .catch(error => {
