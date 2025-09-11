@@ -704,19 +704,20 @@ def _generate_feeding_pdf(title: str, data: dict, output_path: str):
         story.append(Paragraph(rtl("الملخص التنفيذي"), header_style))
         
         kpi_data = []
-        if 'total_meals' in kpis:
-            kpi_data.append([rtl('إجمالي الوجبات'), str(kpis['total_meals'])])
-        if 'total_grams' in kpis:
-            kpi_data.append([rtl('إجمالي الغرامات'), str(kpis['total_grams'])])
-        if 'total_water_ml' in kpis:
-            kpi_data.append([rtl('إجمالي الماء (مل)'), str(kpis['total_water_ml'])])
-        if 'dogs_count' in kpis:
-            kpi_data.append([rtl('عدد الكلاب'), str(kpis['dogs_count'])])
+        # REVERSED order of KPIs and REVERSED columns (value first, then label)
         if 'meals_count' in kpis:
-            kpi_data.append([rtl('عدد الوجبات'), str(kpis['meals_count'])])
+            kpi_data.append([str(kpis['meals_count']), rtl('عدد الوجبات')])
+        if 'dogs_count' in kpis:
+            kpi_data.append([str(kpis['dogs_count']), rtl('عدد الكلاب')])
+        if 'total_water_ml' in kpis:
+            kpi_data.append([str(kpis['total_water_ml']), rtl('إجمالي الماء (مل)')])
+        if 'total_grams' in kpis:
+            kpi_data.append([str(kpis['total_grams']), rtl('إجمالي الغرامات')])
+        if 'total_meals' in kpis:
+            kpi_data.append([str(kpis['total_meals']), rtl('إجمالي الوجبات')])
             
         if kpi_data:
-            kpi_table = Table(kpi_data, colWidths=[3*72, 2*72])
+            kpi_table = Table(kpi_data, colWidths=[2*72, 3*72])
             kpi_table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, -1), colors.lightgrey),
                 ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
