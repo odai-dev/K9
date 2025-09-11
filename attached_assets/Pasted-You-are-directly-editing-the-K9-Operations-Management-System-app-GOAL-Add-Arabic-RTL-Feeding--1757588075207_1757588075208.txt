@@ -1,0 +1,196 @@
+You are directly editing the K9 Operations Management System app.
+
+GOAL
+Add Arabic/RTL **Feeding reports** under Reports → Breeding that summarize data from the Feeding module (per-meal logs). Keep outputs printable and exportable to PDF. **Do not** change DB schema. Tables must render **right→left** (reverse column order).
+
+Assumptions about FeedingLog fields (already implemented):
+- project_id (UUID), dog_id (UUID), date (Date), time (Time)
+- نوع_الوجبة (enum: "طازج","مجفف","مختلط")
+- اسم_الوجبة (String)
+- كمية_الوجبة_غرام (Float/int grams)
+- ماء_الشرب_مل (Float/int ml)
+- طريقة_التحضير (String: "غلي","نقع","بدون"…)
+- مكملات (JSON list of {"name": str, "dose": str})
+- كتلة_الجسد_BCS (Enum Arabic: "1".."9" or labeled Arabic scale)
+- ملاحظات (Text)
+
+If field names differ, adapt selectors but **keep Arabic labels in UI/PDF**.
+
+================================================
+STEP 1 — PERMISSIONS
+================================================
+Add new permissions and seed defaults:
+- "reports:feeding_daily:view"
+- "reports:feeding_daily:export"
+- "reports:feeding_weekly:view"
+- "reports:feeding_weekly:export"
+
+Grants:
+- GENERAL_ADMIN: all four
+- PROJECT_MANAGER: view/export but only for their assigned projects
+
+================================================
+STEP 2 — ROUTES (pages)
+================================================
+Create a new blueprint `breeding_feeding_reports_routes` with:
+
+GET `/reports/breeding/feeding/daily`
+  - Renders `templates/reports/breeding/feeding_daily.html`
+  - Guards: @login_required + has("reports:feeding_daily:view")
+
+GET `/reports/breeding/feeding/weekly`
+  - Renders `templates/reports/breeding/feeding_weekly.html`
+  - Guards: @login_required + has("reports:feeding_weekly:view")
+
+Register blueprint in app factory.
+
+================================================
+STEP 3 — APIs (data)
+================================================
+Create new blueprint `breeding_feeding_reports_api`:
+
+1) GET `/api/reports/breeding/feeding/daily?project_id=&date=&dog_id=`
+  - Guards: login + permission + PM scoping (must own project_id)
+  - Returns JSON:
+    {
+      "filters": {...},
+      "kpis": {
+        "total_meals": N,
+        "total_grams": int,
+        "total_water_ml": int,
+        "by_meal_type": {"طازج":a,"مجفف":b,"مختلط":c},
+        "bcs_dist": {"1":n1,"2":n2,...,"9":n9}
+      },
+      "rows": [
+        {
+          "date":"YYYY-MM-DD","time":"HH:MM:SS",
+          "dog_id":"..","dog_code":"..","dog_name":"..",
+          "نوع_الوجبة":"طازج|مجفف|مختلط",
+          "اسم_الوجبة":"..",
+          "كمية_الوجبة_غرام": 350,
+          "ماء_الشرب_مل": 400,
+          "طريقة_التحضير":"غلي|نقع|بدون|..",
+          "مكملات":[{"name":"..","dose":".."}],
+          "كتلة_الجسد_BCS":"1..9",
+          "ملاحظات":".."
+        }
+      ]
+    }
+
+   Implementation notes:
+   - Query FeedingLog filtered by project_id (required) and date (required) and optional dog_id.
+   - Join Dog & Project for names/codes using selectinload/joinedload.
+   - Compute KPI totals and distributions server-side.
+
+2) GET `/api/reports/breeding/feeding/weekly?project_id=&week_start=&dog_id=`
+  - week_start = Monday (YYYY-MM-DD). Range = [week_start .. week_start+6].
+  - Returns JSON:
+    {
+      "filters": {...},
+      "kpis": {
+        "dogs_count": D,
+        "meals_count": M,
+        "grams_sum": G,
+        "water_sum_ml": W,
+        "avg_bcs": float|null
+      },
+      "table": [
+        {
+          "dog_id":"..","dog_code":"..","dog_name":"..",
+          "meals": M_dog,
+          "grams_sum": G_dog,
+          "water_sum_ml": W_dog,
+          "bcs_avg": f|null,
+          "by_type": {"طازج":x,"مجفف":y,"مختلط":z},
+          "days": {
+            "Mon": {"meals":n,"grams":g,"water":w},
+            "Tue": {...}, ... "Sun": {...}
+          }
+        }
+      ]
+    }
+
+   Implementation notes:
+   - Aggregate by dog over 7 days.
+   - `avg_bcs`: numeric average of available BCS values (map "1".."9" to ints); null if none.
+   - Make weekday keys Arabic when rendering (UI).
+
+3) PDF export:
+   - GET `/api/reports/breeding/feeding/daily/export.pdf?project_id=&date=&dog_id=`
+     Guards: has("reports:feeding_daily:export")
+   - GET `/api/reports/breeding/feeding/weekly/export.pdf?project_id=&week_start=&dog_id=`
+     Guards: has("reports:feeding_weekly:export")
+
+   Both:
+   - Reuse their respective JSON builders.
+   - Render Arabic RTL PDF via existing ReportLab pipeline (fonts + bidi).
+   - Save to `uploads/reports/feeding/<YYYY-MM-DD>/...pdf`
+   - Return `{ "success": true, "file": "<download_path>" }`
+
+================================================
+STEP 4 — TEMPLATES (Arabic, RTL, reversed columns)
+================================================
+Create:
+1) `templates/reports/breeding/feeding_daily.html`
+   - Filter bar (RTL): المشروع (required), التاريخ (required), الكلب (optional), أزرار (تحديث/تصدير PDF)
+   - KPI cards: إجمالي الوجبات، إجمالي الغرامات، إجمالي الماء (مل)، توزيع BCS، حسب نوع الوجبة
+   - **Table headers (RIGHT→LEFT order)**:
+     [
+       "التاريخ","الوقت",
+       "نوع الوجبة","اسم الوجبة",
+       "كمية (غرام)","ماء (مل)","طريقة التحضير",
+       "المكملات","كتلة الجسد (BCS)","ملاحظات",
+       "الكلب","المشروع"
+     ]
+     Render reversed(headers) so "التاريخ" is on the right edge.
+   - Link each dog name to the feeding page with same project/date & dog filters.
+
+2) `templates/reports/breeding/feeding_weekly.html`
+   - Filter bar (RTL): المشروع (required), **بداية الأسبوع** (required; Monday), الكلب (optional), أزرار (تحديث/تصدير PDF)
+   - KPI cards: عدد الكلاب، إجمالي الوجبات، مجموع الغرامات، مجموع الماء، متوسط BCS
+   - Main table per-dog, **RIGHT→LEFT** headers:
+     [
+       "مجموع الماء (مل)","مجموع الغرامات","عدد الوجبات","متوسط BCS",
+       "حسب النوع (طازج/مجفف/مختلط)","الأحد","السبت","الجمعة","الخميس","الأربعاء","الثلاثاء","الاثنين",
+       "الكلب","الكود"
+     ]
+     - For each day cell: show `meals` count and a tiny subtext `g/w` (grams/water).
+
+================================================
+STEP 5 — STATIC JS
+================================================
+Create `/static/js/reports_feeding.js` used by both pages:
+- On load and filter change, call respective API and render:
+  - KPI cards
+  - Tables with **reversed column arrays**
+  - “Export PDF” button calls the export endpoint then shows download link
+- Use existing CSRF injection pattern.
+
+================================================
+STEP 6 — NAVIGATION
+================================================
+In the Reports menu add a **Breeding** group (if not present) with:
+- **"تقرير التغذية اليومي"** → `/reports/breeding/feeding/daily`
+- **"تقرير التغذية الأسبوعي"** → `/reports/breeding/feeding/weekly`
+Show items only if the user has the matching view permission.
+
+================================================
+STEP 7 — PERFORMANCE
+================================================
+- Add selectinload/joinedload for dog/project to cut N+1.
+- Add an in-process cache (60s) on JSON responses keyed by (user_id, project_id, date/week_start, dog_id) to smooth refreshes.
+
+================================================
+STEP 8 — TESTS
+================================================
+Create `tests/test_reports_breeding_feeding.py`:
+- Seed: one project, 2 dogs, PM user.
+- Insert FeedingLog rows across a day and a week (various types, water, BCS, supplements).
+- DAILY: assert totals, by_meal_type, bcs_dist, and row shaping.
+- WEEKLY: assert per-dog aggregates, by_type, day splits, and avg_bcs math.
+- Export endpoints: assert JSON ok and file path exists.
+
+================================================
+IMPORTANT RTL NOTE
+================================================
+In **all** Feeding report tables, reverse the columns array before rendering so the first Arabic header is on the **right**.
