@@ -112,8 +112,8 @@ def feeding_daily_data():
     
     # Security fix: Scope queries to authorized projects only
     base_query = db.session.query(FeedingLog).options(
-        selectinload(FeedingLog.dog),
-        selectinload(FeedingLog.project)
+        selectinload(FeedingLog.dog),  # type: ignore
+        selectinload(FeedingLog.project)  # type: ignore
     ).filter(
         FeedingLog.date == target_date,
         FeedingLog.project_id.in_(authorized_project_ids)
@@ -148,13 +148,21 @@ def feeding_daily_data():
     
     kpi_result = kpi_query.first()
     
-    # Extract KPI values
-    total_meals_all = kpi_result.total_meals or 0
-    total_grams = kpi_result.total_grams or 0
-    total_water_ml = kpi_result.total_water_ml or 0
-    unique_dogs = kpi_result.unique_dogs or 0
-    fresh_meals = kpi_result.fresh_meals or 0
-    dry_meals = kpi_result.dry_meals or 0
+    # Extract KPI values with null checking
+    if kpi_result:
+        total_meals_all = kpi_result.total_meals or 0
+        total_grams = kpi_result.total_grams or 0
+        total_water_ml = kpi_result.total_water_ml or 0
+        unique_dogs = kpi_result.unique_dogs or 0
+        fresh_meals = kpi_result.fresh_meals or 0
+        dry_meals = kpi_result.dry_meals or 0
+    else:
+        total_meals_all = 0
+        total_grams = 0
+        total_water_ml = 0
+        unique_dogs = 0
+        fresh_meals = 0
+        dry_meals = 0
     
     # Calculate additional metrics (backward compatible)
     avg_quantity = (total_grams / total_meals_all) if total_meals_all > 0 else 0
@@ -285,8 +293,8 @@ def feeding_weekly_data():
     
     # Security fix: Scope query to authorized projects only
     query = db.session.query(FeedingLog).options(
-        joinedload(FeedingLog.dog),
-        joinedload(FeedingLog.project)
+        joinedload(FeedingLog.dog),  # type: ignore
+        joinedload(FeedingLog.project)  # type: ignore
     ).filter(
         FeedingLog.project_id.in_(authorized_project_ids),
         FeedingLog.date >= week_start,
@@ -454,8 +462,8 @@ def export_daily_pdf():
     
     # Security fix: Scope query to authorized projects only
     query = db.session.query(FeedingLog).options(
-        joinedload(FeedingLog.dog),
-        joinedload(FeedingLog.project)
+        joinedload(FeedingLog.dog),  # type: ignore
+        joinedload(FeedingLog.project)  # type: ignore
     ).filter(
         FeedingLog.date == target_date,
         FeedingLog.project_id.in_(authorized_project_ids)
@@ -566,8 +574,8 @@ def export_weekly_pdf():
     
     # Security fix: Scope query to authorized projects only
     query = db.session.query(FeedingLog).options(
-        joinedload(FeedingLog.dog),
-        joinedload(FeedingLog.project)
+        joinedload(FeedingLog.dog),  # type: ignore
+        joinedload(FeedingLog.project)  # type: ignore
     ).filter(
         FeedingLog.project_id.in_(authorized_project_ids),
         FeedingLog.date >= week_start,
