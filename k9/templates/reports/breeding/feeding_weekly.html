@@ -199,8 +199,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const weekStart = document.getElementById('week-start-select').value;
         const dogId = document.getElementById('dog-select').value;
         
-        if (!projectId || !weekStart) {
-            alert('يرجى اختيار المشروع وتاريخ بداية الأسبوع');
+        if (!weekStart) {
+            alert('يرجى اختيار تاريخ بداية الأسبوع');
             return;
         }
         
@@ -208,9 +208,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Build URL with parameters
         const params = new URLSearchParams({
-            project_id: projectId,
             week_start: weekStart
         });
+        
+        if (projectId) {
+            params.append('project_id', projectId);
+        }
         
         if (dogId) {
             params.append('dog_id', dogId);
@@ -308,17 +311,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const weekStart = document.getElementById('week-start-select').value;
         const dogId = document.getElementById('dog-select').value;
         
-        if (!projectId || !weekStart) {
-            alert('يرجى اختيار المشروع وتاريخ بداية الأسبوع');
+        if (!weekStart) {
+            alert('يرجى اختيار تاريخ بداية الأسبوع');
             return;
         }
         
         showLoading(true);
         
         const params = new URLSearchParams({
-            project_id: projectId,
             week_start: weekStart
         });
+        
+        if (projectId) {
+            params.append('project_id', projectId);
+        }
         
         if (dogId) {
             params.append('dog_id', dogId);
@@ -332,8 +338,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 // Create download link
                 const link = document.createElement('a');
-                link.href = `/${data.path}`;
-                link.download = data.path.split('/').pop();
+                link.href = data.file;
+                link.download = data.file.split('/').pop();
                 link.click();
             })
             .catch(error => {
