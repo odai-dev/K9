@@ -423,6 +423,14 @@ class TrainingSession(db.Model):
         return f'<TrainingSession {self.subject} - {self.dog.name}>'
 
 class VeterinaryVisit(db.Model):
+    __table_args__ = (
+        db.Index('idx_veterinary_visit_date', 'visit_date'),
+        db.Index('idx_veterinary_dog_date', 'dog_id', 'visit_date'),
+        db.Index('idx_veterinary_vet_date', 'vet_id', 'visit_date'),
+        db.Index('idx_veterinary_project_date', 'project_id', 'visit_date'),
+        db.Index('idx_veterinary_type_date', 'visit_type', 'visit_date'),
+    )
+    
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     vet_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=False)
