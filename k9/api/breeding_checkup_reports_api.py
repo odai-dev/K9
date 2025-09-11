@@ -6,7 +6,7 @@ Handles data endpoints for Arabic/RTL daily checkup reports
 import os
 from datetime import datetime, date, timedelta
 from collections import defaultdict
-from flask import Blueprint, jsonify, request, current_app, send_file
+from flask import Blueprint, jsonify, request, current_app, send_file, make_response
 from flask_login import login_required, current_user
 from sqlalchemy import and_, func, case
 from sqlalchemy.orm import selectinload, joinedload
@@ -1047,7 +1047,8 @@ def checkup_unified_data():
         if project:
             project_name = project.name
     
-    return jsonify({
+    # Create response with caching headers
+    response_data = {
         'pagination': {
             'page': page,
             'per_page': per_page,
@@ -1071,7 +1072,13 @@ def checkup_unified_data():
         },
         'rows': rows,
         'project_name': project_name
-    })
+    }
+    
+    response = make_response(jsonify(response_data))
+    response.cache_control.max_age = 60
+    response.cache_control.private = True
+    response.headers['Vary'] = 'Cookie, Authorization'
+    return response
 
 
 @bp.route('/unified/export.pdf')
@@ -1303,11 +1310,18 @@ def checkup_unified_export_pdf():
         # Build PDF
         doc.build(story)
         
-        return jsonify({
+        # Create response with caching headers for PDF export
+        response_data = {
             'success': True,
             'file': filepath,
             'filename': filename
-        })
+        }
+        
+        response = make_response(jsonify(response_data))
+        response.cache_control.max_age = 60
+        response.cache_control.private = True
+        response.headers['Vary'] = 'Cookie, Authorization'
+        return response
         
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
