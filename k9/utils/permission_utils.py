@@ -115,7 +115,7 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
     # Handle backward compatibility with old 4-argument format
     if sub_permission is not None and action is not None:
         # Old format: has_permission(user, "Breeding", "التغذية - السجل اليومي", "VIEW")
-        # Convert to simplified permission check
+        # New format: has_permission(user, "Reports", "Feeding Daily", "VIEW")
         category = permission_key.lower()
         if category in ["breeding", "تربية"]:
             return user.role.value == "GENERAL_ADMIN"  # Only admin can access breeding for now
@@ -123,6 +123,43 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
             return True  # Allow project managers to access training
         elif category in ["veterinary", "طبي"]:
             return True  # Allow project managers to access veterinary
+        elif category == "reports":
+            # Handle reports permissions - check against the new structure
+            if user.role.value == "PROJECT_MANAGER":
+                # Map subsection names to permission keys
+                subsection_lower = sub_permission.lower()
+                action_lower = action.value.lower() if hasattr(action, 'value') else str(action).lower()
+                
+                # Map common report subsections
+                if "attendance daily sheet" in subsection_lower:
+                    perm_key = f"reports.attendance.daily.{action_lower}"
+                elif "feeding daily" in subsection_lower:
+                    perm_key = f"reports.breeding.feeding_daily.{action_lower}"
+                elif "feeding weekly" in subsection_lower:
+                    perm_key = f"reports.breeding.feeding_weekly.{action_lower}"
+                elif "trainer daily" in subsection_lower:
+                    perm_key = f"reports.training.trainer_daily.{action_lower}"
+                elif "veterinary daily" in subsection_lower:
+                    perm_key = f"reports.veterinary.daily.{action_lower}"
+                else:
+                    return False  # Unknown report type
+                
+                # Check against allowed permissions
+                allowed_permissions = [
+                    "reports.training.trainer_daily.view",
+                    "reports.training.trainer_daily.export",
+                    "reports.veterinary.daily.view",
+                    "reports.veterinary.daily.export",
+                    "reports.attendance.daily.view",
+                    "reports.attendance.daily.export",
+                    "reports.breeding.feeding_daily.view",
+                    "reports.breeding.feeding_daily.export",
+                    "reports.breeding.feeding_weekly.view",
+                    "reports.breeding.feeding_weekly.export"
+                ]
+                return perm_key in allowed_permissions
+            else:
+                return user.role.value == "GENERAL_ADMIN"
         else:
             return user.role.value == "GENERAL_ADMIN"
     
@@ -141,8 +178,15 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
             "breeding.view",
             "production.view",
             "reports.training.trainer_daily.view",
+            "reports.training.trainer_daily.export",
             "reports.veterinary.daily.view",
-            "reports.attendance.daily.view"
+            "reports.veterinary.daily.export",
+            "reports.attendance.daily.view",
+            "reports.attendance.daily.export",
+            "reports.breeding.feeding_daily.view",
+            "reports.breeding.feeding_daily.export",
+            "reports.breeding.feeding_weekly.view",
+            "reports.breeding.feeding_weekly.export"
         ]
         return permission_key in allowed_permissions
         

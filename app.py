@@ -235,6 +235,18 @@ with app.app_context():
         print(f"⚠ Warning: Could not register password reset routes: {e}")
         # Continue without password reset routes for now
     
+    # Register Breeding Feeding Reports blueprints
+    try:
+        from k9.routes.breeding_feeding_reports_routes import bp as breeding_feeding_reports_ui_bp
+        from k9.api.breeding_feeding_reports_api import bp as breeding_feeding_reports_api_bp
+        app.register_blueprint(breeding_feeding_reports_ui_bp, url_prefix='/reports/breeding/feeding')
+        app.register_blueprint(breeding_feeding_reports_api_bp, url_prefix='/api/reports/breeding/feeding')
+        print("✓ Breeding feeding reports registered successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Could not register breeding feeding reports: {e}")
+        # Continue without breeding feeding reports for now
+    
     # Initialize Security Middleware
     try:
         from k9.utils.security_middleware import SecurityMiddleware
