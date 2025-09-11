@@ -743,7 +743,7 @@ def _generate_feeding_pdf(title: str, data: dict, output_path: str):
                 str(row.get('ماء_الشرب_مل', 0)),
                 str(row.get('كمية_الوجبة_غرام', 0)),
                 rtl(row.get('نوع_الوجبة', '')),
-                row.get('dog_name', ''),
+                rtl(row.get('dog_name', '')),
                 row.get('date', '')
             ])
             
