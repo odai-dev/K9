@@ -78,6 +78,16 @@ PERMISSION_STRUCTURE = {
                 "view": "View attendance daily reports",
                 "export": "Export attendance daily reports"
             }
+        },
+        "breeding": {
+            "feeding_daily": {
+                "view": "View feeding daily reports",
+                "export": "Export feeding daily reports"
+            },
+            "feeding_weekly": {
+                "view": "View feeding weekly reports", 
+                "export": "Export feeding weekly reports"
+            }
         }
     }
 }
