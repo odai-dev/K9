@@ -80,21 +80,13 @@ PERMISSION_STRUCTURE = {
             }
         },
         "breeding": {
-            "feeding_daily": {
-                "view": "View feeding daily reports",
-                "export": "Export feeding daily reports"
+            "feeding": {
+                "view": "View feeding reports (all ranges)",
+                "export": "Export feeding reports (all ranges)"
             },
-            "feeding_weekly": {
-                "view": "View feeding weekly reports", 
-                "export": "Export feeding weekly reports"
-            },
-            "checkup_daily": {
-                "view": "View checkup daily reports",
-                "export": "Export checkup daily reports"
-            },
-            "checkup_weekly": {
-                "view": "View checkup weekly reports",
-                "export": "Export checkup weekly reports"
+            "checkup": {
+                "view": "View checkup reports (all ranges)",
+                "export": "Export checkup reports (all ranges)"
             }
         }
     }
@@ -138,17 +130,13 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
                 subsection_lower = sub_permission.lower()
                 action_lower = action.value.lower() if hasattr(action, 'value') else str(action).lower()
                 
-                # Map common report subsections
+                # Map common report subsections - support both legacy and unified
                 if "attendance daily sheet" in subsection_lower:
                     perm_key = f"reports.attendance.daily.{action_lower}"
-                elif "feeding daily" in subsection_lower:
-                    perm_key = f"reports.breeding.feeding_daily.{action_lower}"
-                elif "feeding weekly" in subsection_lower:
-                    perm_key = f"reports.breeding.feeding_weekly.{action_lower}"
-                elif "checkup daily" in subsection_lower:
-                    perm_key = f"reports.breeding.checkup_daily.{action_lower}"
-                elif "checkup weekly" in subsection_lower:
-                    perm_key = f"reports.breeding.checkup_weekly.{action_lower}"
+                elif any(x in subsection_lower for x in ["feeding daily", "feeding weekly", "feeding"]):
+                    perm_key = f"reports.breeding.feeding.{action_lower}"
+                elif any(x in subsection_lower for x in ["checkup daily", "checkup weekly", "checkup"]):
+                    perm_key = f"reports.breeding.checkup.{action_lower}"
                 elif "trainer daily" in subsection_lower:
                     perm_key = f"reports.training.trainer_daily.{action_lower}"
                 elif "veterinary daily" in subsection_lower:
@@ -164,14 +152,10 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
                     "reports.veterinary.daily.export",
                     "reports.attendance.daily.view",
                     "reports.attendance.daily.export",
-                    "reports.breeding.feeding_daily.view",
-                    "reports.breeding.feeding_daily.export",
-                    "reports.breeding.feeding_weekly.view",
-                    "reports.breeding.feeding_weekly.export",
-                    "reports.breeding.checkup_daily.view",
-                    "reports.breeding.checkup_daily.export",
-                    "reports.breeding.checkup_weekly.view",
-                    "reports.breeding.checkup_weekly.export"
+                    "reports.breeding.feeding.view",
+                    "reports.breeding.feeding.export",
+                    "reports.breeding.checkup.view",
+                    "reports.breeding.checkup.export"
                 ]
                 return perm_key in allowed_permissions
             else:
@@ -199,14 +183,10 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
             "reports.veterinary.daily.export",
             "reports.attendance.daily.view",
             "reports.attendance.daily.export",
-            "reports.breeding.feeding_daily.view",
-            "reports.breeding.feeding_daily.export",
-            "reports.breeding.feeding_weekly.view",
-            "reports.breeding.feeding_weekly.export",
-            "reports.breeding.checkup_daily.view",
-            "reports.breeding.checkup_daily.export",
-            "reports.breeding.checkup_weekly.view",
-            "reports.breeding.checkup_weekly.export"
+            "reports.breeding.feeding.view",
+            "reports.breeding.feeding.export",
+            "reports.breeding.checkup.view",
+            "reports.breeding.checkup.export"
         ]
         return permission_key in allowed_permissions
         
