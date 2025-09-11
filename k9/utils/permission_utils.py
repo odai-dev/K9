@@ -71,7 +71,9 @@ PERMISSION_STRUCTURE = {
             "daily": {
                 "view": "View veterinary daily reports", 
                 "export": "Export veterinary daily reports"
-            }
+            },
+            "view": "View veterinary reports (unified)",
+            "export": "Export veterinary reports (unified)"
         },
         "attendance": {
             "daily": {
@@ -141,6 +143,8 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
                     perm_key = f"reports.training.trainer_daily.{action_lower}"
                 elif "veterinary daily" in subsection_lower:
                     perm_key = f"reports.veterinary.daily.{action_lower}"
+                elif any(x in subsection_lower for x in ["veterinary", "veterinary unified"]):
+                    perm_key = f"reports.veterinary.{action_lower}"
                 else:
                     return False  # Unknown report type
                 
@@ -150,6 +154,8 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
                     "reports.training.trainer_daily.export",
                     "reports.veterinary.daily.view",
                     "reports.veterinary.daily.export",
+                    "reports.veterinary.view",
+                    "reports.veterinary.export",
                     "reports.attendance.daily.view",
                     "reports.attendance.daily.export",
                     "reports.breeding.feeding.view",
@@ -181,6 +187,8 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
             "reports.training.trainer_daily.export",
             "reports.veterinary.daily.view",
             "reports.veterinary.daily.export",
+            "reports.veterinary.view",
+            "reports.veterinary.export",
             "reports.attendance.daily.view",
             "reports.attendance.daily.export",
             "reports.breeding.feeding.view",
