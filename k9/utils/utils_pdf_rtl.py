@@ -24,7 +24,7 @@ _FONTS_REGISTERED = False
 def register_arabic_fonts():
     """
     Register Arabic-compatible fonts for ReportLab
-    Tries to find and register DejaVu Sans or falls back to default fonts
+    Prioritizes local Arabic font files, then falls back to system fonts
     """
     global _FONTS_REGISTERED
     
@@ -32,30 +32,39 @@ def register_arabic_fonts():
         return True
     
     try:
-        # Try to find DejaVu Sans fonts (commonly available)
-        font_paths = [
+        # First priority: Local Arabic fonts in the project
+        local_font_paths = [
+            ('NotoSansArabic', 'k9/static/fonts/NotoSansArabic-Regular.ttf'),
+            ('Amiri', 'k9/static/fonts/Amiri-Regular.ttf'),
+            ('DejaVuSans', 'k9/static/fonts/DejaVuSans.ttf'),
+        ]
+        
+        for font_name, font_path in local_font_paths:
+            if os.path.exists(font_path):
+                pdfmetrics.registerFont(TTFont(font_name, font_path))
+                addMapping(font_name, 0, 0, font_name)  # normal
+                print(f"Successfully registered {font_name} font from: {font_path}")
+                _FONTS_REGISTERED = True
+                return True
+        
+        # Second priority: System DejaVu Sans fonts
+        system_font_paths = [
             '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
             '/usr/share/fonts/dejavu/DejaVuSans.ttf',
             '/System/Library/Fonts/DejaVuSans.ttf',
             'C:\\Windows\\Fonts\\DejaVuSans.ttf'
         ]
         
-        dejavu_path = None
-        for path in font_paths:
+        for path in system_font_paths:
             if os.path.exists(path):
-                dejavu_path = path
-                break
+                pdfmetrics.registerFont(TTFont('DejaVuSans', path))
+                addMapping('DejaVuSans', 0, 0, 'DejaVuSans')  # normal
+                print(f"Successfully registered DejaVu Sans font from: {path}")
+                _FONTS_REGISTERED = True
+                return True
         
-        if dejavu_path:
-            # Register DejaVu Sans font
-            pdfmetrics.registerFont(TTFont('DejaVuSans', dejavu_path))
-            addMapping('DejaVuSans', 0, 0, 'DejaVuSans')  # normal
-            print(f"Successfully registered DejaVu Sans font from: {dejavu_path}")
-            _FONTS_REGISTERED = True
-            return True
-        else:
-            print("DejaVu Sans font not found. Using default fonts (Arabic may not display correctly)")
-            return False
+        print("No Arabic-compatible fonts found. Using default fonts (Arabic may not display correctly)")
+        return False
             
     except Exception as e:
         print(f"Error registering Arabic fonts: {e}")
@@ -94,7 +103,24 @@ def get_arabic_font_name() -> str:
         Font name to use in ReportLab
     """
     if _FONTS_REGISTERED:
-        return 'DejaVuSans'
+        # Check which font was actually registered (prioritize Arabic fonts)
+        try:
+            from reportlab.pdfbase import pdfmetrics
+            
+            # Check for Noto Sans Arabic first (best Arabic support)
+            if 'NotoSansArabic' in pdfmetrics._fonts:
+                return 'NotoSansArabic'
+            # Then check for Amiri
+            elif 'Amiri' in pdfmetrics._fonts:
+                return 'Amiri'
+            # Then DejaVu Sans
+            elif 'DejaVuSans' in pdfmetrics._fonts:
+                return 'DejaVuSans'
+        except:
+            pass
+        
+        # Default fallback when fonts are registered but we can't detect which
+        return 'NotoSansArabic'
     else:
         # Fallback to Helvetica (may not display Arabic correctly)
         return 'Helvetica'

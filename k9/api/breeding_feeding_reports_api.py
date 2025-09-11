@@ -16,8 +16,7 @@ from k9.models.models import (
     FeedingLog, Dog, Project, PermissionType, BodyConditionScale, PrepMethod
 )
 from k9.utils.utils import get_user_projects, check_project_access
-from k9.utils.pdf_rtl import register_arabic_fonts, rtl, get_arabic_font
-from k9.utils.utils_pdf_rtl import get_arabic_font_name
+from k9.utils.utils_pdf_rtl import register_arabic_fonts, rtl, get_arabic_font_name
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
