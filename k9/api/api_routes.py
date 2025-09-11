@@ -1463,6 +1463,120 @@ def grooming_delete(id):
         return jsonify({'error': 'خطأ في حذف سجل العناية'}), 500
 
 # =======================
+# DOGS API ENDPOINTS
+# =======================
+
+@api_bp.route('/dogs', methods=['GET'])
+@login_required
+def get_dogs():
+    """Get list of accessible dogs with optional filtering"""
+    try:
+        # Get parameters
+        status = request.args.get('status', '')
+        project_id = request.args.get('project_id', '')
+        limit = int(request.args.get('limit', 50))
+        offset = int(request.args.get('offset', 0))
+        
+        # Build base query
+        query = Dog.query
+        
+        # Apply status filter if provided
+        if status:
+            try:
+                status_enum = DogStatus(status)
+                query = query.filter(Dog.current_status == status_enum)
+            except ValueError:
+                valid_statuses = [s.value for s in DogStatus]
+                return jsonify({'error': f'Invalid status. Valid options: {valid_statuses}'}), 400
+        
+        # Apply project filter if provided
+        if project_id == 'no_project':
+            # Special case: return dogs with NO project assignments
+            query = query.outerjoin(Dog.projects).filter(Project.id.is_(None))
+        elif project_id:
+            # Regular project filter: dogs assigned to specific project
+            query = query.join(Dog.projects).filter(Project.id == project_id)
+        
+        # Apply permission filtering - PROJECT_MANAGER sees only their assigned dogs
+        if current_user.role == UserRole.PROJECT_MANAGER:
+            accessible_dogs = get_user_accessible_dogs(current_user)
+            dog_ids = [dog.id for dog in accessible_dogs]
+            query = query.filter(Dog.id.in_(dog_ids))
+        
+        # Get total count before pagination
+        total = query.count()
+        
+        # Apply pagination
+        dogs = query.offset(offset).limit(limit).all()
+        
+        # Format response
+        dogs_data = []
+        for dog in dogs:
+            dogs_data.append({
+                'id': str(dog.id),
+                'name': dog.name,
+                'code': dog.code,
+                'microchip_id': dog.microchip_id,
+                'breed': dog.breed,
+                'status': dog.current_status.value if dog.current_status else None,
+                'gender': dog.gender.value if dog.gender else None,
+                'birth_date': dog.birth_date.isoformat() if dog.birth_date else None,
+                'created_at': dog.created_at.isoformat() if dog.created_at else None
+            })
+        
+        return jsonify({
+            'success': True,
+            'data': dogs_data,
+            'total': total,
+            'limit': limit,
+            'offset': offset
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting dogs: {e}")
+        return jsonify({'error': 'خطأ في جلب بيانات الكلاب'}), 500
+
+
+@api_bp.route('/dogs/<dog_id>', methods=['GET'])
+@login_required  
+def get_dog(dog_id):
+    """Get specific dog details"""
+    try:
+        dog = Dog.query.get_or_404(dog_id)
+        
+        # Check permissions - PROJECT_MANAGER can only see their assigned dogs
+        if current_user.role == UserRole.PROJECT_MANAGER:
+            accessible_dogs = get_user_accessible_dogs(current_user)
+            dog_ids = [d.id for d in accessible_dogs]
+            if dog.id not in dog_ids:
+                return jsonify({'error': 'ليس لديك صلاحية لعرض بيانات هذا الكلب'}), 403
+        
+        # Format response
+        dog_data = {
+            'id': str(dog.id),
+            'name': dog.name,
+            'code': dog.code,
+            'microchip_id': dog.microchip_id,
+            'breed': dog.breed,
+            'status': dog.current_status.value if dog.current_status else None,
+            'gender': dog.gender.value if dog.gender else None,
+            'birth_date': dog.birth_date.isoformat() if dog.birth_date else None,
+            'color': dog.color,
+            'weight': float(dog.weight) if dog.weight else None,
+            'height': float(dog.height) if dog.height else None,
+            'created_at': dog.created_at.isoformat() if dog.created_at else None
+        }
+        
+        return jsonify({
+            'success': True,
+            'data': dog_data
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting dog details: {e}")
+        return jsonify({'error': 'خطأ في جلب تفاصيل الكلب'}), 500
+
+# =======================
 # DEWORMING API ENDPOINTS - Moved to api_deworming.py
 # =======================
 # All deworming endpoints have been moved to the dedicated api_deworming.py blueprint
