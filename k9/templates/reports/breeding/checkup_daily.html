@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+
+{% block title %}تقرير الفحص الظاهري اليومي{% endblock %}
+
+{% block content %}
+<div class="container-fluid" dir="rtl">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-stethoscope text-primary me-2"></i>
+                        تقرير الفحص الظاهري اليومي
+                    </h1>
+                    <p class="text-muted mb-0">تقرير شامل لفحوصات الكلاب الظاهرية اليومية وحالتها الصحية</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        العودة للوحة التحكم
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="card mb-4" id="checkup-filters">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-filter me-2"></i>
+                المرشحات
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- Project Selection (Optional) -->
+                <div class="col-md-4">
+                    <label for="project-select" class="form-label">المشروع (اختياري)</label>
+                    <select class="form-select" id="project-select" name="project_id">
+                        <option value="">جميع المشاريع</option>
+                        {% for project in accessible_projects %}
+                        <option value="{{ project.id }}">
+                            {{ project.name }} ({{ project.code }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Date Selection (Required) -->
+                <div class="col-md-4">
+                    <label for="date-select" class="form-label">التاريخ *</label>
+                    <input type="date" 
+                           class="form-control" 
+                           id="date-select" 
+                           name="date" 
+                           required>
+                    <div class="invalid-feedback">
+                        يرجى اختيار تاريخ صحيح
+                    </div>
+                </div>
+                
+                <!-- Optional Dog Filter -->
+                <div class="col-md-4">
+                    <label for="dog-select" class="form-label">الكلب (اختياري)</label>
+                    <select class="form-select" id="dog-select" name="dog_id">
+                        <option value="">جميع الكلاب</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button type="button" 
+                                class="btn btn-primary" 
+                                id="load-report-btn"
+                                disabled>
+                            <i class="fas fa-chart-bar me-2"></i>
+                            عرض التقرير
+                        </button>
+                        
+                        <button type="button" 
+                                class="btn btn-success" 
+                                id="export-pdf-btn"
+                                disabled>
+                            <i class="fas fa-file-pdf me-2"></i>
+                            تصدير PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Loading Indicator -->
+            <div class="row mt-2">
+                <div class="col-12">
+                    <div class="text-center d-none" id="loading-indicator">
+                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                            <span class="visually-hidden">جاري التحميل...</span>
+                        </div>
+                        <span class="text-muted">جاري معالجة الطلب...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Content Area -->
+    <div class="row" id="report-content-area" style="display: none;">
+        
+        <!-- KPIs Row -->
+        <div class="col-12 mb-4">
+            <div class="row" id="kpi-cards">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">إجمالي الفحوصات</div>
+                                    <div class="h4 mb-0" id="total-checks">0</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-stethoscope fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">عدد الكلاب</div>
+                                    <div class="h4 mb-0" id="unique-dogs">0</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-dog fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">الحالات المتوسطة</div>
+                                    <div class="h4 mb-0" id="moderate-cases">0</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-exclamation-circle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">الحالات الشديدة</div>
+                                    <div class="h4 mb-0" id="severe-cases">0</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-exclamation-triangle fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Top Flagged Body Parts -->
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">أكثر الأجزاء ملاحظةً</h6>
+                            <div id="top-flags-container">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Table -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table me-2"></i>
+                        تفاصيل الفحوصات اليومية
+                    </h5>
+                    <div id="pagination-info" class="small text-muted">
+                        <!-- Pagination info -->
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive" id="checkup-table-container">
+                        <!-- Table will be populated by JavaScript -->
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <nav aria-label="تصفح الصفحات" id="pagination-nav" class="mt-3">
+                        <!-- Pagination will be populated by JavaScript -->
+                    </nav>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Print-friendly Signature Section (hidden by default) -->
+        <div class="col-12 mt-4 d-print-block d-none" id="signature-section">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="mb-3">ملاحظات عامة:</h6>
+                            <div style="border-bottom: 1px solid #ddd; min-height: 60px; margin-bottom: 30px;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="border p-3 text-end">
+                                <div class="mb-3">
+                                    <strong>اسم المربي:</strong>
+                                    <div style="border-bottom: 1px solid #000; display: inline-block; width: 200px; margin-right: 10px;"></div>
+                                </div>
+                                <div>
+                                    <strong>التوقيع:</strong>
+                                    <div style="border-bottom: 1px solid #000; display: inline-block; width: 200px; margin-right: 10px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border p-3 text-end">
+                                <div class="mb-3">
+                                    <strong>مسؤول المشروع:</strong>
+                                    <div style="border-bottom: 1px solid #000; display: inline-block; width: 200px; margin-right: 10px;"></div>
+                                </div>
+                                <div>
+                                    <strong>التوقيع:</strong>
+                                    <div style="border-bottom: 1px solid #000; display: inline-block; width: 200px; margin-right: 10px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print Styles -->
+<style>
+@media print {
+    .no-print, .btn, .card-header, .pagination {
+        display: none !important;
+    }
+    
+    #signature-section {
+        display: block !important;
+        page-break-before: auto;
+    }
+    
+    .table {
+        font-size: 12px;
+    }
+    
+    .card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+    
+    body {
+        font-size: 12px;
+    }
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/reports_checkup.js') }}"></script>
+<script>
+// Initialize daily report on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCheckupReport('daily');
+});
+</script>
+{% endblock %}
