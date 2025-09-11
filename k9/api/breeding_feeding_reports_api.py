@@ -1264,14 +1264,15 @@ def feeding_unified_export_pdf():
         # Use existing PDF generation function
         _generate_feeding_pdf(title, pdf_data, filepath)
         
-        # Create response with caching headers for PDF export
-        response_data = {
-            'success': True,
-            'file': filepath,
-            'filename': filename
-        }
+        # Serve the PDF file directly for download
+        response = send_file(
+            filepath,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/pdf'
+        )
         
-        response = make_response(jsonify(response_data))
+        # Add caching headers
         response.cache_control.max_age = 60
         response.cache_control.private = True
         response.headers['Vary'] = 'Cookie, Authorization'
