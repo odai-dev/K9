@@ -76,8 +76,8 @@
                             <li><a class="dropdown-item" href="{{ url_for('main.training_add') }}"><i class="fas fa-plus me-2"></i>إضافة جلسة</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header">الرعاية اليومية</h6></li>
-                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_feeding_log') }}"><i class="fas fa-utensils me-2"></i>التغذية — السجل اليومي</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('main.breeding_checkup') }}"><i class="fas fa-stethoscope me-2"></i>الفحص الظاهري اليومي</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('unified_feeding_reports_ui.feeding') }}"><i class="fas fa-utensils me-2"></i>تقرير التغذية</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('unified_checkup_reports_ui.checkup') }}"><i class="fas fa-stethoscope me-2"></i>تقرير الفحص الظاهري</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('main.breeding_excretion') }}"><i class="fas fa-tint me-2"></i>البراز / البول / القيء</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header">الرعاية والتدريب</h6></li>
@@ -158,10 +158,8 @@
                             <li><a class="dropdown-item" href="{{ url_for('reports_attendance_pm_daily_ui.pm_daily') }}"><i class="fas fa-file-alt me-2"></i>التقرير اليومي لمسؤول المشروع</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header">تقارير التربية والتغذية</h6></li>
-                            <li><a class="dropdown-item" href="{{ url_for('breeding_feeding_reports_ui.feeding_daily') }}"><i class="fas fa-bone me-2"></i>التقرير اليومي للتغذية</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('breeding_feeding_reports_ui.feeding_weekly') }}"><i class="fas fa-calendar-week me-2"></i>التقرير الأسبوعي للتغذية</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('breeding_checkup_reports_ui.checkup_daily') }}"><i class="fas fa-stethoscope me-2"></i>التقرير اليومي للفحص الظاهري</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('breeding_checkup_reports_ui.checkup_weekly') }}"><i class="fas fa-calendar-week me-2"></i>التقرير الأسبوعي للفحص الظاهري</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('unified_feeding_reports_ui.feeding') }}"><i class="fas fa-bone me-2"></i>تقرير التغذية الموحد</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('unified_checkup_reports_ui.checkup') }}"><i class="fas fa-stethoscope me-2"></i>تقرير الفحص الظاهري الموحد</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header">تقارير أخرى</h6></li>
                             <li><a class="dropdown-item" href="{{ url_for('main.reports_index') }}"><i class="fas fa-chart-line me-2"></i>التقارير العامة</a></li>
