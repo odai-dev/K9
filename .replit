@@ -7,7 +7,7 @@ packages = ["freetype", "glibcLocales", "openssl", "postgresql", "sqlite"]
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["gunicorn", "--bind", "0.0.0.0:5000", "--reuse-port", "main:app"]
+run = ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
 
 [workflows]
 runButton = "Project"
@@ -47,3 +47,4 @@ externalPort = 3001
 
 [agent]
 expertMode = true
+integrations = ["python_database:1.0.0"]
