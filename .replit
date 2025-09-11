@@ -7,7 +7,7 @@ packages = ["freetype", "glibcLocales", "openssl", "postgresql", "sqlite"]
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
+run = ["gunicorn", "--bind", "0.0.0.0:5000", "--reuse-port"]
 
 [workflows]
 runButton = "Project"
@@ -30,16 +30,12 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app"
+args = "SESSION_SECRET=\"$(openssl rand -base64 32)\" gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app"
 waitForPort = 5000
 
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 33007
-externalPort = 3001
 
 [[ports]]
 localPort = 41105

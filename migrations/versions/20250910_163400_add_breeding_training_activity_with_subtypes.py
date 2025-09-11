@@ -17,8 +17,24 @@ depends_on = None
 
 
 def upgrade():
-    # Note: Enum types are created separately through direct SQL execution
-    # to avoid conflicts with SQLAlchemy's automatic enum creation
+    # Create the required enum types first (idempotently)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE t.typname='socializationtype' AND n.nspname='public') THEN
+                CREATE TYPE socializationtype AS ENUM ('تفاعل مع البشر', 'تفاعل مع الحيوانات', 'التعرض للمركبات', 'إزالة الحساسية للأصوات', 'استكشاف البيئة', 'تفاعل مع الحشود');
+            END IF;
+        END $$;
+    """)
+    
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE t.typname='ballworktype' AND n.nspname='public') THEN
+                CREATE TYPE ballworktype AS ENUM ('تدريب الإحضار', 'تدريب المسك', 'كرة الرشاقة', 'كرة التناسق', 'كرة المكافأة');
+            END IF;
+        END $$;
+    """)
 
     # Create breeding_training_activity table using existing enum types
     op.create_table('breeding_training_activity',
