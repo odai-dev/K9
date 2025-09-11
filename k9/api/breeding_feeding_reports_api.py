@@ -732,18 +732,18 @@ def _generate_feeding_pdf(title: str, data: dict, output_path: str):
     
     # Add detailed data table if available
     if 'rows' in data and data['rows']:
-        # Daily report table
+        # Daily report table (REVERSED column order)
         table_data = []
-        headers = [rtl('التاريخ'), rtl('الكلب'), rtl('نوع الوجبة'), rtl('الكمية (غرام)'), rtl('الماء (مل)')]
+        headers = [rtl('الماء (مل)'), rtl('الكمية (غرام)'), rtl('نوع الوجبة'), rtl('الكلب'), rtl('التاريخ')]
         table_data.append(headers)
         
         for row in data['rows'][:20]:  # Limit to first 20 rows for PDF
             table_data.append([
-                row.get('date', ''),
-                row.get('dog_name', ''),
-                rtl(row.get('نوع_الوجبة', '')),
+                str(row.get('ماء_الشرب_مل', 0)),
                 str(row.get('كمية_الوجبة_غرام', 0)),
-                str(row.get('ماء_الشرب_مل', 0))
+                rtl(row.get('نوع_الوجبة', '')),
+                row.get('dog_name', ''),
+                row.get('date', '')
             ])
             
         detail_table = Table(table_data, colWidths=[1.5*72, 1.5*72, 1.5*72, 1*72, 1*72])
@@ -759,18 +759,18 @@ def _generate_feeding_pdf(title: str, data: dict, output_path: str):
         story.append(detail_table)
     
     elif 'table' in data and data['table']:
-        # Weekly report table
+        # Weekly report table (REVERSED column order)
         table_data = []
-        headers = [rtl('الكلب'), rtl('عدد الوجبات'), rtl('الغرامات'), rtl('الماء (مل)'), rtl('متوسط BCS')]
+        headers = [rtl('متوسط BCS'), rtl('الماء (مل)'), rtl('الغرامات'), rtl('عدد الوجبات'), rtl('الكلب')]
         table_data.append(headers)
         
         for row in data['table']:
             table_data.append([
-                rtl(row.get('dog_name', '')),
-                str(row.get('meals', 0)),
-                str(row.get('grams_sum', 0)),
+                str(row.get('bcs_avg', '')) if row.get('bcs_avg') else '',
                 str(row.get('water_sum_ml', 0)),
-                str(row.get('bcs_avg', '')) if row.get('bcs_avg') else ''
+                str(row.get('grams_sum', 0)),
+                str(row.get('meals', 0)),
+                rtl(row.get('dog_name', ''))
             ])
             
         detail_table = Table(table_data, colWidths=[2*72, 1*72, 1*72, 1*72, 1*72])
