@@ -1,0 +1,497 @@
+{% extends "base.html" %}
+
+{% block title %}تقرير التغذية الموحد{% endblock %}
+
+{% block content %}
+<div class="container-fluid" dir="rtl">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-bone text-primary me-2"></i>
+                        تقرير التغذية الموحد
+                    </h1>
+                    <p class="text-muted mb-0">تقرير شامل لوجبات الكلاب وحالتها الصحية مع نطاقات زمنية متنوعة</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        العودة للوحة التحكم
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unified Filters Section -->
+    {% include 'reports/breeding/_unified_filters.html' %}
+
+    <!-- Report Content Area -->
+    <div class="row" id="report-content-area" style="display: none;">
+        
+        <!-- KPIs Row -->
+        <div class="col-12 mb-4">
+            <div class="row" id="kpi-cards">
+                <div class="col-md-2">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">إجمالي الوجبات</div>
+                                    <div class="h4 mb-0" id="total-feedings">0</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-utensils fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">عدد الكلاب</div>
+                                    <div class="h4 mb-0" id="unique-dogs">0</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-dog fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">إجمالي الطعام</div>
+                                    <div class="h5 mb-0" id="total-grams">0</div>
+                                    <div class="small">جرام</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-weight fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-warning text-dark">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">إجمالي الماء</div>
+                                    <div class="h5 mb-0" id="total-water-ml">0</div>
+                                    <div class="small">مل</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-tint fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-secondary text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">النطاق الزمني</div>
+                                    <div class="h6 mb-0" id="date-range-display">-</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-calendar fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-light text-dark">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">متوسط الطعام</div>
+                                    <div class="h5 mb-0" id="avg-grams-per-meal">0</div>
+                                    <div class="small">جرام/وجبة</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-calculator fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Report Table -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table me-2"></i>
+                        <span id="table-title">بيانات التغذية</span>
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-secondary" id="aggregation-type">-</span>
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-outline-secondary" id="prev-page-btn" disabled>
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="page-info" disabled>
+                                صفحة 1 من 1
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="next-page-btn" disabled>
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="feeding-table">
+                            <thead class="table-light">
+                                <!-- Headers will be populated dynamically based on aggregation type -->
+                            </thead>
+                            <tbody>
+                                <!-- Data rows will be populated via AJAX -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div class="text-center py-5 d-none" id="empty-state">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">لا توجد بيانات</h5>
+                        <p class="text-muted">لم يتم العثور على وجبات في النطاق الزمني المحدد</p>
+                    </div>
+                    
+                    <!-- Loading State -->
+                    <div class="text-center py-5 d-none" id="table-loading">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">جاري التحميل...</span>
+                        </div>
+                        <p class="text-muted">جاري تحميل البيانات...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden form for PDF export -->
+<form id="pdf-export-form" method="get" target="_blank" style="display: none;">
+    <input type="hidden" name="range_type" id="export-range-type">
+    <input type="hidden" name="project_id" id="export-project-id">
+    <input type="hidden" name="dog_id" id="export-dog-id">
+    <input type="hidden" name="date" id="export-date">
+    <input type="hidden" name="week_start" id="export-week-start">
+    <input type="hidden" name="year_month" id="export-year-month">
+    <input type="hidden" name="date_from" id="export-date-from">
+    <input type="hidden" name="date_to" id="export-date-to">
+</form>
+
+<script>
+// Global state
+let currentData = null;
+let currentPage = 1;
+let totalPages = 1;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Button handlers
+    document.getElementById('load-report-btn').addEventListener('click', loadReport);
+    document.getElementById('export-pdf-btn').addEventListener('click', exportPDF);
+    document.getElementById('prev-page-btn').addEventListener('click', () => loadReport(currentPage - 1));
+    document.getElementById('next-page-btn').addEventListener('click', () => loadReport(currentPage + 1));
+});
+
+function loadReport(page = 1) {
+    const formData = getFormData();
+    if (!formData) return;
+    
+    currentPage = page;
+    showLoading();
+    
+    // Build API URL
+    const params = new URLSearchParams({
+        range_type: formData.range_type,
+        page: page,
+        per_page: 50
+    });
+    
+    if (formData.project_id) params.set('project_id', formData.project_id);
+    if (formData.dog_id) params.set('dog_id', formData.dog_id);
+    if (formData.date) params.set('date', formData.date);
+    if (formData.week_start) params.set('week_start', formData.week_start);
+    if (formData.year_month) params.set('year_month', formData.year_month);
+    if (formData.date_from) params.set('date_from', formData.date_from);
+    if (formData.date_to) params.set('date_to', formData.date_to);
+    
+    fetch(`/api/reports/breeding/feeding/unified?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showError(data.error);
+                return;
+            }
+            
+            currentData = data;
+            totalPages = data.pagination.pages;
+            
+            updateKPIs(data.kpis);
+            updateTable(data.rows, data.filters.aggregation);
+            updatePagination(data.pagination);
+            
+            document.getElementById('report-content-area').style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Error loading report:', error);
+            showError('حدث خطأ أثناء تحميل التقرير');
+        })
+        .finally(() => {
+            hideLoading();
+        });
+}
+
+function exportPDF() {
+    const formData = getFormData();
+    if (!formData) return;
+    
+    // Update form fields for export
+    const form = document.getElementById('pdf-export-form');
+    document.getElementById('export-range-type').value = formData.range_type || '';
+    document.getElementById('export-project-id').value = formData.project_id || '';
+    document.getElementById('export-dog-id').value = formData.dog_id || '';
+    document.getElementById('export-date').value = formData.date || '';
+    document.getElementById('export-week-start').value = formData.week_start || '';
+    document.getElementById('export-year-month').value = formData.year_month || '';
+    document.getElementById('export-date-from').value = formData.date_from || '';
+    document.getElementById('export-date-to').value = formData.date_to || '';
+    
+    form.action = '/api/reports/breeding/feeding/unified/export.pdf';
+    form.submit();
+}
+
+function getFormData() {
+    const rangeType = document.getElementById('range-type').value;
+    if (!rangeType) {
+        showError('يرجى اختيار نوع النطاق الزمني');
+        return null;
+    }
+    
+    return {
+        range_type: rangeType,
+        project_id: document.getElementById('project-select').value,
+        dog_id: document.getElementById('dog-select').value,
+        date: document.getElementById('date-select')?.value,
+        week_start: document.getElementById('week-start-select')?.value,
+        year_month: document.getElementById('year-month-select')?.value,
+        date_from: document.getElementById('date-from-select')?.value,
+        date_to: document.getElementById('date-to-select')?.value
+    };
+}
+
+function updateKPIs(kpis) {
+    document.getElementById('total-feedings').textContent = kpis.total_feedings || 0;
+    document.getElementById('unique-dogs').textContent = kpis.unique_dogs || 0;
+    document.getElementById('total-grams').textContent = Math.round(kpis.total_grams || 0);
+    document.getElementById('total-water-ml').textContent = Math.round(kpis.total_water_ml || 0);
+    document.getElementById('date-range-display').textContent = kpis.date_range_display || '-';
+    
+    // Calculate average grams per meal
+    const avgGrams = (kpis.total_feedings > 0) ? (kpis.total_grams / kpis.total_feedings) : 0;
+    document.getElementById('avg-grams-per-meal').textContent = Math.round(avgGrams);
+}
+
+function updateTable(rows, aggregation) {
+    const table = document.getElementById('feeding-table');
+    const thead = table.querySelector('thead');
+    const tbody = table.querySelector('tbody');
+    
+    // Update table title and aggregation badge
+    document.getElementById('table-title').textContent = getTableTitle(aggregation);
+    document.getElementById('aggregation-type').textContent = getAggregationLabel(aggregation);
+    
+    // Build table headers based on aggregation
+    thead.innerHTML = buildTableHeaders(aggregation);
+    
+    // Build table rows
+    tbody.innerHTML = '';
+    if (rows.length === 0) {
+        document.getElementById('empty-state').classList.remove('d-none');
+        return;
+    }
+    
+    document.getElementById('empty-state').classList.add('d-none');
+    
+    rows.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = buildTableRow(row, aggregation);
+        tbody.appendChild(tr);
+    });
+}
+
+function buildTableHeaders(aggregation) {
+    if (aggregation === 'daily') {
+        return `
+            <tr>
+                <th>التاريخ</th>
+                <th>الوقت</th>
+                <th>الكلب</th>
+                <th>المطعم</th>
+                <th>المشروع</th>
+                <th>نوع الوجبة</th>
+                <th>الكمية (جرام)</th>
+                <th>الماء (مل)</th>
+                <th>طريقة التحضير</th>
+                <th>BCS</th>
+                <th>الملاحظات</th>
+            </tr>
+        `;
+    } else if (aggregation === 'weekly') {
+        return `
+            <tr>
+                <th>الكلب</th>
+                <th>الأسبوع</th>
+                <th>عدد الوجبات</th>
+                <th>إجمالي الطعام (جرام)</th>
+                <th>إجمالي الماء (مل)</th>
+                <th>متوسط BCS</th>
+                <th>التفاصيل</th>
+            </tr>
+        `;
+    } else {
+        return `
+            <tr>
+                <th>الكلب</th>
+                <th>الفترة</th>
+                <th>عدد الوجبات</th>
+                <th>إجمالي الطعام (جرام)</th>
+                <th>إجمالي الماء (مل)</th>
+                <th>متوسط BCS</th>
+            </tr>
+        `;
+    }
+}
+
+function buildTableRow(row, aggregation) {
+    if (aggregation === 'daily') {
+        return `
+            <td>${row.date}</td>
+            <td>${row.time}</td>
+            <td>
+                <div class="fw-bold">${row.dog_name}</div>
+                <small class="text-muted">${row.dog_microchip || ''}</small>
+            </td>
+            <td>${row.feeder}</td>
+            <td><span class="badge bg-light text-dark">${row.project}</span></td>
+            <td><span class="badge ${getMealTypeBadgeClass(row.meal_type)}">${row.meal_type}</span></td>
+            <td>${row.grams || 0}</td>
+            <td>${row.water_ml || 0}</td>
+            <td>${row.prep_method}</td>
+            <td>${row.body_condition_scale ? `<span class="badge ${getBcsBadgeClass(row.body_condition_scale)}">${row.body_condition_scale}</span>` : '-'}</td>
+            <td><small>${row.notes || '-'}</small></td>
+        `;
+    } else if (aggregation === 'weekly') {
+        return `
+            <td>
+                <div class="fw-bold">${row.dog_name}</div>
+                <small class="text-muted">${row.dog_microchip || ''}</small>
+            </td>
+            <td><span class="badge bg-info">${row.week}</span></td>
+            <td>${row.meals}</td>
+            <td>${row.total_grams}</td>
+            <td>${row.total_water_ml}</td>
+            <td>${row.avg_bcs ? `<span class="badge ${getBcsBadgeClass(row.avg_bcs)}">${row.avg_bcs}</span>` : '-'}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="showMealDetails('${row.dog_name}', '${row.week}')">
+                    <i class="fas fa-eye"></i> عرض
+                </button>
+            </td>
+        `;
+    } else {
+        // Default aggregation for monthly or custom ranges
+        return `
+            <td>
+                <div class="fw-bold">${row.dog_name}</div>
+                <small class="text-muted">${row.dog_microchip || ''}</small>
+            </td>
+            <td><span class="badge bg-secondary">${row.period || row.date_range}</span></td>
+            <td>${row.meals || row.total_meals}</td>
+            <td>${row.total_grams}</td>
+            <td>${row.total_water_ml}</td>
+            <td>${row.avg_bcs ? `<span class="badge ${getBcsBadgeClass(row.avg_bcs)}">${row.avg_bcs}</span>` : '-'}</td>
+        `;
+    }
+}
+
+function getMealTypeBadgeClass(mealType) {
+    switch(mealType) {
+        case 'طازج': return 'bg-success text-white';
+        case 'مجفف': return 'bg-warning text-dark';
+        case 'مختلط': return 'bg-info text-white';
+        default: return 'bg-light text-dark';
+    }
+}
+
+function getBcsBadgeClass(bcs) {
+    const score = parseFloat(bcs);
+    if (score < 3) return 'bg-danger text-white';
+    if (score >= 3 && score <= 6) return 'bg-success text-white';
+    if (score > 6) return 'bg-warning text-dark';
+    return 'bg-light text-dark';
+}
+
+function getTableTitle(aggregation) {
+    switch(aggregation) {
+        case 'daily': return 'بيانات التغذية اليومية';
+        case 'weekly': return 'بيانات التغذية الأسبوعية';
+        default: return 'بيانات التغذية المجمعة';
+    }
+}
+
+function getAggregationLabel(aggregation) {
+    switch(aggregation) {
+        case 'daily': return 'عرض يومي';
+        case 'weekly': return 'عرض أسبوعي';
+        default: return 'عرض مجمع';
+    }
+}
+
+function updatePagination(pagination) {
+    document.getElementById('prev-page-btn').disabled = !pagination.has_prev;
+    document.getElementById('next-page-btn').disabled = !pagination.has_next;
+    document.getElementById('page-info').textContent = `صفحة ${pagination.page} من ${pagination.pages}`;
+}
+
+function showLoading() {
+    document.getElementById('loading-indicator').classList.remove('d-none');
+    document.getElementById('table-loading').classList.remove('d-none');
+}
+
+function hideLoading() {
+    document.getElementById('loading-indicator').classList.add('d-none');
+    document.getElementById('table-loading').classList.add('d-none');
+}
+
+function showError(message) {
+    alert(message); // Simple error display - could be enhanced with toast/modal
+}
+
+function showMealDetails(dogName, week) {
+    // TODO: Implement modal with detailed meal information
+    console.log(`Show meal details for ${dogName} - ${week}`);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,416 @@
+<!-- Unified range selector filter for breeding reports -->
+<div class="card mb-4" id="unified-filters">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-filter me-2"></i>
+            المرشحات والنطاق الزمني
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <!-- Project Selection (Optional) -->
+            <div class="col-md-3">
+                <label for="project-select" class="form-label">المشروع (اختياري)</label>
+                <select class="form-select" id="project-select" name="project_id">
+                    <option value="">جميع المشاريع</option>
+                    {% for project in accessible_projects %}
+                    <option value="{{ project.id }}" 
+                            {% if initial_params.project_id == project.id %}selected{% endif %}>
+                        {{ project.name }} ({{ project.code }})
+                    </option>
+                    {% endfor %}
+                </select>
+                <div class="invalid-feedback">
+                    خطأ في اختيار المشروع
+                </div>
+            </div>
+            
+            <!-- Range Type Selection -->
+            <div class="col-md-3">
+                <label for="range-type" class="form-label">نوع النطاق الزمني *</label>
+                <select class="form-select" id="range-type" name="range_type" required>
+                    <option value="daily" {% if initial_params.range_type == 'daily' %}selected{% endif %}>
+                        يومي
+                    </option>
+                    <option value="weekly" {% if initial_params.range_type == 'weekly' %}selected{% endif %}>
+                        أسبوعي
+                    </option>
+                    <option value="monthly" {% if initial_params.range_type == 'monthly' %}selected{% endif %}>
+                        شهري
+                    </option>
+                    <option value="custom" {% if initial_params.range_type == 'custom' %}selected{% endif %}>
+                        نطاق مخصص
+                    </option>
+                </select>
+                <div class="invalid-feedback">
+                    يرجى اختيار نوع النطاق الزمني
+                </div>
+            </div>
+            
+            <!-- Optional Dog Filter -->
+            <div class="col-md-3">
+                <label for="dog-select" class="form-label">الكلب (اختياري)</label>
+                <select class="form-select" id="dog-select" name="dog_id">
+                    <option value="">جميع الكلاب</option>
+                    <!-- Dogs will be populated dynamically based on selected project -->
+                </select>
+                <div class="invalid-feedback">
+                    خطأ في اختيار الكلب
+                </div>
+            </div>
+            
+            <!-- Status Indicator -->
+            <div class="col-md-3 d-flex align-items-end">
+                <div class="w-100">
+                    <div class="badge bg-light text-dark" id="range-status">
+                        <i class="fas fa-info-circle me-1"></i>
+                        اختر النطاق الزمني
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Date Input Section (Dynamic based on range type) -->
+        <div class="row g-3 mt-2" id="date-inputs">
+            
+            <!-- Daily Date Input -->
+            <div class="col-md-6 date-input daily-input">
+                <label for="date-select" class="form-label">التاريخ *</label>
+                <input type="date" 
+                       class="form-control" 
+                       id="date-select" 
+                       name="date" 
+                       value="{{ initial_params.date }}"
+                       required>
+                <div class="invalid-feedback">
+                    يرجى اختيار تاريخ صحيح
+                </div>
+                <small class="form-text text-muted">اختر التاريخ المحدد لعرض التقرير اليومي</small>
+            </div>
+            
+            <!-- Weekly Date Input -->
+            <div class="col-md-6 date-input weekly-input" style="display: none;">
+                <label for="week-start-select" class="form-label">بداية الأسبوع *</label>
+                <input type="date" 
+                       class="form-control" 
+                       id="week-start-select" 
+                       name="week_start" 
+                       value="{{ initial_params.week_start }}"
+                       required>
+                <div class="invalid-feedback">
+                    يرجى اختيار تاريخ بداية الأسبوع
+                </div>
+                <small class="form-text text-muted">اختر بداية الأسبوع (سيتم عرض 7 أيام)</small>
+            </div>
+            
+            <!-- Monthly Date Input -->
+            <div class="col-md-6 date-input monthly-input" style="display: none;">
+                <label for="year-month-select" class="form-label">الشهر والسنة *</label>
+                <input type="month" 
+                       class="form-control" 
+                       id="year-month-select" 
+                       name="year_month" 
+                       value="{{ initial_params.year_month }}"
+                       required>
+                <div class="invalid-feedback">
+                    يرجى اختيار شهر وسنة صحيحين
+                </div>
+                <small class="form-text text-muted">اختر الشهر والسنة لعرض تقرير شهري</small>
+            </div>
+            
+            <!-- Custom Range Inputs -->
+            <div class="col-md-6 date-input custom-input" style="display: none;">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label for="date-from-select" class="form-label">من تاريخ *</label>
+                        <input type="date" 
+                               class="form-control" 
+                               id="date-from-select" 
+                               name="date_from" 
+                               value="{{ initial_params.date_from }}"
+                               required>
+                        <div class="invalid-feedback">
+                            يرجى اختيار تاريخ البداية
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <label for="date-to-select" class="form-label">إلى تاريخ *</label>
+                        <input type="date" 
+                               class="form-control" 
+                               id="date-to-select" 
+                               name="date_to" 
+                               value="{{ initial_params.date_to }}"
+                               required>
+                        <div class="invalid-feedback">
+                            يرجى اختيار تاريخ النهاية
+                        </div>
+                    </div>
+                </div>
+                <small class="form-text text-muted">
+                    <i class="fas fa-lightbulb me-1"></i>
+                    نطاق ≤31 يوم = عرض يومي | نطاق >31 يوم = عرض أسبوعي
+                </small>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="d-flex gap-2 justify-content-end">
+                    <button type="button" 
+                            class="btn btn-outline-secondary" 
+                            id="reset-filters-btn">
+                        <i class="fas fa-undo me-2"></i>
+                        إعادة تعيين
+                    </button>
+                    
+                    <button type="button" 
+                            class="btn btn-primary" 
+                            id="load-report-btn"
+                            disabled>
+                        <i class="fas fa-chart-bar me-2"></i>
+                        عرض التقرير
+                    </button>
+                    
+                    <button type="button" 
+                            class="btn btn-success" 
+                            id="export-pdf-btn"
+                            disabled>
+                        <i class="fas fa-file-pdf me-2"></i>
+                        تصدير PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loading Indicator -->
+        <div class="row mt-2">
+            <div class="col-12">
+                <div class="text-center d-none" id="loading-indicator">
+                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                        <span class="visually-hidden">جاري التحميل...</span>
+                    </div>
+                    <span class="text-muted">جاري معالجة الطلب...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Unified range selector functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const projectSelect = document.getElementById('project-select');
+    const rangeTypeSelect = document.getElementById('range-type');
+    const dogSelect = document.getElementById('dog-select');
+    const loadBtn = document.getElementById('load-report-btn');
+    const exportBtn = document.getElementById('export-pdf-btn');
+    const resetBtn = document.getElementById('reset-filters-btn');
+    const rangeStatus = document.getElementById('range-status');
+    
+    // Date inputs
+    const dateSelect = document.getElementById('date-select');
+    const weekStartSelect = document.getElementById('week-start-select');
+    const yearMonthSelect = document.getElementById('year-month-select');
+    const dateFromSelect = document.getElementById('date-from-select');
+    const dateToSelect = document.getElementById('date-to-select');
+    
+    // Input containers
+    const dailyInput = document.querySelector('.daily-input');
+    const weeklyInput = document.querySelector('.weekly-input');
+    const monthlyInput = document.querySelector('.monthly-input');
+    const customInput = document.querySelector('.custom-input');
+    
+    function updateDateInputs() {
+        const rangeType = rangeTypeSelect.value;
+        
+        // Hide all date inputs
+        [dailyInput, weeklyInput, monthlyInput, customInput].forEach(input => {
+            if (input) input.style.display = 'none';
+        });
+        
+        // Clear required attributes
+        [dateSelect, weekStartSelect, yearMonthSelect, dateFromSelect, dateToSelect].forEach(input => {
+            if (input) input.removeAttribute('required');
+        });
+        
+        // Show and set requirements based on range type
+        switch(rangeType) {
+            case 'daily':
+                if (dailyInput) dailyInput.style.display = 'block';
+                if (dateSelect) dateSelect.setAttribute('required', 'required');
+                break;
+            case 'weekly':
+                if (weeklyInput) weeklyInput.style.display = 'block';
+                if (weekStartSelect) weekStartSelect.setAttribute('required', 'required');
+                break;
+            case 'monthly':
+                if (monthlyInput) monthlyInput.style.display = 'block';
+                if (yearMonthSelect) yearMonthSelect.setAttribute('required', 'required');
+                break;
+            case 'custom':
+                if (customInput) customInput.style.display = 'block';
+                if (dateFromSelect) dateFromSelect.setAttribute('required', 'required');
+                if (dateToSelect) dateToSelect.setAttribute('required', 'required');
+                break;
+        }
+        
+        updateButtonStates();
+        updateRangeStatus();
+    }
+    
+    function updateRangeStatus() {
+        const rangeType = rangeTypeSelect.value;
+        let statusText = '';
+        let statusClass = 'bg-light text-dark';
+        
+        switch(rangeType) {
+            case 'daily':
+                statusText = '<i class="fas fa-calendar-day me-1"></i> تقرير يومي';
+                statusClass = 'bg-primary text-white';
+                break;
+            case 'weekly':
+                statusText = '<i class="fas fa-calendar-week me-1"></i> تقرير أسبوعي';
+                statusClass = 'bg-info text-white';
+                break;
+            case 'monthly':
+                statusText = '<i class="fas fa-calendar me-1"></i> تقرير شهري';
+                statusClass = 'bg-warning text-dark';
+                break;
+            case 'custom':
+                statusText = '<i class="fas fa-calendar-alt me-1"></i> نطاق مخصص';
+                statusClass = 'bg-success text-white';
+                break;
+            default:
+                statusText = '<i class="fas fa-info-circle me-1"></i> اختر النطاق الزمني';
+        }
+        
+        rangeStatus.className = `badge ${statusClass}`;
+        rangeStatus.innerHTML = statusText;
+    }
+    
+    function updateButtonStates() {
+        const rangeType = rangeTypeSelect.value;
+        let hasValidDate = false;
+        
+        switch(rangeType) {
+            case 'daily':
+                hasValidDate = dateSelect && dateSelect.value.trim() !== '';
+                break;
+            case 'weekly':
+                hasValidDate = weekStartSelect && weekStartSelect.value.trim() !== '';
+                break;
+            case 'monthly':
+                hasValidDate = yearMonthSelect && yearMonthSelect.value.trim() !== '';
+                break;
+            case 'custom':
+                hasValidDate = dateFromSelect && dateToSelect && 
+                              dateFromSelect.value.trim() !== '' && 
+                              dateToSelect.value.trim() !== '';
+                break;
+        }
+        
+        const isValid = rangeType && hasValidDate;
+        
+        loadBtn.disabled = !isValid;
+        exportBtn.disabled = !isValid;
+    }
+    
+    // Event listeners for range type changes
+    rangeTypeSelect.addEventListener('change', updateDateInputs);
+    
+    // Event listeners for date changes
+    [dateSelect, weekStartSelect, yearMonthSelect, dateFromSelect, dateToSelect].forEach(input => {
+        if (input) {
+            input.addEventListener('change', updateButtonStates);
+        }
+    });
+    
+    // Project change handler
+    projectSelect.addEventListener('change', function() {
+        updateButtonStates();
+        loadDogsForProject(this.value);
+    });
+    
+    // Reset button handler
+    resetBtn.addEventListener('click', function() {
+        projectSelect.value = '';
+        rangeTypeSelect.value = 'daily';
+        dogSelect.value = '';
+        
+        [dateSelect, weekStartSelect, yearMonthSelect, dateFromSelect, dateToSelect].forEach(input => {
+            if (input) input.value = '';
+        });
+        
+        updateDateInputs();
+        loadDogsForProject('');
+    });
+    
+    // Custom range validation
+    if (dateFromSelect && dateToSelect) {
+        function validateDateRange() {
+            if (dateFromSelect.value && dateToSelect.value) {
+                const fromDate = new Date(dateFromSelect.value);
+                const toDate = new Date(dateToSelect.value);
+                
+                if (fromDate > toDate) {
+                    dateToSelect.setCustomValidity('تاريخ النهاية يجب أن يكون بعد تاريخ البداية');
+                } else {
+                    dateToSelect.setCustomValidity('');
+                    
+                    // Show smart aggregation hint
+                    const diffTime = toDate - fromDate;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    const hintElement = customInput.querySelector('.form-text');
+                    
+                    if (diffDays <= 31) {
+                        hintElement.innerHTML = '<i class="fas fa-calendar-day me-1 text-primary"></i> سيتم العرض بشكل يومي (' + diffDays + ' أيام)';
+                    } else {
+                        hintElement.innerHTML = '<i class="fas fa-calendar-week me-1 text-info"></i> سيتم العرض بشكل أسبوعي (' + diffDays + ' أيام)';
+                    }
+                }
+            }
+        }
+        
+        dateFromSelect.addEventListener('change', validateDateRange);
+        dateToSelect.addEventListener('change', validateDateRange);
+    }
+    
+    // Initialize
+    updateDateInputs();
+    loadDogsForProject(projectSelect.value || '');
+});
+
+// Function to load dogs for selected project (or all dogs)
+function loadDogsForProject(projectId) {
+    const dogSelect = document.getElementById('dog-select');
+    
+    // Clear existing options
+    dogSelect.innerHTML = '<option value="">جاري التحميل...</option>';
+    
+    // Build API URL - if no project selected, get all dogs
+    let apiUrl = '/api/dogs?status=ACTIVE&limit=100';
+    if (projectId) {
+        apiUrl += `&project_id=${projectId}`;
+    }
+    
+    // Load dogs using the main dogs API
+    fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+            dogSelect.innerHTML = '<option value="">جميع الكلاب</option>';
+            if (data.success && data.data) {
+                data.data.forEach(dog => {
+                    const option = document.createElement('option');
+                    option.value = dog.id;
+                    option.textContent = `${dog.name} (${dog.code || dog.id.substring(0,8)})`;
+                    dogSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading dogs:', error);
+            dogSelect.innerHTML = '<option value="">جميع الكلاب</option>';
+        });
+}
+</script>
