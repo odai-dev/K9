@@ -1888,3 +1888,60 @@ class BreedingTrainingActivity(db.Model):
         return f'<BreedingTrainingActivity {self.id}: {self.dog.name if self.dog else "N/A"} - {self.subject[:50]}>'
 
 
+# ---------- CaretakerDailyLog ----------
+class CaretakerDailyLog(db.Model):
+    """
+    Daily caretaker/breeder report log for house and dog maintenance activities
+    تقرير يومي للمربي - تسجيل أنشطة صيانة البيت والكلب
+    """
+    __tablename__ = "caretaker_daily_log"
+
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+    
+    # Core identifiers
+    date = db.Column(db.Date, nullable=False)
+    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=True)
+    dog_id = db.Column(get_uuid_column(), db.ForeignKey("dog.id", ondelete="CASCADE"), nullable=False)
+    caretaker_employee_id = db.Column(get_uuid_column(), db.ForeignKey("employee.id", ondelete="SET NULL"), nullable=True)
+    
+    # House/Kennel information
+    kennel_code = db.Column(db.String(50), nullable=True)  # البيت
+    
+    # HOUSE group activities (البيت)
+    house_clean = db.Column(db.Boolean, nullable=False, default=False)        # نظافة
+    house_vacuum = db.Column(db.Boolean, nullable=False, default=False)       # مكنس، شفاط
+    house_tap_clean = db.Column(db.Boolean, nullable=False, default=False)    # الحنفي
+    house_drain_clean = db.Column(db.Boolean, nullable=False, default=False)  # مجرى
+    
+    # DOG group activities (الكلب)
+    dog_clean = db.Column(db.Boolean, nullable=False, default=False)          # نظافته
+    dog_washed = db.Column(db.Boolean, nullable=False, default=False)         # غسله
+    dog_brushed = db.Column(db.Boolean, nullable=False, default=False)        # تمشيطه
+    bowls_bucket_clean = db.Column(db.Boolean, nullable=False, default=False) # صحن، دلو
+    
+    # Additional information
+    notes = db.Column(db.Text, nullable=True)  # ملاحظات
+    
+    # Audit trail
+    created_by_user_id = db.Column(get_uuid_column(), db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    project = db.relationship('Project', backref='caretaker_daily_logs')
+    dog = db.relationship('Dog', backref='caretaker_daily_logs')
+    caretaker_employee = db.relationship('Employee', backref='caretaker_daily_logs')
+    created_by_user = db.relationship('User', backref='caretaker_daily_logs')
+
+    # Database constraints and indexes
+    __table_args__ = (
+        db.Index("ix_caretaker_daily_date", "date"),
+        db.Index("ix_caretaker_daily_project_date", "project_id", "date"),
+        db.Index("ix_caretaker_daily_dog_date", "dog_id", "date"),
+        db.UniqueConstraint("dog_id", "date", name="uq_caretaker_daily_dog_date"),
+    )
+
+    def __repr__(self):
+        return f'<CaretakerDailyLog {self.id}: {self.dog_id} on {self.date}>'
+
+
