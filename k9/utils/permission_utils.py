@@ -89,6 +89,10 @@ PERMISSION_STRUCTURE = {
             "checkup": {
                 "view": "View checkup reports (all ranges)",
                 "export": "Export checkup reports (all ranges)"
+            },
+            "caretaker_daily": {
+                "view": "View caretaker daily reports",
+                "export": "Export caretaker daily reports"
             }
         }
     }
@@ -139,6 +143,8 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
                     perm_key = f"reports.breeding.feeding.{action_lower}"
                 elif any(x in subsection_lower for x in ["checkup daily", "checkup weekly", "checkup"]):
                     perm_key = f"reports.breeding.checkup.{action_lower}"
+                elif any(x in subsection_lower for x in ["caretaker daily", "caretaker"]):
+                    perm_key = f"reports.breeding.caretaker_daily.{action_lower}"
                 elif "trainer daily" in subsection_lower:
                     perm_key = f"reports.training.trainer_daily.{action_lower}"
                 elif "veterinary daily" in subsection_lower:
@@ -161,7 +167,9 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
                     "reports.breeding.feeding.view",
                     "reports.breeding.feeding.export",
                     "reports.breeding.checkup.view",
-                    "reports.breeding.checkup.export"
+                    "reports.breeding.checkup.export",
+                    "reports.breeding.caretaker_daily.view",
+                    "reports.breeding.caretaker_daily.export"
                 ]
                 return perm_key in allowed_permissions
             else:
@@ -194,7 +202,9 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
             "reports.breeding.feeding.view",
             "reports.breeding.feeding.export",
             "reports.breeding.checkup.view",
-            "reports.breeding.checkup.export"
+            "reports.breeding.checkup.export",
+            "reports.breeding.caretaker_daily.view",
+            "reports.breeding.caretaker_daily.export"
         ]
         return permission_key in allowed_permissions
         
