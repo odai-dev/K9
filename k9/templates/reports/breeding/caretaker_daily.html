@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}تقرير الرعاية اليومية{% endblock %}
+
+{% block content %}
+<div class="container-fluid" dir="rtl">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-broom text-primary me-2"></i>
+                        تقرير الرعاية اليومية
+                    </h1>
+                    <p class="text-muted mb-0">تقرير شامل للرعاية اليومية وتنظيف الكلاب مع نطاقات زمنية متنوعة</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        العودة للوحة التحكم
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unified Filters Section -->
+    {% include 'reports/breeding/_unified_filters.html' %}
+
+    <!-- Report Content Area -->
+    <div class="row" id="report-content-area" style="display: none;">
+        
+        <!-- KPIs Row -->
+        <div class="col-12 mb-4">
+            <div class="row" id="kpi-cards">
+                <div class="col-md-2">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">إجمالي الإدخالات</div>
+                                    <div class="h4 mb-0" id="total-entries">0</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-list-check fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">عدد الكلاب</div>
+                                    <div class="h4 mb-0" id="unique-dogs">0</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-dog fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">تنظيف البيت</div>
+                                    <div class="h5 mb-0" id="house-clean-count">0</div>
+                                    <div class="small" id="house-clean-pct">0%</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-home fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-warning text-dark">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">تنظيف الكلاب</div>
+                                    <div class="h5 mb-0" id="dog-clean-count">0</div>
+                                    <div class="small" id="dog-clean-pct">0%</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-shower fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-secondary text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">النطاق الزمني</div>
+                                    <div class="h6 mb-0" id="date-range-display">-</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-calendar fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-light text-dark">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">التنظيف الكامل</div>
+                                    <div class="h5 mb-0" id="full-clean-count">0</div>
+                                    <div class="small" id="full-clean-pct">0%</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-check-double fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Report Table -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table me-2"></i>
+                        <span id="table-title">بيانات الرعاية اليومية</span>
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-secondary" id="aggregation-type">-</span>
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-outline-secondary" id="prev-page-btn" disabled>
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="page-info" disabled>
+                                صفحة 1 من 1
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="next-page-btn" disabled>
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="caretaker-daily-table">
+                            <thead class="table-light">
+                                <!-- 2-row header structure with grouped columns (reversed for RTL) -->
+                                <tr>
+                                    <!-- Basic Info Group -->
+                                    <th rowspan="2" class="text-center align-middle">التاريخ</th>
+                                    <th rowspan="2" class="text-center align-middle">اسم الكلب</th>
+                                    <th rowspan="2" class="text-center align-middle">رمز الكلب</th>
+                                    <th rowspan="2" class="text-center align-middle">رقم البيت</th>
+                                    <th rowspan="2" class="text-center align-middle">القائم بالرعاية</th>
+                                    <!-- Dog Grooming Group -->
+                                    <th colspan="4" class="text-center bg-warning">مهام رعاية الكلب</th>
+                                    <!-- House Cleaning Group -->
+                                    <th colspan="4" class="text-center bg-info">مهام تنظيف البيت</th>
+                                    <!-- Additional Info -->
+                                    <th rowspan="2" class="text-center align-middle">ملاحظات</th>
+                                    <th rowspan="2" class="text-center align-middle">وقت التسجيل</th>
+                                </tr>
+                                <tr>
+                                    <!-- Dog Grooming Sub-headers (reversed order for RTL) -->
+                                    <th class="text-center bg-warning">تنظيف الأواني</th>
+                                    <th class="text-center bg-warning">تمشيط الكلب</th>
+                                    <th class="text-center bg-warning">استحمام الكلب</th>
+                                    <th class="text-center bg-warning">تنظيف الكلب</th>
+                                    <!-- House Cleaning Sub-headers (reversed order for RTL) -->
+                                    <th class="text-center bg-info">تنظيف البالوعة</th>
+                                    <th class="text-center bg-info">تنظيف الصنبور</th>
+                                    <th class="text-center bg-info">شفط البيت</th>
+                                    <th class="text-center bg-info">تنظيف البيت</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data rows will be populated via AJAX -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div class="text-center py-5 d-none" id="empty-state">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">لا توجد بيانات</h5>
+                        <p class="text-muted">لم يتم العثور على سجلات رعاية في النطاق الزمني المحدد</p>
+                    </div>
+                    
+                    <!-- Loading State -->
+                    <div class="text-center py-5 d-none" id="table-loading">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">جاري التحميل...</span>
+                        </div>
+                        <p class="text-muted">جاري تحميل البيانات...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden form for PDF export -->
+<form id="pdf-export-form" method="get" target="_blank" style="display: none;">
+    <input type="hidden" name="range_type" id="export-range-type">
+    <input type="hidden" name="project_id" id="export-project-id">
+    <input type="hidden" name="dog_id" id="export-dog-id">
+    <input type="hidden" name="date" id="export-date">
+    <input type="hidden" name="week_start" id="export-week-start">
+    <input type="hidden" name="year_month" id="export-year-month">
+    <input type="hidden" name="date_from" id="export-date-from">
+    <input type="hidden" name="date_to" id="export-date-to">
+</form>
+
+<script src="{{ url_for('static', filename='js/reports_caretaker_daily.js') }}"></script>
+{% endblock %}
