@@ -42,7 +42,7 @@
                             <div class="col-md-3 mb-3">
                                 <label for="project_id" class="form-label">المشروع (اختياري)</label>
                                 <select class="form-select" id="project_id" name="project_id">
-                                    <option value="">بدون مشروع</option>
+                                    <option value="">الجميع</option>
                                     {% for project in accessible_projects %}
                                     <option value="{{ project.id }}" 
                                         {% if initial_params.project_id == project.id %}selected{% endif %}>

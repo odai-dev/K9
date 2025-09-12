@@ -75,10 +75,14 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadDogs() {
         try {
             const projectId = document.getElementById('project_id').value;
-            let url = '/api/dogs/list';
+            let url = '/api/dogs';
+            const params = new URLSearchParams();
+            params.append('status', 'ACTIVE');
+            params.append('limit', '50');
             if (projectId) {
-                url += `?project_id=${encodeURIComponent(projectId)}`;
+                params.append('project_id', projectId);
             }
+            url += `?${params.toString()}`;
             
             const response = await fetch(url, {
                 headers: {
@@ -87,7 +91,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             if (response.ok) {
-                const dogs = await response.json();
+                const apiResponse = await response.json();
+                const dogs = apiResponse.data || [];
                 
                 // Clear existing options except "all dogs"
                 dogSelect.innerHTML = '<option value="">جميع الكلاب</option>';
@@ -96,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 dogs.forEach(dog => {
                     const option = document.createElement('option');
                     option.value = dog.id;
-                    option.textContent = `${dog.name} (${dog.code})`;
+                    option.textContent = `${dog.name} (${dog.code || dog.microchip_id})`;
                     dogSelect.appendChild(option);
                 });
             }
