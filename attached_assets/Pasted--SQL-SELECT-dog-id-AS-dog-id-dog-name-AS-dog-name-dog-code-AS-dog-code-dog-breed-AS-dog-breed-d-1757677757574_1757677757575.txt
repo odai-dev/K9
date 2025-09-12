@@ -1,0 +1,36 @@
+[SQL: SELECT dog.id AS dog_id, dog.name AS dog_name, dog.code AS dog_code, dog.breed AS dog_breed, dog.family_line AS dog_family_line, dog.gender AS dog_gender, dog.birth_date AS dog_birth_date, dog.microchip_id AS dog_microchip_id, dog.current_status AS dog_current_status, dog.location AS dog_location, dog.specialization AS dog_specialization, dog.color AS dog_color, dog.weight AS dog_weight, dog.height AS dog_height, dog.birth_certificate AS dog_birth_certificate, dog.photo AS dog_photo, dog.medical_records AS dog_medical_records, dog.assigned_to_user_id AS dog_assigned_to_user_id, dog.father_id AS dog_father_id, dog.mother_id AS dog_mother_id, dog.created_at AS dog_created_at, dog.updated_at AS dog_updated_at 
+FROM dog 
+WHERE dog.id = %(pk_1)s::UUID]
+[parameters: {'pk_1': 'list'}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+ERROR:app:Error in veterinary_data: 'VeterinaryVisit' object has no attribute 'duration_min'
+ERROR:app:Error getting dog details: (psycopg2.errors.InvalidTextRepresentation) invalid input syntax for type uuid: "list"
+LINE 3: WHERE dog.id = 'list'::UUID
+                       ^
+
+[SQL: SELECT dog.id AS dog_id, dog.name AS dog_name, dog.code AS dog_code, dog.breed AS dog_breed, dog.family_line AS dog_family_line, dog.gender AS dog_gender, dog.birth_date AS dog_birth_date, dog.microchip_id AS dog_microchip_id, dog.current_status AS dog_current_status, dog.location AS dog_location, dog.specialization AS dog_specialization, dog.color AS dog_color, dog.weight AS dog_weight, dog.height AS dog_height, dog.birth_certificate AS dog_birth_certificate, dog.photo AS dog_photo, dog.medical_records AS dog_medical_records, dog.assigned_to_user_id AS dog_assigned_to_user_id, dog.father_id AS dog_father_id, dog.mother_id AS dog_mother_id, dog.created_at AS dog_created_at, dog.updated_at AS dog_updated_at 
+FROM dog 
+WHERE dog.id = %(pk_1)s::UUID]
+[parameters: {'pk_1': 'list'}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+ERROR:app:Error in veterinary_data: 'VeterinaryVisit' object has no attribute 'duration_min'
+ERROR:app:Error getting dog details: (psycopg2.errors.InvalidTextRepresentation) invalid input syntax for type uuid: "list"
+LINE 3: WHERE dog.id = 'list'::UUID
+                       ^
+
+[SQL: SELECT dog.id AS dog_id, dog.name AS dog_name, dog.code AS dog_code, dog.breed AS dog_breed, dog.family_line AS dog_family_line, dog.gender AS dog_gender, dog.birth_date AS dog_birth_date, dog.microchip_id AS dog_microchip_id, dog.current_status AS dog_current_status, dog.location AS dog_location, dog.specialization AS dog_specialization, dog.color AS dog_color, dog.weight AS dog_weight, dog.height AS dog_height, dog.birth_certificate AS dog_birth_certificate, dog.photo AS dog_photo, dog.medical_records AS dog_medical_records, dog.assigned_to_user_id AS dog_assigned_to_user_id, dog.father_id AS dog_father_id, dog.mother_id AS dog_mother_id, dog.created_at AS dog_created_at, dog.updated_at AS dog_updated_at 
+FROM dog 
+WHERE dog.id = %(pk_1)s::UUID]
+[parameters: {'pk_1': 'list'}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+ERROR:app:Error getting dog details: (psycopg2.errors.InvalidTextRepresentation) invalid input syntax for type uuid: "list"
+LINE 3: WHERE dog.id = 'list'::UUID
+                       ^
+
+[SQL: SELECT dog.id AS dog_id, dog.name AS dog_name, dog.code AS dog_code, dog.breed AS dog_breed, dog.family_line AS dog_family_line, dog.gender AS dog_gender, dog.birth_date AS dog_birth_date, dog.microchip_id AS dog_microchip_id, dog.current_status AS dog_current_status, dog.location AS dog_location, dog.specialization AS dog_specialization, dog.color AS dog_color, dog.weight AS dog_weight, dog.height AS dog_height, dog.birth_certificate AS dog_birth_certificate, dog.photo AS dog_photo, dog.medical_records AS dog_medical_records, dog.assigned_to_user_id AS dog_assigned_to_user_id, dog.father_id AS dog_father_id, dog.mother_id AS dog_mother_id, dog.created_at AS dog_created_at, dog.updated_at AS dog_updated_at 
+FROM dog 
+WHERE dog.id = %(pk_1)s::UUID]
+[parameters: {'pk_1': 'list'}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+ERROR:app:Error in veterinary_data: 'VeterinaryVisit' object has no attribute 'duration_min'
+ERROR:app:Error in veterinary_data: 'VeterinaryVisit' object has no attribute 'duration_min'

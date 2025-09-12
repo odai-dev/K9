@@ -151,7 +151,8 @@ def veterinary_data():
             by_visit_type = defaultdict(int)
             total_medications = 0
             total_cost = 0
-            duration_minutes = []
+            total_dogs = len(set(visit.dog_id for visit in visits))
+            total_vets = len(set(visit.vet_id for visit in visits))
             
             for visit in visits:
                 visit_type_label = get_visit_type_display(visit.visit_type)
@@ -162,18 +163,14 @@ def veterinary_data():
                 
                 if visit.cost:
                     total_cost += visit.cost
-                
-                if visit.duration_min:
-                    duration_minutes.append(visit.duration_min)
-            
-            avg_duration = sum(duration_minutes) / len(duration_minutes) if duration_minutes else None
             
             kpis = {
                 'total_visits': total_visits,
+                'total_dogs': total_dogs,
+                'total_vets': total_vets,
                 'by_visit_type': dict(by_visit_type),
                 'total_medications': total_medications,
-                'total_cost': round(total_cost, 2),
-                'avg_duration_min': round(avg_duration, 1) if avg_duration else None
+                'total_cost': round(total_cost, 2)
             }
         
         # Build response based on granularity
@@ -211,7 +208,6 @@ def veterinary_data():
                     'treatment': visit.treatment or '',
                     'medications': visit.medications or [],
                     'cost': visit.cost,
-                    'duration_min': visit.duration_min,
                     'notes': visit.notes or '',
                     'project_id': visit.project_id,
                     'project_name': project_name
@@ -232,8 +228,7 @@ def veterinary_data():
                         'visits': 0,
                         'by_visit_type': {},
                         'medications_count': 0,
-                        'cost_sum': 0,
-                        'duration_minutes': []
+                        'cost_sum': 0
                     }
                 
                 agg = dog_aggregates[dog_key]
@@ -250,16 +245,11 @@ def veterinary_data():
                 if visit.cost:
                     agg['cost_sum'] += visit.cost
                 
-                if visit.duration_min:
-                    agg['duration_minutes'].append(visit.duration_min)
+                # VeterinaryVisit doesn't track duration
             
             # Convert to table format
             table = []
             for dog_id, agg in dog_aggregates.items():
-                avg_duration = None
-                if agg['duration_minutes']:
-                    avg_duration = round(sum(agg['duration_minutes']) / len(agg['duration_minutes']), 1)
-                
                 table.append({
                     'dog_id': agg['dog_id'],
                     'dog_code': agg['dog_code'],
@@ -267,8 +257,7 @@ def veterinary_data():
                     'visits': agg['visits'],
                     'by_visit_type': dict(agg['by_visit_type']),
                     'medications_count': agg['medications_count'],
-                    'cost_sum': round(agg['cost_sum'], 2),
-                    'avg_duration_min': avg_duration
+                    'cost_sum': round(agg['cost_sum'], 2)
                 })
             
             response_data['table'] = table
@@ -347,7 +336,9 @@ def export_pdf():
             by_visit_type = {}
             total_medications = 0
             total_cost = 0
-            duration_minutes = []
+            # VeterinaryVisit doesn't track duration like TrainingSession
+            total_dogs = len(set(visit.dog_id for visit in visits))
+            total_vets = len(set(visit.vet_id for visit in visits))
             
             for visit in visits:
                 visit_type_label = get_visit_type_display(visit.visit_type)
@@ -358,18 +349,14 @@ def export_pdf():
                 
                 if visit.cost:
                     total_cost += visit.cost
-                
-                if visit.duration_min:
-                    duration_minutes.append(visit.duration_min)
-            
-            avg_duration = sum(duration_minutes) / len(duration_minutes) if duration_minutes else None
             
             data['kpis'] = {
                 'total_visits': total_visits,
+                'total_dogs': total_dogs,
+                'total_vets': total_vets,
                 'by_visit_type': by_visit_type,
                 'total_medications': total_medications,
-                'total_cost': round(total_cost, 2),
-                'avg_duration_min': round(avg_duration, 1) if avg_duration else None
+                'total_cost': round(total_cost, 2)
             }
         
         # Add rows/table data
@@ -388,7 +375,6 @@ def export_pdf():
                     'treatment': visit.treatment or '',
                     'medications': visit.medications or [],
                     'cost': visit.cost,
-                    'duration_min': visit.duration_min,
                     'notes': visit.notes or '',
                     'project_name': project_name
                 })
@@ -406,8 +392,7 @@ def export_pdf():
                         'visits': 0,
                         'by_visit_type': {},
                         'medications_count': 0,
-                        'cost_sum': 0,
-                        'duration_minutes': []
+                        'cost_sum': 0
                     }
                 
                 agg = dog_aggregates[dog_key]
@@ -422,14 +407,12 @@ def export_pdf():
                 if visit.cost:
                     agg['cost_sum'] += visit.cost
                 
-                if visit.duration_min:
-                    agg['duration_minutes'].append(visit.duration_min)
+                # VeterinaryVisit doesn't track duration
             
             table = []
             for agg in dog_aggregates.values():
                 avg_duration = None
-                if agg['duration_minutes']:
-                    avg_duration = round(sum(agg['duration_minutes']) / len(agg['duration_minutes']), 1)
+                # VeterinaryVisit doesn't track duration
                 
                 table.append({
                     'dog_code': agg['dog_code'],
@@ -438,7 +421,7 @@ def export_pdf():
                     'by_visit_type': agg['by_visit_type'],
                     'medications_count': agg['medications_count'],
                     'cost_sum': round(agg['cost_sum'], 2),
-                    'avg_duration_min': avg_duration
+                    # No duration tracking for veterinary visits
                 })
             
             data['table'] = table
@@ -499,8 +482,7 @@ def export_pdf():
                 [rtl("إجمالي التكلفة"), f"{kpis['total_cost']} ر.س"],
             ]
             
-            if kpis['avg_duration_min']:
-                kpis_data.append([rtl("متوسط المدة"), f"{kpis['avg_duration_min']} دقيقة"])
+            # No duration data for veterinary visits
             
             # Visit type breakdown
             for visit_type, count in kpis['by_visit_type'].items():
@@ -530,7 +512,8 @@ def export_pdf():
             for row in data['rows']:
                 medications_str = format_medications_display(row['medications'])
                 cost_str = f"{row['cost']} ر.س" if row['cost'] else ""
-                duration_str = f"{row['duration_min']} دقيقة" if row['duration_min'] else ""
+                # No duration data for veterinary visits
+                duration_str = ""
                 
                 table_data.append([
                     rtl(row['project_name']),
@@ -558,7 +541,8 @@ def export_pdf():
             for row in data['table']:
                 visit_types_str = ", ".join([f"{t}: {c}" for t, c in row['by_visit_type'].items()])
                 cost_str = f"{row['cost_sum']} ر.س" if row['cost_sum'] else ""
-                duration_str = f"{row['avg_duration_min']} دقيقة" if row['avg_duration_min'] else ""
+                # No duration data for veterinary visits  
+                duration_str = ""
                 
                 table_data.append([
                     rtl(row['dog_code']),
