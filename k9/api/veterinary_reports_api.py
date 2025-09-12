@@ -558,35 +558,35 @@ def export_pdf():
         # Create and style table with proper width management
         if table_data is not None:
             # FIXED: Calculate optimal column widths based on content and page width
-            page_width = A4[0] - 100  # Leave margins
+            page_width = A4[0] - 120  # Smaller table with more margins
             num_columns = len(table_data[0]) if table_data else 0
             
             if num_columns > 0:
                 # Define column widths based on content type and importance
                 if data['granularity'] == "day":
-                    # Daily table - REORGANIZED widths to match new column order
+                    # SMARTER column widths based on content type and typical length
                     col_widths = [
-                        page_width * 0.08,  # التاريخ
-                        page_width * 0.06,  # الوقت
-                        page_width * 0.12,  # الكلب
-                        page_width * 0.12,  # اسم الطبيب
-                        page_width * 0.08,  # نوع الزيارة
-                        page_width * 0.18,  # التشخيص (most important)
-                        page_width * 0.18,  # العلاج (most important)
-                        page_width * 0.12,  # الأدوية
-                        page_width * 0.08,  # التكلفة
-                        page_width * 0.10,  # المشروع
-                        page_width * 0.15   # ملاحظات
+                        page_width * 0.07,  # التاريخ - dates are predictable width
+                        page_width * 0.05,  # الوقت - times are short
+                        page_width * 0.10,  # الكلب - dog names are usually short
+                        page_width * 0.11,  # اسم الطبيب - vet names vary
+                        page_width * 0.09,  # نوع الزيارة - visit types are fixed options
+                        page_width * 0.20,  # التشخيص - diagnoses need most space (medical details)
+                        page_width * 0.20,  # العلاج - treatments need most space (medical details)  
+                        page_width * 0.08,  # الأدوية - medication names are usually short
+                        page_width * 0.06,  # التكلفة - costs are just numbers
+                        page_width * 0.08,  # المشروع - project names are usually short
+                        page_width * 0.16   # ملاحظات - notes need reasonable space but not too much
                     ]
                 else:
-                    # Aggregate table with 6 columns - more space per column
+                    # SMARTER aggregate table widths
                     col_widths = [
-                        page_width * 0.12,  # الكود
-                        page_width * 0.15,  # الكلب
-                        page_width * 0.10,  # عدد الزيارات
-                        page_width * 0.35,  # حسب النوع
-                        page_width * 0.12,  # عدد الأدوية
-                        page_width * 0.16   # مجموع التكلفة
+                        page_width * 0.10,  # الكود - codes are short
+                        page_width * 0.16,  # الكلب - dog names need reasonable space
+                        page_width * 0.12,  # عدد الزيارات - visit counts are numbers
+                        page_width * 0.38,  # حسب النوع - visit type breakdown needs most space
+                        page_width * 0.10,  # عدد الأدوية - medication counts are numbers
+                        page_width * 0.14   # مجموع التكلفة - total costs need moderate space
                     ]
                 
                 table = Table(table_data, colWidths=col_widths)
