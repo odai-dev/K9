@@ -502,11 +502,11 @@ def export_pdf():
         # Data table
         table_data = None
         if data['granularity'] == "day" and 'rows' in data:
-            # Daily detailed table (RTL column order) - FIXED: Apply RTL to headers
+            # Daily detailed table - REORGANIZED column order for better readability
             headers = [
-                rtl("المشروع"), rtl("الكلب"), rtl("اسم الطبيب"), rtl("ملاحظات"), 
-                rtl("التكلفة"), rtl("الأدوية"), rtl("العلاج"), rtl("التشخيص"), 
-                rtl("نوع الزيارة"), rtl("الوقت"), rtl("التاريخ")
+                rtl("التاريخ"), rtl("الوقت"), rtl("الكلب"), rtl("اسم الطبيب"), 
+                rtl("نوع الزيارة"), rtl("التشخيص"), rtl("العلاج"), rtl("الأدوية"), 
+                rtl("التكلفة"), rtl("المشروع"), rtl("ملاحظات")
             ]
             
             table_data = [headers]
@@ -516,19 +516,19 @@ def export_pdf():
                 # No duration data for veterinary visits
                 duration_str = ""
                 
-                # FIXED: Removed duration column, reordered for better width management
+                # REORGANIZED: Better column order matching headers
                 table_data.append([
-                    rtl(row['project_name']),
+                    row['date'],
+                    row['time'],
                     rtl(row['dog_name']),
                     rtl(row['vet_name']),
-                    rtl(row['notes']),
-                    rtl(cost_str),
-                    rtl(medications_str),
-                    rtl(row['treatment']),
-                    rtl(row['diagnosis']),
                     rtl(row['visit_type']),
-                    row['time'],
-                    row['date']
+                    rtl(row['diagnosis']),
+                    rtl(row['treatment']),
+                    rtl(medications_str),
+                    rtl(cost_str),
+                    rtl(row['project_name']),
+                    rtl(row['notes'])
                 ])
         
         elif 'table' in data:
@@ -564,19 +564,19 @@ def export_pdf():
             if num_columns > 0:
                 # Define column widths based on content type and importance
                 if data['granularity'] == "day":
-                    # Daily table with 11 columns - optimized widths
+                    # Daily table - REORGANIZED widths to match new column order
                     col_widths = [
-                        page_width * 0.08,  # المشروع
-                        page_width * 0.08,  # الكلب 
-                        page_width * 0.08,  # اسم الطبيب
-                        page_width * 0.15,  # ملاحظات
-                        page_width * 0.06,  # التكلفة
+                        page_width * 0.08,  # التاريخ
+                        page_width * 0.06,  # الوقت
+                        page_width * 0.12,  # الكلب
+                        page_width * 0.12,  # اسم الطبيب
+                        page_width * 0.08,  # نوع الزيارة
+                        page_width * 0.18,  # التشخيص (most important)
+                        page_width * 0.18,  # العلاج (most important)
                         page_width * 0.12,  # الأدوية
-                        page_width * 0.15,  # العلاج
-                        page_width * 0.15,  # التشخيص
-                        page_width * 0.06,  # نوع الزيارة
-                        page_width * 0.04,  # الوقت
-                        page_width * 0.06   # التاريخ
+                        page_width * 0.08,  # التكلفة
+                        page_width * 0.10,  # المشروع
+                        page_width * 0.15   # ملاحظات
                     ]
                 else:
                     # Aggregate table with 6 columns - more space per column

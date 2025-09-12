@@ -322,11 +322,29 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'حدث خطأ في تحميل البيانات');
+                // FIXED: Better error handling for non-JSON responses
+                let errorMessage = 'حدث خطأ في تحميل البيانات';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorMessage;
+                } catch (parseError) {
+                    // If response isn't JSON (like 429 rate limit), show status
+                    errorMessage = `خطأ في الخادم (${response.status}): ${response.statusText}`;
+                }
+                throw new Error(errorMessage);
             }
             
-            const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+                // FIXED: Check if response is empty or malformed
+                if (!data || Object.keys(data).length === 0) {
+                    throw new Error('لم يتم استلام بيانات صحيحة من الخادم');
+                }
+            } catch (parseError) {
+                console.error('JSON parsing error:', parseError);
+                throw new Error('خطأ في تحليل البيانات المستلمة');
+            }
             
             hideLoading();
             
@@ -393,11 +411,23 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'حدث خطأ في تصدير التقرير');
+                // FIXED: Better error handling for PDF export
+                let errorMessage = 'حدث خطأ في تصدير التقرير';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorMessage;
+                } catch (parseError) {
+                    errorMessage = `خطأ في الخادم (${response.status}): ${response.statusText}`;
+                }
+                throw new Error(errorMessage);
             }
             
-            const result = await response.json();
+            let result;
+            try {
+                result = await response.json();
+            } catch (parseError) {
+                throw new Error('خطأ في تحليل استجابة التصدير');
+            }
             
             if (result.success) {
                 // Create download link
