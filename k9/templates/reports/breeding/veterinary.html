@@ -42,7 +42,7 @@
                             <div class="col-md-3 mb-3">
                                 <label for="project_id" class="form-label">المشروع (اختياري)</label>
                                 <select class="form-select" id="project_id" name="project_id">
-                                    <option value="">الكل / خارج مشاريع</option>
+                                    <option value="">بدون مشروع</option>
                                     {% for project in accessible_projects %}
                                     <option value="{{ project.id }}" 
                                         {% if initial_params.project_id == project.id %}selected{% endif %}>
@@ -68,7 +68,12 @@
                                 <label for="dog_id" class="form-label">الكلب (اختياري)</label>
                                 <select class="form-select" id="dog_id" name="dog_id">
                                     <option value="">جميع الكلاب</option>
-                                    <!-- Options will be populated by JavaScript -->
+                                    {% for dog in accessible_dogs %}
+                                    <option value="{{ dog.id }}" 
+                                        {% if initial_params.dog_id == dog.id %}selected{% endif %}>
+                                        {{ dog.name }} ({{ dog.code }})
+                                    </option>
+                                    {% endfor %}
                                 </select>
                             </div>
 
@@ -303,7 +308,7 @@
 </div>
 
 <!-- CSRF Token -->
-<input type="hidden" id="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" id="csrf_token" value="">
 
 {% endblock %}
 
