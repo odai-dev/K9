@@ -265,6 +265,17 @@ with app.app_context():
     except Exception as e:
         print(f"⚠ Warning: Could not register unified veterinary reports: {e}")
     
+    # Register Caretaker Daily Report blueprints
+    try:
+        from k9.routes.caretaker_daily_report_routes import bp as caretaker_daily_reports_ui_bp
+        from k9.api.caretaker_daily_report_api import bp as caretaker_daily_reports_api_bp
+        app.register_blueprint(caretaker_daily_reports_ui_bp, url_prefix='/reports/breeding/caretaker-daily')
+        app.register_blueprint(caretaker_daily_reports_api_bp, url_prefix='/api/reports/breeding/caretaker-daily')
+        print("✓ Caretaker daily reports registered successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Could not register caretaker daily reports: {e}")
+    
     # Keep legacy API blueprints for backward compatibility during transition
     try:
         from k9.api.breeding_feeding_reports_api import bp as breeding_feeding_reports_api_bp
