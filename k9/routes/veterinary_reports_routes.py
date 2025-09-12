@@ -5,7 +5,7 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 
 from k9.utils.permission_utils import has_permission
-from k9.utils.utils import get_user_projects
+from k9.utils.utils import get_user_projects, get_user_accessible_dogs
 
 bp = Blueprint('veterinary_reports_ui', __name__)
 
@@ -20,8 +20,9 @@ def veterinary():
         flash('ليس لديك صلاحية لعرض التقارير البيطرية', 'error')
         return redirect(url_for('main.dashboard'))
     
-    # Get accessible projects for current user
+    # Get accessible projects and dogs for current user
     projects = get_user_projects(current_user)
+    dogs = get_user_accessible_dogs(current_user)
     
     # Get any URL parameters for state preservation
     initial_params = {
@@ -38,5 +39,6 @@ def veterinary():
     
     return render_template('reports/breeding/veterinary.html', 
                          accessible_projects=projects,
+                         accessible_dogs=dogs,
                          initial_params=initial_params,
                          title='التقرير البيطري (موحّد)')

@@ -1,0 +1,45 @@
+SQL: INSERT INTO audit_log (id, user_id, action, target_type, target_id, target_name, description, old_values, new_values, ip_address, user_agent, session_id, extra_data, created_at) VALUES (%(id)s::UUID, %(user_id)s::UUID, %(action)s, %(target_type)s, %(target_id)s::UUID, %(target_name)s, %(description)s, %(old_values)s::JSON, %(new_values)s::JSON, %(ip_address)s, %(user_agent)s, %(session_id)s, %(extra_data)s::JSON, %(created_at)s)]
+[parameters: {'id': 'c874e9ec-3927-4039-afe1-d5710fb65cdc', 'user_id': UUID('48dfccf2-e98f-4e51-8f57-6f0e9b278ec1'), 'action': 'SECURITY_EVENT', 'target_type': 'Security', 'target_id': '48dfccf2-e98f-4e51-8f57-6f0e9b278ec1', 'target_name': None, 'description': '{"event_type": "SUCCESSFUL_LOGIN", "details": {"username": "admin", "ip": "10.84.0.50", "mfa_used": false}, "timestamp": "2025-09-12T11:33:25.232134"}', 'old_values': 'null', 'new_values': 'null', 'ip_address': '10.84.0.50', 'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36', 'session_id': None, 'extra_data': '{}', 'created_at': datetime.datetime(2025, 9, 12, 11, 33, 25, 232673)}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+ERROR:app:Exception on /reports/breeding/veterinary/ [GET]
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/k9/routes/veterinary_reports_routes.py", line 39, in veterinary
+    return render_template('reports/breeding/veterinary.html',
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/runner/workspace/k9/templates/reports/breeding/veterinary.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "/home/runner/workspace/k9/templates/base.html", line 247, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/k9/templates/reports/breeding/veterinary.html", line 306, in block 'content'
+    <input type="hidden" id="csrf_token" value="{{ csrf_token() }}">
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/jinja2/utils.py", line 92, in from_obj
+    if hasattr(obj, "jinja_pass_arg"):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+jinja2.exceptions.UndefinedError: 'csrf_token' is undefined
