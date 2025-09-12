@@ -9,7 +9,7 @@ from app import app, db
 from k9.models.models import (
     User, Project, Dog, FeedingLog, SubPermission, UserRole, 
     PermissionType, BodyConditionScale, PrepMethod, DogGender,
-    VeterinaryVisit, VisitType, Employee, EmployeeRole
+    VeterinaryVisit, VisitType, Employee, EmployeeRole, CaretakerDailyLog
 )
 from werkzeug.security import generate_password_hash
 
@@ -38,11 +38,14 @@ def client(app_instance):
 def db_session(app_instance):
     """Create database session for testing"""
     with app_instance.app_context():
-        # Clean up any existing data
+        # Clean up any existing data in correct order (child tables first to avoid FK violations)
         db.session.query(FeedingLog).delete()
+        db.session.query(CaretakerDailyLog).delete()
+        db.session.query(VeterinaryVisit).delete()
+        db.session.query(SubPermission).delete()
         db.session.query(Dog).delete()
         db.session.query(Project).delete()
-        db.session.query(SubPermission).delete()
+        db.session.query(Employee).delete()
         db.session.query(User).delete()
         db.session.commit()
         yield db.session
@@ -367,3 +370,56 @@ def test_user_without_permissions(db_session):
     db.session.add(user)
     db.session.commit()
     return user
+
+
+@pytest.fixture(scope='function')
+def test_caretaker_employee(db_session):
+    """Create test caretaker employee"""
+    caretaker = Employee(
+        name='أحمد القائم بالرعاية',
+        employee_id='CARE001',
+        role=EmployeeRole.HANDLER,
+        phone='987654321',
+        email='caretaker@test.com',
+        hire_date=date(2021, 1, 1),
+        is_active=True
+    )
+    db.session.add(caretaker)
+    db.session.commit()
+    return caretaker
+
+
+@pytest.fixture(scope='function')
+def test_caretaker_logs(db_session, test_dogs, test_project, test_caretaker_employee, test_user):
+    """Create test caretaker daily logs"""
+    logs = []
+    base_date = date.today()
+    
+    # Create caretaker logs for testing
+    for day_offset in range(7):  # Create data for a week
+        log_date = base_date - timedelta(days=day_offset)
+        
+        for i, dog in enumerate(test_dogs):
+            caretaker_log = CaretakerDailyLog(
+                dog_id=dog.id,
+                project_id=test_project.id,
+                caretaker_employee_id=test_caretaker_employee.id,
+                date=log_date,
+                house_number=f"H{i+1:03d}",
+                house_clean=True if i % 2 == 0 else False,
+                house_vacuum=True if i % 3 == 0 else False,
+                house_tap_clean=True if i % 2 == 1 else False,
+                house_drain_clean=True if i % 4 == 0 else False,
+                dog_clean=True if i % 2 == 0 else False,
+                dog_washed=True if i % 3 == 1 else False,
+                dog_brushed=True if i % 2 == 1 else False,
+                bowls_bucket_clean=True if i % 3 == 0 else False,
+                notes=f'رعاية يومية لـ {dog.name} - يوم {day_offset + 1}',
+                created_by=test_user.id,
+                created_at=datetime.combine(log_date, datetime.min.time().replace(hour=9, minute=30))
+            )
+            db.session.add(caretaker_log)
+            logs.append(caretaker_log)
+    
+    db.session.commit()
+    return logs
