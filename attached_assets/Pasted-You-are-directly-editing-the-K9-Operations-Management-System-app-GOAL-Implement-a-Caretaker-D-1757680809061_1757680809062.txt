@@ -1,0 +1,155 @@
+You are directly editing the K9 Operations Management System app.
+
+GOAL
+Implement a **Caretaker Daily Report (تقرير يومي للمربي)** that mirrors the provided Word layout:
+- One page (Arabic, RTL) with a 2-row header table:
+  Top: [م | اسم الكلب | اسم السائس | البيت | الكلب | ملاحظات]
+  Second row expands "البيت": [نظافة | مكنس، شفاط | الحنفي | مجرى]
+  and expands "الكلب": [نظافته | غسله | تمشيطه | صحن، دلو]
+- Data source: new lightweight log model (if needed) + dog/employee lookups.
+- Filters: **date (required)**, **project (optional)**, **caretaker/employee (optional)**, **kennel/house (optional)**.
+- Export to PDF (Arabic fonts, RTL). Reverse table columns so the first Arabic header appears on the RIGHT.
+
+================================================
+STEP 1 — MODEL (non-destructive, new table)
+================================================
+Create `CaretakerDailyLog` (if an equivalent does not exist):
+- id (UUID, pk)
+- date (Date, required)
+- project_id (UUID|null)      # optional to allow off-project logs
+- dog_id (UUID, required)
+- caretaker_employee_id (UUID|null)
+- kennel_code (String(50)|null)   # "البيت"
+- # HOUSE group (البيت):
+  house_clean (Boolean)               # نظافة
+  house_vacuum (Boolean)              # مكنس، شفاط
+  house_tap_clean (Boolean)           # الحنفي
+  house_drain_clean (Boolean)         # مجرى
+- # DOG group (الكلب):
+  dog_clean (Boolean)                 # نظافته
+  dog_washed (Boolean)                # غسله
+  dog_brushed (Boolean)               # تمشيطه
+  bowls_bucket_clean (Boolean)        # صحن، دلو
+- notes (Text|null)                   # ملاحظات
+- created_by_user_id (Int|null), created_at/updated_at
+
+Add indexes on (date), (project_id, date), (dog_id, date).
+
+================================================
+STEP 2 — PERMISSIONS
+================================================
+- "reports:caretaker_daily:view"
+- "reports:caretaker_daily:export"
+Grant GENERAL_ADMIN: both. PROJECT_MANAGER: both but only for their projects; when project filter is empty, PMs see dogs in their projects only (off-project hidden for PMs; Admin sees all).
+
+================================================
+STEP 3 — ROUTES (page)
+================================================
+Add blueprint `caretaker_daily_report_routes`:
+
+GET `/reports/breeding/caretaker-daily`
+- Renders `templates/reports/breeding/caretaker_daily.html`
+- @login_required + has("reports:caretaker_daily:view")
+
+Filter bar (RTL):
+- التاريخ (required)
+- المشروع (اختياري)
+- السائس/المربي (اختياري)
+- البيت (اختياري)
+- أزرار: تحديث | تصدير PDF
+
+================================================
+STEP 4 — API (data provider + export)
+================================================
+Create blueprint `caretaker_daily_report_api`:
+
+A) GET `/api/reports/breeding/caretaker-daily?date=&project_id=&caretaker_id=&kennel_code=`
+- Guard: login + permission; PM scoping (see Step 2).
+- Query `CaretakerDailyLog` filtered by date; apply optional filters.
+- Join Dog (name, code), Employee (caretaker name), Project (name).
+- Return JSON:
+{
+  "filters": {...},
+  "rows": [
+    {
+      "serial": 1,
+      "dog_name":"...", "dog_code":"...",
+      "caretaker_name":"...",
+      "kennel_code":"...",
+      "house": { "clean":true, "vacuum":false, "tap":true, "drain":true },
+      "dog":   { "clean":true, "washed":false, "brushed":true, "bowls":true },
+      "notes":"..."
+    },
+    ...
+  ],
+  "meta": { "project_name":"..."|"(الكل)" }
+}
+- Sort by kennel_code then dog_code; serial is 1..N.
+
+B) PDF export
+GET `/api/reports/breeding/caretaker-daily/export.pdf?date=&project_id=&caretaker_id=&kennel_code=`
+- Guard: has("reports:caretaker_daily:export")
+- Reuse the JSON builder; render **exact layout**:
+  • Title: "التقرير اليومي للمربي"
+  • Date + Project (or "(الكل)") + optional caretaker/kennel
+  • Table with 2-row header (Arabic, RTL, reversed columns)
+  • Footer: 
+      - "ملاحظات عامة:" (multi-line)
+      - "اسم السائس/المربي: ________  التوقيع: ________"
+      - "مسؤول المشروع: ________  التوقيع: ________"
+- Save to `uploads/reports/caretaker/<YYYY-MM-DD>/caretaker_daily_<projectCode_or_all>_<YYYY-MM-DD>.pdf`
+- Return `{ "success": true, "file": "<download_path>" }`
+
+================================================
+STEP 5 — TEMPLATE (Arabic, RTL, reversed columns)
+================================================
+Create `templates/reports/breeding/caretaker_daily.html`:
+- Sticky filter bar (as above)
+- Render the table **RIGHT→LEFT** with a 2-row header:
+
+Top header cells (right→left): 
+["التاريخ (أعلى الصفحة فقط)", "م", "اسم الكلب", "اسم السائس", "البيت", "الكلب", "ملاحظات"]
+
+Second header row (right→left) aligned under their parents:
+- Under "البيت": ["نظافة","مكنس، شفاط","الحنفي","مجرى"]
+- Under "الكلب": ["نظافته","غسله","تمشيطه","صحن، دلو"]
+
+Implementation:
+- Build arrays like:
+  const parentHeaders = ["م","اسم الكلب","اسم السائس","البيت","الكلب","ملاحظات"];
+  const houseSub = ["نظافة","مكنس، شفاط","الحنفي","مجرى"];
+  const dogSub   = ["نظافته","غسله","تمشيطه","صحن، دلو"];
+  // Render with columns reversed for RTL so "م" appears at the far right.
+- Cells display ✔ / ✖ (or □/■) for booleans; notes as text.
+- Button "تصدير PDF" calls export endpoint with same filters.
+
+Include `/static/js/reports_caretaker_daily.js`.
+
+================================================
+STEP 6 — STATIC JS
+================================================
+Create `/static/js/reports_caretaker_daily.js`:
+- Read filters; GET the API; render the 2-row header (reverse column arrays).
+- For booleans, render ✔ for true, ✖ for false (ARIA-friendly).
+- Export button → call export endpoint; show download link.
+- Keep CSRF handling consistent with the app.
+
+================================================
+STEP 7 — NAVIGATION
+================================================
+In Reports → Breeding, add:
+- **"تقرير يومي للمربي"** → `/reports/breeding/caretaker-daily`
+Visible if user has "reports:caretaker_daily:view".
+
+================================================
+STEP 8 — OPTIONAL SEED/BRIDGE
+================================================
+If you already record these cleans/grooms elsewhere (e.g., Cleaning or Grooming modules), add a nightly job or on-demand sync to **generate CaretakerDailyLog** rows for the selected date from those sources, so the report can populate without double-entry.
+
+================================================
+STEP 9 — TESTS
+================================================
+Add `tests/test_reports_caretaker_daily.py`:
+- Seed: admin, PM, dogs, caretaker; create CaretakerDailyLog rows on a date (mix of true/false).
+- JSON endpoint: shape + orders + boolean mapping ✔/✖.
+- PDF export: returns path; visually validate columns are reversed and 2-row header renders correctly.
