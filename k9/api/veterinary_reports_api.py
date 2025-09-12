@@ -502,10 +502,11 @@ def export_pdf():
         # Data table
         table_data = None
         if data['granularity'] == "day" and 'rows' in data:
-            # Daily detailed table (RTL column order)
+            # Daily detailed table (RTL column order) - FIXED: Apply RTL to headers
             headers = [
-                "المشروع", "الكلب", "اسم الطبيب", "ملاحظات", "المدة (دقيقة)", 
-                "التكلفة", "الأدوية", "العلاج", "التشخيص", "نوع الزيارة", "الوقت", "التاريخ"
+                rtl("المشروع"), rtl("الكلب"), rtl("اسم الطبيب"), rtl("ملاحظات"), 
+                rtl("التكلفة"), rtl("الأدوية"), rtl("العلاج"), rtl("التشخيص"), 
+                rtl("نوع الزيارة"), rtl("الوقت"), rtl("التاريخ")
             ]
             
             table_data = [headers]
@@ -515,12 +516,12 @@ def export_pdf():
                 # No duration data for veterinary visits
                 duration_str = ""
                 
+                # FIXED: Removed duration column, reordered for better width management
                 table_data.append([
                     rtl(row['project_name']),
                     rtl(row['dog_name']),
                     rtl(row['vet_name']),
                     rtl(row['notes']),
-                    rtl(duration_str),
                     rtl(cost_str),
                     rtl(medications_str),
                     rtl(row['treatment']),
@@ -531,10 +532,10 @@ def export_pdf():
                 ])
         
         elif 'table' in data:
-            # Aggregate table (RTL column order)
+            # Aggregate table (RTL column order) - FIXED: Apply RTL to headers, removed duration
             headers = [
-                "الكود", "الكلب", "عدد الزيارات", "حسب النوع (روتيني/طارئ/تطعيم)", 
-                "عدد الأدوية", "مجموع التكلفة", "متوسط المدة (دقيقة)"
+                rtl("الكود"), rtl("الكلب"), rtl("عدد الزيارات"), 
+                rtl("حسب النوع"), rtl("عدد الأدوية"), rtl("مجموع التكلفة")
             ]
             
             table_data = [headers]
@@ -544,27 +545,70 @@ def export_pdf():
                 # No duration data for veterinary visits  
                 duration_str = ""
                 
+                # FIXED: Removed duration column for better width management
                 table_data.append([
                     rtl(row['dog_code']),
                     rtl(row['dog_name']),
                     str(row['visits']),
                     rtl(visit_types_str),
                     str(row['medications_count']),
-                    rtl(cost_str),
-                    rtl(duration_str)
+                    rtl(cost_str)
                 ])
         
-        # Create and style table
+        # Create and style table with proper width management
         if table_data is not None:
-            table = Table(table_data)
-            table.setStyle(TableStyle([
-                ('FONTNAME', (0, 0), (-1, -1), get_arabic_font_name()),
-                ('FONTSIZE', (0, 0), (-1, -1), 8),
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-            ]))
-            story.append(table)
+            # FIXED: Calculate optimal column widths based on content and page width
+            page_width = A4[0] - 100  # Leave margins
+            num_columns = len(table_data[0]) if table_data else 0
+            
+            if num_columns > 0:
+                # Define column widths based on content type and importance
+                if data['granularity'] == "day":
+                    # Daily table with 11 columns - optimized widths
+                    col_widths = [
+                        page_width * 0.08,  # المشروع
+                        page_width * 0.08,  # الكلب 
+                        page_width * 0.08,  # اسم الطبيب
+                        page_width * 0.15,  # ملاحظات
+                        page_width * 0.06,  # التكلفة
+                        page_width * 0.12,  # الأدوية
+                        page_width * 0.15,  # العلاج
+                        page_width * 0.15,  # التشخيص
+                        page_width * 0.06,  # نوع الزيارة
+                        page_width * 0.04,  # الوقت
+                        page_width * 0.06   # التاريخ
+                    ]
+                else:
+                    # Aggregate table with 6 columns - more space per column
+                    col_widths = [
+                        page_width * 0.12,  # الكود
+                        page_width * 0.15,  # الكلب
+                        page_width * 0.10,  # عدد الزيارات
+                        page_width * 0.35,  # حسب النوع
+                        page_width * 0.12,  # عدد الأدوية
+                        page_width * 0.16   # مجموع التكلفة
+                    ]
+                
+                table = Table(table_data, colWidths=col_widths)
+                table.setStyle(TableStyle([
+                    ('FONTNAME', (0, 0), (-1, -1), get_arabic_font_name()),
+                    ('FONTSIZE', (0, 0), (-1, -1), 7),  # Smaller font for better fit
+                    ('FONTSIZE', (0, 0), (-1, 0), 8),   # Slightly larger for headers
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightblue]),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 2),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 2),
+                    ('TOPPADDING', (0, 0), (-1, -1), 3),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+                ]))
+                story.append(table)
+            else:
+                # Fallback for empty data
+                story.append(Paragraph(rtl("لا توجد بيانات لعرضها"), title_style))
         
         # Footer for daily reports
         if data['granularity'] == "day":
