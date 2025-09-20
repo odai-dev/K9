@@ -18,6 +18,7 @@ from k9.utils.attendance_reporting_constants import (
     GROUP_1_HEADERS, GROUP_2_HEADERS, LEAVE_TABLE_HEADERS, REPORT_LABELS
 )
 from k9.models.models import Project
+from k9.utils.report_header import create_pdf_report_header
 
 
 def ensure_reports_directory() -> str:
@@ -112,32 +113,21 @@ def export_daily_attendance_pdf(data: Dict[str, Any]) -> str:
             alignment=TA_RIGHT
         )
         
-        # Add main title
-        title = Paragraph(rtl(REPORT_LABELS["main_title"]), title_style)
-        story.append(title)
-        story.append(Spacer(1, 12))
-        
-        # Add date and day information
-        target_date = datetime.strptime(data.get("date"), "%Y-%m-%d").date()
+        # Add date and day information for header
+        date_string = data.get("date", datetime.now().strftime("%Y-%m-%d"))
+        target_date = datetime.strptime(date_string, "%Y-%m-%d").date()
         formatted_date = format_arabic_date(target_date)
         day_name = data.get("day_name_ar", "")
+        project_name = data.get("project_name", "جميع المشاريع")
         
-        date_info = [
-            [rtl(f"{REPORT_LABELS['day_label']} {day_name}"), rtl(f"{REPORT_LABELS['date_label']} {formatted_date}")]
-        ]
+        additional_info = f"{REPORT_LABELS['day_label']} {day_name}   {REPORT_LABELS['date_label']} {formatted_date}   المشروع: {project_name}"
         
-        date_table = Table(date_info, colWidths=[3*inch, 3*inch])
-        date_table.setStyle(TableStyle([
-            ('FONTNAME', (0, 0), (-1, -1), font_name),
-            ('FONTSIZE', (0, 0), (-1, -1), 12),
-            ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('BACKGROUND', (0, 0), (-1, -1), colors.lightgrey)
-        ]))
-        
-        story.append(date_table)
-        story.append(Spacer(1, 20))
+        # Add standardized header to story
+        header_elements = create_pdf_report_header(
+            report_title_ar=REPORT_LABELS["main_title"],
+            additional_info=additional_info
+        )
+        story.extend(header_elements)
         
         # Process groups data
         groups = data.get("groups", [])

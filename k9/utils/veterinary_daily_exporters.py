@@ -14,6 +14,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 from k9.utils.utils_pdf_rtl import rtl
 from k9.utils.veterinary_daily_constants import PDF_HEADERS
+from k9.utils.report_header import create_pdf_report_header
 
 
 def register_arabic_fonts():
@@ -59,20 +60,17 @@ def export_vet_daily_pdf(data: Dict[str, Any]) -> Dict[str, str]:
     # Build content
     story = []
     
-    # Title
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=getSampleStyleSheet()['Heading1'],
-        fontName=font_name,
-        fontSize=18,
-        spaceAfter=20,
-        alignment=2  # Right alignment for RTL
+    # Create standardized header
+    additional_info = f"اليوم: {data['day_name_ar']}   التاريخ: {data['date_ar']}   المشروع: {data.get('project_name', 'غير محدد')}"
+    
+    # Add standardized header to story
+    header_elements = create_pdf_report_header(
+        report_title_ar="التقرير اليومي الصحي",
+        additional_info=additional_info
     )
+    story.extend(header_elements)
     
-    title_text = rtl("التقرير اليومي الصحي")
-    story.append(Paragraph(title_text, title_style))
-    
-    # Header information
+    # Keep header style for section headers
     header_style = ParagraphStyle(
         'HeaderStyle',
         parent=getSampleStyleSheet()['Normal'],
@@ -81,17 +79,6 @@ def export_vet_daily_pdf(data: Dict[str, Any]) -> Dict[str, str]:
         spaceAfter=10,
         alignment=2  # Right alignment
     )
-    
-    header_info = [
-        f"اليوم: {data['day_name_ar']}",
-        f"التاريخ: {data['date_ar']}",
-        f"المشروع: {data.get('project_name', 'غير محدد')}"
-    ]
-    
-    for info in header_info:
-        story.append(Paragraph(rtl(info), header_style))
-    
-    story.append(Spacer(1, 20))
     
     # KPIs Summary
     kpis_style = ParagraphStyle(

@@ -14,6 +14,7 @@ from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 
 from k9.utils.pdf_rtl import register_arabic_fonts, rtl, get_arabic_font
 from k9.utils.trainer_daily_constants import TRAINER_DAILY_HEADERS, SUMMARY_HEADERS
+from k9.utils.report_header import create_pdf_report_header
 
 
 def export_trainer_daily_pdf(report_data: Dict[str, Any]) -> str:
@@ -49,17 +50,8 @@ def export_trainer_daily_pdf(report_data: Dict[str, Any]) -> str:
     # Story elements
     story = []
     
-    # Styles
+    # Styles needed for table sections
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        'ArabicTitle',
-        parent=styles['Title'],
-        fontName=arabic_font,
-        fontSize=16,
-        alignment=TA_CENTER,
-        spaceAfter=20
-    )
-    
     header_style = ParagraphStyle(
         'ArabicHeader',
         parent=styles['Normal'],
@@ -69,15 +61,19 @@ def export_trainer_daily_pdf(report_data: Dict[str, Any]) -> str:
         spaceAfter=10
     )
     
-    # Title and header information
+    # Create standardized header
     formatted_date = datetime.strptime(report_data['date'], '%Y-%m-%d').strftime('%d/%m/%Y')
     day_name = report_data['day_name_ar']
     project_name = report_data.get('project_name', 'جميع المشاريع')
     
-    header_text = f"{rtl('اليوم')}: {rtl(day_name)}   {rtl('التاريخ')}: {formatted_date}   {rtl('المشروع')}: {rtl(project_name)}"
-    story.append(Paragraph(rtl("تقرير يومي للمدرب"), title_style))
-    story.append(Paragraph(header_text, header_style))
-    story.append(Spacer(1, 20))
+    additional_info = f"اليوم: {day_name}   التاريخ: {formatted_date}   المشروع: {project_name}"
+    
+    # Add standardized header to story
+    header_elements = create_pdf_report_header(
+        report_title_ar="تقرير يومي للمدرب",
+        additional_info=additional_info
+    )
+    story.extend(header_elements)
     
     # Sessions table
     if report_data['sessions']:
