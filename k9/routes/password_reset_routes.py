@@ -71,6 +71,14 @@ def request_reset():
                     from flask import current_app
                     current_app.logger.info(f"Password reset token for {email}: {reset_token.token}")
                     current_app.logger.info(f"Reset URL: {reset_url}")
+                    
+                    # In development, show the reset link directly
+                    import os
+                    flask_env = os.environ.get("FLASK_ENV", "development")
+                    if flask_env == "development":
+                        flash('تعذر إرسال البريد الإلكتروني - الوضع التطويري', 'warning')
+                        flash(f'رابط إعادة تعيين كلمة المرور (للتطوير فقط): <a href="{reset_url}" class="alert-link">{reset_url}</a>', 'info')
+                        return render_template('auth/password_reset_request.html', success=True, reset_url=reset_url, development_mode=True)
                 
             except Exception as e:
                 db.session.rollback()
