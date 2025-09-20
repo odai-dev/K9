@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import current_user
 from app import db
 from k9.models.models import User
@@ -67,22 +67,26 @@ def request_reset():
                 })
                 
                 if not email_sent:
-                    # Log the token for development/testing
-                    from flask import current_app
-                    current_app.logger.info(f"Password reset token for {email}: {reset_token.token}")
-                    current_app.logger.info(f"Reset URL: {reset_url}")
-                    
-                    # In development, show the reset link directly
+                    # Safe environment check for development behavior
                     import os
-                    flask_env = os.environ.get("FLASK_ENV", "development")
-                    if flask_env == "development":
+                    is_development = (current_app.debug or 
+                                    current_app.config.get('ENV') == 'development' or 
+                                    os.getenv('FLASK_ENV') == 'development' or
+                                    os.getenv('APP_SHOW_DEV_RESET_LINK') == '1')
+                    
+                    if is_development:
+                        # Log the token for development/testing only
+                        current_app.logger.info(f"Password reset token for {email}: {reset_token.token}")
+                        current_app.logger.info(f"Reset URL: {reset_url}")
+                        current_app.logger.warning("Development mode: Showing password reset link directly (email service not configured)")
                         flash('تعذر إرسال البريد الإلكتروني - الوضع التطويري', 'warning')
-                        flash(f'رابط إعادة تعيين كلمة المرور (للتطوير فقط): <a href="{reset_url}" class="alert-link">{reset_url}</a>', 'info')
                         return render_template('auth/password_reset_request.html', success=True, reset_url=reset_url, development_mode=True)
+                    else:
+                        # In production, only log that email failed (no sensitive data)
+                        current_app.logger.error("Email service failed to send password reset email - please check email configuration")
                 
             except Exception as e:
                 db.session.rollback()
-                from flask import current_app
                 current_app.logger.error(f"Password reset error: {e}")
         
         flash(success_message, 'info')
@@ -170,6 +174,19 @@ def reset_password(token):
 @password_reset_bp.route('/cleanup-tokens')
 def cleanup_expired_tokens():
     """Clean up expired tokens (admin only)."""
+    # Security check: Only allow in development or with explicit admin access
+    from flask_login import current_user
+    import os
+    
+    is_development = (current_app.debug or 
+                     current_app.config.get('ENV') == 'development' or 
+                     os.getenv('FLASK_ENV') == 'development')
+    
+    if not is_development and not (current_user.is_authenticated and 
+                                  getattr(current_user, 'role', None) == 'GENERAL_ADMIN'):
+        from flask import abort
+        abort(403)
+    
     # This would typically be called by a cron job
     try:
         count = PasswordResetToken.cleanup_expired()
