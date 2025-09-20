@@ -370,21 +370,16 @@ def caretaker_daily_unified_export_pdf():
 
 def _generate_caretaker_daily_pdf(title, data, output_path, date_range):
     """Generate RTL PDF for caretaker daily report"""
+    from k9.utils.report_header import create_pdf_report_header
+    
     register_arabic_fonts()
     
     # Create document
     doc = SimpleDocTemplate(output_path, pagesize=A4, rightMargin=20, leftMargin=20)
     story = []
     
-    # Get styles
+    # Get styles for section headers
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle('RTLTitle', 
-                                parent=styles['Title'],
-                                fontName=get_arabic_font_name(),
-                                fontSize=18, 
-                                alignment=TA_CENTER,
-                                spaceAfter=20)
-    
     header_style = ParagraphStyle('RTLHeader', 
                                  parent=styles['Normal'],
                                  fontName=get_arabic_font_name(),
@@ -392,10 +387,12 @@ def _generate_caretaker_daily_pdf(title, data, output_path, date_range):
                                  alignment=TA_RIGHT,
                                  spaceAfter=10)
     
-    # Title
-    story.append(Paragraph(rtl(title), title_style))
-    story.append(Paragraph(rtl(f"الفترة: {date_range}"), header_style))
-    story.append(Spacer(1, 20))
+    # Add standardized header
+    header_elements = create_pdf_report_header(
+        report_title_ar=title,
+        additional_info=f"الفترة: {date_range}"
+    )
+    story.extend(header_elements)
     
     # KPIs summary
     kpis = data.get('kpis', {})

@@ -665,6 +665,8 @@ def export_weekly_pdf():
 
 def _generate_feeding_pdf(title: str, data: dict, output_path: str):
     """Generate feeding report PDF with Arabic RTL support"""
+    from k9.utils.report_header import create_pdf_report_header
+    
     # Register Arabic fonts
     register_arabic_fonts()
     font_name = get_arabic_font_name()
@@ -676,18 +678,11 @@ def _generate_feeding_pdf(title: str, data: dict, output_path: str):
     # Build content
     story = []
     
-    # Title
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=getSampleStyleSheet()['Heading1'],
-        fontName=font_name,
-        fontSize=18,
-        spaceAfter=20,
-        alignment=TA_CENTER
+    # Add standardized header
+    header_elements = create_pdf_report_header(
+        report_title_ar=title
     )
-    
-    story.append(Paragraph(rtl(title), title_style))
-    story.append(Spacer(1, 20))
+    story.extend(header_elements)
     
     # Add KPIs section
     if 'kpis' in data:

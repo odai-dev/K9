@@ -450,18 +450,10 @@ def export_pdf():
         doc = SimpleDocTemplate(file_path, pagesize=A4)
         story = []
         
-        # Styles
-        styles = getSampleStyleSheet()
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Title'],
-            fontName=get_arabic_font_name(),
-            fontSize=16,
-            alignment=TA_CENTER,
-            spaceAfter=20
-        )
+        # Import and create standardized header
+        from k9.utils.report_header import create_pdf_report_header
         
-        # Header
+        # Header information
         project_name = "الكل" if not data['filters']['project_id'] else "مشروع محدد"
         date_range = format_date_range_for_display(
             parse_date_string(date_from), 
@@ -469,9 +461,14 @@ def export_pdf():
             data['filters']['range_type']
         )
         
-        title_text = f"التقرير البيطري\n{project_name} - {date_range}"
-        story.append(Paragraph(rtl(title_text), title_style))
-        story.append(Spacer(1, 20))
+        additional_info = f"المشروع: {project_name}   الفترة: {date_range}"
+        
+        # Add standardized header
+        header_elements = create_pdf_report_header(
+            report_title_ar="التقرير البيطري",
+            additional_info=additional_info
+        )
+        story.extend(header_elements)
         
         # KPIs section
         if data.get('kpis') and data['filters']['show_kpis']:

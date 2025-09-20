@@ -18,6 +18,7 @@ from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from k9.utils.utils_pdf_rtl import register_arabic_fonts, rtl, get_arabic_font_name
 from k9.utils.dates_ar import format_arabic_date
 from k9.services.pm_daily_services import get_pm_daily
+from k9.utils.report_header import create_pdf_report_header
 
 
 def export_pm_daily_pdf(project_id: str, date_str: str, user, project_code: str | None = None) -> Dict[str, str]:
@@ -101,29 +102,21 @@ def _generate_pdf(data: Dict[str, Any], file_path: str):
 
 
 def _build_header(data: Dict[str, Any], font_name: str) -> List[Any]:
-    """Build PDF header with date and day information"""
-    story = []
-    
-    # Header style
-    styles = getSampleStyleSheet()
-    header_style = styles['Normal'].clone('HeaderStyle')
-    header_style.fontName = font_name
-    header_style.fontSize = 14
-    header_style.alignment = TA_CENTER
-    
+    """Build standardized PDF header with company logo and information"""
     # Date formatting
     report_date = date.fromisoformat(data['date'])
     formatted_date = format_arabic_date(report_date)
     day_name = data['day_name_ar']
+    project_name = data.get('project_name', 'غير محدد')
     
-    # Header text
-    header_text = rtl(f"اليوم: {day_name} - التاريخ: {formatted_date}")
-    header_para = Paragraph(header_text, header_style)
+    # Create additional info
+    additional_info = f"اليوم: {day_name}   التاريخ: {formatted_date}   المشروع: {project_name}"
     
-    story.append(header_para)
-    story.append(Spacer(1, 10*mm))
-    
-    return story
+    # Create standardized header
+    return create_pdf_report_header(
+        report_title_ar="التقرير اليومي لرئيس الميدان",
+        additional_info=additional_info
+    )
 
 
 def _build_main_table(data: Dict[str, Any], font_name: str) -> List[Any]:
