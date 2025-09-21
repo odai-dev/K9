@@ -1,5 +1,18 @@
 /* Custom CSS for K9 Operations Management System */
 
+/* Navy Blue Color Scheme Override for Bootstrap */
+:root {
+    --bs-primary: #1a365d;
+    --bs-primary-rgb: 26,54,93;
+}
+
+/* Ensure all Bootstrap utility classes use navy blue */
+.text-primary, .link-primary { color: #1a365d !important; }
+.bg-primary { background-color: #1a365d !important; }
+.border-primary { border-color: #1a365d !important; }
+.btn-outline-primary { color: #1a365d; border-color: #1a365d; }
+.btn-outline-primary:hover { background-color: #1a365d; border-color: #1a365d; }
+
 /* RTL Support and Arabic Font */
 * {
     font-family: 'Noto Sans Arabic', sans-serif;
@@ -16,7 +29,7 @@ body {
     box-shadow: 0 2px 20px rgba(0,0,0,0.1);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%) !important;
     border-bottom: 3px solid rgba(255,255,255,0.1);
     padding: 0.75rem 0;
     z-index: 1050;
@@ -299,11 +312,11 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    background: linear-gradient(135deg, #2c5282 0%, #3182ce 100%);
 }
 
 .btn-success {
@@ -349,13 +362,13 @@ body {
 }
 
 .btn-outline-primary {
-    border: 2px solid #007bff;
-    color: #007bff;
+    border: 2px solid #1a365d;
+    color: #1a365d;
 }
 
 .btn-outline-primary:hover {
-    background: #007bff;
-    border-color: #007bff;
+    background: #1a365d;
+    border-color: #1a365d;
     color: white;
 }
 
@@ -369,8 +382,8 @@ body {
 }
 
 .form-control:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    border-color: #1a365d;
+    box-shadow: 0 0 0 0.2rem rgba(26,54,93,0.25);
     transform: translateY(-1px);
 }
 
@@ -382,8 +395,8 @@ body {
 }
 
 .form-select:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    border-color: #1a365d;
+    box-shadow: 0 0 0 0.2rem rgba(26,54,93,0.25);
 }
 
 .form-label {
@@ -443,7 +456,7 @@ body {
 }
 
 .badge.bg-primary {
-    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%) !important;
 }
 
 .badge.bg-success {
@@ -477,9 +490,9 @@ body {
 }
 
 .alert-primary {
-    background: linear-gradient(135deg, rgba(0,123,255,0.1) 0%, rgba(0,86,179,0.1) 100%);
-    color: #004085;
-    border-right: 4px solid #007bff;
+    background: linear-gradient(135deg, rgba(26,54,93,0.1) 0%, rgba(44,82,130,0.1) 100%);
+    color: #1a365d;
+    border-right: 4px solid #1a365d;
 }
 
 .alert-success {
@@ -644,10 +657,10 @@ body {
 
 .quick-action-btn:hover {
     background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
-    border-color: #007bff;
-    color: #007bff;
+    border-color: #1a365d;
+    color: #1a365d;
     transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,123,255,0.15);
+    box-shadow: 0 10px 25px rgba(26,54,93,0.15);
     text-decoration: none;
 }
 
@@ -678,7 +691,7 @@ body {
 
 .dog-photo:hover {
     transform: scale(1.1);
-    border-color: #007bff;
+    border-color: #1a365d;
 }
 
 .dog-photo-placeholder {
@@ -842,7 +855,7 @@ body {
     
     .form-control:focus {
         background-color: #4d4d4d;
-        border-color: #007bff;
+        border-color: #1a365d;
     }
 }
 
@@ -881,7 +894,7 @@ body {
 }
 
 [dir="rtl"] .alert-primary {
-    border-left-color: #007bff;
+    border-left-color: #1a365d;
 }
 
 [dir="rtl"] .alert-success {
