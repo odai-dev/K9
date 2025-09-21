@@ -12,7 +12,7 @@ from reportlab.lib.units import inch, cm
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 
-from k9.utils.pdf_rtl import register_arabic_fonts, rtl, get_arabic_font
+from k9.utils.utils_pdf_rtl import register_arabic_fonts, rtl, get_arabic_font_name
 from k9.utils.trainer_daily_constants import TRAINER_DAILY_HEADERS, SUMMARY_HEADERS
 from k9.utils.report_header import create_pdf_report_header
 
@@ -29,7 +29,7 @@ def export_trainer_daily_pdf(report_data: Dict[str, Any]) -> str:
     """
     # Register Arabic fonts
     register_arabic_fonts()
-    arabic_font = get_arabic_font()
+    arabic_font = get_arabic_font_name()
     
     # Create output directory
     year = datetime.now().year

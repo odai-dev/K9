@@ -523,12 +523,17 @@ def generate_excel_report(report_type, start_date, end_date, user, filters=None)
     from openpyxl import Workbook
     from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
     from openpyxl.utils import get_column_letter
+    from openpyxl.drawing.image import Image as XLImage
+    from k9.utils.report_header import create_excel_header_data
     
     filters = filters or {}
     
     # Create workbook and worksheet
     wb = Workbook()
     ws = wb.active
+    
+    # Get company header data
+    header_data = create_excel_header_data()
     
     # Arabic font and styling
     arabic_font = Font(name='Calibri', size=11, bold=False)
@@ -569,8 +574,11 @@ def generate_excel_report(report_type, start_date, end_date, user, filters=None)
             cell.alignment = Alignment(horizontal='center')
             cell.border = border
         
+        # Adjust data start row to account for header
+        data_start_row = current_row + 1
+        
         # Write data
-        for row, dog in enumerate(dogs, 2):
+        for row, dog in enumerate(dogs, data_start_row):
             gender_ar = 'ذكر' if dog.gender.value == 'MALE' else 'أنثى'
             status_ar = {
                 'ACTIVE': 'نشط', 'RETIRED': 'متقاعد', 
@@ -604,9 +612,35 @@ def generate_excel_report(report_type, start_date, end_date, user, filters=None)
             is_active = (status_filter == 'ACTIVE')
             employees = [e for e in employees if e.is_active == is_active]
         
+        # Add company header (same logic as dogs section)
+        current_row = 1
+        try:
+            if os.path.exists(header_data['company_logo_path']):
+                img = XLImage(header_data['company_logo_path'])
+                img.height = 60
+                img.width = 120
+                ws.add_image(img, f'D{current_row}')
+        except:
+            pass
+        
+        for i, info in enumerate(header_data['english_info']):
+            ws.cell(row=current_row + i, column=1).value = info
+            ws.cell(row=current_row + i, column=1).font = Font(name='Calibri', size=9)
+        
+        for i, info in enumerate(header_data['arabic_info']):
+            ws.cell(row=current_row + i, column=8).value = info
+            ws.cell(row=current_row + i, column=8).font = Font(name='Calibri', size=9)
+            ws.cell(row=current_row + i, column=8).alignment = Alignment(horizontal='right')
+        
+        current_row += 6
+        ws.cell(row=current_row, column=4).value = "تقرير الموظفين"
+        ws.cell(row=current_row, column=4).font = Font(name='Calibri', size=14, bold=True)
+        ws.cell(row=current_row, column=4).alignment = Alignment(horizontal='center')
+        current_row += 2
+        
         # Write headers
         for col, header in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=col)
+            cell = ws.cell(row=current_row, column=col)
             cell.value = header
             cell.font = header_font
             cell.fill = header_fill
