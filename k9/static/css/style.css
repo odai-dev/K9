@@ -29,6 +29,21 @@ body {
     transition: all 0.3s ease;
 }
 
+/* Company Logo Styling */
+.navbar-brand img,
+.login-header img {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    object-fit: contain;
+    mix-blend-mode: normal;
+}
+
+.login-header img {
+    filter: brightness(0) invert(1) !important;
+}
+
 .navbar-brand:hover {
     transform: scale(1.05);
     filter: brightness(1.1);
