@@ -111,7 +111,12 @@ def create_pdf_report_header(report_title_ar, report_subtitle_ar="", additional_
     # Company header table with logo
     try:
         # Try to load the logo
-        logo_path = os.path.join('k9', 'static', 'img', 'peregrine_header.png')
+        # Try the new company header template first, fallback to old logo
+        company_template_path = os.path.join('k9', 'static', 'img', 'company_header.png')
+        old_logo_path = os.path.join('k9', 'static', 'img', 'peregrine_header.png')
+        
+        # Use company template if available, otherwise fallback
+        logo_path = company_template_path if os.path.exists(company_template_path) else old_logo_path
         if os.path.exists(logo_path):
             # Create company information sections
             english_info = Paragraph(f"""
@@ -208,7 +213,7 @@ def create_excel_header_data():
     company_data = get_company_header_data()
     
     return {
-        'company_logo_path': os.path.join('k9', 'static', 'img', 'peregrine_header.png'),
+        'company_logo_path': os.path.join('k9', 'static', 'img', 'company_header.png') if os.path.exists(os.path.join('k9', 'static', 'img', 'company_header.png')) else os.path.join('k9', 'static', 'img', 'peregrine_header.png'),
         'english_info': [
             company_data['english']['company_name'],
             company_data['english']['service_type'], 

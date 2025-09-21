@@ -1,0 +1,87 @@
+<!-- Standardized Bilingual Company Header for All Reports -->
+<div class="report-header d-print-block mb-4 p-3 border-bottom">
+    <div class="row align-items-center">
+        <!-- English Company Information (Left) -->
+        <div class="col-md-3 text-start">
+            <div class="company-info-en" style="font-size: 9pt; line-height: 1.2;">
+                <strong>Peregrine Security and Safety Services</strong><br>
+                Security guard service<br>
+                Haddah, West of the German<br>
+                Embassy, Sana'a, Yemen
+            </div>
+        </div>
+        
+        <!-- Company Logo (Center) -->
+        <div class="col-md-6 text-center">
+            <img src="{{ url_for('static', filename='img/company_header.png') }}" 
+                 alt="Company Logo" 
+                 class="img-fluid company-logo"
+                 style="max-height: 80px; width: auto;"
+                 onerror="this.style.display='none';">
+            <!-- Fallback if logo not available -->
+            <div class="logo-fallback d-none" style="padding: 20px; border: 2px solid #ddd; border-radius: 8px;">
+                <i class="fas fa-shield-alt fa-3x text-primary mb-2"></i>
+                <div class="h5 mb-0">K9 Operations</div>
+            </div>
+        </div>
+        
+        <!-- Arabic Company Information (Right) -->
+        <div class="col-md-3 text-end" dir="rtl">
+            <div class="company-info-ar" style="font-size: 9pt; line-height: 1.2;">
+                <strong>نشاط خدمات الأمن والسلامة</strong><br>
+                خدمة حراسة الأمن<br>
+                حدة غرب السفارة الألمانية صنعاء<br>
+                الجمهورية اليمنية
+            </div>
+        </div>
+    </div>
+    
+    <!-- Separator Line -->
+    <hr class="my-3" style="border-top: 2px solid #333;">
+</div>
+
+<!-- Additional CSS for Print Media -->
+<style>
+@media print {
+    .report-header {
+        display: block !important;
+        page-break-inside: avoid;
+    }
+    .company-info-en, .company-info-ar {
+        font-family: Arial, sans-serif;
+    }
+}
+
+/* Show fallback logo if main logo fails */
+img.company-logo:not([src*="company_header.png"]) + .logo-fallback,
+img.company-logo[src=""] + .logo-fallback {
+    display: block !important;
+}
+
+/* RTL Support for Arabic text */
+.company-info-ar {
+    font-family: 'Noto Sans Arabic', 'Amiri', Arial, sans-serif;
+    direction: rtl;
+    text-align: right;
+}
+
+.company-info-en {
+    direction: ltr;
+    text-align: left;
+}
+</style>
+
+<!-- JavaScript to handle logo fallback -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const logo = document.querySelector('.company-logo');
+    const fallback = document.querySelector('.logo-fallback');
+    
+    if (logo && fallback) {
+        logo.onerror = function() {
+            this.style.display = 'none';
+            fallback.classList.remove('d-none');
+        };
+    }
+});
+</script>
