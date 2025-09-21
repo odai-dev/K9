@@ -64,7 +64,7 @@ Preferred communication style: Simple, everyday language.
 ## Replit Environment Setup
 - **Status**: ✅ Successfully configured for Replit
 - **Database**: PostgreSQL database provisioned and migrations applied successfully
-- **Admin User**: Default admin user created (username: admin, password: admin123)
+- **Admin User**: Default admin user created (username: admin, password: password123)
 - **Workflow**: Configured with webview output on port 5000 using gunicorn
 - **Host Configuration**: Properly configured for 0.0.0.0 to support Replit's proxy
 - **Deployment**: Configured for autoscale deployment with gunicorn
