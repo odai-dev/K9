@@ -83,13 +83,10 @@ async function updateDogFilter() {
         const projectId = document.getElementById('projectFilter').value;
         const url = projectId ? `/api/dogs?project_id=${projectId}` : '/api/dogs';
         
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const dogs = await response.json();
+        // Use modern API client with authentication
+        const params = projectId ? { project_id: projectId } : {};
+        const response = await k9Api.getDogs(params);
+        const dogs = response.data || response;
         
         const dogSelect = document.getElementById('dogFilter');
         dogSelect.innerHTML = '<option value="">جميع الكلاب</option>';
