@@ -13,9 +13,6 @@
                     </h3>
                 </div>
                 <div class="card-body">
-                    <!-- Company Header -->
-                    {% include 'reports/_header.html' %}
-
                     <!-- Filters -->
                     <div class="row mb-4">
                         <div class="col-md-4">
@@ -62,7 +59,10 @@
                     </div>
 
                     <!-- Report content -->
-                    <div id="report-content" class="d-none">
+                    <div id="report-content" class="report-preview d-none">
+                        <!-- Company Header for Preview/Print Only -->
+                        {% include 'reports/_header.html' %}
+                        
                         <!-- Header info -->
                         <div id="report-header" class="mb-4 text-center">
                             <h4 id="report-title"></h4>

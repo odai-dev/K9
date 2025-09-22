@@ -20,9 +20,6 @@
         </div>
     </div>
 
-    <!-- Company Header -->
-    {% include 'reports/_header.html' %}
-
     <!-- Filters -->
     <div class="card mb-4">
         <div class="card-header">
@@ -79,7 +76,9 @@
     </div>
 
     <!-- KPIs -->
-    <div class="row mb-4" id="kpisRow" style="display: none;">
+    <div class="row mb-4 report-preview" id="kpisRow" style="display: none;">
+        <!-- Company Header for Preview/Print Only -->
+        {% include 'reports/_header.html' %}
         <div class="col-md-2">
             <div class="card text-center">
                 <div class="card-body">
