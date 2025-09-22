@@ -25,15 +25,15 @@
         </div>
     </div>
 
-    <!-- Company Header -->
-    {% include 'reports/_header.html' %}
-
     <!-- Filters Section -->
     {% include 'reports/attendance/_filters.html' %}
 
     <!-- Report Content Area -->
-    <div class="row" id="report-content-area" style="display: none;">
+    <div class="row report-preview" id="report-content-area" style="display: none;">
         <div class="col-12">
+            <!-- Company Header for Preview/Print Only -->
+            {% include 'reports/_header.html' %}
+            
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <div>

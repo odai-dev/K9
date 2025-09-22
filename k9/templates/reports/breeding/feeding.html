@@ -25,14 +25,13 @@
         </div>
     </div>
 
-    <!-- Company Header -->
-    {% include 'reports/_header.html' %}
-
     <!-- Unified Filters Section -->
     {% include 'reports/breeding/_unified_filters.html' %}
 
     <!-- Report Content Area -->
-    <div class="row" id="report-content-area" style="display: none;">
+    <div class="row report-preview" id="report-content-area" style="display: none;">
+        <!-- Company Header for Preview/Print Only -->
+        {% include 'reports/_header.html' %}
         
         <!-- KPIs Row -->
         <div class="col-12 mb-4">

@@ -912,3 +912,31 @@ body {
 [dir="rtl"] .alert-info {
     border-left-color: #17a2b8;
 }
+
+/* Report Header Visibility Control */
+/* Hide report headers on screen by default, show only in preview and print */
+.report-preview .report-header {
+    display: block !important;
+}
+
+/* Additional print-specific styles for report headers */
+@media print {
+    .report-header {
+        display: block !important;
+        page-break-inside: avoid;
+        margin-bottom: 20px !important;
+    }
+    
+    /* Ensure company logo prints well */
+    .report-header .company-logo {
+        max-height: 60px !important;
+        width: auto !important;
+    }
+    
+    /* Print-optimized font sizes for company info */
+    .report-header .company-info-en,
+    .report-header .company-info-ar {
+        font-size: 10pt !important;
+        line-height: 1.2 !important;
+    }
+}
