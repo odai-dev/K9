@@ -134,9 +134,9 @@ def dogs_add():
             dog.gender = DogGender(request.form['gender'])
             dog.birth_date = datetime.strptime(request.form['birth_date'], '%Y-%m-%d').date() if request.form['birth_date'] else None
             dog.color = request.form.get('color')
-            dog.weight = float(request.form['weight']) if request.form.get('weight') and request.form['weight'].strip() else None
-            dog.height = float(request.form['height']) if request.form.get('height') and request.form['height'].strip() else None
-            dog.microchip_id = request.form.get('microchip_id') if request.form.get('microchip_id') and request.form.get('microchip_id').strip() else None
+            dog.weight = float(request.form['weight']) if request.form.get('weight') and request.form.get('weight').strip() else None
+            dog.height = float(request.form['height']) if request.form.get('height') and request.form.get('height').strip() else None
+            dog.microchip_id = request.form.get('microchip_id').strip() if request.form.get('microchip_id') and request.form.get('microchip_id').strip() else None
             dog.location = request.form.get('location')
             dog.specialization = request.form.get('specialization')
             dog.current_status = DogStatus.ACTIVE
