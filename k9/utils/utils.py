@@ -499,13 +499,19 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
     # Build PDF with header
     doc.build(story, onFirstPage=build_header)
 
-    # Log the report generation
-    log_audit(user.id, 'EXPORT', 'Report', filename, {
-        'report_type': report_type,
-        'start_date': start_date.isoformat() if start_date else None,
-        'end_date': end_date.isoformat() if end_date else None,
-        'filters': filters
-    })
+    # Log the report generation (with safe error handling)
+    try:
+        import uuid
+        log_audit(user.id, 'EXPORT', 'Report', str(uuid.uuid4()), {
+            'report_type': report_type,
+            'filename': filename,
+            'start_date': start_date.isoformat() if start_date else None,
+            'end_date': end_date.isoformat() if end_date else None,
+            'filters': filters
+        })
+    except Exception as e:
+        # Don't let audit logging errors break report generation
+        print(f"Warning: Could not log export audit trail: {e}")
     
     return filename
 
@@ -736,14 +742,20 @@ def generate_excel_report(report_type, start_date, end_date, user, filters=None)
     # Save file
     wb.save(filepath)
     
-    # Log the report generation
-    log_audit(user.id, 'EXPORT', 'Report', filename, {
-        'report_type': report_type,
-        'format': 'excel',
-        'start_date': start_date.isoformat() if start_date else None,
-        'end_date': end_date.isoformat() if end_date else None,
-        'filters': filters
-    })
+    # Log the report generation (with safe error handling)
+    try:
+        import uuid
+        log_audit(user.id, 'EXPORT', 'Report', str(uuid.uuid4()), {
+            'report_type': report_type,
+            'format': 'excel',
+            'filename': filename,
+            'start_date': start_date.isoformat() if start_date else None,
+            'end_date': end_date.isoformat() if end_date else None,
+            'filters': filters
+        })
+    except Exception as e:
+        # Don't let audit logging errors break report generation
+        print(f"Warning: Could not log export audit trail: {e}")
     
     return filename
 
