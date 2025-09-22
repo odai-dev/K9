@@ -269,14 +269,28 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadDogOptions() {
-    fetch('/api/dogs')
-        .then(response => response.json())
+    fetch('/api/dogs', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
             const select = document.getElementById('dog_id');
             const currentValue = select.value;
             
+            // Handle wrapped response format - API returns {data: [...], success: true, ...}
+            const dogs = Array.isArray(data) ? data : (data.data || []);
+            
             select.innerHTML = '<option value="">اختر الكلب</option>';
-            data.forEach(dog => {
+            dogs.forEach(dog => {
                 const option = document.createElement('option');
                 option.value = dog.id;
                 option.textContent = dog.name;
@@ -288,17 +302,36 @@ function loadDogOptions() {
                 select.appendChild(option);
             });
         })
-        .catch(error => console.error('Error loading dogs:', error));
+        .catch(error => {
+            console.error('Error loading dogs:', error);
+            // Show user-friendly error message
+            const select = document.getElementById('dog_id');
+            select.innerHTML = '<option value="">خطأ في تحميل الكلاب</option>';
+        });
 }
 
 function loadTrainerOptions() {
-    fetch('/api/employees?role=TRAINER')
-        .then(response => response.json())
+    fetch('/api/employees?role=TRAINER', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
             const select = document.getElementById('trainer_id');
             
+            // Handle wrapped response format - API might return {data: [...]} or bare array
+            const trainers = Array.isArray(data) ? data : (data.data || []);
+            
             select.innerHTML = '<option value="">اختر المدرب</option>';
-            data.forEach(trainer => {
+            trainers.forEach(trainer => {
                 const option = document.createElement('option');
                 option.value = trainer.id;
                 option.textContent = trainer.name;
@@ -310,7 +343,12 @@ function loadTrainerOptions() {
                 select.appendChild(option);
             });
         })
-        .catch(error => console.error('Error loading trainers:', error));
+        .catch(error => {
+            console.error('Error loading trainers:', error);
+            // Show user-friendly error message
+            const select = document.getElementById('trainer_id');
+            select.innerHTML = '<option value="">خطأ في تحميل المدربين</option>';
+        });
 }
 
 function handleCategoryChange() {
@@ -408,6 +446,7 @@ function submitForm(event) {
     
     fetch(url, {
         method: method,
+        credentials: 'include',
         headers: {
             'Content-Type': 'application/json',
         },
