@@ -108,6 +108,7 @@ class FeedingLogManager {
             if (dogId) params.append('dog_id', dogId);
             
             const response = await fetch(`/api/breeding/feeding/log/list?${params}`, {
+                credentials: 'include',
                 headers: {
                     'X-CSRFToken': this.csrfToken
                 }
@@ -138,6 +139,7 @@ class FeedingLogManager {
         try {
             // Load projects for filter
             const projectsResponse = await fetch('/api/projects', {
+                credentials: 'include',
                 headers: { 'X-CSRFToken': this.csrfToken }
             });
             if (projectsResponse.ok) {
@@ -167,6 +169,7 @@ class FeedingLogManager {
             const url = projectId ? `/api/dogs?project_id=${projectId}` : '/api/dogs';
             
             const dogsResponse = await fetch(url, {
+                credentials: 'include',
                 headers: { 'X-CSRFToken': this.csrfToken }
             });
             

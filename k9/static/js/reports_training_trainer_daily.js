@@ -27,7 +27,9 @@ class TrainerDailyReport {
 
     async loadProjects() {
         try {
-            const response = await fetch('/api/projects');
+            const response = await fetch('/api/projects', {
+                credentials: 'include'
+            });
             if (response.ok) {
                 const projects = await response.json();
                 const select = document.getElementById('project_id');
@@ -47,7 +49,9 @@ class TrainerDailyReport {
 
     async loadTrainers() {
         try {
-            const response = await fetch('/api/employees?role=TRAINER');
+            const response = await fetch('/api/employees?role=TRAINER', {
+                credentials: 'include'
+            });
             if (response.ok) {
                 const trainers = await response.json();
                 const select = document.getElementById('trainer_id');
@@ -67,9 +71,12 @@ class TrainerDailyReport {
 
     async loadDogs() {
         try {
-            const response = await fetch('/api/dogs');
+            const response = await fetch('/api/dogs', {
+                credentials: 'include'
+            });
             if (response.ok) {
                 const dogs = await response.json();
+                console.log('Dogs loaded successfully:', dogs);
                 const select = document.getElementById('dog_id');
                 dogs.forEach(dog => {
                     const option = document.createElement('option');
@@ -79,9 +86,7 @@ class TrainerDailyReport {
                 });
             }
         } catch (error) {
-            if (error && error.message) {
-                console.error('Error loading dogs:', error.message);
-            }
+            console.error('Error loading dogs:', error);
         }
     }
 
@@ -135,6 +140,7 @@ class TrainerDailyReport {
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                credentials: 'include',
                 body: JSON.stringify(filters)
             });
 
