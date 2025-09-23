@@ -2562,7 +2562,11 @@ def reports_preview_pdf():
     
     # Get the same data as preview
     preview_response = reports_preview()
-    data = preview_response.get_json()
+    if hasattr(preview_response, 'get_json'):
+        data = preview_response.get_json()
+    else:
+        # Handle error case
+        return f"<div class='alert alert-danger'>حدث خطأ في تحميل البيانات</div>"
     
     # Generate HTML that looks like the PDF
     report_titles = {
@@ -2585,18 +2589,24 @@ def reports_preview_pdf():
     }
     report_title = report_titles.get(report_type, 'تقرير')
     
-    html_content = f"""
-    <div style="text-align: center; margin-bottom: 30px;">
-        <h3 style="color: #C00000; font-family: 'Cairo', 'Amiri', sans-serif;">
-            {report_title}
-        </h3>
-        <p style="font-size: 12px; color: #666;">
-            تاريخ الإنشاء: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-        </p>
-    </div>
+    # Render the header template
+    header_html = render_template('reports/_header.html')
     
-    <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; font-family: 'Cairo', 'Amiri', sans-serif; font-size: 10px;">
+    html_content = f"""
+    <div class="report-preview" style="font-family: 'Cairo', 'Amiri', sans-serif; direction: rtl;">
+        {header_html}
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h3 style="color: #C00000; font-family: 'Cairo', 'Amiri', sans-serif;">
+                {report_title}
+            </h3>
+            <p style="font-size: 12px; color: #666;">
+                تاريخ الإنشاء: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            </p>
+        </div>
+        
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-family: 'Cairo', 'Amiri', sans-serif; font-size: 10px;">
     """
     
     if data['records']:
@@ -2625,14 +2635,15 @@ def reports_preview_pdf():
         html_content += "<tr><td style='text-align: center; padding: 20px;'>لا توجد بيانات</td></tr>"
     
     html_content += """
-        </table>
-    </div>
-    
-    <div style="margin-top: 40px; font-size: 12px;">
-        <p><strong>ملاحظات:</strong></p>
-        <div style="margin-top: 60px;">
-            <p>اسم المسؤول: ..............................     التوقيع: ..............................</p>
-            <p>اسم المدير: ..............................     التوقيع: ..............................</p>
+            </table>
+        </div>
+        
+        <div style="margin-top: 40px; font-size: 12px;">
+            <p><strong>ملاحظات:</strong></p>
+            <div style="margin-top: 60px;">
+                <p>اسم المسؤول: ..............................     التوقيع: ..............................</p>
+                <p>اسم المدير: ..............................     التوقيع: ..............................</p>
+            </div>
         </div>
     </div>
     """
