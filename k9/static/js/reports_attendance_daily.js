@@ -115,6 +115,7 @@ class DailyAttendanceReport {
             
             const response = await fetch('/api/reports/attendance/run/daily-sheet', {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
                 },
