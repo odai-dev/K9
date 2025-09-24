@@ -25,7 +25,11 @@ migrate = Migrate()
 app = Flask(__name__, template_folder='k9/templates', static_folder='k9/static')
 app.secret_key = os.environ.get("SESSION_SECRET")
 if not app.secret_key:
-    raise RuntimeError("SESSION_SECRET environment variable is required but not set")
+    # For local development, provide a fallback but warn user
+    import secrets
+    app.secret_key = secrets.token_urlsafe(32)
+    print("WARNING: SESSION_SECRET not set. Using temporary session key.")
+    print("Set SESSION_SECRET environment variable for production!")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1) # needed for url_for to generate with https
 
 # Enhanced security configuration
