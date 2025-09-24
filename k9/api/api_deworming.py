@@ -234,14 +234,19 @@ def api_deworming_list():
         page = int(request.args.get('page', 1))
         per_page = min(int(request.args.get('per_page', 50)), 100)
         
-        # Base query with necessary joins
-        query = DewormingLog.query.join(Dog).join(Project)
+        # Base query with necessary joins (left join for project since it can be null)
+        query = DewormingLog.query.join(Dog).outerjoin(Project)
         
         # Apply project scoping for PROJECT_MANAGER
         if current_user.role == UserRole.PROJECT_MANAGER:
             assigned_projects = get_user_assigned_projects(current_user)
             assigned_project_ids = [p.id for p in assigned_projects]
-            query = query.filter(DewormingLog.project_id.in_(assigned_project_ids))
+            # Include both assigned projects AND records without project assignment
+            from sqlalchemy import or_
+            query = query.filter(or_(
+                DewormingLog.project_id.in_(assigned_project_ids),
+                DewormingLog.project_id.is_(None)
+            ))
         
         # Apply filters
         if project_id:
@@ -279,8 +284,8 @@ def api_deworming_list():
             
             item_data = {
                 'id': str(log.id),
-                'project_id': str(log.project_id),
-                'project_name': log.project.name,
+                'project_id': str(log.project_id) if log.project_id else None,
+                'project_name': log.project.name if log.project else 'بدون مشروع',
                 'date': log.date.strftime('%Y-%m-%d'),
                 'time': log.time.strftime('%H:%M'),
                 'dog_id': str(log.dog_id),
@@ -309,7 +314,12 @@ def api_deworming_list():
         if current_user.role == UserRole.PROJECT_MANAGER:
             assigned_projects = get_user_assigned_projects(current_user)
             assigned_project_ids = [p.id for p in assigned_projects]
-            total_query = total_query.filter(DewormingLog.project_id.in_(assigned_project_ids))
+            # Include both assigned projects AND records without project assignment
+            from sqlalchemy import or_
+            total_query = total_query.filter(or_(
+                DewormingLog.project_id.in_(assigned_project_ids),
+                DewormingLog.project_id.is_(None)
+            ))
         
         # Apply same filters to KPI calculations
         if project_id:
