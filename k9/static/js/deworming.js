@@ -98,7 +98,7 @@ function updateDogFilter() {
         fetch(`/api/dogs?project_id=${projectId}`)
             .then(response => response.json())
             .then(data => {
-                const dogs = data.dogs || data || []; // Handle different response formats
+                const dogs = data.data || data.dogs || data || []; // Handle different response formats
                 if (Array.isArray(dogs)) {
                     dogs.forEach(dog => {
                     const option = document.createElement('option');
@@ -118,7 +118,7 @@ function updateDogFilter() {
         fetch('/api/dogs')
             .then(response => response.json())
             .then(data => {
-                const dogs = data.dogs || data || []; // Handle different response formats
+                const dogs = data.data || data.dogs || data || []; // Handle different response formats
                 if (Array.isArray(dogs)) {
                     dogs.forEach(dog => {
                         const option = document.createElement('option');
