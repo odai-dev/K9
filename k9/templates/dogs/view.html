@@ -298,7 +298,7 @@
                 </h5>
             </div>
             <div class="card-body text-center">
-                <img src="{{ url_for('main.uploaded_file', filename=dog.photo) }}" 
+                <img src="{{ url_for('uploaded_file', filename=dog.photo) }}" 
                      alt="{{ dog.name }}" class="img-fluid rounded">
             </div>
         </div>
@@ -319,7 +319,7 @@
                         <i class="fas fa-file-pdf text-danger me-2"></i>
                         شهادة الميلاد
                     </div>
-                    <a href="{{ url_for('main.uploaded_file', filename=dog.birth_certificate) }}" 
+                    <a href="{{ url_for('uploaded_file', filename=dog.birth_certificate) }}" 
                        target="_blank" class="btn btn-sm btn-outline-primary">
                         <i class="fas fa-eye"></i>
                     </a>

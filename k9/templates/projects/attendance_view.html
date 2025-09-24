@@ -155,7 +155,7 @@
                                         <div class="d-flex align-items-center">
                                             <div class="avatar-sm me-2">
                                                 {% if entry.employee.photo %}
-                                                <img src="{{ url_for('main.uploaded_file', filename=entry.employee.photo) }}" class="rounded-circle" width="32" height="32" alt="صورة الموظف">
+                                                <img src="{{ url_for('uploaded_file', filename=entry.employee.photo) }}" class="rounded-circle" width="32" height="32" alt="صورة الموظف">
                                                 {% else %}
                                                 <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 12px;">
                                                     {{ entry.employee.name[0] if entry.employee.name else 'M' }}
