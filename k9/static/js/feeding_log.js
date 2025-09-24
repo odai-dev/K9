@@ -144,22 +144,35 @@ class FeedingLogManager {
             });
             if (projectsResponse.ok) {
                 const projectsData = await projectsResponse.json();
-                this.populateSelect('projectFilter', projectsData, 'id', 'name');
+                // Ensure projectsData is an array
+                if (Array.isArray(projectsData)) {
+                    this.populateSelect('projectFilter', projectsData, 'id', 'name');
+                } else {
+                    console.error('Error loading projects: Expected array but got:', projectsData);
+                    this.populateSelect('projectFilter', [], 'id', 'name');
+                }
                 
                 // Add event listener for project change to update dogs
                 const projectFilter = document.getElementById('projectFilter');
-                projectFilter.addEventListener('change', () => {
-                    this.updateDogFilter();
-                });
+                if (projectFilter && !projectFilter.hasAttribute('data-listener-added')) {
+                    projectFilter.addEventListener('change', () => {
+                        this.updateDogFilter();
+                    });
+                    projectFilter.setAttribute('data-listener-added', 'true');
+                }
+            } else {
+                console.error('Error loading projects:', await projectsResponse.text());
+                this.populateSelect('projectFilter', [], 'id', 'name');
             }
             
             // Load dogs for filter (initially all dogs)
             await this.updateDogFilter();
             
         } catch (error) {
-            if (error && error.message) {
-                console.error('Error loading filter options:', error.message);
-            }
+            console.error('Error loading filter options:', error);
+            // Ensure selects are populated with empty arrays
+            this.populateSelect('projectFilter', [], 'id', 'name');
+            this.populateSelect('dogFilter', [], 'id', dog => `${dog.name} (${dog.code})`);
         }
     }
 
@@ -175,13 +188,24 @@ class FeedingLogManager {
             
             if (dogsResponse.ok) {
                 const dogsData = await dogsResponse.json();
-                this.populateSelect('dogFilter', dogsData, 'id', dog => `${dog.name} (${dog.code})`);
+                // Ensure dogsData is an array before calling populateSelect
+                if (Array.isArray(dogsData)) {
+                    this.populateSelect('dogFilter', dogsData, 'id', dog => `${dog.name} (${dog.code})`);
+                } else {
+                    console.error('Error loading dogs: Expected array but got:', dogsData);
+                    // Clear the select with empty array
+                    this.populateSelect('dogFilter', [], 'id', dog => `${dog.name} (${dog.code})`);
+                }
             } else {
                 console.error('Error loading dogs:', await dogsResponse.text());
+                // Clear the select with empty array
+                this.populateSelect('dogFilter', [], 'id', dog => `${dog.name} (${dog.code})`);
             }
             
         } catch (error) {
             console.error('Error loading dogs:', error);
+            // Clear the select with empty array
+            this.populateSelect('dogFilter', [], 'id', dog => `${dog.name} (${dog.code})`);
         }
     }
 
