@@ -95,18 +95,43 @@ function updateDogFilter() {
     
     if (projectId) {
         // Load dogs for the selected project
-        fetch(`/api/projects/${projectId}/dogs`)
+        fetch(`/api/dogs?project_id=${projectId}`)
             .then(response => response.json())
-            .then(dogs => {
-                dogs.forEach(dog => {
+            .then(data => {
+                const dogs = data.dogs || data || []; // Handle different response formats
+                if (Array.isArray(dogs)) {
+                    dogs.forEach(dog => {
                     const option = document.createElement('option');
                     option.value = dog.id;
                     option.textContent = `${dog.name} (${dog.code})`;
                     dogFilter.appendChild(option);
-                });
+                    });
+                } else {
+                    console.error('Expected dogs array but got:', typeof dogs, dogs);
+                }
             })
             .catch(error => {
                 console.error('Error loading dogs:', error);
+            });
+    } else {
+        // Load all dogs when no project is selected
+        fetch('/api/dogs')
+            .then(response => response.json())
+            .then(data => {
+                const dogs = data.dogs || data || []; // Handle different response formats
+                if (Array.isArray(dogs)) {
+                    dogs.forEach(dog => {
+                        const option = document.createElement('option');
+                        option.value = dog.id;
+                        option.textContent = `${dog.name} (${dog.code})`;
+                        dogFilter.appendChild(option);
+                    });
+                } else {
+                    console.error('Expected dogs array but got:', typeof dogs, dogs);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading all dogs:', error);
             });
     }
 }
