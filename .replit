@@ -7,7 +7,7 @@ packages = ["freetype", "glibcLocales", "openssl", "postgresql", "sqlite"]
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["gunicorn", "--bind", "0.0.0.0:5000", "--reuse-port"]
+run = ["gunicorn", "--bind", "0.0.0.0:5000", "--reuse-port", "main:app"]
 
 [workflows]
 runButton = "Project"
@@ -38,7 +38,7 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 44825
+localPort = 42595
 externalPort = 3000
 
 [agent]
