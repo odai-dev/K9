@@ -37,7 +37,7 @@
                     <tr>
                         <td>
                             {% if dog.photo %}
-                                <img src="{{ url_for('main.uploaded_file', filename=dog.photo) }}" 
+                                <img src="{{ url_for('uploaded_file', filename=dog.photo) }}" 
                                      alt="{{ dog.name }}" class="dog-photo">
                             {% else %}
                                 <div class="dog-photo-placeholder">
