@@ -188,7 +188,6 @@ body {
     
     /* Main content mobile spacing */
     main {
-        margin-top: 70px !important;
         padding: 1rem !important;
     }
     
@@ -707,11 +706,61 @@ body {
     border: 2px solid #e9ecef;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
+/* Global navbar spacing for fixed-top navbar with larger logo */
+body {
+    padding-top: 75px;
+}
+
+/* Mobile and tablet dropdown fixes for collapsed navbar */
+@media (max-width: 991.98px) {
+    body {
+        padding-top: 70px;
+    }
+    
     .navbar-nav {
         padding: 1rem 0;
     }
+    
+    .navbar-collapse {
+        max-height: 80vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Mobile dropdown fixes for scrolling issues - only in collapsed navbar */
+    .navbar-collapse .dropdown-menu {
+        position: static !important;
+        transform: none !important;
+        max-height: 70vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+        float: none;
+        border: none;
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+        box-shadow: none;
+        background: rgba(255,255,255,0.95);
+    }
+    
+    /* Better spacing for mobile dropdowns */
+    .navbar-collapse .dropdown-item {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .navbar-collapse .dropdown-header {
+        padding: 0.75rem 1rem 0.25rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+}
+
+/* Additional mobile-specific styles */
+@media (max-width: 768px) {
     
     .stats-content {
         flex-direction: column;
@@ -781,6 +830,19 @@ body {
     
     .quick-action-btn span {
         font-size: 0.875rem;
+    }
+    
+    .navbar-brand {
+        font-size: 1rem;
+    }
+    
+    .navbar-brand img {
+        height: 45px !important;
+    }
+    
+    .navbar-toggler {
+        padding: 0.75rem 0.5rem;
+        font-size: 1.2rem;
     }
 }
 
