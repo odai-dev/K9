@@ -53,6 +53,18 @@ body {
     mix-blend-mode: normal;
 }
 
+.navbar-brand img {
+    height: 80px;
+    width: auto;
+}
+
+/* Responsive logo sizing */
+@media (max-width: 576px) {
+    .navbar-brand img {
+        height: 60px;
+    }
+}
+
 .login-header img {
     filter: brightness(0) invert(1) !important;
 }
