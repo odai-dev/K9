@@ -29,6 +29,42 @@ import os
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
+@admin_bp.route('/')
+@login_required
+@admin_required
+def dashboard():
+    """Main admin dashboard with system overview and navigation"""
+    from k9.models.models import User, Project, SubPermission, PermissionAuditLog, Dog, Employee, TrainingSession, VeterinaryVisit
+    from sqlalchemy import func
+    
+    # System statistics
+    stats = {
+        'total_users': User.query.count(),
+        'total_project_managers': User.query.filter_by(role=UserRole.PROJECT_MANAGER).count(),
+        'total_projects': Project.query.count(),
+        'total_dogs': Dog.query.count(),
+        'total_employees': Employee.query.count(),
+        'total_permissions': SubPermission.query.count(),
+        'granted_permissions': SubPermission.query.filter_by(is_granted=True).count(),
+    }
+    
+    # Recent activities
+    recent_permission_changes = PermissionAuditLog.query.order_by(PermissionAuditLog.created_at.desc()).limit(5).all()
+    recent_training = TrainingSession.query.order_by(TrainingSession.created_at.desc()).limit(5).all()
+    recent_vet_visits = VeterinaryVisit.query.order_by(VeterinaryVisit.created_at.desc()).limit(5).all()
+    
+    # Get project managers for quick access
+    project_managers = get_project_managers()
+    projects = get_all_projects()
+    
+    return render_template('admin/dashboard.html',
+                         stats=stats,
+                         recent_permission_changes=recent_permission_changes,
+                         recent_training=recent_training,
+                         recent_vet_visits=recent_vet_visits,
+                         project_managers=project_managers,
+                         projects=projects)
+
 @admin_bp.route('/permissions')
 @login_required
 @admin_required
@@ -409,6 +445,21 @@ def preview_pm_view(user_id):
 @admin_required
 def admin_profile():
     """Admin profile management with password change functionality"""
+    
+    # Get system stats for display (needed for all renders)
+    from k9.models.models import User, Project, SubPermission, Dog, Employee
+    stats = {
+        'total_users': User.query.count(),
+        'total_project_managers': User.query.filter_by(role=UserRole.PROJECT_MANAGER).count(),
+        'total_projects': Project.query.count(),
+        'total_dogs': Dog.query.count(),
+        'total_employees': Employee.query.count(),
+        'granted_permissions': SubPermission.query.filter_by(is_granted=True).count(),
+    }
+    
+    # Get recent admin activities (recent permission changes)
+    recent_activities = PermissionAuditLog.query.filter_by(admin_user_id=current_user.id).order_by(PermissionAuditLog.created_at.desc()).limit(5).all()
+    
     if request.method == 'POST':
         action = request.form.get('action')
         
@@ -425,7 +476,7 @@ def admin_profile():
                     'ip_address': request.remote_addr
                 })
                 flash('يرجى إدخال كلمة المرور الحالية', 'error')
-                return render_template('admin/profile.html')
+                return render_template('admin/profile.html', stats=stats, recent_activities=recent_activities)
             
             # Verify current password
             if not check_password_hash(current_user.password_hash, current_password):
@@ -436,7 +487,7 @@ def admin_profile():
                     'user_agent': request.headers.get('User-Agent', '')
                 })
                 flash('كلمة المرور الحالية غير صحيحة', 'error')
-                return render_template('admin/profile.html')
+                return render_template('admin/profile.html', stats=stats, recent_activities=recent_activities)
             
             # Validate new password inputs
             if not new_password or not confirm_password:
@@ -446,7 +497,7 @@ def admin_profile():
                     'ip_address': request.remote_addr
                 })
                 flash('يرجى إدخال كلمة المرور الجديدة وتأكيدها', 'error')
-                return render_template('admin/profile.html')
+                return render_template('admin/profile.html', stats=stats, recent_activities=recent_activities)
             
             if new_password != confirm_password:
                 SecurityHelper.log_security_event(current_user.id, 'PASSWORD_CHANGE_ATTEMPT_FAILED', {
@@ -455,7 +506,7 @@ def admin_profile():
                     'ip_address': request.remote_addr
                 })
                 flash('كلمة المرور الجديدة وتأكيدها غير متطابقتين', 'error')
-                return render_template('admin/profile.html')
+                return render_template('admin/profile.html', stats=stats, recent_activities=recent_activities)
             
             # Check password complexity
             is_valid, error_message = PasswordValidator.validate_password(new_password)
@@ -466,7 +517,7 @@ def admin_profile():
                     'ip_address': request.remote_addr
                 })
                 flash(f'كلمة المرور غير صالحة: {error_message}', 'error')
-                return render_template('admin/profile.html')
+                return render_template('admin/profile.html', stats=stats, recent_activities=recent_activities)
             
             # Check if new password is different from current
             if check_password_hash(current_user.password_hash, new_password):
@@ -476,7 +527,7 @@ def admin_profile():
                     'ip_address': request.remote_addr
                 })
                 flash('كلمة المرور الجديدة يجب أن تكون مختلفة عن الحالية', 'error')
-                return render_template('admin/profile.html')
+                return render_template('admin/profile.html', stats=stats, recent_activities=recent_activities)
             
             try:
                 # Update password and timestamp
@@ -534,6 +585,6 @@ def admin_profile():
                 })
                 
                 flash(f'حدث خطأ أثناء تغيير كلمة المرور. يرجى المحاولة مرة أخرى.', 'error')
-                return render_template('admin/profile.html')
+                return render_template('admin/profile.html', stats=stats, recent_activities=recent_activities)
     
-    return render_template('admin/profile.html')
+    return render_template('admin/profile.html', stats=stats, recent_activities=recent_activities)

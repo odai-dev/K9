@@ -1,6 +1,10 @@
-{% extends "base.html" %}
+{% extends "admin/base_admin.html" %}
 
 {% block title %}ملف المدير الشخصي{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active" aria-current="page">الملف الشخصي</li>
+{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -93,10 +97,70 @@
     padding: 15px;
     margin-top: 20px;
 }
+
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 40px;
+    margin-bottom: 25px;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 0;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 0 0 2px #007bff;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 17px;
+    bottom: -25px;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item:last-child::before {
+    display: none;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.timeline-title {
+    margin: 0 0 5px 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.timeline-desc {
+    margin: 0 0 8px 0;
+    color: #718096;
+    font-size: 0.9rem;
+}
 </style>
 {% endblock %}
 
-{% block content %}
+{% block admin_content %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h2">
@@ -247,6 +311,170 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+            
+            <!-- System Information Card -->
+            <div class="profile-card mt-4">
+                <div class="profile-header">
+                    <i class="fas fa-server fa-2x mb-3"></i>
+                    <h4>معلومات النظام</h4>
+                    <p class="mb-0 opacity-75">إحصائيات وحالة النظام</p>
+                </div>
+                
+                <div class="profile-content">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-database me-2"></i>إحصائيات قاعدة البيانات</h6>
+                            <table class="table user-info-table">
+                                <tr>
+                                    <td><strong>إجمالي المستخدمين:</strong></td>
+                                    <td>{{ stats.total_users if stats else 'غير متاح' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>مديري المشاريع:</strong></td>
+                                    <td>{{ stats.total_project_managers if stats else 'غير متاح' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>إجمالي المشاريع:</strong></td>
+                                    <td>{{ stats.total_projects if stats else 'غير متاح' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>الصلاحيات الممنوحة:</strong></td>
+                                    <td>{{ stats.granted_permissions if stats else 'غير متاح' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-shield-alt me-2"></i>الأمان والحماية</h6>
+                            <table class="table user-info-table">
+                                <tr>
+                                    <td><strong>حالة الاتصال:</strong></td>
+                                    <td><span class="badge bg-success">متصل</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>آخر نشاط:</strong></td>
+                                    <td>الآن</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>عنوان IP:</strong></td>
+                                    <td class="font-monospace">{{ request.remote_addr }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>المتصفح:</strong></td>
+                                    <td>{{ request.headers.get('User-Agent', 'غير معروف')[:50] }}...</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- System Health -->
+                    <hr>
+                    <h6><i class="fas fa-heartbeat me-2"></i>حالة النظام</h6>
+                    <div class="row text-center">
+                        <div class="col-3">
+                            <div class="p-3 bg-light rounded">
+                                <i class="fas fa-database fa-2x text-success mb-2"></i>
+                                <div><strong>قاعدة البيانات</strong></div>
+                                <small class="text-success">متصلة</small>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="p-3 bg-light rounded">
+                                <i class="fas fa-lock fa-2x text-success mb-2"></i>
+                                <div><strong>المصادقة</strong></div>
+                                <small class="text-success">نشطة</small>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="p-3 bg-light rounded">
+                                <i class="fas fa-history fa-2x text-success mb-2"></i>
+                                <div><strong>التدقيق</strong></div>
+                                <small class="text-success">مفعل</small>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="p-3 bg-light rounded">
+                                <i class="fas fa-cloud fa-2x text-success mb-2"></i>
+                                <div><strong>النظام</strong></div>
+                                <small class="text-success">مستقر</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Admin Activities -->
+            <div class="profile-card mt-4">
+                <div class="profile-header">
+                    <i class="fas fa-history fa-2x mb-3"></i>
+                    <h4>الأنشطة الأخيرة</h4>
+                    <p class="mb-0 opacity-75">آخر العمليات الإدارية</p>
+                </div>
+                
+                <div class="profile-content">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6>العمليات الأخيرة</h6>
+                        <a href="{{ url_for('admin.permissions_audit_log') }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-search me-1"></i>عرض جميع السجلات
+                        </a>
+                    </div>
+                    
+                    {% if recent_activities %}
+                        <div class="timeline">
+                            {% for activity in recent_activities %}
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-primary"></div>
+                                <div class="timeline-content">
+                                    <h6 class="timeline-title">{{ activity.action }}</h6>
+                                    <p class="timeline-desc">{{ activity.description }}</p>
+                                    <small class="text-muted">{{ activity.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-clock fa-2x mb-2"></i>
+                            <p>لا توجد أنشطة حديثة</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="profile-card mt-4">
+                <div class="profile-header">
+                    <i class="fas fa-bolt fa-2x mb-3"></i>
+                    <h4>إجراءات سريعة</h4>
+                    <p class="mb-0 opacity-75">عمليات إدارية مختصرة</p>
+                </div>
+                
+                <div class="profile-content">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <a href="{{ url_for('admin.permissions_dashboard') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-user-shield me-2"></i>إدارة الصلاحيات
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="{{ url_for('admin.export_all_permissions_csv') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-download me-2"></i>تصدير الصلاحيات
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="{{ url_for('admin.permissions_audit_log') }}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-history me-2"></i>سجل التدقيق
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-tachometer-alt me-2"></i>لوحة التحكم
+                            </a>
+                        </div>
+                    </div>
+                </div>
                 </div>
             </div>
         </div>

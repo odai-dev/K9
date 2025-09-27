@@ -1,0 +1,439 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}لوحة تحكم المدير العام{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active" aria-current="page">الرئيسية</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.admin-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.admin-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+}
+
+.stat-icon {
+    font-size: 3rem;
+    opacity: 0.3;
+    position: absolute;
+    top: 15px;
+    left: 20px;
+}
+
+.stat-content {
+    position: relative;
+    z-index: 2;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.admin-nav-card {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    text-align: center;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    height: 100%;
+}
+
+.admin-nav-card:hover {
+    border-color: #1a365d;
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(26, 54, 93, 0.1);
+}
+
+.admin-nav-icon {
+    font-size: 3.5rem;
+    color: #1a365d;
+    margin-bottom: 20px;
+}
+
+.admin-nav-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 10px;
+}
+
+.admin-nav-desc {
+    color: #718096;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.activity-item {
+    padding: 15px;
+    border-bottom: 1px solid #e2e8f0;
+    transition: background-color 0.2s ease;
+}
+
+.activity-item:hover {
+    background-color: #f7fafc;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    margin-left: 15px;
+}
+
+.activity-permission {
+    background-color: #e6fffa;
+    color: #38b2ac;
+}
+
+.activity-training {
+    background-color: #fef5e7;
+    color: #dd6b20;
+}
+
+.activity-veterinary {
+    background-color: #e6f3ff;
+    color: #3182ce;
+}
+
+.quick-stats {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 25px;
+}
+
+.system-health {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 25px;
+}
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-1">
+                <i class="fas fa-tachometer-alt me-2"></i>
+                لوحة تحكم المدير العام
+            </h1>
+            <p class="text-muted mb-0">مرحباً {{ current_user.full_name }}، نظرة عامة على النظام</p>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('admin.permissions_dashboard') }}" class="btn btn-primary">
+                <i class="fas fa-user-shield me-1"></i>
+                إدارة الصلاحيات
+            </a>
+            <a href="{{ url_for('admin.admin_profile') }}" class="btn btn-outline-primary">
+                <i class="fas fa-user-cog me-1"></i>
+                الملف الشخصي
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards Row -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card">
+                <i class="fas fa-users stat-icon"></i>
+                <div class="stat-content">
+                    <div class="stat-number">{{ stats.total_users }}</div>
+                    <div class="stat-label">إجمالي المستخدمين</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <i class="fas fa-user-tie stat-icon"></i>
+                <div class="stat-content">
+                    <div class="stat-number">{{ stats.total_project_managers }}</div>
+                    <div class="stat-label">مديري المشاريع</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <i class="fas fa-project-diagram stat-icon"></i>
+                <div class="stat-content">
+                    <div class="stat-number">{{ stats.total_projects }}</div>
+                    <div class="stat-label">المشاريع</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <i class="fas fa-shield-alt stat-icon"></i>
+                <div class="stat-content">
+                    <div class="stat-number">{{ stats.granted_permissions }}</div>
+                    <div class="stat-label">الصلاحيات الممنوحة</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation Cards -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="h4 mb-3">
+                <i class="fas fa-th-large me-2"></i>
+                الوظائف الإدارية
+            </h3>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+            <a href="{{ url_for('admin.permissions_dashboard') }}" class="text-decoration-none">
+                <div class="admin-nav-card admin-card">
+                    <div class="admin-nav-icon">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <div class="admin-nav-title">إدارة الصلاحيات</div>
+                    <div class="admin-nav-desc">
+                        تحكم تفصيلي في صلاحيات مديري المشاريع وإعدادات الوصول للنظام
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+            <a href="{{ url_for('admin.admin_profile') }}" class="text-decoration-none">
+                <div class="admin-nav-card admin-card">
+                    <div class="admin-nav-icon">
+                        <i class="fas fa-user-cog"></i>
+                    </div>
+                    <div class="admin-nav-title">الملف الشخصي</div>
+                    <div class="admin-nav-desc">
+                        إدارة حسابك الشخصي وتغيير كلمة المرور وإعدادات الأمان
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+            <a href="{{ url_for('admin.permissions_audit_log') }}" class="text-decoration-none">
+                <div class="admin-nav-card admin-card">
+                    <div class="admin-nav-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div class="admin-nav-title">سجل التدقيق</div>
+                    <div class="admin-nav-desc">
+                        مراجعة جميع التغييرات والعمليات الإدارية في النظام
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- System Info and Recent Activities -->
+    <div class="row">
+        <!-- System Quick Stats -->
+        <div class="col-lg-4 mb-4">
+            <div class="card admin-card">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        إحصائيات سريعة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 border-end">
+                            <div class="h4 text-primary">{{ stats.total_dogs }}</div>
+                            <small class="text-muted">الكلاب</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="h4 text-success">{{ stats.total_employees }}</div>
+                            <small class="text-muted">الموظفون</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>معدل الصلاحيات الممنوحة</span>
+                        <span class="badge bg-primary fs-6">
+                            {% if stats.total_permissions > 0 %}
+                                {{ "%.1f"|format((stats.granted_permissions / stats.total_permissions * 100)) }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Permission Changes -->
+        <div class="col-lg-4 mb-4">
+            <div class="card admin-card">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock me-2"></i>
+                        تغييرات الصلاحيات الحديثة
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_permission_changes %}
+                        {% for change in recent_permission_changes %}
+                        <div class="activity-item">
+                            <div class="d-flex align-items-center">
+                                <div class="activity-icon activity-permission">
+                                    <i class="fas fa-user-edit"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-medium">{{ change.admin_user.full_name if change.admin_user else 'نظام' }}</div>
+                                    <small class="text-muted">{{ change.description[:50] }}...</small>
+                                    <div class="small text-muted">{{ change.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-history fa-2x mb-2"></i>
+                            <p>لا توجد تغييرات حديثة</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- System Health -->
+        <div class="col-lg-4 mb-4">
+            <div class="card admin-card">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-heartbeat me-2"></i>
+                        حالة النظام
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span>قاعدة البيانات</span>
+                        <span class="badge bg-success">متصلة</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span>المصادقة</span>
+                        <span class="badge bg-success">تعمل</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span>التدقيق</span>
+                        <span class="badge bg-success">مفعل</span>
+                    </div>
+                    <hr>
+                    <div class="text-center">
+                        <small class="text-muted">آخر فحص: الآن</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card admin-card">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt me-2"></i>
+                        إجراءات سريعة
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{{ url_for('admin.permissions_dashboard') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-plus me-2"></i>
+                                إضافة صلاحيات جديدة
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{{ url_for('admin.export_all_permissions_csv') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-download me-2"></i>
+                                تصدير جميع الصلاحيات
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{{ url_for('admin.permissions_audit_log') }}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-search me-2"></i>
+                                البحث في السجلات
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-home me-2"></i>
+                                العودة للرئيسية
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add some interactive effects
+    const cards = document.querySelectorAll('.admin-nav-card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-8px)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+    
+    // Auto-refresh stats every 30 seconds
+    setInterval(function() {
+        // You can add AJAX calls here to update stats dynamically
+        console.log('Stats auto-refresh would happen here');
+    }, 30000);
+});
+</script>
+{% endblock %}
