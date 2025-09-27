@@ -1,13 +1,15 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_login import login_required, current_user
-from app import db
-from k9.utils.security_utils import MFAManager, SecurityHelper
+from werkzeug.security import generate_password_hash
+from app import db, csrf
+from k9.utils.security_utils import MFAManager, SecurityHelper, PasswordValidator
 from datetime import datetime
 
 mfa_bp = Blueprint('mfa', __name__, url_prefix='/mfa')
 
 @mfa_bp.route('/setup', methods=['GET', 'POST'])
 @login_required
+@csrf.exempt
 def setup():
     """MFA setup page."""
     if current_user.mfa_enabled:
@@ -81,6 +83,7 @@ def status():
 
 @mfa_bp.route('/disable', methods=['POST'])
 @login_required
+@csrf.exempt
 def disable():
     """Disable MFA."""
     if not current_user.mfa_enabled:
@@ -111,6 +114,7 @@ def disable():
 
 @mfa_bp.route('/regenerate-backup-codes', methods=['POST'])
 @login_required
+@csrf.exempt
 def regenerate_backup_codes():
     """Regenerate backup codes."""
     if not current_user.mfa_enabled:
@@ -140,6 +144,7 @@ def regenerate_backup_codes():
 
 @mfa_bp.route('/change-password', methods=['GET', 'POST'])
 @login_required
+@csrf.exempt
 def change_password():
     """Change password with complexity validation."""
     if request.method == 'POST':

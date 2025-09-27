@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import current_user
-from app import db
+from app import db, csrf
 from k9.models.models import User
 from k9.models.password_reset import PasswordResetToken
 from k9.utils.security_utils import PasswordValidator, SecurityHelper
@@ -11,6 +11,7 @@ from datetime import datetime
 password_reset_bp = Blueprint('password_reset', __name__, url_prefix='/password-reset')
 
 @password_reset_bp.route('/request', methods=['GET', 'POST'])
+@csrf.exempt
 def request_reset():
     """Request password reset."""
     if current_user.is_authenticated:
@@ -95,6 +96,7 @@ def request_reset():
     return render_template('auth/password_reset_request.html')
 
 @password_reset_bp.route('/reset/<token>', methods=['GET', 'POST'])
+@csrf.exempt
 def reset_password(token):
     """Reset password using token."""
     if current_user.is_authenticated:
