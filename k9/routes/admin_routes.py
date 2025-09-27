@@ -3,14 +3,16 @@ Admin Routes for Enhanced Permission Management System
 Provides comprehensive permission control interface for GENERAL_ADMIN users
 """
 
-from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, send_file
-from flask_login import login_required, current_user
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, send_file, session
+from flask_login import login_required, current_user, logout_user, login_user
+from werkzeug.security import check_password_hash, generate_password_hash
 from k9.utils.permission_decorators import admin_required
 from k9.utils.permission_utils import (
     PERMISSION_STRUCTURE, get_user_permissions_matrix, update_permission, 
     bulk_update_permissions, get_project_managers, get_all_projects,
     initialize_default_permissions, export_permissions_matrix
 )
+from k9.utils.security_utils import PasswordValidator, SecurityHelper
 from k9.models.models import User, Project, SubPermission, PermissionAuditLog, PermissionType, UserRole
 from app import db
 from k9.utils.utils import log_audit
@@ -401,3 +403,137 @@ def preview_pm_view(user_id):
                          coverage_percentage=round(coverage_percentage, 1),
                          granted_permissions=granted_permissions,
                          total_permissions=total_permissions)
+
+@admin_bp.route('/profile', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def admin_profile():
+    """Admin profile management with password change functionality"""
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'change_password':
+            current_password = request.form.get('current_password', '')
+            new_password = request.form.get('new_password', '')
+            confirm_password = request.form.get('confirm_password', '')
+            
+            # Basic validation
+            if not current_password:
+                SecurityHelper.log_security_event(current_user.id, 'PASSWORD_CHANGE_ATTEMPT_FAILED', {
+                    'reason': 'empty_current_password',
+                    'username': current_user.username,
+                    'ip_address': request.remote_addr
+                })
+                flash('يرجى إدخال كلمة المرور الحالية', 'error')
+                return render_template('admin/profile.html')
+            
+            # Verify current password
+            if not check_password_hash(current_user.password_hash, current_password):
+                SecurityHelper.log_security_event(current_user.id, 'PASSWORD_CHANGE_ATTEMPT_FAILED', {
+                    'reason': 'invalid_current_password',
+                    'username': current_user.username,
+                    'ip_address': request.remote_addr,
+                    'user_agent': request.headers.get('User-Agent', '')
+                })
+                flash('كلمة المرور الحالية غير صحيحة', 'error')
+                return render_template('admin/profile.html')
+            
+            # Validate new password inputs
+            if not new_password or not confirm_password:
+                SecurityHelper.log_security_event(current_user.id, 'PASSWORD_CHANGE_ATTEMPT_FAILED', {
+                    'reason': 'empty_new_password',
+                    'username': current_user.username,
+                    'ip_address': request.remote_addr
+                })
+                flash('يرجى إدخال كلمة المرور الجديدة وتأكيدها', 'error')
+                return render_template('admin/profile.html')
+            
+            if new_password != confirm_password:
+                SecurityHelper.log_security_event(current_user.id, 'PASSWORD_CHANGE_ATTEMPT_FAILED', {
+                    'reason': 'password_confirmation_mismatch',
+                    'username': current_user.username,
+                    'ip_address': request.remote_addr
+                })
+                flash('كلمة المرور الجديدة وتأكيدها غير متطابقتين', 'error')
+                return render_template('admin/profile.html')
+            
+            # Check password complexity
+            is_valid, error_message = PasswordValidator.validate_password(new_password)
+            if not is_valid:
+                SecurityHelper.log_security_event(current_user.id, 'PASSWORD_CHANGE_ATTEMPT_FAILED', {
+                    'reason': 'password_complexity_failed',
+                    'username': current_user.username,
+                    'ip_address': request.remote_addr
+                })
+                flash(f'كلمة المرور غير صالحة: {error_message}', 'error')
+                return render_template('admin/profile.html')
+            
+            # Check if new password is different from current
+            if check_password_hash(current_user.password_hash, new_password):
+                SecurityHelper.log_security_event(current_user.id, 'PASSWORD_CHANGE_ATTEMPT_FAILED', {
+                    'reason': 'same_as_current_password',
+                    'username': current_user.username,
+                    'ip_address': request.remote_addr
+                })
+                flash('كلمة المرور الجديدة يجب أن تكون مختلفة عن الحالية', 'error')
+                return render_template('admin/profile.html')
+            
+            try:
+                # Update password and timestamp
+                current_user.password_hash = generate_password_hash(new_password)
+                current_user.password_changed_at = datetime.utcnow()
+                
+                # Reset failed login attempts if any
+                current_user.failed_login_attempts = 0
+                current_user.account_locked_until = None
+                
+                db.session.commit()
+                
+                # Log successful password change
+                SecurityHelper.log_security_event(current_user.id, 'PASSWORD_CHANGED', {
+                    'username': current_user.username,
+                    'ip_address': request.remote_addr,
+                    'user_agent': request.headers.get('User-Agent', ''),
+                    'changed_at': current_user.password_changed_at.isoformat()
+                })
+                
+                # Log audit trail
+                log_audit(
+                    user_id=current_user.id,
+                    action='EDIT',
+                    target_type='User',
+                    target_id=str(current_user.id),
+                    description=f'Admin {current_user.username} successfully changed their password'
+                )
+                
+                # Invalidate current session and create new one for security
+                # This forces re-authentication and invalidates any other active sessions
+                user_to_relogin = current_user
+                logout_user()
+                
+                # Clear session data
+                session.clear()
+                
+                # Log the user back in with fresh session
+                login_user(user_to_relogin, remember=False, force=True, fresh=True)
+                
+                flash('تم تغيير كلمة المرور بنجاح! تم تسجيل دخولك بجلسة جديدة لأمان إضافي.', 'success')
+                
+                # Redirect to avoid POST resubmission
+                return redirect(url_for('admin.admin_profile'))
+                
+            except Exception as e:
+                db.session.rollback()
+                
+                # Log the error
+                SecurityHelper.log_security_event(current_user.id, 'PASSWORD_CHANGE_ERROR', {
+                    'reason': 'database_error',
+                    'error': str(e),
+                    'username': current_user.username,
+                    'ip_address': request.remote_addr
+                })
+                
+                flash(f'حدث خطأ أثناء تغيير كلمة المرور. يرجى المحاولة مرة أخرى.', 'error')
+                return render_template('admin/profile.html')
+    
+    return render_template('admin/profile.html')
