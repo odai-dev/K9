@@ -27,4 +27,5 @@ dependencies = [
     "pyotp>=2.9.0",
     "qrcode[pil]>=8.2",
     "sendgrid>=6.12.4",
+    "flask-wtf>=1.2.2",
 ]
