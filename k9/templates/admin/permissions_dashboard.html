@@ -1,6 +1,10 @@
-{% extends "base.html" %}
+{% extends "admin/base_admin.html" %}
 
 {% block title %}تفويض الصلاحيات - لوحة التحكم{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active" aria-current="page">إدارة الصلاحيات</li>
+{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -89,7 +93,7 @@
 </style>
 {% endblock %}
 
-{% block content %}
+{% block admin_content %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h2">
@@ -116,12 +120,34 @@
             <div class="user-sidebar rounded">
                 <div class="p-3 border-bottom">
                     <h5 class="mb-3">مديرو المشاريع</h5>
+                    
+                    <!-- Search Users -->
+                    <div class="mb-3">
+                        <div class="position-relative">
+                            <input type="text" class="form-control" id="userSearch" placeholder="البحث عن مستخدم...">
+                            <i class="fas fa-search position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Project Filter -->
                     <div class="mb-3">
                         <select class="form-select" id="projectFilter">
                             <option value="">جميع المشاريع</option>
                             {% for project in projects %}
                             <option value="{{ project.id }}">{{ project.name }}</option>
                             {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Permission Coverage Filter -->
+                    <div class="mb-3">
+                        <label class="form-label small">تصفية حسب نسبة الصلاحيات:</label>
+                        <select class="form-select form-select-sm" id="coverageFilter">
+                            <option value="">الكل</option>
+                            <option value="high">عالية (75%+)</option>
+                            <option value="medium">متوسطة (25-74%)</option>
+                            <option value="low">منخفضة (&lt;25%)</option>
+                            <option value="none">بدون صلاحيات</option>
                         </select>
                     </div>
                 </div>
@@ -287,6 +313,56 @@
 document.addEventListener('DOMContentLoaded', function() {
     let currentUserId = null;
     let currentProjectId = null;
+    let allUsers = Array.from(document.querySelectorAll('.user-item'));
+    
+    // User search functionality
+    document.getElementById('userSearch').addEventListener('input', function() {
+        filterUsers();
+    });
+    
+    // Coverage filter functionality
+    document.getElementById('coverageFilter').addEventListener('change', function() {
+        filterUsers();
+    });
+    
+    function filterUsers() {
+        const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+        const coverageFilter = document.getElementById('coverageFilter').value;
+        
+        allUsers.forEach(function(userItem) {
+            const userName = userItem.querySelector('strong').textContent.toLowerCase();
+            const username = userItem.dataset.username.toLowerCase();
+            const countBadge = userItem.querySelector('.permission-count-badge');
+            const permissionCount = parseInt(countBadge.textContent) || 0;
+            
+            // Calculate approximate permission coverage (this is simplified)
+            const totalPossiblePermissions = {{ permission_structure|length * 7 }};
+            const coverage = totalPossiblePermissions > 0 ? (permissionCount / totalPossiblePermissions) * 100 : 0;
+            
+            // Check search term match
+            const matchesSearch = searchTerm === '' || 
+                userName.includes(searchTerm) || 
+                username.includes(searchTerm);
+            
+            // Check coverage filter
+            let matchesCoverage = true;
+            if (coverageFilter === 'high') {
+                matchesCoverage = coverage >= 75;
+            } else if (coverageFilter === 'medium') {
+                matchesCoverage = coverage >= 25 && coverage < 75;
+            } else if (coverageFilter === 'low') {
+                matchesCoverage = coverage > 0 && coverage < 25;
+            } else if (coverageFilter === 'none') {
+                matchesCoverage = coverage === 0;
+            }
+            
+            if (matchesSearch && matchesCoverage) {
+                userItem.style.display = 'block';
+            } else {
+                userItem.style.display = 'none';
+            }
+        });
+    }
 
     // User selection
     document.querySelectorAll('.user-item').forEach(function(item) {
