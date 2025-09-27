@@ -204,6 +204,7 @@
                             <li><h6 class="dropdown-header">الحساب الشخصي</h6></li>
                             {% if current_user.role.value == 'GENERAL_ADMIN' %}
                             <li><a class="dropdown-item" href="{{ url_for('main.admin_panel') }}"><i class="fas fa-user-shield me-2"></i>لوحة التحكم</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.admin_profile') }}"><i class="fas fa-user-cog me-2"></i>ملف الحساب الشخصي</a></li>
                             <li><hr class="dropdown-divider"></li>
                             {% endif %}
                             <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>تسجيل الخروج</a></li>
@@ -221,6 +222,7 @@
                             <li><h6 class="dropdown-header">{{ current_user.full_name }}</h6></li>
                             {% if current_user.role.value == 'GENERAL_ADMIN' %}
                             <li><a class="dropdown-item" href="{{ url_for('main.admin_panel') }}"><i class="fas fa-user-shield me-2"></i>لوحة التحكم</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.admin_profile') }}"><i class="fas fa-user-cog me-2"></i>ملف الحساب الشخصي</a></li>
                             <li><hr class="dropdown-divider"></li>
                             {% endif %}
                             <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>تسجيل الخروج</a></li>
