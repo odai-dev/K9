@@ -11,6 +11,7 @@
         </div>
         
         <form method="POST" class="auth-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input type="hidden" name="username" value="{{ user.username }}">
             <input type="hidden" name="password" value="{{ request.form.password }}">
             
@@ -36,6 +37,7 @@
             <details class="backup-code-section">
                 <summary>استخدام رمز احتياطي</summary>
                 <form method="POST" class="mt-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <input type="hidden" name="username" value="{{ user.username }}">
                     <input type="hidden" name="password" value="{{ request.form.password }}">
                     
