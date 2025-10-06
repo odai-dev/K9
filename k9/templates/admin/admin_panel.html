@@ -106,6 +106,7 @@
                                 قائمة مديري المشاريع
                             </h5>
                             <form method="POST" action="{{ url_for('main.sync_project_managers') }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <button type="submit" class="btn btn-success btn-sm">
                                     <i class="fas fa-sync"></i>
                                     مزامنة الموظفين
@@ -190,6 +191,7 @@
                                                                 المشاريع
                                                             </button>
                                                             <form method="POST" action="{{ url_for('main.toggle_user_status', user_id=user.id) }}" class="d-inline">
+                                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                                 <button type="submit" 
                                                                         class="btn btn-sm btn-{{ 'warning' if user.active else 'success' }}"
                                                                         onclick="return confirm('هل أنت متأكد من تغيير حالة هذا المستخدم؟')">
@@ -600,6 +602,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="POST" action="{{ url_for('main.update_user_credentials') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-header">
                     <h5 class="modal-title" id="editUserModalLabel">
                         <i class="fas fa-user-edit"></i>
@@ -651,6 +654,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <form method="POST" action="{{ url_for('main.update_permissions') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-header">
                     <h5 class="modal-title" id="permissionModalLabel">
                         <i class="fas fa-user-shield"></i>

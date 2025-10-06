@@ -34,6 +34,7 @@
                 </div>
                 
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <!-- Basic Information -->
                     <div class="row mb-4">
                         <div class="col-12">
