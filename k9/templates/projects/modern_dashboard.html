@@ -296,6 +296,7 @@
                             <div class="d-flex gap-2 justify-content-center">
                                 {% if project.status.value == 'PLANNED' %}
                                     <form method="POST" action="{{ url_for('main.project_status_change', project_id=project.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <input type="hidden" name="status" value="ACTIVE">
                                         <button type="submit" class="btn btn-success" onclick="return confirm('هل أنت متأكد من بدء المشروع؟')">
                                             <i class="fas fa-play me-2"></i>بدء المشروع
@@ -303,12 +304,14 @@
                                     </form>
                                 {% elif project.status.value == 'ACTIVE' %}
                                     <form method="POST" action="{{ url_for('main.project_status_change', project_id=project.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <input type="hidden" name="status" value="COMPLETED">
                                         <button type="submit" class="btn btn-primary" onclick="return confirm('هل أنت متأكد من إكمال المشروع؟')">
                                             <i class="fas fa-check me-2"></i>إكمال المشروع
                                         </button>
                                     </form>
                                     <form method="POST" action="{{ url_for('main.project_status_change', project_id=project.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <input type="hidden" name="status" value="CANCELLED">
                                         <button type="submit" class="btn btn-danger" onclick="return confirm('هل أنت متأكد من إلغاء المشروع؟')">
                                             <i class="fas fa-times me-2"></i>إلغاء المشروع
@@ -687,6 +690,7 @@ function generateReport(type) {
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST" action="{{ url_for('main.project_manager_update', project_id=project.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="project_manager_id" class="form-label">مدير المشروع</label>

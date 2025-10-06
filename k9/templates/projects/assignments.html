@@ -38,6 +38,7 @@
                 <div class="card-body">
                     <!-- Add Dog Assignment Form -->
                     <form method="POST" action="{{ url_for('main.project_assignment_add', project_id=project.id) }}" class="mb-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <input type="hidden" name="assignment_type" value="dog">
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
@@ -95,6 +96,7 @@
                                                         <i class="fas fa-edit"></i>
                                                     </button>
                                                     <form method="POST" action="{{ url_for('main.project_assignment_remove', project_id=project.id, assignment_id=assignment.id) }}" 
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                           style="display: inline;" 
                                                           onsubmit="return confirm('هل أنت متأكد من إزالة هذا التعيين؟')">
                                                         <button type="submit" class="btn btn-sm btn-outline-danger">
@@ -114,6 +116,7 @@
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                     </div>
                                                     <form method="POST" action="{{ url_for('main.project_assignment_edit', project_id=project.id, assignment_id=assignment.id) }}">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                         <div class="modal-body">
                                                             <div class="mb-3">
                                                                 <label for="editNotes{{ assignment.id }}" class="form-label">الملاحظات</label>
@@ -153,6 +156,7 @@
                 <div class="card-body">
                     <!-- Add Employee Assignment Form -->
                     <form method="POST" action="{{ url_for('main.project_assignment_add', project_id=project.id) }}" class="mb-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <input type="hidden" name="assignment_type" value="employee">
                         <div class="alert alert-success">
                             <i class="fas fa-users me-2"></i>
@@ -210,6 +214,7 @@
                                                         <i class="fas fa-edit"></i>
                                                     </button>
                                                     <form method="POST" action="{{ url_for('main.project_assignment_remove', project_id=project.id, assignment_id=assignment.id) }}" 
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                           style="display: inline;" 
                                                           onsubmit="return confirm('هل أنت متأكد من إزالة هذا التعيين؟')">
                                                         <button type="submit" class="btn btn-sm btn-outline-danger">
@@ -229,6 +234,7 @@
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                     </div>
                                                     <form method="POST" action="{{ url_for('main.project_assignment_edit', project_id=project.id, assignment_id=assignment.id) }}">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                         <div class="modal-body">
                                                             <div class="mb-3">
                                                                 <label for="editEmployeeNotes{{ assignment.id }}" class="form-label">الملاحظات</label>
@@ -269,6 +275,7 @@
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('main.project_assignment_add', project_id=project.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <input type="hidden" name="assignment_type" value="project_manager">
                         <div class="row align-items-end">
                             <div class="col-md-8">

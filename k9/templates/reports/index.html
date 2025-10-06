@@ -185,6 +185,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form id="reportForm" method="POST" action="{{ url_for('main.reports_generate') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <input type="hidden" id="reportType" name="report_type">
                     
@@ -400,3 +401,4 @@ document.getElementById('endDate').addEventListener('change', function() {
 }
 </style>
 {% endblock %}
+
