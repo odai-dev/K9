@@ -47,6 +47,7 @@
                 </div>
                 <div class="card-body">
                     <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <div class="row">
                             <div class="col-md-3">
                                 <label for="entity_type" class="form-label">نوع العضو</label>
@@ -145,6 +146,7 @@
                                                         <i class="fas fa-edit"></i>
                                                     </button>
                                                     <form method="POST" action="{{ url_for('main.remove_shift_assignment', project_id=project.id, shift_id=shift.id, assignment_id=assignment.id) }}" 
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                           style="display: inline;" 
                                                           onsubmit="return confirm('هل أنت متأكد من إزالة هذا التعيين؟')">
                                                         <button type="submit" class="btn btn-sm btn-outline-danger">
@@ -164,6 +166,7 @@
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                     </div>
                                                     <form method="POST" action="{{ url_for('main.edit_shift_assignment', project_id=project.id, shift_id=shift.id, assignment_id=assignment.id) }}">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                                         <div class="modal-body">
                                                             <div class="mb-3">
                                                                 <label for="editNotes{{ assignment.id }}" class="form-label">الملاحظات</label>

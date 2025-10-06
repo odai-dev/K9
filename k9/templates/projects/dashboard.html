@@ -71,6 +71,7 @@
                             <div class="d-flex gap-2 justify-content-center">
                                 {% if project.status.value == 'PLANNED' %}
                                     <form method="POST" action="{{ url_for('main.project_status_change', project_id=project.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <input type="hidden" name="status" value="ACTIVE">
                                         <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('هل أنت متأكد من بدء المشروع؟')">
                                             <i class="fas fa-play me-2"></i>بدء المشروع
@@ -80,6 +81,7 @@
                                 
                                 {% if project.status.value == 'ACTIVE' %}
                                     <form method="POST" action="{{ url_for('main.project_status_change', project_id=project.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <input type="hidden" name="status" value="COMPLETED">
                                         <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('هل أنت متأكد من إنهاء المشروع؟ سيتم تسجيل تاريخ الانتهاء تلقائياً.')">
                                             <i class="fas fa-check me-2"></i>إنهاء المشروع
@@ -88,6 +90,7 @@
                                 {% endif %}
                                 
                                 <form method="POST" action="{{ url_for('main.project_status_change', project_id=project.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <input type="hidden" name="status" value="CANCELLED">
                                     <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('هل أنت متأكد من إلغاء المشروع؟')">
                                         <i class="fas fa-times me-2"></i>إلغاء المشروع

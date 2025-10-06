@@ -138,6 +138,7 @@
 
 <!-- Hidden Delete Form -->
 <form id="deleteForm" method="POST" style="display: none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 </form>
 
 <script>
@@ -150,3 +151,4 @@ function confirmDelete(projectId, projectName) {
 }
 </script>
 {% endblock %}
+
