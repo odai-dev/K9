@@ -133,6 +133,7 @@
                         </div>
                         
                         <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <div class="mb-4">
                                 <label for="full_name" class="form-label">
                                     <i class="fas fa-user me-2"></i>الاسم الكامل

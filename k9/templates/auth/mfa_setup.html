@@ -31,6 +31,7 @@
                         </div>
                         
                         <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <input type="hidden" name="action" value="generate_secret">
                             <button type="submit" class="btn btn-primary btn-lg">
                                 <i class="fas fa-qrcode"></i> البدء في الإعداد
@@ -64,6 +65,7 @@
                             </ol>
                             
                             <form method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <input type="hidden" name="action" value="verify_and_enable">
                                 
                                 <div class="form-group">
