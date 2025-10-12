@@ -23,7 +23,6 @@ from reportlab.lib.units import inch
 from reportlab.lib import colors
 from datetime import datetime
 import json
-import csv
 import io
 import os
 
@@ -403,51 +402,36 @@ def export_user_permissions_pdf(user_id):
     
     return send_file(temp_path, as_attachment=True, download_name=filename, mimetype='application/pdf')
 
-@admin_bp.route('/permissions/export-csv')
+@admin_bp.route('/permissions/export-excel')
 @login_required
 @admin_required
-def export_all_permissions_csv():
-    """Export all permissions to CSV for compliance tracking"""
-    output = io.StringIO()
-    writer = csv.writer(output)
-    
-    # Header
-    writer.writerow([
-        'User ID', 'Username', 'Full Name', 'Project ID', 'Section', 'Subsection', 
-        'Permission Type', 'Is Granted', 'Updated At'
-    ])
+def export_all_permissions_excel():
+    """Export all permissions to Excel for compliance tracking"""
+    from k9.utils.excel_exporter import create_permissions_report_excel, save_excel_to_bytes
     
     # Get all permissions
     permissions = SubPermission.query.join(User).all()
     
-    for perm in permissions:
-        writer.writerow([
-            perm.user_id,
-            perm.user.username,
-            perm.user.full_name,
-            perm.project_id or 'Global',
-            perm.section,
-            perm.subsection,
-            perm.permission_type.value,
-            'Yes' if perm.is_granted else 'No',
-            perm.updated_at.strftime('%Y-%m-%d %H:%M:%S')
-        ])
+    # Create Excel workbook
+    wb = create_permissions_report_excel(permissions)
+    
+    # Convert to bytes
+    excel_bytes = save_excel_to_bytes(wb)
     
     # Log audit
     log_audit(
         user_id=current_user.id,
         action='EXPORT',
         target_type='SubPermission',
-        target_id='all-permissions-csv',
-        description="Exported all permissions to CSV for compliance"
+        target_id='all-permissions-excel',
+        description="Exported all permissions to Excel for compliance"
     )
     
-    output.seek(0)
     return send_file(
-        io.BytesIO(output.getvalue().encode('utf-8')),
+        io.BytesIO(excel_bytes),
         as_attachment=True,
-        download_name=f"all_permissions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-        mimetype='text/csv'
+        download_name=f"all_permissions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
 @admin_bp.route('/permissions/preview/<int:user_id>')
