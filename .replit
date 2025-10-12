@@ -37,6 +37,10 @@ waitForPort = 5000
 localPort = 5000
 externalPort = 80
 
+[[ports]]
+localPort = 44679
+externalPort = 3000
+
 [agent]
 expertMode = true
 integrations = ["python_database:1.0.0"]
