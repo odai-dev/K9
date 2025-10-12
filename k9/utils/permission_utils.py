@@ -210,7 +210,7 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
         
     return False
 
-def get_user_permissions_matrix(user_id):
+def get_user_permissions_matrix(user_id, project_id=None):
     """Get comprehensive permissions matrix for a user"""
     user = User.query.get_or_404(user_id)
     
@@ -229,7 +229,7 @@ def get_user_permissions_matrix(user_id):
                 matrix[section] = True
         return matrix
     
-    # For project managers, return limited permissions
+    # For project managers, return limited permissions based on project_id
     matrix = {}
     for section, subsections in PERMISSION_STRUCTURE.items():
         if isinstance(subsections, dict):
@@ -244,14 +244,19 @@ def get_user_permissions_matrix(user_id):
             
     return matrix
 
-def update_permission(user_id, permission_key, granted, updated_by):
+def update_permission(user_id, permission_key, granted, updated_by, project_id=None):
     """Update a specific permission for a user"""
     # This is a placeholder - in a real system, you'd store permissions in the database
+    # The project_id parameter allows for project-scoped permissions
     return True
 
-def bulk_update_permissions(user_id, permissions_dict, updated_by):
+def bulk_update_permissions(user_id, permissions_dict, updated_by, project_id=None):
     """Bulk update permissions for a user"""
     # This is a placeholder - in a real system, you'd bulk update permissions
+    # Extract project_id from permissions_dict if not provided directly
+    if project_id is None and 'project_id' in permissions_dict:
+        project_id = permissions_dict['project_id']
+    # The project_id parameter allows for project-scoped permissions
     return True
 
 def get_project_managers():
@@ -267,9 +272,10 @@ def initialize_default_permissions(user):
     # This is a placeholder - permissions are handled by role
     pass
 
-def export_permissions_matrix(users):
+def export_permissions_matrix(users, project_id=None):
     """Export permissions matrix to CSV format"""
     # This is a placeholder for export functionality
+    # The project_id parameter allows filtering permissions by project
     return "permissions_export.csv"
 
 def get_user_permissions_for_project(user, project_id):

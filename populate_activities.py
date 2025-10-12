@@ -79,7 +79,7 @@ def create_training_sessions(dogs, trainers, projects):
         print("   ⚠ No trainers available")
         return
     
-    categories = ['OBEDIENCE', 'DETECTION', 'AGILITY', 'ATTACK', 'FITNESS', 'BEHAVIOR_IMPROVEMENT']
+    categories = ['OBEDIENCE', 'DETECTION', 'AGILITY', 'ATTACK', 'FITNESS']
     count = 0
     
     for i in range(80):
