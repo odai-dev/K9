@@ -89,7 +89,7 @@ def get_user_permissions(user_id):
     if user.role != UserRole.PROJECT_MANAGER:
         return jsonify({'error': 'يمكن إدارة صلاحيات مديري المشاريع فقط'}), 400
     
-    matrix = get_user_permissions_matrix(user, project_id)
+    matrix = get_user_permissions_matrix(user.id, project_id=project_id)
     
     return jsonify({
         'user': {
@@ -123,17 +123,43 @@ def update_user_permission():
     
     project_id = data.get('project_id')
     
-    success = update_permission(
-        admin_user=current_user,
-        target_user=user,
+    # Get old permission value for audit
+    existing_perm = SubPermission.query.filter_by(
+        user_id=user.id,
         section=data['section'],
         subsection=data['subsection'],
         permission_type=permission_type,
-        project_id=project_id,
-        is_granted=data['is_granted']
+        project_id=project_id
+    ).first()
+    old_value = existing_perm.is_granted if existing_perm else False
+    new_value = data['is_granted']
+    
+    # Create permission key for the simple function signature
+    permission_key = f"{data['section']}.{data['subsection']}.{permission_type.value}"
+    
+    success = update_permission(
+        user_id=user.id,
+        permission_key=permission_key,
+        granted=new_value,
+        updated_by=current_user.id,
+        project_id=project_id
     )
     
     if success:
+        # Create audit log entry
+        audit_log = PermissionAuditLog()
+        audit_log.changed_by_user_id = current_user.id
+        audit_log.target_user_id = user.id
+        audit_log.section = data['section']
+        audit_log.subsection = data['subsection']
+        audit_log.permission_type = permission_type
+        audit_log.project_id = project_id
+        audit_log.old_value = old_value
+        audit_log.new_value = new_value
+        audit_log.ip_address = request.remote_addr
+        audit_log.user_agent = request.headers.get('User-Agent', '')
+        db.session.add(audit_log)
+        db.session.commit()
         # Log audit
         log_audit(
             user_id=current_user.id,
@@ -164,15 +190,35 @@ def bulk_update_user_permissions():
     
     project_id = data.get('project_id')
     
+    # Build permissions dict for bulk update
+    permissions_dict = {
+        'section': data['section'],
+        'is_granted': data['is_granted'],
+        'project_id': project_id
+    }
+    
     count = bulk_update_permissions(
-        admin_user=current_user,
-        target_user=user,
-        section=data['section'],
-        is_granted=data['is_granted'],
+        user_id=user.id,
+        permissions_dict=permissions_dict,
+        updated_by=current_user.id,
         project_id=project_id
     )
     
     if count > 0:
+        # Create audit log entry for bulk update
+        audit_log = PermissionAuditLog()
+        audit_log.changed_by_user_id = current_user.id
+        audit_log.target_user_id = user.id
+        audit_log.section = data['section']
+        audit_log.subsection = 'bulk_update'
+        audit_log.permission_type = PermissionType.VIEW  # Generic for bulk operation
+        audit_log.project_id = project_id
+        audit_log.old_value = False
+        audit_log.new_value = data['is_granted']
+        audit_log.ip_address = request.remote_addr
+        audit_log.user_agent = request.headers.get('User-Agent', '')
+        db.session.add(audit_log)
+        db.session.commit()
         # Log audit
         log_audit(
             user_id=current_user.id,
@@ -263,7 +309,7 @@ def export_user_permissions_json(user_id):
     if user.role != UserRole.PROJECT_MANAGER:
         return jsonify({'error': 'يمكن تصدير صلاحيات مديري المشاريع فقط'}), 400
     
-    permissions_data = export_permissions_matrix(user, project_id)
+    permissions_data = export_permissions_matrix([user], project_id=project_id)
     
     # Log audit
     log_audit(
@@ -289,7 +335,7 @@ def export_user_permissions_pdf(user_id):
         return redirect(url_for('admin.permissions_dashboard'))
     
     # Get permissions matrix
-    matrix = get_user_permissions_matrix(user, project_id)
+    matrix = get_user_permissions_matrix(user.id, project_id=project_id)
     
     # Create PDF
     filename = f"permissions_{user.username}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
@@ -417,7 +463,7 @@ def preview_pm_view(user_id):
         return redirect(url_for('admin.permissions_dashboard'))
     
     # Get user's permissions
-    matrix = get_user_permissions_matrix(user, project_id)
+    matrix = get_user_permissions_matrix(user.id, project_id=project_id)
     
     # Calculate summary statistics
     total_permissions = 0
