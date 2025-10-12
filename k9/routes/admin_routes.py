@@ -458,7 +458,7 @@ def admin_profile():
     }
     
     # Get recent admin activities (recent permission changes)
-    recent_activities = PermissionAuditLog.query.filter_by(admin_user_id=current_user.id).order_by(PermissionAuditLog.created_at.desc()).limit(5).all()
+    recent_activities = PermissionAuditLog.query.filter_by(changed_by_user_id=current_user.id).order_by(PermissionAuditLog.created_at.desc()).limit(5).all()
     
     if request.method == 'POST':
         action = request.form.get('action')
