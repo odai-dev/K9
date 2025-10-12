@@ -4015,43 +4015,26 @@ def attendance_report_generate():
         
         records = query.order_by(Attendance.date.desc(), Attendance.shift_id).all()
         
-        # Generate CSV
-        import csv
-        import io
+        # Generate Excel
         from flask import Response
+        from k9.utils.excel_exporter import create_attendance_report_excel, save_excel_to_bytes
         
-        output = io.StringIO()
-        writer = csv.writer(output)
+        # Create Excel workbook
+        if shift_id:
+            shift = Shift.query.get(shift_id)
+            wb = create_attendance_report_excel(records, start_date, end_date, shift.name)
+        else:
+            wb = create_attendance_report_excel(records, start_date, end_date)
         
-        # CSV Header
-        writer.writerow([
-            'التاريخ', 'الوردية', 'نوع العضو', 'رمز العضو', 'اسم العضو', 
-            'الحالة', 'سبب الغياب', 'سبب التأخير', 'وقت الدخول', 'وقت الخروج', 'ملاحظات'
-        ])
-        
-        for record in records:
-            writer.writerow([
-                record.date.strftime('%Y-%m-%d'),
-                record.shift.name,
-                'موظف' if record.entity_type == EntityType.EMPLOYEE else 'كلب',
-                record.get_entity_code(),
-                record.get_entity_name(),
-                record.get_status_display(),
-                record.get_absence_reason_display(),
-                record.late_reason or '',
-                record.check_in_time.strftime('%H:%M') if record.check_in_time else '',
-                record.check_out_time.strftime('%H:%M') if record.check_out_time else '',
-                record.notes or ''
-            ])
-        
-        output.seek(0)
+        # Convert to bytes
+        excel_bytes = save_excel_to_bytes(wb)
         
         # Create response
         response = Response(
-            output.getvalue(),
-            content_type='text/csv; charset=utf-8-sig'
+            excel_bytes,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
-        filename = f'attendance_report_{start_date}_{end_date}.csv'
+        filename = f'attendance_report_{start_date}_{end_date}.xlsx'
         response.headers['Content-Disposition'] = f'attachment; filename={filename}'
         
         log_audit(current_user.id, AuditAction.EXPORT, 'Attendance', None,
