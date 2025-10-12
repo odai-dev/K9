@@ -32,6 +32,7 @@ Preferred communication style: Simple, everyday language.
 - **Attendance System**: Comprehensive attendance tracking with shift management, employee and dog scheduling, and project-specific attendance recording. Includes dual group attendance tracking, leave management, and reporting with Arabic RTL PDF export.
 - **Unified Matrix Attendance System**: Advanced attendance matrix feature displaying employees vs dates with comprehensive filtering, pagination, real-time data loading, and multi-format export capabilities.
 - **Ultra-Granular Permission System**: Revolutionary permission architecture providing GENERAL_ADMIN users with complete control over PROJECT_MANAGER access at a subsection level. Features 79 distinct permission combinations across 9 major sections with 7 action types each, comprehensive audit logging, and an intuitive admin dashboard.
+- **Excel Export System**: Comprehensive Excel (XLSX) export functionality for attendance reports and permissions data. Replaces CSV exports with professionally formatted Excel files featuring Arabic RTL support, auto-formatted columns, styled headers, and borders for improved data presentation and analysis.
 
 ### System Design Choices
 - **Client/Server Separation**: Clear distinction between frontend and backend.
@@ -48,6 +49,7 @@ Preferred communication style: Simple, everyday language.
 - **Security**: Werkzeug.
 - **Database**: psycopg2-binary.
 - **PDF Generation**: ReportLab.
+- **Excel Export**: openpyxl for XLSX file generation with Arabic RTL support.
 
 ### Frontend Dependencies
 - **UI Framework**: Bootstrap 5 RTL.
