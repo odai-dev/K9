@@ -618,3 +618,288 @@ def admin_profile():
                 return render_template('admin/profile.html', stats=stats, recent_activities=recent_activities)
     
     return render_template('admin/profile.html', stats=stats, recent_activities=recent_activities)
+
+
+@admin_bp.route('/backup')
+@login_required
+@admin_required
+def backup_management():
+    """Backup management page"""
+    from k9.models.models import BackupSettings
+    from k9.utils.backup_utils import BackupManager
+    
+    settings = BackupSettings.get_settings()
+    backup_manager = BackupManager()
+    backups = backup_manager.list_backups()
+    
+    return render_template('admin/backup_management.html',
+                         settings=settings,
+                         backups=backups)
+
+
+@admin_bp.route('/backup/create', methods=['POST'])
+@login_required
+@admin_required
+def create_backup():
+    """Create a new database backup"""
+    from k9.utils.backup_utils import BackupManager
+    from k9.models.models import BackupSettings
+    
+    data = request.get_json() or {}
+    description = data.get('description', '')
+    
+    backup_manager = BackupManager()
+    success, filename, error = backup_manager.create_backup(description)
+    
+    if success:
+        settings = BackupSettings.get_settings()
+        settings.last_backup_at = datetime.utcnow()
+        settings.last_backup_status = 'success'
+        settings.last_backup_message = f'Backup created: {filename}'
+        db.session.commit()
+        
+        log_audit(
+            user_id=current_user.id,
+            action='CREATE',
+            target_type='Backup',
+            target_id=filename,
+            description=f'Created database backup: {filename}'
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'تم إنشاء النسخة الاحتياطية بنجاح',
+            'filename': filename
+        })
+    else:
+        settings = BackupSettings.get_settings()
+        settings.last_backup_at = datetime.utcnow()
+        settings.last_backup_status = 'failed'
+        settings.last_backup_message = error
+        db.session.commit()
+        
+        return jsonify({
+            'success': False,
+            'message': f'فشل إنشاء النسخة الاحتياطية: {error}'
+        }), 500
+
+
+@admin_bp.route('/backup/list')
+@login_required
+@admin_required
+def list_backups():
+    """List all available backups"""
+    from k9.utils.backup_utils import BackupManager
+    
+    backup_manager = BackupManager()
+    backups = backup_manager.list_backups()
+    
+    backups_data = []
+    for backup in backups:
+        backups_data.append({
+            'filename': backup['filename'],
+            'timestamp': backup['timestamp'],
+            'description': backup.get('description', ''),
+            'size': backup['size'],
+            'size_mb': round(backup['size'] / (1024 * 1024), 2),
+            'created_at': backup['created_at'].isoformat(),
+            'database': backup.get('database', 'unknown')
+        })
+    
+    return jsonify({'backups': backups_data})
+
+
+@admin_bp.route('/backup/restore/<path:filename>', methods=['POST'])
+@login_required
+@admin_required
+def restore_backup(filename):
+    """Restore database from backup"""
+    from k9.utils.backup_utils import BackupManager
+    
+    data = request.get_json() or {}
+    confirm = data.get('confirm', False)
+    
+    if not confirm:
+        return jsonify({
+            'success': False,
+            'message': 'يرجى التأكيد على الاستعادة'
+        }), 400
+    
+    backup_manager = BackupManager()
+    success, error = backup_manager.restore_backup(filename)
+    
+    if success:
+        log_audit(
+            user_id=current_user.id,
+            action='RESTORE',
+            target_type='Backup',
+            target_id=filename,
+            description=f'Restored database from backup: {filename}'
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'تمت استعادة قاعدة البيانات بنجاح'
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'message': f'فشلت الاستعادة: {error}'
+        }), 500
+
+
+@admin_bp.route('/backup/download/<path:filename>')
+@login_required
+@admin_required
+def download_backup(filename):
+    """Download a backup file"""
+    from k9.utils.backup_utils import BackupManager
+    import os
+    
+    backup_manager = BackupManager()
+    backup_path = os.path.join(backup_manager.backup_dir, filename)
+    
+    if not os.path.exists(backup_path):
+        flash('الملف غير موجود', 'error')
+        return redirect(url_for('admin.backup_management'))
+    
+    log_audit(
+        user_id=current_user.id,
+        action='DOWNLOAD',
+        target_type='Backup',
+        target_id=filename,
+        description=f'Downloaded backup: {filename}'
+    )
+    
+    return send_file(backup_path, as_attachment=True, download_name=filename)
+
+
+@admin_bp.route('/backup/delete/<path:filename>', methods=['POST'])
+@login_required
+@admin_required
+def delete_backup(filename):
+    """Delete a backup file"""
+    from k9.utils.backup_utils import BackupManager
+    
+    backup_manager = BackupManager()
+    success, error = backup_manager.delete_backup(filename)
+    
+    if success:
+        log_audit(
+            user_id=current_user.id,
+            action='DELETE',
+            target_type='Backup',
+            target_id=filename,
+            description=f'Deleted backup: {filename}'
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'تم حذف النسخة الاحتياطية بنجاح'
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'message': f'فشل الحذف: {error}'
+        }), 500
+
+
+@admin_bp.route('/backup/settings', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def backup_settings():
+    """Manage backup settings"""
+    from k9.models.models import BackupSettings, BackupFrequency
+    
+    settings = BackupSettings.get_settings()
+    
+    if request.method == 'POST':
+        data = request.get_json() or {}
+        
+        try:
+            settings.auto_backup_enabled = data.get('auto_backup_enabled', settings.auto_backup_enabled)
+            
+            if 'backup_frequency' in data:
+                settings.backup_frequency = BackupFrequency(data['backup_frequency'])
+            
+            if 'backup_hour' in data:
+                backup_hour = int(data['backup_hour'])
+                if 0 <= backup_hour <= 23:
+                    settings.backup_hour = backup_hour
+            
+            if 'retention_days' in data:
+                retention_days = int(data['retention_days'])
+                if retention_days > 0:
+                    settings.retention_days = retention_days
+            
+            settings.google_drive_enabled = data.get('google_drive_enabled', settings.google_drive_enabled)
+            
+            if 'google_drive_folder_id' in data:
+                settings.google_drive_folder_id = data['google_drive_folder_id']
+            
+            settings.updated_by_user_id = current_user.id
+            settings.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+            
+            log_audit(
+                user_id=current_user.id,
+                action='EDIT',
+                target_type='BackupSettings',
+                target_id=str(settings.id),
+                description=f'Updated backup settings'
+            )
+            
+            return jsonify({
+                'success': True,
+                'message': 'تم تحديث إعدادات النسخ الاحتياطي بنجاح'
+            })
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({
+                'success': False,
+                'message': f'فشل التحديث: {str(e)}'
+            }), 500
+    
+    return jsonify({
+        'settings': {
+            'auto_backup_enabled': settings.auto_backup_enabled,
+            'backup_frequency': settings.backup_frequency.value,
+            'backup_hour': settings.backup_hour,
+            'retention_days': settings.retention_days,
+            'google_drive_enabled': settings.google_drive_enabled,
+            'google_drive_folder_id': settings.google_drive_folder_id,
+            'last_backup_at': settings.last_backup_at.isoformat() if settings.last_backup_at else None,
+            'last_backup_status': settings.last_backup_status,
+            'last_backup_message': settings.last_backup_message
+        }
+    })
+
+
+@admin_bp.route('/backup/cleanup', methods=['POST'])
+@login_required
+@admin_required
+def cleanup_old_backups():
+    """Clean up old backups based on retention policy"""
+    from k9.utils.backup_utils import BackupManager
+    from k9.models.models import BackupSettings
+    
+    settings = BackupSettings.get_settings()
+    backup_manager = BackupManager()
+    
+    count = backup_manager.cleanup_old_backups(settings.retention_days)
+    
+    log_audit(
+        user_id=current_user.id,
+        action='CLEANUP',
+        target_type='Backup',
+        target_id='cleanup',
+        description=f'Cleaned up {count} old backups (retention: {settings.retention_days} days)'
+    )
+    
+    return jsonify({
+        'success': True,
+        'message': f'تم حذف {count} نسخة احتياطية قديمة',
+        'count': count
+    })
