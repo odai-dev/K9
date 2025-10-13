@@ -2080,8 +2080,22 @@ def project_evaluation_add(project_id):
 @main_bp.route('/reports')
 @login_required
 def reports_index():
-    """Redirect to advanced reports interface"""
-    return redirect(url_for('main.reports_advanced'))
+    """Redirect to Reports Hub"""
+    return redirect(url_for('main.reports_hub'))
+
+@main_bp.route('/reports/hub')
+@login_required
+def reports_hub():
+    """Centralized Reports Hub with all reporting sections"""
+    # Calculate real statistics
+    stats = {
+        'total_dogs': Dog.query.count(),
+        'total_employees': Employee.query.filter_by(is_active=True).count(),
+        'total_projects': Project.query.count(),
+        'total_training_sessions': TrainingSession.query.count(),
+        'total_vet_visits': VeterinaryVisit.query.count()
+    }
+    return render_template('reports/hub.html', stats=stats)
 
 @main_bp.route('/reports/simple')
 @login_required
