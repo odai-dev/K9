@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block title %}مركز التقارير{% endblock %}
+
+{% block content %}
+<div class="container-fluid" dir="rtl">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-2">
+                        <i class="fas fa-chart-line text-primary me-2"></i>
+                        مركز التقارير المتقدم
+                    </h1>
+                    <p class="text-muted mb-0">الوصول السريع لجميع التقارير والإحصائيات مع إمكانيات التصدير والتحليل</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        العودة للوحة التحكم
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stats-card bg-gradient-primary">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon">
+                        <i class="fas fa-dog fa-2x"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h4 class="mb-0">{{ stats.total_dogs or 0 }}</h4>
+                        <p class="mb-0">إجمالي الكلاب</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stats-card bg-gradient-success">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h4 class="mb-0">{{ stats.total_employees or 0 }}</h4>
+                        <p class="mb-0">إجمالي الموظفين</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stats-card bg-gradient-warning">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon">
+                        <i class="fas fa-dumbbell fa-2x"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h4 class="mb-0">{{ stats.total_training_sessions or 0 }}</h4>
+                        <p class="mb-0">جلسات التدريب</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stats-card bg-gradient-info">
+                <div class="d-flex align-items-center">
+                    <div class="stats-icon">
+                        <i class="fas fa-stethoscope fa-2x"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h4 class="mb-0">{{ stats.total_vet_visits or 0 }}</h4>
+                        <p class="mb-0">الزيارات البيطرية</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Categories -->
+    <div class="row">
+        <!-- Attendance Reports Section -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-check me-2"></i>
+                        تقارير الحضور والمشاريع
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="{{ url_for('reports_attendance_ui.daily_sheet') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-clipboard-list text-primary me-2"></i>
+                                <strong>كشف التحضير اليومي</strong>
+                                <br>
+                                <small class="text-muted">تقرير التحضير والحضور اليومي للموظفين والكلاب</small>
+                            </div>
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                        <a href="{{ url_for('reports_attendance_pm_daily_ui.pm_daily') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-file-alt text-primary me-2"></i>
+                                <strong>التقرير اليومي لمسؤول المشروع</strong>
+                                <br>
+                                <small class="text-muted">تقرير مفصل لأداء الموظفين في المشاريع</small>
+                            </div>
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Training Reports Section -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-dumbbell me-2"></i>
+                        تقارير التدريب
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="{{ url_for('training_trainer_daily_ui.trainer_daily') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-user-graduate text-warning me-2"></i>
+                                <strong>التقرير اليومي للمدرب</strong>
+                                <br>
+                                <small class="text-muted">تقرير شامل لجلسات التدريب والأداء</small>
+                            </div>
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Breeding Reports Section -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bone me-2"></i>
+                        تقارير التربية والرعاية
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="{{ url_for('unified_feeding_reports_ui.feeding') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-utensils text-success me-2"></i>
+                                <strong>تقرير التغذية الموحد</strong>
+                                <br>
+                                <small class="text-muted">متابعة شاملة لوجبات الكلاب وحالتها الغذائية</small>
+                            </div>
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                        <a href="{{ url_for('unified_checkup_reports_ui.checkup') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-stethoscope text-success me-2"></i>
+                                <strong>تقرير الفحص الظاهري الموحد</strong>
+                                <br>
+                                <small class="text-muted">تقييم الحالة الصحية الظاهرية للكلاب</small>
+                            </div>
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                        <a href="{{ url_for('caretaker_daily_reports_ui.caretaker_daily') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-broom text-success me-2"></i>
+                                <strong>تقرير الرعاية اليومية</strong>
+                                <br>
+                                <small class="text-muted">تقرير شامل للرعاية والتنظيف اليومي</small>
+                            </div>
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                        <a href="{{ url_for('veterinary_reports_ui.veterinary') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-user-md text-success me-2"></i>
+                                <strong>التقرير البيطري الموحد</strong>
+                                <br>
+                                <small class="text-muted">تقارير الفحوصات والعلاجات البيطرية</small>
+                            </div>
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- General Reports Section -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        التقارير العامة والإحصائيات
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="{{ url_for('main.reports_advanced') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center border-start border-3 border-info">
+                            <div>
+                                <i class="fas fa-filter text-info me-2"></i>
+                                <strong>التقارير المتقدمة</strong>
+                                <br>
+                                <small class="text-muted">معاينة وتصدير التقارير بمرشحات مخصصة | PDF & Excel</small>
+                            </div>
+                            <span class="badge bg-info">مميز</span>
+                        </a>
+                        <a href="{{ url_for('main.reports_simple') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-dog text-info me-2"></i>
+                                <strong>تقرير الكلاب</strong>
+                                <br>
+                                <small class="text-muted">قائمة شاملة بجميع الكلاب ومعلوماتها</small>
+                            </div>
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                        <a href="{{ url_for('main.reports_simple') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-users text-info me-2"></i>
+                                <strong>تقرير الموظفين</strong>
+                                <br>
+                                <small class="text-muted">بيانات الموظفين ومعلوماتهم الوظيفية</small>
+                            </div>
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Formats Info -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h5 class="alert-heading">
+                    <i class="fas fa-info-circle me-2"></i>
+                    إمكانيات التصدير
+                </h5>
+                <p class="mb-0">
+                    جميع التقارير تدعم التصدير إلى صيغ متعددة:
+                    <span class="badge bg-danger ms-2"><i class="fas fa-file-pdf me-1"></i>PDF</span>
+                    <span class="badge bg-success ms-2"><i class="fas fa-file-excel me-1"></i>Excel</span>
+                    <span class="badge bg-primary ms-2"><i class="fas fa-print me-1"></i>طباعة</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stats-card {
+    background: linear-gradient(135deg, var(--bs-primary) 0%, #667eea 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    color: white;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.stats-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+    color: #333 !important;
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+    color: #333 !important;
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    color: #333 !important;
+}
+
+.stats-icon {
+    opacity: 0.9;
+}
+
+.card {
+    border: none;
+    transition: transform 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.list-group-item-action:hover {
+    background-color: #f8f9fa;
+    border-right: 3px solid var(--bs-primary);
+}
+
+.card-header {
+    font-weight: 600;
+    border: none;
+}
+
+@media print {
+    .btn, .alert {
+        display: none;
+    }
+}
+</style>
+{% endblock %}
