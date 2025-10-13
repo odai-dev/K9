@@ -842,6 +842,10 @@ def backup_settings():
             
             db.session.commit()
             
+            from flask import current_app
+            if hasattr(current_app, 'reschedule_backup_jobs'):
+                current_app.reschedule_backup_jobs()
+            
             log_audit(
                 user_id=current_user.id,
                 action='EDIT',
