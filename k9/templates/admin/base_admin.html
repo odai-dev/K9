@@ -183,6 +183,11 @@
                     <i class="fas fa-history me-2"></i>سجل التدقيق
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if 'backup' in request.endpoint }}" href="{{ url_for('admin.backup_management') }}">
+                    <i class="fas fa-database me-2"></i>النسخ الاحتياطي
+                </a>
+            </li>
         </ul>
     </div>
     
