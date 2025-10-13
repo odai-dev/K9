@@ -145,3 +145,9 @@ Preferred communication style: Simple, everyday language.
 - **Admin Panel UI Redesign**: ✅ October 13, 2025 - Completely redesigned admin navigation to match main app styling. Replaced custom sidebar with Bootstrap navbar tabs, removed heavy custom CSS, and integrated admin pages with consistent app design. Fixed legacy /admin route redirect.
 - **Dark Mode Implementation**: ✅ October 13, 2025 - Added comprehensive dark mode support with toggle button in navigation bar. Implemented theme switching with localStorage persistence, CSS variables for theming, and proper contrast across all components including cards, forms, tables, modals, alerts, and admin pages.
 - **System Status**: ✅ Fully functional K9 Operations Management System ready for immediate use
+
+## Integration Notes
+- **Google Drive Integration**: User dismissed Replit's Google Drive connector (connector:ccfg_google-drive_0F6D7EF5E22543468DB221F94F). Future Google Drive backup integration will require either:
+  - Service Account credentials (JSON key file) stored as secret, OR
+  - Manual OAuth 2.0 flow implementation
+  - Note: google-api-python-client packages already installed for future use

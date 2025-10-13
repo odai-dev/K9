@@ -1945,3 +1945,47 @@ class CaretakerDailyLog(db.Model):
         return f'<CaretakerDailyLog {self.id}: {self.dog_id} on {self.date}>'
 
 
+class BackupFrequency(Enum):
+    DISABLED = "DISABLED"
+    DAILY = "DAILY"
+    WEEKLY = "WEEKLY"
+    MONTHLY = "MONTHLY"
+
+
+class BackupSettings(db.Model):
+    __tablename__ = "backup_settings"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    auto_backup_enabled = db.Column(db.Boolean, nullable=False, default=False)
+    backup_frequency = db.Column(db.Enum(BackupFrequency), nullable=False, default=BackupFrequency.DISABLED)
+    backup_hour = db.Column(db.Integer, nullable=False, default=2)
+    retention_days = db.Column(db.Integer, nullable=False, default=30)
+    
+    google_drive_enabled = db.Column(db.Boolean, nullable=False, default=False)
+    google_drive_folder_id = db.Column(db.String(255), nullable=True)
+    google_drive_credentials = db.Column(Text, nullable=True)
+    
+    last_backup_at = db.Column(db.DateTime, nullable=True)
+    last_backup_status = db.Column(db.String(50), nullable=True)
+    last_backup_message = db.Column(Text, nullable=True)
+    
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_by_user_id = db.Column(get_uuid_column(), db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
+    
+    updated_by_user = db.relationship('User', backref='backup_settings_updates')
+    
+    def __repr__(self):
+        return f'<BackupSettings {self.id}: {self.backup_frequency.value}>'
+    
+    @classmethod
+    def get_settings(cls):
+        settings = cls.query.first()
+        if not settings:
+            settings = cls()
+            db.session.add(settings)
+            db.session.commit()
+        return settings
+
+
