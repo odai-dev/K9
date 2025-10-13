@@ -320,6 +320,8 @@ with app.app_context():
         from k9.utils.backup_utils import BackupManager
         from datetime import datetime
         
+        backup_scheduler = BackgroundScheduler()
+        
         def run_scheduled_backup():
             """Run scheduled backup job"""
             with app.app_context():
@@ -327,6 +329,7 @@ with app.app_context():
                     settings = BackupSettings.get_settings()
                     
                     if not settings.auto_backup_enabled or settings.backup_frequency == BackupFrequency.DISABLED:
+                        print("⚠ Automated backup skipped: disabled in settings")
                         return
                     
                     backup_manager = BackupManager()
@@ -353,20 +356,24 @@ with app.app_context():
                 except Exception as e:
                     print(f"✗ Scheduled backup error: {str(e)}")
         
-        def initialize_backup_scheduler():
-            """Initialize backup scheduler based on settings"""
-            scheduler = BackgroundScheduler()
-            
+        def reschedule_backup_jobs():
+            """Reschedule backup jobs based on current settings"""
             with app.app_context():
+                try:
+                    backup_scheduler.remove_job('backup_job')
+                    print("✓ Removed existing backup job")
+                except:
+                    pass
+                
                 settings = BackupSettings.get_settings()
                 
                 if settings.auto_backup_enabled and settings.backup_frequency != BackupFrequency.DISABLED:
                     if settings.backup_frequency == BackupFrequency.DAILY:
                         trigger = CronTrigger(hour=settings.backup_hour, minute=0)
-                        scheduler.add_job(
+                        backup_scheduler.add_job(
                             run_scheduled_backup,
                             trigger=trigger,
-                            id='daily_backup',
+                            id='backup_job',
                             name='Daily Backup',
                             replace_existing=True
                         )
@@ -374,10 +381,10 @@ with app.app_context():
                     
                     elif settings.backup_frequency == BackupFrequency.WEEKLY:
                         trigger = CronTrigger(day_of_week='sun', hour=settings.backup_hour, minute=0)
-                        scheduler.add_job(
+                        backup_scheduler.add_job(
                             run_scheduled_backup,
                             trigger=trigger,
-                            id='weekly_backup',
+                            id='backup_job',
                             name='Weekly Backup',
                             replace_existing=True
                         )
@@ -385,22 +392,28 @@ with app.app_context():
                     
                     elif settings.backup_frequency == BackupFrequency.MONTHLY:
                         trigger = CronTrigger(day=1, hour=settings.backup_hour, minute=0)
-                        scheduler.add_job(
+                        backup_scheduler.add_job(
                             run_scheduled_backup,
                             trigger=trigger,
-                            id='monthly_backup',
+                            id='backup_job',
                             name='Monthly Backup',
                             replace_existing=True
                         )
                         print(f"✓ Monthly backup scheduled on 1st of month at {settings.backup_hour}:00")
-            
-            scheduler.start()
-            print("✓ Backup scheduler initialized successfully")
-            
-            return scheduler
+                    
+                    return True
+                else:
+                    print("⚠ Automated backup not scheduled: disabled in settings")
+                    return False
         
-        backup_scheduler = initialize_backup_scheduler()
+        backup_scheduler.start()
+        print("✓ Backup scheduler started")
+        
+        reschedule_backup_jobs()
+        
+        app.reschedule_backup_jobs = reschedule_backup_jobs
         
     except Exception as e:
         print(f"⚠ Warning: Could not initialize backup scheduler: {e}")
         backup_scheduler = None
+        app.reschedule_backup_jobs = lambda: False
