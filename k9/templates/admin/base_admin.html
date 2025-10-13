@@ -2,315 +2,195 @@
 
 {% block extra_css %}
 <style>
-.admin-wrapper {
-    display: flex;
-    min-height: calc(100vh - 80px);
-}
-
-.admin-sidebar {
-    width: 280px;
-    background: #1a365d;
+/* Admin page header styling */
+.admin-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 0;
-    position: sticky;
-    top: 80px;
-    height: calc(100vh - 80px);
-    overflow-y: auto;
-    transition: width 0.3s ease;
+    padding: 2rem 0;
+    margin: -1rem -1rem 2rem -1rem;
+    border-radius: 0 0 1rem 1rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-.admin-sidebar.collapsed {
-    width: 60px;
-}
-
-.admin-sidebar-header {
-    padding: 20px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    text-align: center;
-}
-
-.admin-sidebar-header h5 {
+.admin-header h1 {
     margin: 0;
     font-weight: 600;
-    transition: opacity 0.3s ease;
 }
 
-.admin-sidebar.collapsed .admin-sidebar-header h5 {
-    opacity: 0;
+.admin-header .breadcrumb {
+    background: transparent;
+    margin: 0;
+    padding: 0;
 }
 
-.admin-nav {
-    padding: 10px 0;
-}
-
-.admin-nav-item {
-    margin: 2px 10px;
-}
-
-.admin-nav-link {
-    display: flex;
-    align-items: center;
-    padding: 12px 20px;
-    color: rgba(255,255,255,0.8);
+.admin-header .breadcrumb-item a {
+    color: rgba(255,255,255,0.9);
     text-decoration: none;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    position: relative;
 }
 
-.admin-nav-link:hover {
-    background: rgba(255,255,255,0.1);
-    color: white;
-    transform: translateX(-2px);
-}
-
-.admin-nav-link.active {
-    background: rgba(255,255,255,0.2);
+.admin-header .breadcrumb-item.active {
     color: white;
 }
 
-.admin-nav-link.active::before {
-    content: '';
-    position: absolute;
-    right: 0;
-    top: 0;
-    height: 100%;
-    width: 4px;
-    background: #4facfe;
-    border-radius: 2px;
+.admin-header .breadcrumb-item + .breadcrumb-item::before {
+    color: rgba(255,255,255,0.7);
 }
 
-.admin-nav-icon {
-    font-size: 1.2rem;
-    width: 20px;
-    margin-left: 15px;
-    text-align: center;
-    transition: margin 0.3s ease;
-}
-
-.admin-sidebar.collapsed .admin-nav-icon {
-    margin-left: 0;
-}
-
-.admin-nav-text {
-    transition: opacity 0.3s ease;
-}
-
-.admin-sidebar.collapsed .admin-nav-text {
-    opacity: 0;
-}
-
-.admin-content {
-    flex: 1;
-    padding: 25px;
-    background: #f8f9fa;
-    overflow-x: hidden;
-}
-
-.admin-toggle {
-    position: absolute;
-    top: 20px;
-    left: -15px;
-    background: #1a365d;
-    border: 2px solid white;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    cursor: pointer;
-    z-index: 1000;
-    transition: all 0.3s ease;
-}
-
-.admin-toggle:hover {
-    background: #2d5a87;
-}
-
-.admin-breadcrumb {
+/* Admin navigation tabs */
+.admin-nav-tabs {
     background: white;
-    padding: 15px 20px;
-    border-radius: 8px;
-    margin-bottom: 25px;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    margin-bottom: 1.5rem;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.admin-nav-tabs .nav-link {
+    color: #6c757d;
+    border: none;
+    border-radius: 0.375rem;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.admin-nav-tabs .nav-link:hover {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.admin-nav-tabs .nav-link.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
 }
 
 .admin-card {
     background: white;
-    border-radius: 12px;
+    border-radius: 0.75rem;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     border: none;
-    transition: box-shadow 0.3s ease;
-}
-
-.admin-card:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    margin-bottom: 1.5rem;
 }
 
 .admin-card-header {
     background: #f8f9fa;
     border-bottom: 1px solid #e9ecef;
-    padding: 20px;
-    border-radius: 12px 12px 0 0;
+    padding: 1.25rem 1.5rem;
+    border-radius: 0.75rem 0.75rem 0 0;
+    font-weight: 600;
 }
 
 .admin-card-body {
-    padding: 25px;
+    padding: 1.5rem;
 }
 
-/* Mobile Responsive */
-@media (max-width: 768px) {
-    .admin-wrapper {
-        flex-direction: column;
-    }
-    
-    .admin-sidebar {
-        width: 100%;
-        height: auto;
-        position: relative;
-        top: 0;
-    }
-    
-    .admin-sidebar.collapsed {
-        height: 60px;
-        overflow: hidden;
-    }
-    
-    .admin-toggle {
-        display: block;
-    }
+/* Stats cards */
+.admin-stat-card {
+    background: white;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-@media (min-width: 769px) {
-    .admin-toggle {
-        display: flex;
-    }
+.admin-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-/* Custom scrollbar for sidebar */
-.admin-sidebar::-webkit-scrollbar {
-    width: 6px;
+.admin-stat-card .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
 }
 
-.admin-sidebar::-webkit-scrollbar-track {
-    background: rgba(255,255,255,0.1);
+.admin-stat-card .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
 }
 
-.admin-sidebar::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.3);
-    border-radius: 3px;
-}
-
-.admin-sidebar::-webkit-scrollbar-thumb:hover {
-    background: rgba(255,255,255,0.5);
+.admin-stat-card .stat-label {
+    color: #6c757d;
+    font-size: 0.875rem;
+    margin: 0;
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="admin-wrapper">
-    <!-- Admin Sidebar -->
-    <nav class="admin-sidebar" id="adminSidebar">
-        <div class="admin-sidebar-header">
-            <div class="admin-toggle" onclick="toggleSidebar()">
-                <i class="fas fa-bars"></i>
+<div class="container-fluid">
+    <!-- Admin Header -->
+    <div class="admin-header">
+        <div class="container-fluid px-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h1>
+                    <i class="fas fa-user-shield me-2"></i>
+                    {% block admin_title %}لوحة التحكم{% endblock %}
+                </h1>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-light">
+                    <i class="fas fa-home me-2"></i>العودة للرئيسية
+                </a>
             </div>
-            <h5>لوحة التحكم</h5>
-            <p class="small mb-0 opacity-75">مدير عام</p>
+            
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('admin.dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-1"></i>الرئيسية
+                        </a>
+                    </li>
+                    {% block breadcrumb %}{% endblock %}
+                </ol>
+            </nav>
         </div>
-        
-        <div class="admin-nav">
-            <div class="admin-nav-item">
-                <a href="{{ url_for('admin.dashboard') }}" class="admin-nav-link {{ 'active' if request.endpoint == 'admin.dashboard' }}">
-                    <i class="fas fa-tachometer-alt admin-nav-icon"></i>
-                    <span class="admin-nav-text">الرئيسية</span>
+    </div>
+    
+    <!-- Admin Navigation Tabs -->
+    <div class="container-fluid px-4">
+        <ul class="nav admin-nav-tabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'admin.dashboard' }}" href="{{ url_for('admin.dashboard') }}">
+                    <i class="fas fa-tachometer-alt me-2"></i>لوحة التحكم
                 </a>
-            </div>
-            
-            <div class="admin-nav-item">
-                <a href="{{ url_for('admin.permissions_dashboard') }}" class="admin-nav-link {{ 'active' if 'permissions' in request.endpoint }}">
-                    <i class="fas fa-user-shield admin-nav-icon"></i>
-                    <span class="admin-nav-text">إدارة الصلاحيات</span>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if 'permissions' in request.endpoint }}" href="{{ url_for('admin.permissions_dashboard') }}">
+                    <i class="fas fa-user-shield me-2"></i>إدارة الصلاحيات
                 </a>
-            </div>
-            
-            <div class="admin-nav-item">
-                <a href="{{ url_for('admin.admin_profile') }}" class="admin-nav-link {{ 'active' if request.endpoint == 'admin.admin_profile' }}">
-                    <i class="fas fa-user-cog admin-nav-icon"></i>
-                    <span class="admin-nav-text">الملف الشخصي</span>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'admin.admin_profile' }}" href="{{ url_for('admin.admin_profile') }}">
+                    <i class="fas fa-user-cog me-2"></i>الملف الشخصي
                 </a>
-            </div>
-            
-            <div class="admin-nav-item">
-                <a href="{{ url_for('admin.permissions_audit_log') }}" class="admin-nav-link {{ 'active' if 'audit' in request.endpoint }}">
-                    <i class="fas fa-history admin-nav-icon"></i>
-                    <span class="admin-nav-text">سجل التدقيق</span>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if 'audit' in request.endpoint }}" href="{{ url_for('admin.permissions_audit_log') }}">
+                    <i class="fas fa-history me-2"></i>سجل التدقيق
                 </a>
-            </div>
-            
-            <hr style="border-color: rgba(255,255,255,0.2); margin: 20px 10px;">
-            
-            <div class="admin-nav-item">
-                <a href="{{ url_for('main.dashboard') }}" class="admin-nav-link">
-                    <i class="fas fa-home admin-nav-icon"></i>
-                    <span class="admin-nav-text">العودة للرئيسية</span>
-                </a>
-            </div>
-            
-            <div class="admin-nav-item">
-                <a href="{{ url_for('auth.logout') }}" class="admin-nav-link text-danger">
-                    <i class="fas fa-sign-out-alt admin-nav-icon"></i>
-                    <span class="admin-nav-text">تسجيل الخروج</span>
-                </a>
-            </div>
-        </div>
-    </nav>
+            </li>
+        </ul>
+    </div>
     
     <!-- Admin Content -->
-    <main class="admin-content">
-        <!-- Breadcrumb -->
-        <nav class="admin-breadcrumb" aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item">
-                    <a href="{{ url_for('admin.dashboard') }}">
-                        <i class="fas fa-home me-1"></i>لوحة التحكم
-                    </a>
-                </li>
-                {% block breadcrumb %}{% endblock %}
-            </ol>
-        </nav>
-        
-        <!-- Page Content -->
+    <div class="container-fluid px-4">
         {% block admin_content %}{% endblock %}
-    </main>
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function toggleSidebar() {
-    const sidebar = document.getElementById('adminSidebar');
-    sidebar.classList.toggle('collapsed');
-    
-    // Save state to localStorage
-    const isCollapsed = sidebar.classList.contains('collapsed');
-    localStorage.setItem('adminSidebarCollapsed', isCollapsed);
-}
-
-// Restore sidebar state on page load
+// Admin page JavaScript utilities
 document.addEventListener('DOMContentLoaded', function() {
-    const sidebar = document.getElementById('adminSidebar');
-    const isCollapsed = localStorage.getItem('adminSidebarCollapsed') === 'true';
-    
-    if (isCollapsed) {
-        sidebar.classList.add('collapsed');
-    }
-    
-    // Add active state based on current page
+    // Add active state to nav links based on current page
     const currentPath = window.location.pathname;
-    const navLinks = document.querySelectorAll('.admin-nav-link');
+    const navLinks = document.querySelectorAll('.admin-nav-tabs .nav-link');
     
     navLinks.forEach(link => {
         if (link.getAttribute('href') === currentPath) {
@@ -318,18 +198,5 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
-
-// Mobile responsive behavior
-function handleMobileResize() {
-    const sidebar = document.getElementById('adminSidebar');
-    if (window.innerWidth <= 768) {
-        sidebar.classList.add('collapsed');
-    } else if (localStorage.getItem('adminSidebarCollapsed') !== 'true') {
-        sidebar.classList.remove('collapsed');
-    }
-}
-
-window.addEventListener('resize', handleMobileResize);
-handleMobileResize(); // Call on load
 </script>
 {% endblock %}
