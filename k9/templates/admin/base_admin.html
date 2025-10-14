@@ -6,70 +6,137 @@
 .admin-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 2rem 0;
-    margin: -1rem -1rem 2rem -1rem;
-    border-radius: 0 0 1rem 1rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    padding: 2.5rem 0 1.5rem 0;
+    margin-bottom: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-bottom: 3px solid rgba(255,255,255,0.2);
 }
 
 [data-theme="dark"] .admin-header {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    border-bottom: 3px solid rgba(255,255,255,0.15);
 }
 
 .admin-header h1 {
     margin: 0;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 2rem;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .admin-header .breadcrumb {
     background: transparent;
-    margin: 0;
+    margin: 0.75rem 0 0 0;
     padding: 0;
+    font-size: 0.95rem;
 }
 
 .admin-header .breadcrumb-item a {
     color: rgba(255,255,255,0.9);
     text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.admin-header .breadcrumb-item a:hover {
+    color: white;
+    text-decoration: underline;
 }
 
 .admin-header .breadcrumb-item.active {
     color: white;
+    font-weight: 500;
 }
 
 .admin-header .breadcrumb-item + .breadcrumb-item::before {
     color: rgba(255,255,255,0.7);
 }
 
+.admin-header .btn-light {
+    background: rgba(255,255,255,0.95);
+    border: 2px solid rgba(255,255,255,0.3);
+    color: #667eea;
+    font-weight: 600;
+    padding: 0.5rem 1.25rem;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.admin-header .btn-light:hover {
+    background: white;
+    border-color: white;
+    color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
 /* Admin navigation tabs */
 .admin-nav-tabs {
     background: white;
-    border-radius: 0.5rem;
-    padding: 0.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 0;
+    padding: 0;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-top: none;
+}
+
+[data-theme="dark"] .admin-nav-tabs {
+    background: #1a1a1a;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .admin-nav-tabs .nav-link {
     color: #6c757d !important;
     border: none;
-    border-radius: 0.375rem;
-    padding: 0.75rem 1.5rem;
+    border-radius: 0;
+    padding: 1rem 1.75rem;
     transition: all 0.3s ease;
     text-decoration: none !important;
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border-bottom: 3px solid transparent;
+    position: relative;
+}
+
+[data-theme="dark"] .admin-nav-tabs .nav-link {
+    color: #adb5bd !important;
 }
 
 .admin-nav-tabs .nav-link:hover {
-    background: #f8f9fa;
-    color: #495057 !important;
+    background: rgba(102, 126, 234, 0.05);
+    color: #667eea !important;
     text-decoration: none !important;
+    border-bottom-color: rgba(102, 126, 234, 0.3);
+}
+
+[data-theme="dark"] .admin-nav-tabs .nav-link:hover {
+    background: rgba(79, 172, 254, 0.1);
+    color: #4facfe !important;
+    border-bottom-color: rgba(79, 172, 254, 0.3);
 }
 
 .admin-nav-tabs .nav-link.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white !important;
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea !important;
     text-decoration: none !important;
+    border-bottom-color: #667eea;
+}
+
+[data-theme="dark"] .admin-nav-tabs .nav-link.active {
+    background: rgba(79, 172, 254, 0.15);
+    color: #4facfe !important;
+    border-bottom-color: #4facfe;
+}
+
+.admin-nav-tabs .nav-link i {
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.admin-nav-tabs .nav-link:hover i,
+.admin-nav-tabs .nav-link.active i {
+    opacity: 1;
 }
 
 .admin-card {
@@ -132,37 +199,40 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <!-- Admin Header -->
-    <div class="admin-header">
-        <div class="container-fluid px-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
+<!-- Admin Header -->
+<div class="admin-header">
+    <div class="container-fluid px-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
                 <h1>
                     <i class="fas fa-user-shield me-2"></i>
                     {% block admin_title %}لوحة التحكم{% endblock %}
                 </h1>
+                <!-- Breadcrumb -->
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="{{ url_for('admin.dashboard') }}">
+                                <i class="fas fa-tachometer-alt me-1"></i>الرئيسية
+                            </a>
+                        </li>
+                        {% block breadcrumb %}{% endblock %}
+                    </ol>
+                </nav>
+            </div>
+            <div>
                 <a href="{{ url_for('main.dashboard') }}" class="btn btn-light">
-                    <i class="fas fa-home me-2"></i>العودة للرئيسية
+                    <i class="fas fa-arrow-right me-2"></i>العودة للرئيسية
                 </a>
             </div>
-            
-            <!-- Breadcrumb -->
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item">
-                        <a href="{{ url_for('admin.dashboard') }}">
-                            <i class="fas fa-tachometer-alt me-1"></i>الرئيسية
-                        </a>
-                    </li>
-                    {% block breadcrumb %}{% endblock %}
-                </ol>
-            </nav>
         </div>
     </div>
-    
-    <!-- Admin Navigation Tabs -->
+</div>
+
+<!-- Admin Navigation Tabs -->
+<ul class="nav admin-nav-tabs" role="tablist">
     <div class="container-fluid px-4">
-        <ul class="nav admin-nav-tabs" role="tablist">
+        <div class="d-flex">
             <li class="nav-item">
                 <a class="nav-link {{ 'active' if request.endpoint == 'admin.dashboard' }}" href="{{ url_for('admin.dashboard') }}">
                     <i class="fas fa-tachometer-alt me-2"></i>لوحة التحكم
@@ -188,13 +258,13 @@
                     <i class="fas fa-database me-2"></i>النسخ الاحتياطي
                 </a>
             </li>
-        </ul>
+        </div>
     </div>
-    
-    <!-- Admin Content -->
-    <div class="container-fluid px-4">
-        {% block admin_content %}{% endblock %}
-    </div>
+</ul>
+
+<!-- Admin Content -->
+<div class="container-fluid px-4">
+    {% block admin_content %}{% endblock %}
 </div>
 {% endblock %}
 
