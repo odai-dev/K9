@@ -654,8 +654,16 @@ def create_backup():
     if success:
         settings = BackupSettings.get_settings()
         settings.last_backup_at = datetime.utcnow()
-        settings.last_backup_status = 'success'
-        settings.last_backup_message = f'Backup created: {filename}'
+        
+        if error:
+            settings.last_backup_status = 'partial'
+            settings.last_backup_message = error
+            message = f'تم إنشاء النسخة الاحتياطية محلياً، لكن فشل الرفع إلى Google Drive: {error}'
+        else:
+            settings.last_backup_status = 'success'
+            settings.last_backup_message = f'Backup created: {filename}'
+            message = 'تم إنشاء النسخة الاحتياطية بنجاح'
+        
         db.session.commit()
         
         log_audit(
@@ -663,13 +671,14 @@ def create_backup():
             action='CREATE',
             target_type='Backup',
             target_id=filename,
-            description=f'Created database backup: {filename}'
+            description=f'Created database backup: {filename}' + (f' (Drive upload failed: {error})' if error else '')
         )
         
         return jsonify({
             'success': True,
-            'message': 'تم إنشاء النسخة الاحتياطية بنجاح',
-            'filename': filename
+            'message': message,
+            'filename': filename,
+            'warning': error if error else None
         })
     else:
         settings = BackupSettings.get_settings()
@@ -907,3 +916,194 @@ def cleanup_old_backups():
         'message': f'تم حذف {count} نسخة احتياطية قديمة',
         'count': count
     })
+
+
+@admin_bp.route('/google-drive/connect')
+@login_required
+@admin_required
+def google_drive_connect():
+    """Initiate Google Drive OAuth flow"""
+    from k9.utils.google_drive_manager import GoogleDriveManager
+    import secrets
+    
+    try:
+        drive_manager = GoogleDriveManager()
+        redirect_uri = url_for('admin.google_drive_callback', _external=True)
+        
+        authorization_url, state = drive_manager.get_authorization_url(redirect_uri)
+        
+        session['google_oauth_state'] = state
+        session['google_oauth_user_id'] = str(current_user.id)
+        
+        return redirect(authorization_url)
+        
+    except ValueError as e:
+        flash(f'خطأ في الإعداد: {str(e)}', 'error')
+        return redirect(url_for('admin.backup_management'))
+    except Exception as e:
+        flash(f'فشل الاتصال بـ Google Drive: {str(e)}', 'error')
+        return redirect(url_for('admin.backup_management'))
+
+
+@admin_bp.route('/google-drive/callback')
+@login_required
+@admin_required
+def google_drive_callback():
+    """Handle Google Drive OAuth callback"""
+    from k9.utils.google_drive_manager import GoogleDriveManager
+    from k9.models.models import BackupSettings
+    import json
+    
+    state = session.get('google_oauth_state')
+    stored_user_id = session.get('google_oauth_user_id')
+    
+    if not state or stored_user_id != str(current_user.id):
+        session.pop('google_oauth_state', None)
+        session.pop('google_oauth_user_id', None)
+        flash('جلسة OAuth غير صالحة', 'error')
+        return redirect(url_for('admin.backup_management'))
+    
+    try:
+        drive_manager = GoogleDriveManager()
+        redirect_uri = url_for('admin.google_drive_callback', _external=True)
+        
+        credentials_dict = drive_manager.exchange_code_for_credentials(
+            authorization_response=request.url,
+            redirect_uri=redirect_uri,
+            state=state
+        )
+        
+        user_info = drive_manager.get_user_info(credentials_dict)
+        
+        success, folder_id, error = drive_manager.find_or_create_backup_folder(credentials_dict)
+        
+        if not success:
+            session.pop('google_oauth_state', None)
+            session.pop('google_oauth_user_id', None)
+            flash(f'فشل إنشاء مجلد النسخ الاحتياطي: {error}', 'error')
+            return redirect(url_for('admin.backup_management'))
+        
+        settings = BackupSettings.get_settings()
+        settings.google_drive_credentials = json.dumps(credentials_dict)
+        settings.google_drive_folder_id = folder_id
+        settings.google_drive_enabled = True
+        settings.updated_by_user_id = current_user.id
+        settings.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        session.pop('google_oauth_state', None)
+        session.pop('google_oauth_user_id', None)
+        
+        log_audit(
+            user_id=current_user.id,
+            action='CONNECT',
+            target_type='GoogleDrive',
+            target_id=folder_id,
+            description=f'Connected Google Drive account: {user_info.get("email") if user_info else "unknown"}'
+        )
+        
+        flash(f'تم الاتصال بـ Google Drive بنجاح ({user_info.get("email") if user_info else ""})', 'success')
+        return redirect(url_for('admin.backup_management'))
+        
+    except Exception as e:
+        db.session.rollback()
+        session.pop('google_oauth_state', None)
+        session.pop('google_oauth_user_id', None)
+        flash(f'فشل الاتصال بـ Google Drive: {str(e)}', 'error')
+        return redirect(url_for('admin.backup_management'))
+
+
+@admin_bp.route('/google-drive/disconnect', methods=['POST'])
+@login_required
+@admin_required
+def google_drive_disconnect():
+    """Disconnect Google Drive and revoke tokens"""
+    from k9.utils.google_drive_manager import GoogleDriveManager
+    from k9.models.models import BackupSettings
+    import json
+    
+    try:
+        settings = BackupSettings.get_settings()
+        
+        if settings.google_drive_credentials:
+            try:
+                credentials_dict = json.loads(settings.google_drive_credentials)
+                drive_manager = GoogleDriveManager()
+                drive_manager.revoke_credentials(credentials_dict)
+            except Exception as e:
+                logger.warning(f"Failed to revoke Google Drive credentials: {e}")
+        
+        settings.google_drive_credentials = None
+        settings.google_drive_folder_id = None
+        settings.google_drive_enabled = False
+        settings.updated_by_user_id = current_user.id
+        settings.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        log_audit(
+            user_id=current_user.id,
+            action='DISCONNECT',
+            target_type='GoogleDrive',
+            target_id='disconnect',
+            description='Disconnected Google Drive account'
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'تم قطع الاتصال بـ Google Drive بنجاح'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': f'فشل قطع الاتصال: {str(e)}'
+        }), 500
+
+
+@admin_bp.route('/google-drive/status')
+@login_required
+@admin_required
+def google_drive_status():
+    """Get Google Drive connection status"""
+    from k9.utils.google_drive_manager import GoogleDriveManager
+    from k9.models.models import BackupSettings
+    import json
+    
+    settings = BackupSettings.get_settings()
+    
+    if not settings.google_drive_credentials:
+        return jsonify({
+            'connected': False,
+            'enabled': settings.google_drive_enabled
+        })
+    
+    try:
+        credentials_dict = json.loads(settings.google_drive_credentials)
+        drive_manager = GoogleDriveManager()
+        
+        credentials_dict = drive_manager.refresh_credentials(credentials_dict)
+        
+        if json.dumps(credentials_dict) != settings.google_drive_credentials:
+            settings.google_drive_credentials = json.dumps(credentials_dict)
+            db.session.commit()
+        
+        user_info = drive_manager.get_user_info(credentials_dict)
+        
+        return jsonify({
+            'connected': True,
+            'enabled': settings.google_drive_enabled,
+            'user_email': user_info.get('email') if user_info else None,
+            'user_name': user_info.get('name') if user_info else None,
+            'folder_id': settings.google_drive_folder_id
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to get Google Drive status: {e}")
+        return jsonify({
+            'connected': False,
+            'enabled': settings.google_drive_enabled,
+            'error': str(e)
+        })

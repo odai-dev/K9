@@ -48,6 +48,11 @@
     color: #7c2d12;
 }
 
+.backup-status.partial {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
 .backup-item {
     border: 1px solid #e2e8f0;
     border-radius: 10px;
@@ -109,8 +114,14 @@
                 <small class="d-block opacity-75">آخر نسخة احتياطية</small>
                 <strong>{{ settings.last_backup_at.strftime('%Y-%m-%d %H:%M') }}</strong>
                 <div class="mt-1">
-                    <span class="backup-status {{ 'success' if settings.last_backup_status == 'success' else 'failed' }}">
-                        {{ 'نجحت' if settings.last_backup_status == 'success' else 'فشلت' }}
+                    <span class="backup-status {{ 'success' if settings.last_backup_status == 'success' else ('partial' if settings.last_backup_status == 'partial' else 'failed') }}">
+                        {% if settings.last_backup_status == 'success' %}
+                            نجحت
+                        {% elif settings.last_backup_status == 'partial' %}
+                            جزئية
+                        {% else %}
+                            فشلت
+                        {% endif %}
                     </span>
                 </div>
             </div>
@@ -195,18 +206,14 @@
             </div>
 
             <div class="settings-section">
-                <h6 class="mb-3">Google Drive</h6>
-                <div class="alert alert-info" role="alert">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <small>لتفعيل Google Drive، يرجى إضافة بيانات الاعتماد في الإعدادات</small>
-                </div>
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" id="googleDriveEnabled" 
-                           {{ 'checked' if settings.google_drive_enabled else '' }}
-                           disabled>
-                    <label class="form-check-label text-muted" for="googleDriveEnabled">
-                        تفعيل Google Drive (قريباً)
-                    </label>
+                <h6 class="mb-3"><i class="fab fa-google-drive me-2"></i> Google Drive</h6>
+                
+                <div id="googleDriveStatus">
+                    <div class="text-center py-3">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">جاري التحميل...</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -271,6 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
     createBackupModal = new bootstrap.Modal(document.getElementById('createBackupModal'));
     restoreBackupModal = new bootstrap.Modal(document.getElementById('restoreBackupModal'));
     loadBackups();
+    loadGoogleDriveStatus();
 });
 
 async function loadBackups() {
@@ -486,6 +494,69 @@ function showAlert(message, type) {
     setTimeout(() => {
         alertDiv.remove();
     }, 5000);
+}
+
+async function loadGoogleDriveStatus() {
+    try {
+        const response = await fetch('{{ url_for("admin.google_drive_status") }}');
+        const data = await response.json();
+        
+        const container = document.getElementById('googleDriveStatus');
+        
+        if (data.connected) {
+            container.innerHTML = `
+                <div class="alert alert-success mb-3" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>متصل بـ Google Drive</strong>
+                    ${data.user_email ? `<br><small class="text-muted">${data.user_email}</small>` : ''}
+                </div>
+                <button class="btn btn-outline-danger btn-sm w-100" onclick="disconnectGoogleDrive()">
+                    <i class="fas fa-unlink me-2"></i> قطع الاتصال
+                </button>
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="alert alert-info mb-3" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <small>قم بربط حساب Google Drive لحفظ النسخ الاحتياطية تلقائياً في السحابة</small>
+                </div>
+                <a href="{{ url_for('admin.google_drive_connect') }}" class="btn btn-primary btn-sm w-100">
+                    <i class="fab fa-google me-2"></i> الاتصال بـ Google Drive
+                </a>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading Google Drive status:', error);
+        const container = document.getElementById('googleDriveStatus');
+        container.innerHTML = `
+            <div class="alert alert-warning" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <small>فشل تحميل حالة الاتصال</small>
+            </div>
+        `;
+    }
+}
+
+async function disconnectGoogleDrive() {
+    if (!confirm('هل أنت متأكد من قطع الاتصال بـ Google Drive؟ سيتم حذف بيانات الاعتماد المحفوظة.')) return;
+    
+    try {
+        const response = await fetch('{{ url_for("admin.google_drive_disconnect") }}', {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(data.message, 'success');
+            loadGoogleDriveStatus();
+        } else {
+            showAlert(data.message, 'danger');
+        }
+    } catch (error) {
+        console.error('Error disconnecting Google Drive:', error);
+        showAlert('فشل قطع الاتصال بـ Google Drive', 'danger');
+    }
 }
 </script>
 {% endblock %}

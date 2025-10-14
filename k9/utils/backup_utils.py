@@ -31,7 +31,7 @@ class BackupManager:
             'password': parsed.password or ''
         }
     
-    def create_backup(self, description: str = '') -> Tuple[bool, str, Optional[str]]:
+    def create_backup(self, description: str = '', upload_to_drive: bool = True) -> Tuple[bool, str, Optional[str]]:
         try:
             db_config = self._parse_database_url()
             
@@ -74,6 +74,19 @@ class BackupManager:
                     json.dump(metadata, f, indent=2)
                 
                 logger.info(f"Backup created successfully: {backup_filename}")
+                
+                if upload_to_drive:
+                    drive_success, drive_error = self._upload_to_google_drive(backup_path, description)
+                    if drive_success:
+                        logger.info(f"Backup uploaded to Google Drive: {backup_filename}")
+                    elif drive_error:
+                        if drive_error != "Google Drive not enabled or not configured":
+                            error_msg = f"Backup created locally but Google Drive upload failed: {drive_error}"
+                            logger.error(error_msg)
+                            return True, backup_filename, error_msg
+                        else:
+                            logger.debug(f"Google Drive not configured, skipping upload")
+                
                 return True, backup_filename, None
             else:
                 error_msg = f"pg_dump failed: {result.stderr}"
@@ -88,6 +101,50 @@ class BackupManager:
             error_msg = f"Backup failed: {str(e)}"
             logger.error(error_msg)
             return False, '', error_msg
+    
+    def _upload_to_google_drive(self, backup_path: str, description: str = '') -> Tuple[bool, Optional[str]]:
+        try:
+            from k9.models.models import BackupSettings
+            from k9.utils.google_drive_manager import GoogleDriveManager
+            from app import db
+            
+            settings = BackupSettings.get_settings()
+            
+            if not settings.google_drive_enabled or not settings.google_drive_credentials:
+                return False, "Google Drive not enabled or not configured"
+            
+            credentials_dict = json.loads(settings.google_drive_credentials)
+            drive_manager = GoogleDriveManager()
+            
+            credentials_dict = drive_manager.refresh_credentials(credentials_dict)
+            
+            if json.dumps(credentials_dict) != settings.google_drive_credentials:
+                settings.google_drive_credentials = json.dumps(credentials_dict)
+                db.session.commit()
+            
+            if not settings.google_drive_folder_id:
+                success, folder_id, error = drive_manager.find_or_create_backup_folder(credentials_dict)
+                if not success:
+                    return False, f"Failed to create backup folder: {error}"
+                settings.google_drive_folder_id = folder_id
+                db.session.commit()
+            
+            success, file_id, error = drive_manager.upload_backup(
+                credentials_dict,
+                backup_path,
+                settings.google_drive_folder_id,
+                description
+            )
+            
+            if success:
+                return True, None
+            else:
+                return False, error
+                
+        except Exception as e:
+            error_msg = f"Google Drive upload failed: {str(e)}"
+            logger.error(error_msg)
+            return False, error_msg
     
     def restore_backup(self, backup_filename: str) -> Tuple[bool, Optional[str]]:
         try:
