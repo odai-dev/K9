@@ -174,6 +174,7 @@ class SecurityMiddleware:
             'img-src': [
                 "'self'",
                 'data:',  # For base64 images (QR codes)
+                'blob:',  # For image upload previews
                 'https:'  # Allow HTTPS images
             ],
             'connect-src': [
