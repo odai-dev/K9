@@ -338,9 +338,14 @@ with app.app_context():
                     
                     settings.last_backup_at = datetime.utcnow()
                     if success:
-                        settings.last_backup_status = 'success'
-                        settings.last_backup_message = f'Automated backup created: {filename}'
-                        print(f"✓ Automated backup created successfully: {filename}")
+                        if error:
+                            settings.last_backup_status = 'partial'
+                            settings.last_backup_message = f'Backup created locally but Google Drive upload failed: {error}'
+                            print(f"⚠ Automated backup created locally: {filename}, but Google Drive upload failed: {error}")
+                        else:
+                            settings.last_backup_status = 'success'
+                            settings.last_backup_message = f'Automated backup created: {filename}'
+                            print(f"✓ Automated backup created successfully: {filename}")
                         
                         if settings.retention_days > 0:
                             cleanup_count = backup_manager.cleanup_old_backups(settings.retention_days)
