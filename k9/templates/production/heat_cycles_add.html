@@ -36,9 +36,17 @@
                             <select class="form-select" id="dog_id" name="dog_id" required>
                                 <option value="">اختر الأنثى</option>
                                 {% for female in females %}
-                                    <option value="{{ female.id }}">{{ female.name }} - {{ female.code }}</option>
+                                    <option value="{{ female.id }}" data-cycle-count="{{ female.heat_cycles|length }}">{{ female.name }} - {{ female.code }}</option>
                                 {% endfor %}
                             </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="cycle_number" class="form-label">رقم الدورة <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="cycle_number" name="cycle_number" min="1" required>
+                            <small class="form-text text-muted">سيتم ملء الرقم تلقائياً بناءً على الدورات السابقة، يمكنك تعديله لتسجيل دورات سابقة</small>
                         </div>
                     </div>
 
@@ -91,4 +99,18 @@
         </div>
     </div>
 </div>
+
+<script>
+// Auto-populate cycle number when dog is selected
+document.getElementById('dog_id').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    if (selectedOption.value) {
+        const cycleCount = parseInt(selectedOption.getAttribute('data-cycle-count') || 0);
+        const nextCycleNumber = cycleCount + 1;
+        document.getElementById('cycle_number').value = nextCycleNumber;
+    } else {
+        document.getElementById('cycle_number').value = '';
+    }
+});
+</script>
 {% endblock %}
