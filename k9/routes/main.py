@@ -590,9 +590,8 @@ def heat_cycles_add():
             from k9.models.models import HeatCycle, HeatStatus
             heat_cycle = HeatCycle()
             heat_cycle.dog_id = request.form['dog_id']
-            # Auto-increment cycle number for this dog
-            existing_cycles = HeatCycle.query.filter_by(dog_id=request.form['dog_id']).count()
-            heat_cycle.cycle_number = existing_cycles + 1
+            # Use user-entered cycle number (allows recording of historical cycles)
+            heat_cycle.cycle_number = int(request.form['cycle_number'])
             heat_cycle.start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d').date()
             if request.form.get('end_date'):
                 heat_cycle.end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d').date()
