@@ -3,7 +3,7 @@ import json
 from datetime import date, timedelta
 from flask import url_for
 
-from k9.models.models import User, FeedingLog, BodyConditionScale, PrepMethod, BreedingCheckup
+from k9.models.models import User, FeedingLog, BodyConditionScale, PrepMethod
 
 
 @pytest.mark.unit

@@ -24,7 +24,7 @@ class TestVeterinaryReportsRoutes:
         assert 'text/html' in response.headers.get('Content-Type', '')
         
         # Check for unified report elements
-        assert b'range-selector' in response.data or b'تحديد النطاق' in response.data
+        assert b'range-selector' in response.data or 'تحديد النطاق'.encode('utf-8') in response.data
 
     def test_unified_veterinary_with_different_ranges(self, authenticated_client, test_project):
         """Test unified veterinary route with different range types"""
