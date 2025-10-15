@@ -21,7 +21,7 @@ class TestUnifiedBreedingReportsRoutes:
         assert 'text/html' in response.headers.get('Content-Type', '')
         
         # Check for unified report elements
-        assert b'range-selector' in response.data or b'تحديد النطاق' in response.data
+        assert b'range-selector' in response.data or 'تحديد النطاق'.encode('utf-8') in response.data
         
     def test_unified_checkup_route_renders(self, authenticated_client, test_project):
         """Test that unified checkup report route renders successfully"""

@@ -9,23 +9,25 @@ from app import app, db
 from k9.models.models import (
     User, Project, Dog, FeedingLog, SubPermission, UserRole, 
     PermissionType, BodyConditionScale, PrepMethod, DogGender,
-    VeterinaryVisit, VisitType, Employee, EmployeeRole, CaretakerDailyLog
+    VeterinaryVisit, VisitType, Employee, EmployeeRole, CaretakerDailyLog,
+    AuditLog
 )
 from werkzeug.security import generate_password_hash
 
 
 @pytest.fixture(scope='session')
 def app_instance():
-    """Create application instance for testing"""
-    app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-    app.config['WTF_CSRF_ENABLED'] = False
-    app.config['SECRET_KEY'] = 'test-secret-key'
+    """Create application instance for testing
     
-    with app.app_context():
-        db.create_all()
-        yield app
-        db.drop_all()
+    WARNING: This fixture needs refactoring to use app-factory pattern.
+    Currently DISABLED to prevent accidental data loss on production database.
+    
+    TODO: Implement create_app() factory function that accepts config
+    so tests can instantiate a fresh Flask app with SQLite in-memory database.
+    """
+    pytest.skip("Test configuration needs refactoring - currently unsafe. "
+                "Tests would run against production PostgreSQL database. "
+                "Need to implement app-factory pattern first.")
 
 
 @pytest.fixture(scope='function')
@@ -45,6 +47,7 @@ def db_session(app_instance):
         db.session.query(SubPermission).delete()
         db.session.query(Dog).delete()
         db.session.query(Project).delete()
+        db.session.query(AuditLog).delete()
         db.session.query(Employee).delete()
         db.session.query(User).delete()
         db.session.commit()
