@@ -66,8 +66,9 @@ class SecurityMiddleware:
         else:
             storage[ip] = []
         
-        # Check limit (60 requests per 5 minutes)
-        if len(storage[ip]) >= 60:
+        # Check limit (500 requests per 5 minutes - configurable via env)
+        rate_limit = int(os.environ.get('RATE_LIMIT_REQUESTS', '500'))
+        if len(storage[ip]) >= rate_limit:
             return False
         
         # Add current request
