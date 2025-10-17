@@ -1856,6 +1856,7 @@ class BreedingTrainingActivity(db.Model):
     # Session details
     subject = db.Column(Text, nullable=False)                    # موضوع التدريب
     duration = db.Column(db.Integer, nullable=False)             # minutes - مدة التدريب بالدقائق
+    duration_days = db.Column(db.Integer, nullable=True)         # days - مدة التدريب بالأيام (اختياري)
     success_rating = db.Column(db.Integer, nullable=False)       # 1-5 scale - تقييم النجاح
     
     # Environment and context
