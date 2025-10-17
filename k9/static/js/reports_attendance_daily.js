@@ -102,6 +102,14 @@ class DailyAttendanceReport {
         }, 3000);
     }
 
+    getCsrfToken() {
+        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (!token) {
+            console.warn('CSRF token not found in meta tag');
+        }
+        return token;
+    }
+
     async loadReport() {
         if (!this.hasValidFilters()) {
             this.showError('يرجى اختيار المشروع والتاريخ');
@@ -113,12 +121,19 @@ class DailyAttendanceReport {
         try {
             this.showLoading();
             
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            const csrfToken = this.getCsrfToken();
+            if (csrfToken) {
+                headers['X-CSRFToken'] = csrfToken;
+            }
+            
             const response = await fetch('/api/reports/attendance/run/daily-sheet', {
                 method: 'POST',
                 credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: headers,
                 body: JSON.stringify(filters)
             });
 
@@ -305,11 +320,19 @@ class DailyAttendanceReport {
         try {
             this.showLoading();
             
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            const csrfToken = this.getCsrfToken();
+            if (csrfToken) {
+                headers['X-CSRFToken'] = csrfToken;
+            }
+            
             const response = await fetch('/api/reports/attendance/export/pdf/daily-sheet', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                credentials: 'include',
+                headers: headers,
                 body: JSON.stringify(filters)
             });
 
