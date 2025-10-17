@@ -109,6 +109,16 @@ def create_training_activity():
         except (ValueError, TypeError):
             return jsonify({'error': 'مدة التدريب غير صالحة'}), 400
         
+        # Validate duration_days (optional, positive integer)
+        duration_days = None
+        if data.get('duration_days'):
+            try:
+                duration_days = int(data['duration_days'])
+                if duration_days <= 0:
+                    return jsonify({'error': 'مدة التدريب بالأيام يجب أن تكون أكبر من صفر'}), 400
+            except (ValueError, TypeError):
+                return jsonify({'error': 'مدة التدريب بالأيام غير صالحة'}), 400
+        
         # Validate success rating (1-5)
         try:
             success_rating = int(data['success_rating'])
@@ -128,6 +138,7 @@ def create_training_activity():
         training_activity.subtype_ball = subtype_ball
         training_activity.subject = data['subject']
         training_activity.duration = duration
+        training_activity.duration_days = duration_days
         training_activity.success_rating = success_rating
         training_activity.location = data.get('location')
         training_activity.weather_conditions = data.get('weather_conditions')
@@ -398,6 +409,7 @@ def get_training_activity(activity_id):
             'subtype_ball': activity.subtype_ball.value if activity.subtype_ball else None,
             'subject': activity.subject,
             'duration': activity.duration,
+            'duration_days': activity.duration_days,
             'success_rating': activity.success_rating,
             'location': activity.location,
             'weather_conditions': activity.weather_conditions,
@@ -446,6 +458,18 @@ def update_training_activity(activity_id):
                 activity.duration = duration
             except (ValueError, TypeError):
                 return jsonify({'error': 'مدة التدريب غير صالحة'}), 400
+        
+        if 'duration_days' in data:
+            if data['duration_days']:
+                try:
+                    duration_days = int(data['duration_days'])
+                    if duration_days <= 0:
+                        return jsonify({'error': 'مدة التدريب بالأيام يجب أن تكون أكبر من صفر'}), 400
+                    activity.duration_days = duration_days
+                except (ValueError, TypeError):
+                    return jsonify({'error': 'مدة التدريب بالأيام غير صالحة'}), 400
+            else:
+                activity.duration_days = None
         
         if 'success_rating' in data:
             try:

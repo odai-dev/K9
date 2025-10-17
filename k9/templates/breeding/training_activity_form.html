@@ -136,7 +136,7 @@
                         </div>
                         
                         <div class="row g-3 mb-4">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label for="duration" class="form-label required">المدة (بالدقائق)</label>
                                 <input type="number" class="form-control" id="duration" required min="1" max="480"
                                        value="{% if activity %}{{ activity.duration }}{% endif %}"
@@ -144,7 +144,15 @@
                                 <div class="invalid-feedback"></div>
                             </div>
                             
-                            <div class="col-md-6">
+                            <div class="col-md-4">
+                                <label for="duration_days" class="form-label">المدة (بالأيام)</label>
+                                <input type="number" class="form-control" id="duration_days" min="1"
+                                       value="{% if activity and activity.duration_days %}{{ activity.duration_days }}{% endif %}"
+                                       placeholder="المدة بالأيام (اختياري)">
+                                <div class="invalid-feedback"></div>
+                            </div>
+                            
+                            <div class="col-md-4">
                                 <label for="success_rating" class="form-label required">تقييم النجاح</label>
                                 <select class="form-select" id="success_rating" required>
                                     <option value="">اختر التقييم</option>
@@ -426,6 +434,7 @@ function submitForm(event) {
         category: document.getElementById('category').value,
         subject: document.getElementById('subject').value.trim(),
         duration: parseInt(document.getElementById('duration').value),
+        duration_days: document.getElementById('duration_days').value ? parseInt(document.getElementById('duration_days').value) : null,
         success_rating: parseInt(document.getElementById('success_rating').value),
         location: document.getElementById('location').value.trim() || null,
         weather_conditions: document.getElementById('weather_conditions').value.trim() || null,
