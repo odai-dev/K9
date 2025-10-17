@@ -1906,6 +1906,50 @@ def project_incident_add(project_id):
     
     return render_template('projects/incident_add.html', project=project)
 
+@main_bp.route('/projects/<project_id>/incidents/resolve')
+@login_required
+def project_resolve_incident(project_id):
+    try:
+        project = Project.query.get_or_404(project_id)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects'))
+    
+    # Check permissions
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects'))
+    
+    incident_id = request.args.get('incident_id')
+    if not incident_id:
+        flash('معرف الحادث مفقود', 'error')
+        return redirect(url_for('main.project_incidents', project_id=project_id))
+    
+    try:
+        incident = Incident.query.get_or_404(incident_id)
+        if incident.project_id != project.id:
+            flash('الحادث غير مرتبط بهذا المشروع', 'error')
+            return redirect(url_for('main.project_incidents', project_id=project_id))
+        
+        incident.resolved = True
+        incident.resolved_at = datetime.utcnow()
+        incident.resolved_by_id = current_user.id
+        db.session.commit()
+        
+        log_audit(current_user.id, AuditAction.UPDATE, 'Incident', incident.id, f'تم حل الحادث', None, {'resolved': True})
+        flash('تم تمييز الحادث كمحلول بنجاح', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء تحديث الحادث: {str(e)}', 'error')
+    
+    return redirect(url_for('main.project_incidents', project_id=project_id))
+
 # Enhanced Projects Section - Suspicions
 @main_bp.route('/projects/<project_id>/suspicions')
 @login_required
