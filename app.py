@@ -283,6 +283,17 @@ with app.app_context():
     except Exception as e:
         print(f"⚠ Warning: Could not register caretaker daily reports: {e}")
     
+    # Keep legacy UI blueprints for backward compatibility during transition
+    try:
+        from k9.routes.breeding_feeding_reports_routes import bp as breeding_feeding_reports_ui_bp
+        from k9.routes.breeding_checkup_reports_routes import bp as breeding_checkup_reports_ui_bp
+        app.register_blueprint(breeding_feeding_reports_ui_bp, url_prefix='/reports/breeding/feeding')
+        app.register_blueprint(breeding_checkup_reports_ui_bp, url_prefix='/reports/breeding/checkup')
+        print("✓ Legacy breeding reports UI registered successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Could not register legacy breeding reports UI: {e}")
+    
     # Keep legacy API blueprints for backward compatibility during transition
     try:
         from k9.api.breeding_feeding_reports_api import bp as breeding_feeding_reports_api_bp
