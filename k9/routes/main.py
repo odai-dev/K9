@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, current_app, abort
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, current_app, abort, make_response
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app import db
@@ -3586,7 +3586,11 @@ def attendance_shifts():
         return redirect(url_for('main.dashboard'))
     
     shifts = Shift.query.order_by(Shift.start_time).all()
-    return render_template('attendance/shifts.html', shifts=shifts)
+    response = make_response(render_template('attendance/shifts.html', shifts=shifts))
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 @main_bp.route('/attendance/shifts/add', methods=['GET', 'POST'])
 @login_required
