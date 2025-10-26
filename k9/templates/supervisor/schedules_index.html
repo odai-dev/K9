@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة الجداول اليومية{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-calendar-alt me-2"></i>
+                إدارة الجداول اليومية
+            </h1>
+            <a href="{{ url_for('supervisor.schedule_create') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>
+                إنشاء جدول جديد
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <form method="GET" action="{{ url_for('supervisor.schedules_index') }}" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">من تاريخ</label>
+                        <input type="date" name="date_from" class="form-control" value="{{ request.args.get('date_from', '') }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">إلى تاريخ</label>
+                        <input type="date" name="date_to" class="form-control" value="{{ request.args.get('date_to', '') }}">
+                    </div>
+                    {% if current_user.role.value == 'GENERAL_ADMIN' and projects %}
+                    <div class="col-md-3">
+                        <label class="form-label">المشروع</label>
+                        <select name="project_id" class="form-select">
+                            <option value="">جميع المشاريع</option>
+                            {% for project in projects %}
+                            <option value="{{ project.id }}" {% if request.args.get('project_id') == project.id|string %}selected{% endif %}>
+                                {{ project.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                    <div class="col-md-3">
+                        <label class="form-label">الحالة</label>
+                        <select name="status" class="form-select">
+                            <option value="">الكل</option>
+                            <option value="active" {% if request.args.get('status') == 'active' %}selected{% endif %}>نشط</option>
+                            <option value="locked" {% if request.args.get('status') == 'locked' %}selected{% endif %}>مقفل</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i>
+                            بحث
+                        </button>
+                        <a href="{{ url_for('supervisor.schedules_index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-redo me-2"></i>
+                            إعادة تعيين
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Schedules List -->
+<div class="row">
+    <div class="col-12">
+        {% if schedules %}
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>التاريخ</th>
+                                    <th>المشروع</th>
+                                    <th>عدد السائسين</th>
+                                    <th>الحالة</th>
+                                    <th>تاريخ القفل</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for schedule in schedules %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ schedule.date.strftime('%Y-%m-%d') }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ schedule.date.strftime('%A') }}</small>
+                                    </td>
+                                    <td>
+                                        {% if schedule.project %}
+                                            {{ schedule.project.name }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ schedule.items|length }} سائس</span>
+                                    </td>
+                                    <td>
+                                        {% if schedule.is_locked %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-lock me-1"></i>
+                                                مقفل
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-unlock me-1"></i>
+                                                نشط
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if schedule.locked_at %}
+                                            {{ schedule.locked_at.strftime('%Y-%m-%d %H:%M') }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('supervisor.schedule_view', schedule_id=schedule.id) }}" 
+                                               class="btn btn-outline-primary"
+                                               title="عرض التفاصيل">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if not schedule.is_locked %}
+                                            <button class="btn btn-outline-warning" 
+                                                    onclick="lockSchedule('{{ schedule.id }}')"
+                                                    title="قفل الجدول">
+                                                <i class="fas fa-lock"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger" 
+                                                    onclick="deleteSchedule('{{ schedule.id }}')"
+                                                    title="حذف">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% else %}
+                                            <button class="btn btn-outline-info" 
+                                                    onclick="unlockSchedule('{{ schedule.id }}')"
+                                                    title="إلغاء القفل">
+                                                <i class="fas fa-unlock"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+                        <a class="page-link" href="{{ url_for('supervisor.schedules_index', page=pagination.prev_num) if pagination.has_prev else '#' }}">
+                            السابق
+                        </a>
+                    </li>
+                    {% for page_num in pagination.iter_pages() %}
+                        {% if page_num %}
+                            <li class="page-item {{ 'active' if page_num == pagination.page }}">
+                                <a class="page-link" href="{{ url_for('supervisor.schedules_index', page=page_num) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+                        <a class="page-link" href="{{ url_for('supervisor.schedules_index', page=pagination.next_num) if pagination.has_next else '#' }}">
+                            التالي
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+        {% else %}
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">لا توجد جداول يومية</h5>
+                    <p class="text-muted">لم يتم إنشاء أي جدول يومي بعد</p>
+                    <a href="{{ url_for('supervisor.schedule_create') }}" class="btn btn-primary mt-3">
+                        <i class="fas fa-plus me-2"></i>
+                        إنشاء الجدول الأول
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+function lockSchedule(scheduleId) {
+    if (!confirm('هل أنت متأكد من قفل هذا الجدول؟ لن يتمكن السائسون من تقديم تقارير بعد القفل.')) {
+        return;
+    }
+    
+    fetch(`/supervisor/schedules/${scheduleId}/lock`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('خطأ: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('حدث خطأ أثناء قفل الجدول');
+    });
+}
+
+function unlockSchedule(scheduleId) {
+    if (!confirm('هل أنت متأكد من إلغاء قفل هذا الجدول؟')) {
+        return;
+    }
+    
+    fetch(`/supervisor/schedules/${scheduleId}/unlock`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('خطأ: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('حدث خطأ أثناء إلغاء قفل الجدول');
+    });
+}
+
+function deleteSchedule(scheduleId) {
+    if (!confirm('هل أنت متأكد من حذف هذا الجدول؟ سيتم حذف جميع البيانات المرتبطة به.')) {
+        return;
+    }
+    
+    fetch(`/supervisor/schedules/${scheduleId}/delete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('خطأ: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('حدث خطأ أثناء حذف الجدول');
+    });
+}
+</script>
+{% endblock %}
