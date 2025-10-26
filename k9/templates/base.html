@@ -190,6 +190,19 @@
                                     <i class="fas fa-file-alt me-2"></i>تقارير السائسين
                                 </a>
                             </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('supervisor.schedules_index') }}">
+                                    <i class="fas fa-calendar-alt me-2"></i>الجداول اليومية
+                                </a>
+                            </li>
+                            {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('admin.backup_management') }}">
+                                    <i class="fas fa-database me-2"></i>النسخ الاحتياطي
+                                </a>
+                            </li>
+                            {% endif %}
                         </ul>
                     </li>
                     {% endif %}
@@ -269,6 +282,9 @@
                             <li><a class="dropdown-item" href="{{ url_for('admin.admin_profile') }}"><i class="fas fa-user-cog me-2"></i>ملف الحساب الشخصي</a></li>
                             <li><hr class="dropdown-divider"></li>
                             {% endif %}
+                            <li><a class="dropdown-item" href="{{ url_for('mfa.change_password') }}"><i class="fas fa-key me-2"></i>تغيير كلمة المرور</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('mfa.setup') }}"><i class="fas fa-shield-alt me-2"></i>المصادقة الثنائية (2FA)</a></li>
+                            <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>تسجيل الخروج</a></li>
                         </ul>
                     </li>
@@ -287,6 +303,9 @@
                             <li><a class="dropdown-item" href="{{ url_for('admin.admin_profile') }}"><i class="fas fa-user-cog me-2"></i>ملف الحساب الشخصي</a></li>
                             <li><hr class="dropdown-divider"></li>
                             {% endif %}
+                            <li><a class="dropdown-item" href="{{ url_for('mfa.change_password') }}"><i class="fas fa-key me-2"></i>تغيير كلمة المرور</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('mfa.setup') }}"><i class="fas fa-shield-alt me-2"></i>المصادقة الثنائية (2FA)</a></li>
+                            <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>تسجيل الخروج</a></li>
                         </ul>
                     </li>

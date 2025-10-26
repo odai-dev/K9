@@ -319,6 +319,36 @@
                 </div>
             </a>
         </div>
+        
+        <!-- Backup Management -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <a href="{{ url_for('admin.backup_management') }}" class="text-decoration-none">
+                <div class="admin-nav-card admin-card" style="border-color: #38b2ac;">
+                    <div class="admin-nav-icon" style="color: #38b2ac;">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="admin-nav-title">النسخ الاحتياطي</div>
+                    <div class="admin-nav-desc">
+                        إدارة النسخ الاحتياطية للبيانات والربط مع Google Drive
+                    </div>
+                </div>
+            </a>
+        </div>
+        
+        <!-- Daily Schedule Management -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <a href="{{ url_for('supervisor.schedules_index') }}" class="text-decoration-none">
+                <div class="admin-nav-card admin-card" style="border-color: #dd6b20;">
+                    <div class="admin-nav-icon" style="color: #dd6b20;">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="admin-nav-title">الجداول اليومية</div>
+                    <div class="admin-nav-desc">
+                        إنشاء وإدارة جداول العمل اليومية للسائسين
+                    </div>
+                </div>
+            </a>
+        </div>
     </div>
 
     <!-- System Info and Recent Activities -->
