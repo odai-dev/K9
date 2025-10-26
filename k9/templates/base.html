@@ -134,8 +134,14 @@
                             <i class="fas fa-project-diagram me-1"></i>المشاريع
                         </a>
                         <ul class="dropdown-menu shadow">
-                            <li><a class="dropdown-item" href="{{ url_for('main.projects') }}"><i class="fas fa-folder me-2"></i>المشاريع</a></li>
+                            <li><h6 class="dropdown-header">إدارة المشاريع</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.projects') }}"><i class="fas fa-folder me-2"></i>قائمة المشاريع</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('main.project_add') }}"><i class="fas fa-plus-circle me-2"></i>إضافة مشروع</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header text-muted">عمليات المشروع</h6></li>
+                            <li><small class="dropdown-item text-muted" style="font-size: 0.85rem; cursor: default;">
+                                <i class="fas fa-info-circle me-1"></i>اختر مشروعاً لإدارة الحوادث والتقييمات
+                            </small></li>
                         </ul>
                     </li>
                     {% endif %}
@@ -208,10 +214,22 @@
                     {% endif %}
                     
                     {% if current_user.role.value == 'GENERAL_ADMIN' %}
-                    <li class="nav-item">
-                        <a class="nav-link px-3 py-2 rounded-pill" href="{{ url_for('main.unified_attendance') }}">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="attendanceDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-calendar-check me-1"></i>الحضور
                         </a>
+                        <ul class="dropdown-menu shadow">
+                            <li><h6 class="dropdown-header">إدارة الحضور</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.unified_attendance') }}"><i class="fas fa-tachometer-alt me-2"></i>لوحة الحضور</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.attendance_record') }}"><i class="fas fa-edit me-2"></i>تسجيل الحضور</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">إدارة الفترات</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.attendance_shifts') }}"><i class="fas fa-clock me-2"></i>إدارة الفترات</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.attendance_shifts_add') }}"><i class="fas fa-plus-circle me-2"></i>إضافة فترة</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">التقارير</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.attendance_reports') }}"><i class="fas fa-file-alt me-2"></i>تقارير الحضور</a></li>
+                        </ul>
                     </li>
                     {% endif %}
                     
@@ -221,21 +239,25 @@
                             <i class="fas fa-chart-bar me-1"></i>التقارير
                         </a>
                         <ul class="dropdown-menu shadow">
-                            <li><h6 class="dropdown-header">تقارير التدريب</h6></li>
-                            <li><a class="dropdown-item" href="/reports/training/trainer-daily"><i class="fas fa-dumbbell me-2"></i>التقرير اليومي للمدرب</a></li>
+                            <li><a class="dropdown-item fw-bold" href="{{ url_for('main.reports_hub') }}"><i class="fas fa-chart-line me-2 text-primary"></i>مركز التقارير</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header">تقارير الحضور</h6></li>
                             <li><a class="dropdown-item" href="{{ url_for('reports_attendance_ui.daily_sheet') }}"><i class="fas fa-calendar-check me-2"></i>كشف التحضير اليومي</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('reports_attendance_pm_daily_ui.pm_daily') }}"><i class="fas fa-file-alt me-2"></i>التقرير اليومي لمسؤول المشروع</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><h6 class="dropdown-header">تقارير التربية والتغذية</h6></li>
+                            <li><h6 class="dropdown-header">تقارير التدريب</h6></li>
+                            <li><a class="dropdown-item" href="/reports/training/trainer-daily"><i class="fas fa-dumbbell me-2"></i>التقرير اليومي للمدرب</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">تقارير التربية والرعاية</h6></li>
                             <li><a class="dropdown-item" href="{{ url_for('unified_feeding_reports_ui.feeding') }}"><i class="fas fa-bone me-2"></i>تقرير التغذية الموحد</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('unified_checkup_reports_ui.checkup') }}"><i class="fas fa-stethoscope me-2"></i>تقرير الفحص الظاهري الموحد</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('caretaker_daily_reports_ui.caretaker_daily') }}"><i class="fas fa-broom me-2"></i>تقرير الرعاية اليومية</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">تقارير بيطرية</h6></li>
                             <li><a class="dropdown-item" href="{{ url_for('veterinary_reports_ui.veterinary') }}"><i class="fas fa-user-md me-2"></i>التقرير البيطري الموحد</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><h6 class="dropdown-header">تقارير أخرى</h6></li>
-                            <li><a class="dropdown-item" href="{{ url_for('main.reports_index') }}"><i class="fas fa-chart-line me-2"></i>التقارير العامة</a></li>
+                            <li><h6 class="dropdown-header">تقارير عامة</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.reports_index') }}"><i class="fas fa-chart-pie me-2"></i>التقارير العامة</a></li>
                         </ul>
                     </li>
                     {% endif %}
