@@ -306,6 +306,19 @@ with app.app_context():
     except Exception as e:
         print(f"⚠ Warning: Could not register legacy breeding reports APIs: {e}")
     
+    # Register Handler Daily System blueprints
+    try:
+        from k9.routes.handler_routes import handler_bp
+        from k9.routes.schedule_routes import schedule_bp
+        from k9.routes.user_management_routes import user_mgmt_bp
+        app.register_blueprint(handler_bp)
+        app.register_blueprint(schedule_bp)
+        app.register_blueprint(user_mgmt_bp)
+        print("✓ Handler daily system registered successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Could not register handler daily system: {e}")
+    
     # Initialize Security Middleware
     try:
         from k9.utils.security_middleware import SecurityMiddleware
@@ -430,6 +443,34 @@ with app.app_context():
         print("✓ Backup scheduler started")
         
         reschedule_backup_jobs()
+        
+        # Add daily schedule auto-lock job
+        try:
+            from k9.utils.schedule_utils import auto_lock_yesterday_schedules, cleanup_old_notifications
+            from config import Config
+            
+            # Auto-lock schedules at the end of each day
+            backup_scheduler.add_job(
+                auto_lock_yesterday_schedules,
+                trigger=CronTrigger(hour=Config.SCHEDULE_AUTO_LOCK_HOUR, minute=Config.SCHEDULE_AUTO_LOCK_MINUTE),
+                id='auto_lock_schedules',
+                name='Auto Lock Yesterday Schedules',
+                replace_existing=True
+            )
+            print(f"✓ Auto-lock schedules job scheduled at {Config.SCHEDULE_AUTO_LOCK_HOUR}:{Config.SCHEDULE_AUTO_LOCK_MINUTE:02d}")
+            
+            # Cleanup old notifications weekly
+            backup_scheduler.add_job(
+                cleanup_old_notifications,
+                trigger=CronTrigger(day_of_week='mon', hour=2, minute=0),
+                id='cleanup_notifications',
+                name='Cleanup Old Notifications',
+                replace_existing=True
+            )
+            print("✓ Notification cleanup job scheduled (weekly on Monday 2:00 AM)")
+            
+        except Exception as e:
+            print(f"⚠ Warning: Could not schedule auto-lock job: {e}")
         
         app.reschedule_backup_jobs = reschedule_backup_jobs  # type: ignore
         

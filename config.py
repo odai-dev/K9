@@ -52,6 +52,16 @@ class Config:
     # Languages
     LANGUAGES = ['ar', 'en']
     
+    # Handler Report Settings
+    HANDLER_REPORT_GRACE_MINUTES = int(os.environ.get('HANDLER_REPORT_GRACE_MINUTES', 240))  # 4 hours default
+    
+    # Schedule Auto-Lock Settings
+    SCHEDULE_AUTO_LOCK_HOUR = int(os.environ.get('SCHEDULE_AUTO_LOCK_HOUR', 23))  # 11 PM default
+    SCHEDULE_AUTO_LOCK_MINUTE = int(os.environ.get('SCHEDULE_AUTO_LOCK_MINUTE', 59))  # 11:59 PM default
+    
+    # Notification Settings
+    NOTIFICATION_POLL_INTERVAL = int(os.environ.get('NOTIFICATION_POLL_INTERVAL', 30))  # seconds
+    
 class DevelopmentConfig(Config):
     DEBUG = True
 
