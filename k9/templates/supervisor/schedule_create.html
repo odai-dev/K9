@@ -121,25 +121,35 @@ document.getElementById('projectSelect')?.addEventListener('change', function() 
     const projectId = this.value;
     if (!projectId) return;
     
-    // Load handlers
-    fetch(`/supervisor/api/handlers-by-project/${projectId}`)
+    // Load both handlers and dogs in parallel
+    const handlersPromise = fetch(`/supervisor/api/handlers-by-project/${projectId}`)
         .then(response => response.json())
         .then(data => {
             handlers = data.handlers;
-            updateAllHandlerSelects();
+            console.log('Loaded handlers:', handlers.length);
+        })
+        .catch(error => {
+            console.error('Error loading handlers:', error);
+            handlers = [];
         });
     
-    // Load dogs
-    fetch(`/supervisor/api/dogs-by-project/${projectId}`)
+    const dogsPromise = fetch(`/supervisor/api/dogs-by-project/${projectId}`)
         .then(response => response.json())
         .then(data => {
             dogs = data.dogs;
-            updateAllDogSelects();
-            
-            // Clear container and add first row
-            document.getElementById('scheduleItemsContainer').innerHTML = '';
-            addScheduleRow();
+            console.log('Loaded dogs:', dogs.length);
+        })
+        .catch(error => {
+            console.error('Error loading dogs:', error);
+            dogs = [];
         });
+    
+    // Wait for both to complete, then create rows
+    Promise.all([handlersPromise, dogsPromise]).then(() => {
+        // Clear container and add first row
+        document.getElementById('scheduleItemsContainer').innerHTML = '';
+        addScheduleRow();
+    });
 });
 
 function addScheduleRow() {
