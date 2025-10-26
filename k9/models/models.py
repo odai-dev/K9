@@ -27,6 +27,7 @@ def default_uuid():
 class UserRole(Enum):
     GENERAL_ADMIN = "GENERAL_ADMIN"
     PROJECT_MANAGER = "PROJECT_MANAGER"
+    HANDLER = "HANDLER"
 
 class EmployeeRole(Enum):
     HANDLER = "سائس"
@@ -266,8 +267,17 @@ class User(UserMixin, db.Model):
     # For project managers - which sections they can access
     allowed_sections = db.Column(JSON, default=list)
     
+    # Handler-specific fields
+    phone = db.Column(db.String(20))  # رقم الهاتف للسائس
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=True)  # المشروع المخصص للسائس
+    dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=True)  # الكلب المخصص للسائس
+    
     # Relationship to project manager permissions
     pm_permissions = db.relationship('ProjectManagerPermission', backref='user', lazy='dynamic', cascade='all, delete-orphan')
+    
+    # Relationships for handler
+    assigned_project = db.relationship('Project', backref='handler_users', foreign_keys=[project_id])
+    assigned_dog = db.relationship('Dog', backref='handler_users', foreign_keys=[dog_id])
     
     def __repr__(self):
         return f'<User {self.username}>'
@@ -301,7 +311,7 @@ class Dog(db.Model):
     
     # Relationships
     assigned_to_user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'))
-    assigned_to_user = db.relationship('User', backref='assigned_dogs')
+    assigned_to_user = db.relationship('User', backref='assigned_dogs', foreign_keys=[assigned_to_user_id])
     
     # Parent relationships for breeding
     father_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'))

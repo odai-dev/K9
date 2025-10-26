@@ -112,6 +112,7 @@ with app.app_context():
     # Make sure to import the models here or their tables won't be created
     import k9.models.models  # noqa: F401
     import k9.models.models_attendance_reporting  # noqa: F401
+    import k9.models.models_handler_daily  # noqa: F401
 
     # Always skip automatic table creation, use migrations instead
     # db.create_all() - disabled for proper migration handling
