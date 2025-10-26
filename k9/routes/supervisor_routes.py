@@ -30,8 +30,8 @@ def schedules_index():
     project_id = request.args.get('project_id')
     status_filter = request.args.get('status')
     
-    # Build query with eager loading of items
-    query = DailySchedule.query.options(joinedload(DailySchedule.items))
+    # Build query
+    query = DailySchedule.query
     
     # Filter by project if supervisor has project
     if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
