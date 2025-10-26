@@ -311,10 +311,13 @@ def notifications():
         str(current_user.id), unread_only=True
     ))
     
+    total_count = len(all_notifications)
+    
     return render_template('handler/notifications.html',
                          page_title='الإشعارات',
                          notifications=all_notifications,
-                         unread_count=unread_count)
+                         unread_count=unread_count,
+                         total_count=total_count)
 
 
 @handler_bp.route('/notifications/<notification_id>/read', methods=['POST'])
