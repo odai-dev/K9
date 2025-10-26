@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة تحكم السائس{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-id-badge me-2"></i>
+                لوحة تحكم السائس
+            </h1>
+            <div>
+                <a href="{{ url_for('handler.notifications') }}" class="btn btn-outline-primary position-relative">
+                    <i class="fas fa-bell me-1"></i>
+                    الإشعارات
+                    {% if unread_count > 0 %}
+                    <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-danger">
+                        {{ unread_count if unread_count < 100 else '99+' }}
+                    </span>
+                    {% endif %}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Welcome Card -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm bg-gradient-primary text-white">
+            <div class="card-body p-4">
+                <h4 class="mb-3">
+                    <i class="fas fa-hand-sparkles me-2"></i>
+                    مرحباً، {{ current_user.full_name }}
+                </h4>
+                <p class="mb-2"><i class="fas fa-project-diagram me-2"></i>المشروع: {{ project.name if project else 'غير محدد' }}</p>
+                <p class="mb-2"><i class="fas fa-dog me-2"></i>الكلب المخصص: {{ assigned_dog.name if assigned_dog else 'غير محدد' }}</p>
+                <p class="mb-0"><i class="fas fa-calendar-day me-2"></i>التاريخ: {{ today_date }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row mb-4">
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stats-card bg-primary">
+            <div class="stats-content">
+                <div class="stats-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="stats-info">
+                    <h3>{{ stats.total_reports }}</h3>
+                    <p>إجمالي التقارير</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stats-card bg-success">
+            <div class="stats-content">
+                <div class="stats-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stats-info">
+                    <h3>{{ stats.approved_reports }}</h3>
+                    <p>التقارير المعتمدة</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stats-card bg-warning">
+            <div class="stats-content">
+                <div class="stats-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stats-info">
+                    <h3>{{ stats.pending_reports }}</h3>
+                    <p>قيد المراجعة</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stats-card bg-info">
+            <div class="stats-content">
+                <div class="stats-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div class="stats-info">
+                    <h3>{{ stats.this_month_reports }}</h3>
+                    <p>تقارير هذا الشهر</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's Schedule & Quick Actions -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-day me-2"></i>
+                    جدول اليوم
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if today_schedule %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>الوردية</th>
+                                    <th>الكلب</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in today_schedule %}
+                                <tr>
+                                    <td>
+                                        {% if item.shift %}
+                                            <i class="fas fa-clock me-1"></i>
+                                            {{ item.shift.name }}
+                                            <small class="text-muted d-block">
+                                                {{ item.shift.start_time.strftime('%H:%M') }} - {{ item.shift.end_time.strftime('%H:%M') }}
+                                            </small>
+                                        {% else %}
+                                            <span class="text-muted">غير محدد</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.dog %}
+                                            <i class="fas fa-dog me-1"></i>
+                                            {{ item.dog.name }}
+                                            <small class="text-muted d-block">{{ item.dog.code }}</small>
+                                        {% else %}
+                                            <span class="text-muted">غير محدد</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.status.value == 'PLANNED' %}
+                                            <span class="badge bg-secondary">مخطط</span>
+                                        {% elif item.status.value == 'PRESENT' %}
+                                            <span class="badge bg-success">حاضر</span>
+                                        {% elif item.status.value == 'ABSENT' %}
+                                            <span class="badge bg-danger">غائب</span>
+                                        {% elif item.status.value == 'REPLACED' %}
+                                            <span class="badge bg-warning">تم الاستبدال</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if not item.report %}
+                                            <a href="{{ url_for('handler.new_report', schedule_item_id=item.id) }}" 
+                                               class="btn btn-sm btn-primary">
+                                                <i class="fas fa-plus me-1"></i>
+                                                إنشاء تقرير
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ url_for('handler.view_report', id=item.report.id) }}" 
+                                               class="btn btn-sm btn-success">
+                                                <i class="fas fa-eye me-1"></i>
+                                                عرض التقرير
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">لا يوجد جدول لليوم</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white border-0 pt-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    إجراءات سريعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('handler.new_report') }}" class="btn btn-primary">
+                        <i class="fas fa-file-alt me-2"></i>
+                        إنشاء تقرير جديد
+                    </a>
+                    <a href="{{ url_for('handler.my_reports') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-list me-2"></i>
+                        تقاريري
+                    </a>
+                    <a href="{{ url_for('handler.notifications') }}" class="btn btn-outline-info">
+                        <i class="fas fa-bell me-2"></i>
+                        الإشعارات
+                        {% if unread_count > 0 %}
+                        <span class="badge bg-danger">{{ unread_count }}</span>
+                        {% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Notifications -->
+        {% if recent_notifications %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-bell me-2"></i>
+                    آخر الإشعارات
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for notif in recent_notifications[:3] %}
+                    <a href="{{ url_for('handler.notifications') }}" 
+                       class="list-group-item list-group-item-action {{ 'bg-light' if not notif.read else '' }}">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ notif.title }}</h6>
+                            <small class="text-muted">{{ notif.created_at.strftime('%H:%M') }}</small>
+                        </div>
+                        <p class="mb-1 small">{{ notif.message }}</p>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% if recent_notifications|length > 3 %}
+                <div class="card-footer bg-white text-center">
+                    <a href="{{ url_for('handler.notifications') }}" class="text-primary small">
+                        عرض جميع الإشعارات
+                        <i class="fas fa-arrow-left me-1"></i>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Reports -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>
+                        آخر التقارير
+                    </h5>
+                    <a href="{{ url_for('handler.my_reports') }}" class="btn btn-sm btn-outline-primary">
+                        عرض الكل
+                        <i class="fas fa-arrow-left me-1"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if recent_reports %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>التاريخ</th>
+                                    <th>الكلب</th>
+                                    <th>الوردية</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report in recent_reports %}
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ report.date.strftime('%Y-%m-%d') }}
+                                    </td>
+                                    <td>
+                                        <i class="fas fa-dog me-1"></i>
+                                        {{ report.dog.name if report.dog else 'غير محدد' }}
+                                    </td>
+                                    <td>
+                                        {% if report.shift %}
+                                            {{ report.shift.name }}
+                                        {% else %}
+                                            <span class="text-muted">غير محدد</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if report.status.value == 'DRAFT' %}
+                                            <span class="badge bg-secondary">مسودة</span>
+                                        {% elif report.status.value == 'SUBMITTED' %}
+                                            <span class="badge bg-warning">قيد المراجعة</span>
+                                        {% elif report.status.value == 'APPROVED' %}
+                                            <span class="badge bg-success">معتمد</span>
+                                        {% elif report.status.value == 'REJECTED' %}
+                                            <span class="badge bg-danger">مرفوض</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('handler.view_report', id=report.id) }}" 
+                                               class="btn btn-outline-primary" title="عرض">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if report.status.value == 'DRAFT' %}
+                                            <a href="{{ url_for('handler.edit_report', id=report.id) }}" 
+                                               class="btn btn-outline-warning" title="تعديل">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">لا توجد تقارير سابقة</p>
+                        <a href="{{ url_for('handler.new_report') }}" class="btn btn-primary mt-2">
+                            <i class="fas fa-plus me-1"></i>
+                            إنشاء أول تقرير
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-refresh notifications count every 30 seconds
+setInterval(function() {
+    fetch('{{ url_for("handler.get_unread_count") }}')
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.querySelector('.badge.bg-danger');
+            if (data.count > 0) {
+                if (badge) {
+                    badge.textContent = data.count < 100 ? data.count : '99+';
+                }
+            } else {
+                if (badge) {
+                    badge.remove();
+                }
+            }
+        });
+}, 30000);
+</script>
+{% endblock %}
