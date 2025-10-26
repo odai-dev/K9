@@ -155,7 +155,9 @@ with app.app_context():
         if current_user.is_authenticated and current_user.role == UserRole.HANDLER:
             try:
                 from k9.services.handler_service import NotificationService
-                data['handler_unread_count'] = NotificationService.get_unread_count(str(current_user.id))
+                data['handler_unread_count'] = len(NotificationService.get_user_notifications(
+                    str(current_user.id), unread_only=True
+                ))
             except Exception:
                 pass
         
