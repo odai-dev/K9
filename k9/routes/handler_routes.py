@@ -14,7 +14,7 @@ from k9.models.models_handler_daily import (
     TrainingType, BehaviorType, IncidentType, StoolColor, StoolShape,
     HealthCheckStatus
 )
-from k9.models.models import UserRole, Dog
+from k9.models.models import UserRole, Dog, User
 from app import db
 from functools import wraps
 
@@ -301,7 +301,27 @@ def new_report():
     # Get available dogs (project dogs or all if no project)
     available_dogs = []
     if current_user.project_id:
-        available_dogs = Dog.query.filter_by(project_id=current_user.project_id, current_status='ACTIVE').all()
+        # Dogs are assigned to handlers, not directly to projects
+        # Get all handlers in this project
+        handlers_in_project = User.query.filter_by(
+            role=UserRole.HANDLER,
+            project_id=current_user.project_id
+        ).all()
+        
+        # Get dogs assigned to these handlers
+        handler_ids = [h.id for h in handlers_in_project]
+        if handler_ids:
+            available_dogs = Dog.query.filter(
+                Dog.assigned_to_user_id.in_(handler_ids),
+                Dog.current_status == 'ACTIVE'
+            ).all()
+        
+        # Also include unassigned dogs
+        unassigned_dogs = Dog.query.filter(
+            Dog.assigned_to_user_id.is_(None),
+            Dog.current_status == 'ACTIVE'
+        ).all()
+        available_dogs = available_dogs + unassigned_dogs
     else:
         available_dogs = Dog.query.filter_by(current_status='ACTIVE').all()
     

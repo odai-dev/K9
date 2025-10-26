@@ -304,10 +304,27 @@ def get_handlers_by_project(project_id):
 @supervisor_required
 def get_dogs_by_project(project_id):
     """API: الحصول على الكلاب حسب المشروع"""
-    dogs = Dog.query.filter_by(
-        project_id=project_id,
-        current_status='ACTIVE'
+    # Dogs are assigned to handlers, and handlers are assigned to projects
+    # Get all handlers in this project
+    handlers_in_project = User.query.filter_by(
+        role=UserRole.HANDLER,
+        project_id=project_id
     ).all()
+    
+    # Get dogs assigned to these handlers
+    handler_ids = [h.id for h in handlers_in_project]
+    dogs = Dog.query.filter(
+        Dog.assigned_to_user_id.in_(handler_ids),
+        Dog.current_status == 'ACTIVE'
+    ).all() if handler_ids else []
+    
+    # Also include dogs not assigned to anyone (available for assignment)
+    unassigned_dogs = Dog.query.filter(
+        Dog.assigned_to_user_id.is_(None),
+        Dog.current_status == 'ACTIVE'
+    ).all()
+    
+    all_dogs = dogs + unassigned_dogs
     
     return jsonify({
         'dogs': [
@@ -316,7 +333,7 @@ def get_dogs_by_project(project_id):
                 'name': d.name,
                 'code': d.code
             }
-            for d in dogs
+            for d in all_dogs
         ]
     })
 
