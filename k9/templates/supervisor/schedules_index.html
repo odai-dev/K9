@@ -103,7 +103,7 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <span class="badge bg-info">{{ schedule.items|length }} سائس</span>
+                                        <span class="badge bg-info">{{ schedule.items.count() }} سائس</span>
                                     </td>
                                     <td>
                                         {% if schedule.is_locked %}
