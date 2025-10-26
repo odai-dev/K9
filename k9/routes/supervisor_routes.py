@@ -92,9 +92,9 @@ def schedule_create():
             date=schedule_date,
             project_id=project_id,
             notes=notes,
-            is_locked=False,
             created_by_user_id=current_user.id
         )
+        # status defaults to ScheduleStatus.OPEN automatically
         db.session.add(schedule)
         db.session.flush()
         
