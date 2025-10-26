@@ -64,19 +64,19 @@
                         <div class="flex-grow-1">
                             <div class="d-flex align-items-center mb-2">
                                 <!-- Icon based on notification type -->
-                                {% if notif.notification_type.value == 'SCHEDULE_CREATED' %}
+                                {% if notif.type.value == 'SCHEDULE_CREATED' %}
                                     <i class="fas fa-calendar-plus fa-lg me-3 text-primary"></i>
-                                {% elif notif.notification_type.value == 'SCHEDULE_UPDATED' %}
+                                {% elif notif.type.value == 'SCHEDULE_UPDATED' %}
                                     <i class="fas fa-calendar-check fa-lg me-3 text-info"></i>
-                                {% elif notif.notification_type.value == 'EMPLOYEE_REPLACED' %}
+                                {% elif notif.type.value == 'EMPLOYEE_REPLACED' %}
                                     <i class="fas fa-exchange-alt fa-lg me-3 text-warning"></i>
-                                {% elif notif.notification_type.value == 'REPORT_APPROVED' %}
+                                {% elif notif.type.value == 'REPORT_APPROVED' %}
                                     <i class="fas fa-check-circle fa-lg me-3 text-success"></i>
-                                {% elif notif.notification_type.value == 'REPORT_REJECTED' %}
+                                {% elif notif.type.value == 'REPORT_REJECTED' %}
                                     <i class="fas fa-times-circle fa-lg me-3 text-danger"></i>
-                                {% elif notif.notification_type.value == 'REPORT_DUE_SOON' %}
+                                {% elif notif.type.value == 'REPORT_DUE_SOON' %}
                                     <i class="fas fa-clock fa-lg me-3 text-warning"></i>
-                                {% elif notif.notification_type.value == 'REPORT_OVERDUE' %}
+                                {% elif notif.type.value == 'REPORT_OVERDUE' %}
                                     <i class="fas fa-exclamation-triangle fa-lg me-3 text-danger"></i>
                                 {% else %}
                                     <i class="fas fa-bell fa-lg me-3 text-secondary"></i>
