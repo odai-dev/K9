@@ -92,8 +92,13 @@ def create():
         if error:
             flash(error, 'danger')
         else:
-            flash(f'تم إنشاء المستخدم بنجاح. اسم المستخدم: {username}, كلمة المرور: {password}', 'success')
-            return redirect(url_for('user_management.index'))
+            # Show password on success page instead of flash message
+            return render_template('admin/user_management/create_success.html',
+                                 page_title='تم إنشاء المستخدم بنجاح',
+                                 username=username,
+                                 password=password,
+                                 full_name=full_name,
+                                 user_role=role)
     
     # GET request
     projects = Project.query.all()

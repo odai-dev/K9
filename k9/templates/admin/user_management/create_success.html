@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <!-- Success Card -->
+            <div class="card border-0 shadow-lg">
+                <div class="card-header bg-success text-white text-center py-4">
+                    <i class="fas fa-check-circle fa-3x mb-3"></i>
+                    <h3 class="mb-0">تم إنشاء المستخدم بنجاح</h3>
+                </div>
+                
+                <div class="card-body p-4">
+                    <!-- Warning Alert -->
+                    <div class="alert alert-warning border-0 shadow-sm mb-4">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>تنبيه مهم:</strong> سيتم عرض كلمة المرور مرة واحدة فقط. احفظها الآن قبل مغادرة هذه الصفحة.
+                    </div>
+                    
+                    <!-- User Details -->
+                    <div class="mb-4">
+                        <h5 class="text-muted mb-3">
+                            <i class="fas fa-user me-2"></i>
+                            بيانات المستخدم
+                        </h5>
+                        
+                        <table class="table table-borderless">
+                            <tbody>
+                                <tr>
+                                    <td class="text-muted" style="width: 150px;"><strong>الاسم الكامل:</strong></td>
+                                    <td>{{ full_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted"><strong>اسم المستخدم:</strong></td>
+                                    <td>
+                                        <span class="badge bg-primary fs-6 px-3 py-2">{{ username }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted"><strong>الصلاحية:</strong></td>
+                                    <td>
+                                        {% if user_role == 'GENERAL_ADMIN' %}
+                                        <span class="badge bg-danger">مدير عام</span>
+                                        {% elif user_role == 'PROJECT_MANAGER' %}
+                                        <span class="badge bg-info">مسؤول مشروع</span>
+                                        {% elif user_role == 'HANDLER' %}
+                                        <span class="badge bg-success">سائس</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ user_role }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Password Display -->
+                    <div class="mb-4">
+                        <h5 class="text-danger mb-3">
+                            <i class="fas fa-key me-2"></i>
+                            كلمة المرور (احفظها الآن!)
+                        </h5>
+                        
+                        <div class="position-relative">
+                            <div class="input-group input-group-lg">
+                                <input type="text" 
+                                       id="password-field" 
+                                       class="form-control text-center fw-bold bg-light" 
+                                       value="{{ password }}" 
+                                       readonly 
+                                       style="font-size: 1.5rem; letter-spacing: 0.1em;">
+                                <button class="btn btn-outline-primary" 
+                                        type="button" 
+                                        onclick="copyPassword()"
+                                        id="copy-btn">
+                                    <i class="fas fa-copy me-2"></i>نسخ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Instructions -->
+                    <div class="alert alert-info border-0 shadow-sm">
+                        <h6 class="mb-2">
+                            <i class="fas fa-info-circle me-2"></i>
+                            كيفية مشاركة البيانات مع المستخدم:
+                        </h6>
+                        <ol class="mb-0 pe-3">
+                            <li>انسخ كلمة المرور باستخدام زر "نسخ"</li>
+                            <li>أرسل بيانات الدخول للمستخدم عبر قناة آمنة</li>
+                            <li>اطلب من المستخدم تغيير كلمة المرور بعد أول تسجيل دخول</li>
+                        </ol>
+                    </div>
+                </div>
+                
+                <!-- Card Footer -->
+                <div class="card-footer bg-light text-center py-3">
+                    <a href="{{ url_for('user_management.create') }}" class="btn btn-success me-2">
+                        <i class="fas fa-plus me-2"></i>إضافة مستخدم آخر
+                    </a>
+                    <a href="{{ url_for('user_management.index') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-list me-2"></i>قائمة المستخدمين
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyPassword() {
+    const passwordField = document.getElementById('password-field');
+    const copyBtn = document.getElementById('copy-btn');
+    
+    // Select and copy the password
+    passwordField.select();
+    passwordField.setSelectionRange(0, 99999); // For mobile devices
+    
+    navigator.clipboard.writeText(passwordField.value).then(() => {
+        // Change button to show success
+        const originalHTML = copyBtn.innerHTML;
+        copyBtn.innerHTML = '<i class="fas fa-check me-2"></i>تم النسخ!';
+        copyBtn.classList.remove('btn-outline-primary');
+        copyBtn.classList.add('btn-success');
+        
+        // Reset after 2 seconds
+        setTimeout(() => {
+            copyBtn.innerHTML = originalHTML;
+            copyBtn.classList.remove('btn-success');
+            copyBtn.classList.add('btn-outline-primary');
+        }, 2000);
+    }).catch(err => {
+        alert('فشل النسخ. الرجاء نسخ كلمة المرور يدوياً.');
+    });
+}
+</script>
+
+<style>
+.card {
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.card-header {
+    border-bottom: none;
+}
+
+#password-field {
+    font-family: 'Courier New', monospace;
+    border: 2px solid #ffc107;
+    background-color: #fff9e6 !important;
+}
+
+#password-field:focus {
+    border-color: #ff9800;
+    box-shadow: 0 0 0 0.25rem rgba(255, 152, 0, 0.25);
+}
+</style>
+{% endblock %}
