@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block title %}تقاريري{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-file-alt me-2"></i>
+                تقاريري
+            </h1>
+            <a href="{{ url_for('handler.new_report') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>
+                تقرير جديد
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">من تاريخ</label>
+                        <input type="date" name="date_from" class="form-control" 
+                               value="{{ request.args.get('date_from', '') }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">إلى تاريخ</label>
+                        <input type="date" name="date_to" class="form-control" 
+                               value="{{ request.args.get('date_to', '') }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">الحالة</label>
+                        <select name="status" class="form-select">
+                            <option value="">الكل</option>
+                            <option value="DRAFT" {{ 'selected' if request.args.get('status') == 'DRAFT' }}>مسودة</option>
+                            <option value="SUBMITTED" {{ 'selected' if request.args.get('status') == 'SUBMITTED' }}>قيد المراجعة</option>
+                            <option value="APPROVED" {{ 'selected' if request.args.get('status') == 'APPROVED' }}>معتمد</option>
+                            <option value="REJECTED" {{ 'selected' if request.args.get('status') == 'REJECTED' }}>مرفوض</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-filter me-2"></i>
+                            تصفية
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card border-0 shadow-sm border-start border-primary border-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">إجمالي التقارير</h6>
+                        <h3 class="mb-0">{{ summary.total }}</h3>
+                    </div>
+                    <div class="text-primary">
+                        <i class="fas fa-file-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card border-0 shadow-sm border-start border-success border-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">معتمد</h6>
+                        <h3 class="mb-0 text-success">{{ summary.approved }}</h3>
+                    </div>
+                    <div class="text-success">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card border-0 shadow-sm border-start border-warning border-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">قيد المراجعة</h6>
+                        <h3 class="mb-0 text-warning">{{ summary.pending }}</h3>
+                    </div>
+                    <div class="text-warning">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card border-0 shadow-sm border-start border-secondary border-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">مسودة</h6>
+                        <h3 class="mb-0 text-secondary">{{ summary.draft }}</h3>
+                    </div>
+                    <div class="text-secondary">
+                        <i class="fas fa-edit fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reports List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                {% if reports %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>التاريخ</th>
+                                    <th>الكلب</th>
+                                    <th>الوردية</th>
+                                    <th>الموقع</th>
+                                    <th>الحالة</th>
+                                    <th>تم الإرسال</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report in reports %}
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ report.date.strftime('%Y-%m-%d') }}
+                                        <br>
+                                        <small class="text-muted">
+                                            {{ report.date.strftime('%A') }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if report.dog %}
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-dog me-2"></i>
+                                                <div>
+                                                    <div>{{ report.dog.name }}</div>
+                                                    <small class="text-muted">{{ report.dog.code }}</small>
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">غير محدد</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if report.shift %}
+                                            <i class="fas fa-clock me-1"></i>
+                                            {{ report.shift.name }}
+                                        {% else %}
+                                            <span class="text-muted">غير محدد</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if report.location %}
+                                            <i class="fas fa-map-marker-alt me-1"></i>
+                                            {{ report.location }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if report.status.value == 'DRAFT' %}
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-edit me-1"></i>مسودة
+                                            </span>
+                                        {% elif report.status.value == 'SUBMITTED' %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-clock me-1"></i>قيد المراجعة
+                                            </span>
+                                        {% elif report.status.value == 'APPROVED' %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle me-1"></i>معتمد
+                                            </span>
+                                        {% elif report.status.value == 'REJECTED' %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times-circle me-1"></i>مرفوض
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if report.submitted_at %}
+                                            {{ report.submitted_at.strftime('%Y-%m-%d %H:%M') }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('handler.view_report', id=report.id) }}" 
+                                               class="btn btn-outline-primary" 
+                                               title="عرض">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if report.status.value == 'DRAFT' %}
+                                            <a href="{{ url_for('handler.edit_report', id=report.id) }}" 
+                                               class="btn btn-outline-warning" 
+                                               title="تعديل">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" 
+                                                    class="btn btn-outline-danger" 
+                                                    title="حذف"
+                                                    onclick="deleteReport('{{ report.id }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% elif report.status.value == 'REJECTED' and report.review_notes %}
+                                            <button type="button" 
+                                                    class="btn btn-outline-info" 
+                                                    title="سبب الرفض"
+                                                    onclick="showRejectionReason('{{ report.review_notes }}')">
+                                                <i class="fas fa-info-circle"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if pagination.pages > 1 %}
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+                                <a class="page-link" href="{{ url_for('handler.my_reports', page=pagination.prev_num) if pagination.has_prev else '#' }}">
+                                    السابق
+                                </a>
+                            </li>
+                            {% for page_num in pagination.iter_pages() %}
+                                {% if page_num %}
+                                    <li class="page-item {{ 'active' if page_num == pagination.page }}">
+                                        <a class="page-link" href="{{ url_for('handler.my_reports', page=page_num) }}">
+                                            {{ page_num }}
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                {% endif %}
+                            {% endfor %}
+                            <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+                                <a class="page-link" href="{{ url_for('handler.my_reports', page=pagination.next_num) if pagination.has_next else '#' }}">
+                                    التالي
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-alt fa-4x text-muted mb-3"></i>
+                        <h5 class="text-muted">لا توجد تقارير</h5>
+                        <p class="text-muted">ابدأ بإنشاء تقرير جديد الآن</p>
+                        <a href="{{ url_for('handler.new_report') }}" class="btn btn-primary mt-3">
+                            <i class="fas fa-plus me-2"></i>
+                            إنشاء تقرير جديد
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteReport(reportId) {
+    if (confirm('هل أنت متأكد من حذف هذا التقرير؟')) {
+        fetch(`/handler/reports/${reportId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('فشل حذف التقرير: ' + data.error);
+            }
+        });
+    }
+}
+
+function showRejectionReason(reason) {
+    alert('سبب الرفض:\n\n' + reason);
+}
+</script>
+{% endblock %}

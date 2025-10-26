@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+
+{% block title %}إنشاء تقرير جديد{% endblock %}
+
+{% block extra_css %}
+<style>
+.section-card {
+    border-left: 4px solid #0d6efd;
+    margin-bottom: 1.5rem;
+}
+.form-section-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem;
+}
+.required-field::after {
+    content: " *";
+    color: #dc3545;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-file-alt me-2"></i>
+                إنشاء تقرير يومي جديد
+            </h1>
+            <a href="{{ url_for('handler.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-right me-2"></i>
+                العودة
+            </a>
+        </div>
+    </div>
+</div>
+
+<form method="POST" id="reportForm" enctype="multipart/form-data">
+    {{ form.hidden_tag() if form }}
+    
+    <!-- Basic Information -->
+    <div class="card section-card border-0 shadow-sm">
+        <div class="form-section-header">
+            <h5 class="mb-0">
+                <i class="fas fa-info-circle me-2"></i>
+                المعلومات الأساسية
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label required-field">التاريخ</label>
+                    <input type="date" 
+                           name="date" 
+                           class="form-control" 
+                           value="{{ schedule_item.schedule.date if schedule_item else today }}"
+                           {{ 'readonly' if schedule_item else '' }}
+                           required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label required-field">الكلب</label>
+                    <select name="dog_id" class="form-select" required {{ 'disabled' if schedule_item else '' }}>
+                        {% if schedule_item and schedule_item.dog %}
+                            <option value="{{ schedule_item.dog.id }}" selected>
+                                {{ schedule_item.dog.name }} - {{ schedule_item.dog.code }}
+                            </option>
+                        {% elif assigned_dog %}
+                            <option value="{{ assigned_dog.id }}" selected>
+                                {{ assigned_dog.name }} - {{ assigned_dog.code }}
+                            </option>
+                        {% else %}
+                            <option value="">اختر كلباً</option>
+                            {% for dog in available_dogs %}
+                            <option value="{{ dog.id }}">{{ dog.name }} - {{ dog.code }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                    {% if schedule_item and schedule_item.dog %}
+                    <input type="hidden" name="dog_id" value="{{ schedule_item.dog.id }}">
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">الوردية</label>
+                    <select name="shift_id" class="form-select">
+                        <option value="">اختر وردية</option>
+                        {% for shift in shifts %}
+                        <option value="{{ shift.id }}" 
+                                {{ 'selected' if schedule_item and schedule_item.shift_id == shift.id }}>
+                            {{ shift.name }} ({{ shift.start_time.strftime('%H:%M') }} - {{ shift.end_time.strftime('%H:%M') }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">الموقع</label>
+                    <input type="text" name="location" class="form-control" placeholder="مثال: المقر الرئيسي">
+                </div>
+                {% if schedule_item %}
+                <input type="hidden" name="schedule_item_id" value="{{ schedule_item.id }}">
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Health Check Section -->
+    <div class="card section-card border-0 shadow-sm">
+        <div class="form-section-header">
+            <h5 class="mb-0">
+                <i class="fas fa-heartbeat me-2"></i>
+                الفحص الصحي
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label required-field">الحالة العامة</label>
+                    <select name="health_overall_condition" class="form-select" required>
+                        <option value="">اختر...</option>
+                        <option value="ممتازة">ممتازة</option>
+                        <option value="جيدة" selected>جيدة</option>
+                        <option value="متوسطة">متوسطة</option>
+                        <option value="ضعيفة">ضعيفة</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label required-field">الشهية</label>
+                    <select name="health_appetite" class="form-select" required>
+                        <option value="">اختر...</option>
+                        <option value="ممتازة">ممتازة</option>
+                        <option value="جيدة" selected>جيدة</option>
+                        <option value="ضعيفة">ضعيفة</option>
+                        <option value="منعدمة">منعدمة</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label required-field">مستوى النشاط</label>
+                    <select name="health_energy_level" class="form-select" required>
+                        <option value="">اختر...</option>
+                        <option value="عالي">عالي</option>
+                        <option value="طبيعي" selected>طبيعي</option>
+                        <option value="منخفض">منخفض</option>
+                        <option value="خامل">خامل</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">درجة الحرارة (°C)</label>
+                    <input type="number" name="health_temperature" class="form-control" 
+                           step="0.1" min="35" max="42" placeholder="38.5">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">الوزن (كجم)</label>
+                    <input type="number" name="health_weight" class="form-control" 
+                           step="0.1" min="1" max="100" placeholder="25.5">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">حالة الفراء</label>
+                    <input type="text" name="health_coat_condition" class="form-control" 
+                           placeholder="مثال: نظيف ولامع">
+                </div>
+                <div class="col-12">
+                    <label class="form-label">الإصابات (إن وجدت)</label>
+                    <textarea name="health_injuries" class="form-control" rows="2" 
+                              placeholder="وصف أي جروح أو إصابات ملحوظة"></textarea>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" 
+                               name="health_vet_visit_needed" id="vetNeeded">
+                        <label class="form-check-label" for="vetNeeded">
+                            يحتاج زيارة بيطرية
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-6" id="vetReasonDiv" style="display: none;">
+                    <label class="form-label">سبب الزيارة البيطرية</label>
+                    <input type="text" name="health_vet_visit_reason" class="form-control">
+                </div>
+                <div class="col-12">
+                    <label class="form-label">ملاحظات صحية</label>
+                    <textarea name="health_notes" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Care Section -->
+    <div class="card section-card border-0 shadow-sm">
+        <div class="form-section-header">
+            <h5 class="mb-0">
+                <i class="fas fa-hand-holding-heart me-2"></i>
+                الرعاية اليومية
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">كمية الطعام (كجم)</label>
+                    <input type="number" name="care_food_amount_kg" class="form-control" 
+                           step="0.1" min="0" placeholder="2.5">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">استهلاك الماء</label>
+                    <select name="care_water_consumption" class="form-select">
+                        <option value="">اختر...</option>
+                        <option value="طبيعي">طبيعي</option>
+                        <option value="أكثر من الطبيعي">أكثر من الطبيعي</option>
+                        <option value="أقل من الطبيعي">أقل من الطبيعي</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check mt-4">
+                        <input class="form-check-input" type="checkbox" 
+                               name="care_grooming_done" id="groomingDone">
+                        <label class="form-check-label" for="groomingDone">
+                            تم التنظيف/الاستحمام
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">ملاحظات التنظيف</label>
+                    <input type="text" name="care_grooming_notes" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">مدة التمرين (دقائق)</label>
+                    <input type="number" name="care_exercise_duration_minutes" class="form-control" 
+                           min="0" placeholder="30">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">نوع التمرين</label>
+                    <input type="text" name="care_exercise_type" class="form-control" 
+                           placeholder="مثال: المشي، الركض، اللعب">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">عدد مرات الإخراج</label>
+                    <input type="number" name="care_bathroom_breaks" class="form-control" 
+                           min="0" value="0">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">حالة البراز</label>
+                    <select name="care_stool_condition" class="form-select">
+                        <option value="">اختر...</option>
+                        <option value="طبيعي">طبيعي</option>
+                        <option value="رخو">رخو</option>
+                        <option value="إسهال">إسهال</option>
+                        <option value="إمساك">إمساك</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">ملاحظات الرعاية</label>
+                    <textarea name="care_notes" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Behavior Section -->
+    <div class="card section-card border-0 shadow-sm">
+        <div class="form-section-header">
+            <h5 class="mb-0">
+                <i class="fas fa-smile me-2"></i>
+                الملاحظات السلوكية
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label required-field">المزاج</label>
+                    <select name="behavior_mood" class="form-select" required>
+                        <option value="">اختر...</option>
+                        <option value="سعيد">سعيد</option>
+                        <option value="هادئ" selected>هادئ</option>
+                        <option value="عصبي">عصبي</option>
+                        <option value="قلق">قلق</option>
+                        <option value="عدواني">عدواني</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label required-field">مستوى الطاعة</label>
+                    <select name="behavior_obedience_level" class="form-select" required>
+                        <option value="">اختر...</option>
+                        <option value="ممتاز">ممتاز</option>
+                        <option value="جيد" selected>جيد</option>
+                        <option value="متوسط">متوسط</option>
+                        <option value="ضعيف">ضعيف</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" 
+                               name="behavior_aggression_signs" id="aggressionSigns">
+                        <label class="form-check-label" for="aggressionSigns">
+                            علامات عدوانية
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" 
+                               name="behavior_anxiety_signs" id="anxietySigns">
+                        <label class="form-check-label" for="anxietySigns">
+                            علامات قلق
+                        </label>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">التفاعلات الاجتماعية</label>
+                    <textarea name="behavior_social_interactions" class="form-control" rows="2"
+                              placeholder="مثال: تفاعل جيد مع الكلاب الأخرى، هادئ مع الغرباء"></textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">سلوكيات غير عادية</label>
+                    <textarea name="behavior_unusual_behaviors" class="form-control" rows="2"
+                              placeholder="أي سلوك غير معتاد أو مثير للقلق"></textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">ملاحظات سلوكية</label>
+                    <textarea name="behavior_notes" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex gap-2 justify-content-end">
+                <a href="{{ url_for('handler.dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-times me-2"></i>
+                    إلغاء
+                </a>
+                <button type="submit" name="action" value="save_draft" class="btn btn-outline-primary">
+                    <i class="fas fa-save me-2"></i>
+                    حفظ كمسودة
+                </button>
+                <button type="submit" name="action" value="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane me-2"></i>
+                    إرسال للمراجعة
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Toggle vet reason field
+document.getElementById('vetNeeded').addEventListener('change', function() {
+    document.getElementById('vetReasonDiv').style.display = this.checked ? 'block' : 'none';
+});
+
+// Form validation
+document.getElementById('reportForm').addEventListener('submit', function(e) {
+    const action = e.submitter.value;
+    
+    // If submitting (not saving as draft), validate required fields
+    if (action === 'submit') {
+        const requiredFields = this.querySelectorAll('[required]');
+        let allValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value) {
+                allValid = false;
+                field.classList.add('is-invalid');
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!allValid) {
+            e.preventDefault();
+            alert('الرجاء ملء جميع الحقول المطلوبة (المعلمة بـ *)');
+            return false;
+        }
+    }
+});
+</script>
+{% endblock %}
