@@ -123,8 +123,8 @@ class DailyScheduleItem(db.Model):
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     daily_schedule_id = db.Column(get_uuid_column(), db.ForeignKey('daily_schedule.id', ondelete='CASCADE'), nullable=False)
     
-    # Assignment
-    employee_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=False)
+    # Assignment - using handler users (not employees)
+    handler_user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'), nullable=False)
     dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=True)
     shift_id = db.Column(get_uuid_column(), db.ForeignKey('shift.id'), nullable=True)
     
@@ -132,7 +132,7 @@ class DailyScheduleItem(db.Model):
     status = db.Column(db.Enum(ScheduleItemStatus), nullable=False, default=ScheduleItemStatus.PLANNED)
     
     # Replacement info
-    replacement_employee_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=True)
+    replacement_handler_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'), nullable=True)
     absence_reason = db.Column(db.String(500), nullable=True)
     replacement_notes = db.Column(Text, nullable=True)
     
@@ -140,19 +140,19 @@ class DailyScheduleItem(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relationships
-    employee = db.relationship('Employee', foreign_keys=[employee_id], backref='schedule_items')
-    replacement_employee = db.relationship('Employee', foreign_keys=[replacement_employee_id], backref='replacement_schedule_items')
+    # Relationships - using User (handlers) not Employee
+    handler = db.relationship('User', foreign_keys=[handler_user_id], backref='schedule_items')
+    replacement_handler = db.relationship('User', foreign_keys=[replacement_handler_id], backref='replacement_schedule_items')
     dog = db.relationship('Dog', backref='schedule_items')
     shift = db.relationship('Shift', backref='schedule_items')
     
     __table_args__ = (
-        db.Index('idx_schedule_item_employee', 'employee_id'),
+        db.Index('idx_schedule_item_handler', 'handler_user_id'),
         db.Index('idx_schedule_item_status', 'status'),
     )
     
     def __repr__(self):
-        return f'<DailyScheduleItem Employee:{self.employee_id} - {self.status.value}>'
+        return f'<DailyScheduleItem Handler:{self.handler_user_id} - {self.status.value}>'
 
 
 # ============================================================================

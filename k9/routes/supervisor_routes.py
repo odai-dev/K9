@@ -107,7 +107,7 @@ def schedule_create():
             if handler_ids[i] and dog_ids[i] and shift_ids[i]:
                 item = DailyScheduleItem(
                     daily_schedule_id=schedule.id,
-                    employee_id=handler_ids[i],
+                    handler_user_id=handler_ids[i],
                     dog_id=dog_ids[i],
                     shift_id=shift_ids[i]
                 )
