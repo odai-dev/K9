@@ -163,7 +163,7 @@
                                 <i class="fas fa-dog fa-3x text-primary"></i>
                             </div>
                             <h5 class="card-title">الكلاب المعينة</h5>
-                            <h2 class="text-primary mb-2">{{ project.assigned_dogs|length }}</h2>
+                            <h2 class="text-primary mb-2">{{ stats.dog_assignments }}</h2>
                             <a href="#resources-tab" onclick="switchTab('resources-tab')" class="btn btn-outline-primary btn-sm">عرض التفاصيل</a>
                         </div>
                     </div>
@@ -176,7 +176,7 @@
                                 <i class="fas fa-users fa-3x text-success"></i>
                             </div>
                             <h5 class="card-title">الموظفون المعينون</h5>
-                            <h2 class="text-success mb-2">{{ project.assigned_employees|length }}</h2>
+                            <h2 class="text-success mb-2">{{ stats.employee_assignments }}</h2>
                             <a href="#resources-tab" onclick="switchTab('resources-tab')" class="btn btn-outline-success btn-sm">عرض التفاصيل</a>
                         </div>
                     </div>
@@ -189,7 +189,7 @@
                                 <i class="fas fa-exclamation-triangle fa-3x text-warning"></i>
                             </div>
                             <h5 class="card-title">الحوادث</h5>
-                            <h2 class="text-warning mb-2">{{ project.incidents|length }}</h2>
+                            <h2 class="text-warning mb-2">{{ stats.total_incidents }}</h2>
                             <a href="{{ url_for('main.project_incidents', project_id=project.id) }}" class="btn btn-outline-warning btn-sm">عرض التفاصيل</a>
                         </div>
                     </div>
@@ -202,7 +202,7 @@
                                 <i class="fas fa-search fa-3x text-info"></i>
                             </div>
                             <h5 class="card-title">الاشتباهات</h5>
-                            <h2 class="text-info mb-2">{{ project.suspicions|length }}</h2>
+                            <h2 class="text-info mb-2">{{ stats.total_suspicions }}</h2>
                             <a href="{{ url_for('main.project_suspicions', project_id=project.id) }}" class="btn btn-outline-info btn-sm">عرض التفاصيل</a>
                         </div>
                     </div>
@@ -454,7 +454,7 @@
                             </h5>
                         </div>
                         <div class="card-body text-center">
-                            <h3 class="text-warning">{{ project.incidents|length }}</h3>
+                            <h3 class="text-warning">{{ stats.total_incidents }}</h3>
                             <p class="mb-3">إجمالي الحوادث المسجلة</p>
                             <div class="d-grid gap-2">
                                 <a href="{{ url_for('main.project_incident_add', project_id=project.id) }}" class="btn btn-warning">
@@ -476,7 +476,7 @@
                             </h5>
                         </div>
                         <div class="card-body text-center">
-                            <h3 class="text-info">{{ project.suspicions|length }}</h3>
+                            <h3 class="text-info">{{ stats.total_suspicions }}</h3>
                             <p class="mb-3">إجمالي الاشتباهات المسجلة</p>
                             <div class="d-grid gap-2">
                                 <a href="{{ url_for('main.project_suspicion_add', project_id=project.id) }}" class="btn btn-info">
@@ -498,7 +498,7 @@
                             </h5>
                         </div>
                         <div class="card-body text-center">
-                            <h3 class="text-success">{{ project.evaluations|length }}</h3>
+                            <h3 class="text-success">{{ stats.total_evaluations }}</h3>
                             <p class="mb-3">إجمالي التقييمات المسجلة</p>
                             <div class="d-grid gap-2">
                                 <a href="{{ url_for('main.project_evaluation_add', project_id=project.id) }}" class="btn btn-success">
