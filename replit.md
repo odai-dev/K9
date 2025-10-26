@@ -38,6 +38,12 @@ Preferred communication style: Simple, everyday language.
   - Real-time notification system for schedule changes, report approvals/rejections
   - User management with bulk import from Excel/CSV
   - Automated cron jobs for schedule locking (23:59 daily) and notification cleanup (weekly)
+  - **Enhanced Notification System**:
+    - Direct links from notifications to specific reports/schedules
+    - Pending reports counter in admin navigation menu
+    - Separate notification pages for handlers (`/handler/notifications`) and admins (`/admin/notifications`)
+    - Automatic notifications sent to project managers and admins when handlers submit reports
+    - Real-time unread counters in navigation for all user roles
 
 ### System Design Choices
 - **Client/Server Separation**: Clear distinction between frontend and backend.
