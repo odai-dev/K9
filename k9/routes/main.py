@@ -3781,18 +3781,11 @@ def attendance_assignments():
     assignments = ShiftAssignment.query.filter_by(is_active=True).all()
     shifts = Shift.query.filter_by(is_active=True).all()
     
-    # Get available employees (not assigned to active projects)
-    today = date.today()
-    available_employees = []
+    # Get all active employees for assignment
+    available_employees = Employee.query.filter_by(is_active=True).order_by(Employee.name).all()
     
-    # Get all employees with their user accounts
-    all_employees = Employee.query.filter_by(is_active=True).all()
-    employees_dict = {str(emp.id): emp for emp in all_employees}
-    
-    for employee in all_employees:
-        # Check if employee is assigned to any active project
-        if not employee.is_project_owned(today):
-            available_employees.append(employee)
+    # Create dictionary for efficient lookups in template
+    employees_dict = {str(emp.id): emp for emp in available_employees}
     
     return render_template('attendance/assignments.html', 
                          assignments=assignments,
