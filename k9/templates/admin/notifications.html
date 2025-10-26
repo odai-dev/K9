@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}الإشعارات{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-bell me-2"></i>
+                الإشعارات
+                {% if unread_count > 0 %}
+                <span class="badge bg-danger">{{ unread_count }}</span>
+                {% endif %}
+            </h1>
+            <div>
+                {% if unread_count > 0 %}
+                <button onclick="markAllAsRead()" class="btn btn-outline-primary">
+                    <i class="fas fa-check-double me-2"></i>
+                    تعليم الكل كمقروء
+                </button>
+                {% endif %}
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('admin.notifications', filter='all') }}" 
+               class="btn btn-{{ 'primary' if request.args.get('filter', 'all') == 'all' else 'outline-primary' }}">
+                <i class="fas fa-list me-1"></i>
+                الكل ({{ total_count }})
+            </a>
+            <a href="{{ url_for('admin.notifications', filter='unread') }}" 
+               class="btn btn-{{ 'primary' if request.args.get('filter') == 'unread' else 'outline-primary' }}">
+                <i class="fas fa-envelope me-1"></i>
+                غير المقروءة ({{ unread_count }})
+            </a>
+            <a href="{{ url_for('admin.notifications', filter='read') }}" 
+               class="btn btn-{{ 'primary' if request.args.get('filter') == 'read' else 'outline-primary' }}">
+                <i class="fas fa-envelope-open me-1"></i>
+                المقروءة ({{ total_count - unread_count }})
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Notifications List -->
+<div class="row">
+    <div class="col-12">
+        {% if notifications %}
+            <div class="list-group">
+                {% for notif in notifications %}
+                <div class="list-group-item list-group-item-action {{ 'bg-light border-start border-primary border-3' if not notif.read }}" 
+                     id="notif-{{ notif.id }}">
+                    <div class="d-flex w-100 justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-2">
+                                <!-- Icon based on notification type -->
+                                {% if notif.type.value == 'SCHEDULE_CREATED' %}
+                                    <i class="fas fa-calendar-plus fa-lg me-3 text-primary"></i>
+                                {% elif notif.type.value == 'SCHEDULE_UPDATED' %}
+                                    <i class="fas fa-calendar-check fa-lg me-3 text-info"></i>
+                                {% elif notif.type.value == 'EMPLOYEE_REPLACED' %}
+                                    <i class="fas fa-exchange-alt fa-lg me-3 text-warning"></i>
+                                {% elif notif.type.value == 'REPORT_APPROVED' %}
+                                    <i class="fas fa-check-circle fa-lg me-3 text-success"></i>
+                                {% elif notif.type.value == 'REPORT_REJECTED' %}
+                                    <i class="fas fa-times-circle fa-lg me-3 text-danger"></i>
+                                {% elif notif.type.value == 'REPORT_DUE_SOON' %}
+                                    <i class="fas fa-clock fa-lg me-3 text-warning"></i>
+                                {% elif notif.type.value == 'REPORT_OVERDUE' %}
+                                    <i class="fas fa-exclamation-triangle fa-lg me-3 text-danger"></i>
+                                {% else %}
+                                    <i class="fas fa-bell fa-lg me-3 text-secondary"></i>
+                                {% endif %}
+                                
+                                <div>
+                                    <h6 class="mb-1 {{ 'fw-bold' if not notif.read }}">
+                                        {{ notif.title }}
+                                        {% if not notif.read %}
+                                        <span class="badge bg-primary badge-sm ms-2">جديد</span>
+                                        {% endif %}
+                                    </h6>
+                                    <p class="mb-1 text-muted">{{ notif.message }}</p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ notif.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="ms-3">
+                            <div class="btn-group-vertical btn-group-sm">
+                                {% if not notif.read %}
+                                <button class="btn btn-outline-primary" 
+                                        onclick="markAsRead('{{ notif.id }}')" 
+                                        title="تعليم كمقروء">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                {% endif %}
+                                
+                                {% if notif.related_type and notif.related_id %}
+                                <a href="{{ get_notification_link(notif) }}" 
+                                   class="btn btn-outline-info"
+                                   title="عرض التفاصيل">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+                        <a class="page-link" href="{{ url_for('admin.notifications', page=pagination.prev_num, filter=request.args.get('filter', 'all')) if pagination.has_prev else '#' }}">
+                            السابق
+                        </a>
+                    </li>
+                    {% for page_num in pagination.iter_pages() %}
+                        {% if page_num %}
+                            <li class="page-item {{ 'active' if page_num == pagination.page }}">
+                                <a class="page-link" href="{{ url_for('admin.notifications', page=page_num, filter=request.args.get('filter', 'all')) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+                        <a class="page-link" href="{{ url_for('admin.notifications', page=pagination.next_num, filter=request.args.get('filter', 'all')) if pagination.has_next else '#' }}">
+                            التالي
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+        {% else %}
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-bell-slash fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">لا توجد إشعارات</h5>
+                    {% if request.args.get('filter') == 'unread' %}
+                    <p class="text-muted">جميع إشعاراتك مقروءة</p>
+                    {% elif request.args.get('filter') == 'read' %}
+                    <p class="text-muted">لا توجد إشعارات مقروءة</p>
+                    {% else %}
+                    <p class="text-muted">لم تتلق أي إشعارات بعد</p>
+                    {% endif %}
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary mt-3">
+                        <i class="fas fa-home me-2"></i>
+                        العودة للرئيسية
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+function markAsRead(notificationId) {
+    fetch(`/handler/notifications/${notificationId}/mark-read`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update UI
+            const notifElement = document.getElementById(`notif-${notificationId}`);
+            notifElement.classList.remove('bg-light', 'border-start', 'border-primary', 'border-3');
+            
+            // Remove "New" badge
+            const badge = notifElement.querySelector('.badge-sm');
+            if (badge) badge.remove();
+            
+            // Remove button
+            const button = notifElement.querySelector('button');
+            if (button) button.remove();
+            
+            // Update counter
+            updateUnreadCount();
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function markAllAsRead() {
+    if (!confirm('هل تريد تعليم جميع الإشعارات كمقروءة؟')) {
+        return;
+    }
+    
+    fetch('/handler/notifications/mark-all-read', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function updateUnreadCount() {
+    fetch('/handler/api/unread-count')
+        .then(response => response.json())
+        .then(data => {
+            const badges = document.querySelectorAll('.badge.bg-danger');
+            badges.forEach(badge => {
+                if (data.count > 0) {
+                    badge.textContent = data.count;
+                } else {
+                    badge.remove();
+                }
+            });
+        });
+}
+
+// Auto-refresh every 30 seconds
+setInterval(function() {
+    // Only reload if on "all" or "unread" filter
+    const filter = new URLSearchParams(window.location.search).get('filter') || 'all';
+    if (filter === 'all' || filter === 'unread') {
+        updateUnreadCount();
+    }
+}, 30000);
+</script>
+{% endblock %}

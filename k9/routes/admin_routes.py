@@ -1107,3 +1107,62 @@ def google_drive_status():
             'enabled': settings.google_drive_enabled,
             'error': str(e)
         })
+# ============================================================================
+# Notifications Routes (For Admins and Project Managers)
+# ============================================================================
+
+@admin_bp.route('/notifications')
+@login_required
+def notifications():
+    """صفحة الإشعارات للأدمن ومسؤولي المشاريع"""
+    from k9.models.models_handler_daily import Notification
+    from k9.services.handler_service import NotificationService
+    
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    filter_type = request.args.get('filter', 'all')
+    
+    # Build query
+    query = Notification.query.filter_by(user_id=current_user.id)
+    
+    # Apply filter
+    if filter_type == 'unread':
+        query = query.filter_by(read=False)
+    elif filter_type == 'read':
+        query = query.filter_by(read=True)
+    
+    # Get pagination object
+    pagination = query.order_by(Notification.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    # Get counts
+    unread_count = Notification.query.filter_by(
+        user_id=current_user.id, read=False
+    ).count()
+    total_count = Notification.query.filter_by(user_id=current_user.id).count()
+    
+    return render_template('admin/notifications.html',
+                         page_title='الإشعارات',
+                         notifications=pagination.items,
+                         pagination=pagination,
+                         unread_count=unread_count,
+                         total_count=total_count)
+
+
+@admin_bp.route('/notifications/<notification_id>/read', methods=['POST'])
+@login_required
+def mark_notification_read(notification_id):
+    """تعليم الإشعار كمقروء"""
+    from k9.services.handler_service import NotificationService
+    NotificationService.mark_as_read(notification_id)
+    return jsonify({'success': True})
+
+
+@admin_bp.route('/notifications/read-all', methods=['POST'])
+@login_required
+def mark_all_notifications_read():
+    """تعليم جميع الإشعارات كمقروءة"""
+    from k9.services.handler_service import NotificationService
+    count = NotificationService.mark_all_as_read(str(current_user.id))
+    return jsonify({'success': True, 'count': count})

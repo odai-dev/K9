@@ -258,23 +258,34 @@ class HandlerReportService:
         
         # Notify project manager
         if report.project_id:
-            # Get project managers
-            project_managers = User.query.filter(
-                and_(
-                    User.project_id == report.project_id,
-                    User.role.in_(['PROJECT_MANAGER', 'GENERAL_ADMIN'])
-                )
-            ).all()
+            from k9.models.models import Project, Employee
+            project = Project.query.get(report.project_id)
             
-            for pm in project_managers:
-                NotificationService.create_notification(
-                    user_id=str(pm.id),
-                    notification_type=NotificationType.REPORT_SUBMITTED,
-                    title="تقرير جديد من السائس",
-                    message=f"تم إرسال تقرير جديد بتاريخ {report.date}",
-                    related_id=str(report_id),
-                    related_type="HandlerReport"
-                )
+            if project and project.project_manager_id:
+                # Find user account for project manager
+                employee = Employee.query.get(project.project_manager_id)
+                if employee and employee.user_account_id:
+                    NotificationService.create_notification(
+                        user_id=str(employee.user_account_id),
+                        notification_type=NotificationType.REPORT_SUBMITTED,
+                        title="تقرير سائس جديد",
+                        message=f"تم رفع تقرير جديد من السائس بتاريخ {report.date.strftime('%Y-%m-%d')} - المشروع: {project.name}",
+                        related_id=str(report_id),
+                        related_type="HandlerReport"
+                    )
+        
+        # Notify all admins
+        from k9.models.models import UserRole
+        admins = User.query.filter_by(role=UserRole.GENERAL_ADMIN, is_active=True).all()
+        for admin in admins:
+            NotificationService.create_notification(
+                user_id=str(admin.id),
+                notification_type=NotificationType.REPORT_SUBMITTED,
+                title="تقرير سائس جديد",
+                message=f"تم رفع تقرير جديد من السائس بتاريخ {report.date.strftime('%Y-%m-%d')}",
+                related_id=str(report_id),
+                related_type="HandlerReport"
+            )
         
         return True, None
     

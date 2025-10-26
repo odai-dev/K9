@@ -143,21 +143,27 @@ with app.app_context():
         datetime=datetime
     )
     
-    # Context processor for Handler notifications
+    # Context processor for notifications (all users)
     @app.context_processor
-    def inject_handler_data():
-        """Inject Handler notification data into all templates"""
+    def inject_notifications_data():
+        """Inject notification data into all templates for all users"""
         from flask_login import current_user
         from k9.models.models import UserRole
         
-        data = {'handler_unread_count': 0}
+        data = {
+            'handler_unread_count': 0,
+            'admin_unread_count': 0
+        }
         
-        if current_user.is_authenticated and current_user.role == UserRole.HANDLER:
+        if current_user.is_authenticated:
             try:
                 from k9.services.handler_service import NotificationService
-                data['handler_unread_count'] = len(NotificationService.get_user_notifications(
-                    str(current_user.id), unread_only=True
-                ))
+                unread_count = NotificationService.get_unread_count(str(current_user.id))
+                
+                if current_user.role == UserRole.HANDLER:
+                    data['handler_unread_count'] = unread_count
+                elif current_user.role in [UserRole.GENERAL_ADMIN, UserRole.PROJECT_MANAGER]:
+                    data['admin_unread_count'] = unread_count
             except Exception:
                 pass
         
