@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة المستخدمين{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-users me-2"></i>
+                إدارة المستخدمين
+            </h1>
+            <div>
+                <a href="{{ url_for('user_management.bulk_import') }}" class="btn btn-outline-success me-2">
+                    <i class="fas fa-file-upload me-1"></i>
+                    استيراد جماعي
+                </a>
+                <a href="{{ url_for('user_management.create') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus me-1"></i>
+                    إضافة مستخدم
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>
+                    البحث والتصفية
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" action="{{ url_for('user_management.index') }}" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">الدور الوظيفي</label>
+                        <select name="role" class="form-select">
+                            <option value="">الكل</option>
+                            <option value="GENERAL_ADMIN" {{ 'selected' if request.args.get('role') == 'GENERAL_ADMIN' }}>مدير عام</option>
+                            <option value="PROJECT_MANAGER" {{ 'selected' if request.args.get('role') == 'PROJECT_MANAGER' }}>مسؤول مشروع</option>
+                            <option value="HANDLER" {{ 'selected' if request.args.get('role') == 'HANDLER' }}>سائس</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">المشروع</label>
+                        <select name="project_id" class="form-select">
+                            <option value="">الكل</option>
+                            {% for project in projects %}
+                            <option value="{{ project.id }}" {{ 'selected' if request.args.get('project_id') == project.id|string }}>
+                                {{ project.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">الحالة</label>
+                        <select name="status" class="form-select">
+                            <option value="">الكل</option>
+                            <option value="active" {{ 'selected' if request.args.get('status') == 'active' }}>نشط</option>
+                            <option value="inactive" {{ 'selected' if request.args.get('status') == 'inactive' }}>معطل</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i>
+                                بحث
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        قائمة المستخدمين ({{ users|length }})
+                    </h5>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if users %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>الاسم</th>
+                                <th>اسم المستخدم</th>
+                                <th>البريد الإلكتروني</th>
+                                <th>الدور</th>
+                                <th>المشروع</th>
+                                <th>الكلب</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" style="width: 36px; height: 36px;">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <div>
+                                            <strong>{{ user.full_name }}</strong>
+                                            {% if user.phone %}
+                                            <small class="text-muted d-block">
+                                                <i class="fas fa-phone me-1"></i>{{ user.phone }}
+                                            </small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <code class="text-primary">{{ user.username }}</code>
+                                </td>
+                                <td>
+                                    <small>{{ user.email }}</small>
+                                </td>
+                                <td>
+                                    {% if user.role.value == 'GENERAL_ADMIN' %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-user-shield me-1"></i>مدير عام
+                                        </span>
+                                    {% elif user.role.value == 'PROJECT_MANAGER' %}
+                                        <span class="badge bg-primary">
+                                            <i class="fas fa-user-tie me-1"></i>مسؤول مشروع
+                                        </span>
+                                    {% elif user.role.value == 'HANDLER' %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-id-badge me-1"></i>سائس
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ user.role.value }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.project %}
+                                        <i class="fas fa-project-diagram me-1"></i>{{ user.project.name }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.dog %}
+                                        <i class="fas fa-dog me-1"></i>{{ user.dog.name }}
+                                        <small class="text-muted d-block">{{ user.dog.code }}</small>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.active %}
+                                        <span class="badge bg-success">نشط</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">معطل</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('user_management.view', user_id=user.id) }}" 
+                                           class="btn btn-outline-info" title="عرض">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <button type="button" 
+                                                class="btn btn-outline-warning" 
+                                                title="تعديل"
+                                                onclick="window.location.href='{{ url_for('user_management.edit', user_id=user.id) }}'">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <form method="POST" 
+                                              action="{{ url_for('user_management.toggle_status', user_id=user.id) }}" 
+                                              style="display: inline;">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                            <button type="submit" 
+                                                    class="btn btn-outline-{{ 'secondary' if user.active else 'success' }}" 
+                                                    title="{{ 'تعطيل' if user.active else 'تفعيل' }}"
+                                                    onclick="return confirm('هل أنت متأكد من {{ 'تعطيل' if user.active else 'تفعيل' }} هذا المستخدم؟')">
+                                                <i class="fas fa-{{ 'ban' if user.active else 'check' }}"></i>
+                                            </button>
+                                        </form>
+                                        <button type="button" 
+                                                class="btn btn-outline-danger" 
+                                                title="إعادة تعيين كلمة المرور"
+                                                onclick="resetPassword('{{ user.id }}', '{{ user.username }}')">
+                                            <i class="fas fa-key"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">لا يوجد مستخدمون</p>
+                    <a href="{{ url_for('user_management.create') }}" class="btn btn-primary mt-2">
+                        <i class="fas fa-user-plus me-1"></i>
+                        إضافة أول مستخدم
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="resetPasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-key me-2"></i>
+                    إعادة تعيين كلمة المرور
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="resetPasswordForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <p>هل أنت متأكد من إعادة تعيين كلمة المرور للمستخدم: <strong id="resetUsername"></strong>؟</p>
+                    <p class="text-warning">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        سيتم إنشاء كلمة مرور جديدة تلقائياً.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-key me-1"></i>
+                        إعادة تعيين
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function resetPassword(userId, username) {
+    const modal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
+    const form = document.getElementById('resetPasswordForm');
+    const usernameSpan = document.getElementById('resetUsername');
+    
+    form.action = "{{ url_for('user_management.reset_password', user_id='USER_ID') }}".replace('USER_ID', userId);
+    usernameSpan.textContent = username;
+    
+    modal.show();
+}
+</script>
+{% endblock %}

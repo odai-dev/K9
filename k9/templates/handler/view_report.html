@@ -4,9 +4,15 @@
 
 {% block extra_css %}
 <style>
-.report-section {
-    border-left: 4px solid #0d6efd;
+.section-card {
+    border-right: 4px solid #0d6efd;
     margin-bottom: 1.5rem;
+}
+.form-section-header {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #0d6efd;
+    padding: 1rem;
+    font-weight: bold;
 }
 .info-row {
     border-bottom: 1px solid #eee;
@@ -14,6 +20,45 @@
 }
 .info-row:last-child {
     border-bottom: none;
+}
+.health-check-row {
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem 0;
+}
+.health-check-row:last-child {
+    border-bottom: none;
+}
+.training-table {
+    width: 100%;
+}
+.training-table th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
+}
+.training-table td {
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
+}
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+.status-normal {
+    background-color: #d1f5d3;
+    color: #0f5132;
+}
+.status-abnormal {
+    background-color: #f8d7da;
+    color: #842029;
+}
+.status-needs {
+    background-color: #fff3cd;
+    color: #856404;
 }
 .print-hide {
     display: block;
@@ -57,41 +102,23 @@
     </div>
 </div>
 
-<!-- Report Header -->
+<!-- Report Status Header -->
 <div class="row mb-4">
     <div class="col-12">
         <div class="card border-0 shadow-sm">
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <h5 class="mb-3">معلومات التقرير</h5>
                         <div class="info-row">
                             <strong>التاريخ:</strong>
-                            {{ report.date.strftime('%Y-%m-%d') }} ({{ report.date.strftime('%A') }})
+                            <span class="ms-2">{{ report.date.strftime('%Y-%m-%d') }}</span>
                         </div>
                         <div class="info-row">
                             <strong>السائس:</strong>
-                            {{ current_user.full_name }}
-                        </div>
-                        <div class="info-row">
-                            <strong>الكلب:</strong>
-                            {% if report.dog %}
-                                {{ report.dog.name }} ({{ report.dog.code }})
-                            {% else %}
-                                غير محدد
-                            {% endif %}
-                        </div>
-                        <div class="info-row">
-                            <strong>الوردية:</strong>
-                            {% if report.shift %}
-                                {{ report.shift.name }} ({{ report.shift.start_time.strftime('%H:%M') }} - {{ report.shift.end_time.strftime('%H:%M') }})
-                            {% else %}
-                                غير محدد
-                            {% endif %}
+                            <span class="ms-2">{{ report.handler.full_name if report.handler else current_user.full_name }}</span>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <h5 class="mb-3">الحالة</h5>
                         <div class="info-row">
                             <strong>حالة التقرير:</strong>
                             {% if report.status.value == 'DRAFT' %}
@@ -104,22 +131,10 @@
                                 <span class="badge bg-danger ms-2">مرفوض</span>
                             {% endif %}
                         </div>
-                        {% if report.location %}
-                        <div class="info-row">
-                            <strong>الموقع:</strong>
-                            {{ report.location }}
-                        </div>
-                        {% endif %}
                         {% if report.submitted_at %}
                         <div class="info-row">
                             <strong>تاريخ الإرسال:</strong>
-                            {{ report.submitted_at.strftime('%Y-%m-%d %H:%M') }}
-                        </div>
-                        {% endif %}
-                        {% if report.reviewed_at %}
-                        <div class="info-row">
-                            <strong>تاريخ المراجعة:</strong>
-                            {{ report.reviewed_at.strftime('%Y-%m-%d %H:%M') }}
+                            <span class="ms-2">{{ report.submitted_at.strftime('%Y-%m-%d %H:%M') }}</span>
                         </div>
                         {% endif %}
                     </div>
@@ -147,265 +162,302 @@
     </div>
 </div>
 
-<!-- Health Check -->
+<!-- أولاً: المعلومات العامة -->
+<div class="card section-card border-0 shadow-sm">
+    <div class="form-section-header">
+        <h5 class="mb-0">أولاً: المعلومات العامة</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="info-row">
+                    <strong>اسم الكلب:</strong>
+                    <span class="ms-2">
+                        {% if report.dog %}
+                            {{ report.dog.name }} ({{ report.dog.code }})
+                        {% else %}
+                            غير محدد
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-row">
+                    <strong>موقع العمل:</strong>
+                    <span class="ms-2">{{ report.location if report.location else '-' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ثانياً: فحص الكلب/صحة الكلب -->
 {% if report.health %}
-<div class="card report-section border-0 shadow-sm">
-    <div class="card-header bg-white">
-        <h5 class="mb-0">
-            <i class="fas fa-heartbeat me-2"></i>
-            الفحص الصحي
-        </h5>
+<div class="card section-card border-0 shadow-sm">
+    <div class="form-section-header">
+        <h5 class="mb-0">ثانياً: فحص الكلب/صحة الكلب</h5>
     </div>
     <div class="card-body">
-        <div class="row">
-            <div class="col-md-4">
-                <div class="info-row">
-                    <strong>الحالة العامة:</strong>
-                    <span class="ms-2">{{ report.health.overall_condition }}</span>
+        <!-- العين (Eyes) -->
+        <div class="health-check-row">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <strong>1. العين</strong>
+                </div>
+                <div class="col-md-6">
+                    {% if report.health.eyes_status %}
+                        <span class="status-badge status-{{ 'normal' if report.health.eyes_status.value == 'سليم' else 'abnormal' if report.health.eyes_status.value == 'غير طبيعي' else 'needs' }}">
+                            {{ report.health.eyes_status.value }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted">{{ report.health.eyes_notes if report.health.eyes_notes else '-' }}</small>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="info-row">
-                    <strong>الشهية:</strong>
-                    <span class="ms-2">{{ report.health.appetite }}</span>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="info-row">
-                    <strong>مستوى النشاط:</strong>
-                    <span class="ms-2">{{ report.health.energy_level }}</span>
-                </div>
-            </div>
-            {% if report.health.temperature %}
-            <div class="col-md-4">
-                <div class="info-row">
-                    <strong>درجة الحرارة:</strong>
-                    <span class="ms-2">{{ report.health.temperature }} °C</span>
-                </div>
-            </div>
-            {% endif %}
-            {% if report.health.weight %}
-            <div class="col-md-4">
-                <div class="info-row">
-                    <strong>الوزن:</strong>
-                    <span class="ms-2">{{ report.health.weight }} كجم</span>
-                </div>
-            </div>
-            {% endif %}
-            {% if report.health.coat_condition %}
-            <div class="col-md-4">
-                <div class="info-row">
-                    <strong>حالة الفراء:</strong>
-                    <span class="ms-2">{{ report.health.coat_condition }}</span>
-                </div>
-            </div>
-            {% endif %}
         </div>
-        {% if report.health.injuries %}
-        <div class="alert alert-warning mt-3">
-            <strong>الإصابات:</strong>
-            {{ report.health.injuries }}
+
+        <!-- الانف (Nose) -->
+        <div class="health-check-row">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <strong>2. الانف</strong>
+                </div>
+                <div class="col-md-6">
+                    {% if report.health.nose_status %}
+                        <span class="status-badge status-{{ 'normal' if report.health.nose_status.value == 'سليم' else 'abnormal' if report.health.nose_status.value == 'غير طبيعي' else 'needs' }}">
+                            {{ report.health.nose_status.value }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted">{{ report.health.nose_notes if report.health.nose_notes else '-' }}</small>
+                </div>
+            </div>
         </div>
-        {% endif %}
-        {% if report.health.vet_visit_needed %}
-        <div class="alert alert-danger mt-3">
-            <strong><i class="fas fa-exclamation-triangle me-2"></i>يحتاج زيارة بيطرية</strong>
-            {% if report.health.vet_visit_reason %}
-            <br>السبب: {{ report.health.vet_visit_reason }}
-            {% endif %}
+
+        <!-- الأذن (Ears) -->
+        <div class="health-check-row">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <strong>3. الأذن</strong>
+                </div>
+                <div class="col-md-6">
+                    {% if report.health.ears_status %}
+                        <span class="status-badge status-{{ 'normal' if report.health.ears_status.value == 'سليم' else 'abnormal' if report.health.ears_status.value == 'غير طبيعي' else 'needs' }}">
+                            {{ report.health.ears_status.value }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted">{{ report.health.ears_notes if report.health.ears_notes else '-' }}</small>
+                </div>
+            </div>
         </div>
-        {% endif %}
-        {% if report.health.notes %}
-        <div class="mt-3">
-            <strong>ملاحظات:</strong>
-            <p class="mb-0 mt-2">{{ report.health.notes }}</p>
+
+        <!-- الفم (Mouth) -->
+        <div class="health-check-row">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <strong>4. الفم</strong>
+                </div>
+                <div class="col-md-6">
+                    {% if report.health.mouth_status %}
+                        <span class="status-badge status-{{ 'normal' if report.health.mouth_status.value == 'سليم' else 'abnormal' if report.health.mouth_status.value == 'غير طبيعي' else 'needs' }}">
+                            {{ report.health.mouth_status.value }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted">{{ report.health.mouth_notes if report.health.mouth_notes else '-' }}</small>
+                </div>
+            </div>
         </div>
-        {% endif %}
+
+        <!-- الاسنان (Teeth) -->
+        <div class="health-check-row">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <strong>5. الاسنان</strong>
+                </div>
+                <div class="col-md-6">
+                    {% if report.health.teeth_status %}
+                        <span class="status-badge status-{{ 'normal' if report.health.teeth_status.value == 'سليم' else 'abnormal' if report.health.teeth_status.value == 'غير طبيعي' else 'needs' }}">
+                            {{ report.health.teeth_status.value }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted">{{ report.health.teeth_notes if report.health.teeth_notes else '-' }}</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- اللثة (Gums) -->
+        <div class="health-check-row">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <strong>6. اللثة</strong>
+                </div>
+                <div class="col-md-6">
+                    {% if report.health.gums_status %}
+                        <span class="status-badge status-{{ 'normal' if report.health.gums_status.value == 'سليم' else 'abnormal' if report.health.gums_status.value == 'غير طبيعي' else 'needs' }}">
+                            {{ report.health.gums_status.value }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted">{{ report.health.gums_notes if report.health.gums_notes else '-' }}</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- الاطراف الامامية (Front legs) -->
+        <div class="health-check-row">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <strong>7. الاطراف الامامية</strong>
+                </div>
+                <div class="col-md-6">
+                    {% if report.health.front_limbs_status %}
+                        <span class="status-badge status-{{ 'normal' if report.health.front_limbs_status.value == 'سليم' else 'abnormal' if report.health.front_limbs_status.value == 'غير طبيعي' else 'needs' }}">
+                            {{ report.health.front_limbs_status.value }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted">{{ report.health.front_limbs_notes if report.health.front_limbs_notes else '-' }}</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- الاطراف الخلفية (Back legs) -->
+        <div class="health-check-row">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <strong>8. الاطراف الخلفية</strong>
+                </div>
+                <div class="col-md-6">
+                    {% if report.health.back_limbs_status %}
+                        <span class="status-badge status-{{ 'normal' if report.health.back_limbs_status.value == 'سليم' else 'abnormal' if report.health.back_limbs_status.value == 'غير طبيعي' else 'needs' }}">
+                            {{ report.health.back_limbs_status.value }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted">{{ report.health.back_limbs_notes if report.health.back_limbs_notes else '-' }}</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- الشعر (Hair) -->
+        <div class="health-check-row">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <strong>9. الشعر</strong>
+                </div>
+                <div class="col-md-6">
+                    {% if report.health.hair_status %}
+                        <span class="status-badge status-{{ 'normal' if report.health.hair_status.value == 'سليم' else 'abnormal' if report.health.hair_status.value == 'غير طبيعي' else 'needs' }}">
+                            {{ report.health.hair_status.value }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted">{{ report.health.hair_notes if report.health.hair_notes else '-' }}</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- الذيل (Tail) -->
+        <div class="health-check-row">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <strong>10. الذيل</strong>
+                </div>
+                <div class="col-md-6">
+                    {% if report.health.tail_status %}
+                        <span class="status-badge status-{{ 'normal' if report.health.tail_status.value == 'سليم' else 'abnormal' if report.health.tail_status.value == 'غير طبيعي' else 'needs' }}">
+                            {{ report.health.tail_status.value }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted">{{ report.health.tail_notes if report.health.tail_notes else '-' }}</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- المؤخرة (Rear) -->
+        <div class="health-check-row">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <strong>11. المؤخرة</strong>
+                </div>
+                <div class="col-md-6">
+                    {% if report.health.rear_status %}
+                        <span class="status-badge status-{{ 'normal' if report.health.rear_status.value == 'سليم' else 'abnormal' if report.health.rear_status.value == 'غير طبيعي' else 'needs' }}">
+                            {{ report.health.rear_status.value }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <small class="text-muted">{{ report.health.rear_notes if report.health.rear_notes else '-' }}</small>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endif %}
 
-<!-- Care Details -->
-{% if report.care %}
-<div class="card report-section border-0 shadow-sm">
-    <div class="card-header bg-white">
-        <h5 class="mb-0">
-            <i class="fas fa-hand-holding-heart me-2"></i>
-            الرعاية اليومية
-        </h5>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            {% if report.care.food_amount_kg %}
-            <div class="col-md-4">
-                <div class="info-row">
-                    <strong>كمية الطعام:</strong>
-                    <span class="ms-2">{{ report.care.food_amount_kg }} كجم</span>
-                </div>
-            </div>
-            {% endif %}
-            {% if report.care.water_consumption %}
-            <div class="col-md-4">
-                <div class="info-row">
-                    <strong>استهلاك الماء:</strong>
-                    <span class="ms-2">{{ report.care.water_consumption }}</span>
-                </div>
-            </div>
-            {% endif %}
-            <div class="col-md-4">
-                <div class="info-row">
-                    <strong>التنظيف/الاستحمام:</strong>
-                    <span class="ms-2">
-                        {% if report.care.grooming_done %}
-                            <i class="fas fa-check text-success"></i> تم
-                        {% else %}
-                            <i class="fas fa-times text-danger"></i> لم يتم
-                        {% endif %}
-                    </span>
-                </div>
-            </div>
-            {% if report.care.exercise_duration_minutes %}
-            <div class="col-md-4">
-                <div class="info-row">
-                    <strong>مدة التمرين:</strong>
-                    <span class="ms-2">{{ report.care.exercise_duration_minutes }} دقيقة</span>
-                </div>
-            </div>
-            {% endif %}
-            {% if report.care.exercise_type %}
-            <div class="col-md-4">
-                <div class="info-row">
-                    <strong>نوع التمرين:</strong>
-                    <span class="ms-2">{{ report.care.exercise_type }}</span>
-                </div>
-            </div>
-            {% endif %}
-            <div class="col-md-4">
-                <div class="info-row">
-                    <strong>عدد مرات الإخراج:</strong>
-                    <span class="ms-2">{{ report.care.bathroom_breaks }}</span>
-                </div>
-            </div>
-            {% if report.care.stool_condition %}
-            <div class="col-md-4">
-                <div class="info-row">
-                    <strong>حالة البراز:</strong>
-                    <span class="ms-2">{{ report.care.stool_condition }}</span>
-                </div>
-            </div>
-            {% endif %}
-        </div>
-        {% if report.care.notes %}
-        <div class="mt-3">
-            <strong>ملاحظات:</strong>
-            <p class="mb-0 mt-2">{{ report.care.notes }}</p>
-        </div>
-        {% endif %}
-    </div>
-</div>
-{% endif %}
-
-<!-- Behavior -->
-{% if report.behavior %}
-<div class="card report-section border-0 shadow-sm">
-    <div class="card-header bg-white">
-        <h5 class="mb-0">
-            <i class="fas fa-smile me-2"></i>
-            الملاحظات السلوكية
-        </h5>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <div class="info-row">
-                    <strong>المزاج:</strong>
-                    <span class="ms-2">{{ report.behavior.mood }}</span>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="info-row">
-                    <strong>مستوى الطاعة:</strong>
-                    <span class="ms-2">{{ report.behavior.obedience_level }}</span>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="info-row">
-                    <strong>علامات عدوانية:</strong>
-                    <span class="ms-2">
-                        {% if report.behavior.aggression_signs %}
-                            <i class="fas fa-exclamation-triangle text-danger"></i> نعم
-                        {% else %}
-                            <i class="fas fa-check text-success"></i> لا
-                        {% endif %}
-                    </span>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="info-row">
-                    <strong>علامات قلق:</strong>
-                    <span class="ms-2">
-                        {% if report.behavior.anxiety_signs %}
-                            <i class="fas fa-exclamation-triangle text-warning"></i> نعم
-                        {% else %}
-                            <i class="fas fa-check text-success"></i> لا
-                        {% endif %}
-                    </span>
-                </div>
-            </div>
-        </div>
-        {% if report.behavior.social_interactions %}
-        <div class="mt-3">
-            <strong>التفاعلات الاجتماعية:</strong>
-            <p class="mb-0 mt-2">{{ report.behavior.social_interactions }}</p>
-        </div>
-        {% endif %}
-        {% if report.behavior.unusual_behaviors %}
-        <div class="alert alert-warning mt-3">
-            <strong>سلوكيات غير عادية:</strong>
-            <p class="mb-0">{{ report.behavior.unusual_behaviors }}</p>
-        </div>
-        {% endif %}
-        {% if report.behavior.notes %}
-        <div class="mt-3">
-            <strong>ملاحظات:</strong>
-            <p class="mb-0 mt-2">{{ report.behavior.notes }}</p>
-        </div>
-        {% endif %}
-    </div>
-</div>
-{% endif %}
-
-<!-- Training Logs -->
-{% if report.training_logs %}
-<div class="card report-section border-0 shadow-sm">
-    <div class="card-header bg-white">
-        <h5 class="mb-0">
-            <i class="fas fa-graduation-cap me-2"></i>
-            سجلات التدريب
-        </h5>
+<!-- ثالثاً: التدريب -->
+{% if report.training_sessions %}
+<div class="card section-card border-0 shadow-sm">
+    <div class="form-section-header">
+        <h5 class="mb-0">ثالثاً: التدريب</h5>
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-bordered">
+            <table class="training-table">
                 <thead>
                     <tr>
-                        <th>نوع التدريب</th>
-                        <th>المدة</th>
-                        <th>التقييم</th>
-                        <th>الملاحظات</th>
+                        <th style="width: 15%;">نوع التدريب</th>
+                        <th style="width: 30%;">الوصف</th>
+                        <th style="width: 15%;">من</th>
+                        <th style="width: 15%;">إلى</th>
+                        <th style="width: 25%;">ملاحظات</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for log in report.training_logs %}
+                    {% for session in report.training_sessions %}
                     <tr>
-                        <td>{{ log.training_type }}</td>
-                        <td>{{ log.duration_minutes }} دقيقة</td>
-                        <td>
-                            <span class="badge bg-{{ 'success' if log.performance_rating >= 4 else 'warning' if log.performance_rating >= 3 else 'danger' }}">
-                                {{ log.performance_rating }}/5
-                            </span>
-                        </td>
-                        <td>{{ log.notes or '-' }}</td>
+                        <td class="fw-bold">{{ session.training_type.value }}</td>
+                        <td>{{ session.description if session.description else '-' }}</td>
+                        <td>{{ session.time_from.strftime('%H:%M') if session.time_from else '-' }}</td>
+                        <td>{{ session.time_to.strftime('%H:%M') if session.time_to else '-' }}</td>
+                        <td>{{ session.notes if session.notes else '-' }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -415,32 +467,140 @@
 </div>
 {% endif %}
 
-<!-- Incidents -->
-{% if report.incidents %}
-<div class="card report-section border-0 shadow-sm border-danger">
-    <div class="card-header bg-danger text-white">
-        <h5 class="mb-0">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            الحوادث والطوارئ
-        </h5>
+<!-- رابعاً: العناية -->
+{% if report.care %}
+<div class="card section-card border-0 shadow-sm">
+    <div class="form-section-header">
+        <h5 class="mb-0">رابعاً: العناية</h5>
     </div>
     <div class="card-body">
-        {% for incident in report.incidents %}
-        <div class="alert alert-{{ 'danger' if incident.severity == 'خطير' else 'warning' }} mb-3">
-            <h6 class="alert-heading">
-                {{ incident.incident_type }} - {{ incident.severity }}
-            </h6>
-            <p class="mb-2"><strong>الوقت:</strong> {{ incident.incident_time.strftime('%H:%M') }}</p>
-            <p class="mb-2"><strong>الوصف:</strong> {{ incident.description }}</p>
-            {% if incident.action_taken %}
-            <p class="mb-2"><strong>الإجراء المتخذ:</strong> {{ incident.action_taken }}</p>
-            {% endif %}
-            {% if incident.reported_to_supervisor %}
-            <p class="mb-0"><i class="fas fa-check text-success"></i> تم إبلاغ المشرف</p>
-            {% endif %}
+        <div class="row">
+            <div class="col-md-6">
+                <div class="info-row">
+                    <strong>كمية الطعام:</strong>
+                    <span class="ms-2">{{ report.care.food_amount if report.care.food_amount else '-' }}</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-row">
+                    <strong>نوع الطعام:</strong>
+                    <span class="ms-2">{{ report.care.food_type if report.care.food_type else '-' }}</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-row">
+                    <strong>المكملات الغذائية:</strong>
+                    <span class="ms-2">{{ report.care.supplements if report.care.supplements else '-' }}</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-row">
+                    <strong>كمية الماء:</strong>
+                    <span class="ms-2">{{ report.care.water_amount if report.care.water_amount else '-' }}</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-row">
+                    <strong>تمشيط الكلب:</strong>
+                    <span class="ms-2">
+                        {% if report.care.grooming_done %}
+                            <i class="fas fa-check text-success"></i> نعم
+                        {% else %}
+                            <i class="fas fa-times text-danger"></i> لا
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-row">
+                    <strong>غسل الكلب:</strong>
+                    <span class="ms-2">
+                        {% if report.care.washing_done %}
+                            <i class="fas fa-check text-success"></i> نعم
+                        {% else %}
+                            <i class="fas fa-times text-danger"></i> لا
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-row">
+                    <strong>مكان التبرز:</strong>
+                    <span class="ms-2">{{ report.care.excretion_location if report.care.excretion_location else '-' }}</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-row">
+                    <strong>لون البراز:</strong>
+                    <span class="ms-2">{{ report.care.stool_color.value if report.care.stool_color else '-' }}</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-row">
+                    <strong>شكل البراز:</strong>
+                    <span class="ms-2">{{ report.care.stool_shape.value if report.care.stool_shape else '-' }}</span>
+                </div>
+            </div>
         </div>
-        {% endfor %}
     </div>
 </div>
 {% endif %}
+
+<!-- خامساً: سلوك الكلب -->
+{% if report.behavior %}
+<div class="card section-card border-0 shadow-sm">
+    <div class="form-section-header">
+        <h5 class="mb-0">خامساً: سلوك الكلب</h5>
+    </div>
+    <div class="card-body">
+        <div class="mb-3">
+            <strong>السلوك الجيد للكلب/الملاحظات:</strong>
+            <p class="mt-2 mb-0">{{ report.behavior.good_behavior_notes if report.behavior.good_behavior_notes else '-' }}</p>
+        </div>
+        <div>
+            <strong>السلوك السيء للكلب/الملاحظات:</strong>
+            <p class="mt-2 mb-0">{{ report.behavior.bad_behavior_notes if report.behavior.bad_behavior_notes else '-' }}</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- سادساً: حالات الاشتباه والكشف -->
+{% if report.incidents and report.incidents|length > 0 %}
+<div class="card section-card border-0 shadow-sm">
+    <div class="form-section-header">
+        <h5 class="mb-0">سادساً: حالات الاشتباه والكشف</h5>
+    </div>
+    <div class="card-body">
+        {% set suspicion_incidents = report.incidents|selectattr('incident_type.value', 'equalto', 'اشتباه')|list %}
+        {% set detection_incidents = report.incidents|selectattr('incident_type.value', 'equalto', 'كشف')|list %}
+        
+        <div class="mb-3">
+            <strong>حالات الاشتباه:</strong>
+            {% if suspicion_incidents|length > 0 %}
+                <ul class="mt-2">
+                    {% for incident in suspicion_incidents %}
+                    <li>{{ incident.description }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="mt-2 mb-0 text-muted">لا توجد حالات اشتباه</p>
+            {% endif %}
+        </div>
+        <div>
+            <strong>حالات الكشف:</strong>
+            {% if detection_incidents|length > 0 %}
+                <ul class="mt-2">
+                    {% for incident in detection_incidents %}
+                    <li>{{ incident.description }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="mt-2 mb-0 text-muted">لا توجد حالات كشف</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}

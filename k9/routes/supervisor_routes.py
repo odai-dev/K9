@@ -8,23 +8,11 @@ from datetime import date, datetime, timedelta
 from k9.services.handler_service import DailyScheduleService
 from k9.models.models_handler_daily import DailySchedule, DailyScheduleItem
 from k9.models.models import UserRole, User, Dog, Project, Shift
+from k9.decorators import supervisor_required
 from app import db
-from functools import wraps
 
 
 supervisor_bp = Blueprint('supervisor', __name__, url_prefix='/supervisor')
-
-
-def supervisor_required(f):
-    """Decorator to require SUPERVISOR or admin role"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        allowed_roles = [UserRole.SUPERVISOR, UserRole.GENERAL_ADMIN, UserRole.PROJECT_ADMIN]
-        if not current_user.is_authenticated or current_user.role not in allowed_roles:
-            flash('هذه الصفحة متاحة للمشرفين فقط', 'danger')
-            return redirect(url_for('main.index'))
-        return f(*args, **kwargs)
-    return decorated_function
 
 
 @supervisor_bp.route('/schedules')
@@ -325,3 +313,188 @@ def get_dogs_by_project(project_id):
             for d in dogs
         ]
     })
+
+
+# ============================================================================
+# Handler Reports Management
+# ============================================================================
+
+@supervisor_bp.route('/reports')
+@login_required
+@supervisor_required
+def reports_index():
+    """قائمة تقارير السائسين للمراجعة"""
+    from k9.models.models_handler_daily import HandlerReport, ReportStatus
+    from k9.services.handler_service import HandlerReportService
+    
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    
+    # Filters
+    handler_id = request.args.get('handler_id')
+    project_id = request.args.get('project_id')
+    status_filter = request.args.get('status')
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+    
+    # Build query
+    query = HandlerReport.query
+    
+    # Filter by project if supervisor has project
+    if current_user.role == UserRole.SUPERVISOR and current_user.project_id:
+        query = query.filter_by(project_id=current_user.project_id)
+    elif project_id:
+        query = query.filter_by(project_id=project_id)
+    
+    if handler_id:
+        query = query.filter_by(handler_user_id=handler_id)
+    if status_filter:
+        query = query.filter_by(status=ReportStatus[status_filter])
+    if date_from:
+        query = query.filter(HandlerReport.date >= datetime.strptime(date_from, '%Y-%m-%d').date())
+    if date_to:
+        query = query.filter(HandlerReport.date <= datetime.strptime(date_to, '%Y-%m-%d').date())
+    
+    # Pagination
+    pagination = query.order_by(HandlerReport.date.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    # Get statistics
+    stats = {}
+    if current_user.role == UserRole.SUPERVISOR and current_user.project_id:
+        base_query = HandlerReport.query.filter_by(project_id=current_user.project_id)
+    else:
+        base_query = HandlerReport.query
+    
+    stats['total'] = base_query.count()
+    stats['pending'] = base_query.filter_by(status=ReportStatus.SUBMITTED).count()
+    stats['approved'] = base_query.filter_by(status=ReportStatus.APPROVED).count()
+    stats['rejected'] = base_query.filter_by(status=ReportStatus.REJECTED).count()
+    
+    # Get handlers for filter
+    handlers = []
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        handlers = User.query.filter_by(role=UserRole.HANDLER).all()
+    elif current_user.project_id:
+        handlers = User.query.filter_by(role=UserRole.HANDLER, project_id=current_user.project_id).all()
+    
+    # Get projects for filter
+    projects = []
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        projects = Project.query.all()
+    elif current_user.project_id:
+        projects = [Project.query.get(current_user.project_id)]
+    
+    return render_template('supervisor/reports_index.html',
+                         page_title='تقارير السائسين',
+                         reports=pagination.items,
+                         pagination=pagination,
+                         stats=stats,
+                         handlers=handlers,
+                         projects=projects,
+                         ReportStatus=ReportStatus)
+
+
+@supervisor_bp.route('/reports/<report_id>')
+@login_required
+@supervisor_required
+def report_view(report_id):
+    """عرض تفاصيل التقرير"""
+    from k9.models.models_handler_daily import HandlerReport, ReportStatus
+    
+    report = HandlerReport.query.get_or_404(report_id)
+    
+    # Verify access
+    if current_user.role == UserRole.SUPERVISOR and current_user.project_id:
+        if str(report.project_id) != str(current_user.project_id):
+            flash('غير مصرح لك بعرض هذا التقرير', 'danger')
+            return redirect(url_for('supervisor.reports_index'))
+    
+    return render_template('supervisor/report_view.html',
+                         page_title=f'التقرير اليومي - {report.date.strftime("%Y-%m-%d")}',
+                         report=report,
+                         ReportStatus=ReportStatus)
+
+
+@supervisor_bp.route('/reports/<report_id>/approve', methods=['POST'])
+@login_required
+@supervisor_required
+def report_approve(report_id):
+    """اعتماد التقرير"""
+    from k9.models.models_handler_daily import HandlerReport, ReportStatus
+    from k9.services.handler_service import HandlerReportService, NotificationService
+    from k9.models.models_handler_daily import NotificationType
+    
+    report = HandlerReport.query.get_or_404(report_id)
+    
+    # Verify access
+    if current_user.role == UserRole.SUPERVISOR and current_user.project_id:
+        if str(report.project_id) != str(current_user.project_id):
+            return jsonify({'success': False, 'error': 'غير مصرح لك'})
+    
+    review_notes = request.json.get('review_notes', '')
+    
+    # Update report status
+    report.status = ReportStatus.APPROVED
+    report.reviewed_by_user_id = current_user.id
+    report.reviewed_at = datetime.utcnow()
+    report.review_notes = review_notes
+    
+    db.session.commit()
+    
+    # Send notification to handler
+    NotificationService.create_notification(
+        user_id=str(report.handler_user_id),
+        notification_type=NotificationType.REPORT_APPROVED,
+        title="تم اعتماد التقرير",
+        message=f"تم اعتماد تقريرك اليومي بتاريخ {report.date.strftime('%Y-%m-%d')} من قبل {current_user.full_name}",
+        related_id=str(report.id),
+        related_type='HandlerReport'
+    )
+    
+    flash('تم اعتماد التقرير بنجاح', 'success')
+    return jsonify({'success': True, 'message': 'تم اعتماد التقرير بنجاح'})
+
+
+@supervisor_bp.route('/reports/<report_id>/reject', methods=['POST'])
+@login_required
+@supervisor_required
+def report_reject(report_id):
+    """رفض التقرير"""
+    from k9.models.models_handler_daily import HandlerReport, ReportStatus
+    from k9.services.handler_service import HandlerReportService, NotificationService
+    from k9.models.models_handler_daily import NotificationType
+    
+    report = HandlerReport.query.get_or_404(report_id)
+    
+    # Verify access
+    if current_user.role == UserRole.SUPERVISOR and current_user.project_id:
+        if str(report.project_id) != str(current_user.project_id):
+            return jsonify({'success': False, 'error': 'غير مصرح لك'})
+    
+    review_notes = request.json.get('review_notes', '')
+    
+    if not review_notes:
+        return jsonify({'success': False, 'error': 'يجب إدخال سبب الرفض'})
+    
+    # Update report status
+    report.status = ReportStatus.REJECTED
+    report.reviewed_by_user_id = current_user.id
+    report.reviewed_at = datetime.utcnow()
+    report.review_notes = review_notes
+    
+    db.session.commit()
+    
+    # Send notification to handler
+    NotificationService.create_notification(
+        user_id=str(report.handler_user_id),
+        notification_type=NotificationType.REPORT_REJECTED,
+        title="تم رفض التقرير",
+        message=f"تم رفض تقريرك اليومي بتاريخ {report.date.strftime('%Y-%m-%d')}. السبب: {review_notes}",
+        related_id=str(report.id),
+        related_type='HandlerReport'
+    )
+    
+    flash('تم رفض التقرير', 'warning')
+    return jsonify({'success': True, 'message': 'تم رفض التقرير'})

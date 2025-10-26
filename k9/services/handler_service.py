@@ -103,14 +103,18 @@ class DailyScheduleService:
         return False
     
     @staticmethod
-    def lock_schedule(schedule_id: str) -> bool:
+    def lock_schedule(schedule_id: str) -> tuple:
         """إقفال الجدول اليومي"""
         schedule = DailySchedule.query.get(schedule_id)
-        if schedule:
-            schedule.status = ScheduleStatus.LOCKED
-            db.session.commit()
-            return True
-        return False
+        if not schedule:
+            return False, "الجدول غير موجود"
+        
+        if schedule.status == ScheduleStatus.LOCKED:
+            return False, "الجدول مقفل بالفعل"
+        
+        schedule.status = ScheduleStatus.LOCKED
+        db.session.commit()
+        return True, "تم إقفال الجدول بنجاح"
     
     @staticmethod
     def get_handler_schedule_for_date(handler_user_id: str, target_date: date):
@@ -177,9 +181,10 @@ class HandlerReportService:
     
     @staticmethod
     def create_report(handler_user_id: str, dog_id: str, schedule_item_id: Optional[str],
-                     project_id: Optional[str], location: Optional[str]) -> tuple:
+                     project_id: Optional[str], location: Optional[str], report_date: Optional[date] = None) -> tuple:
         """إنشاء تقرير جديد"""
-        report_date = date.today()
+        if report_date is None:
+            report_date = date.today()
         
         report = HandlerReport(
             date=report_date,

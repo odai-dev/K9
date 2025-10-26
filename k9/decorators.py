@@ -53,3 +53,28 @@ def handler_required(f):
         
         return f(*args, **kwargs)
     return decorated_function
+
+
+def supervisor_required(f):
+    """Require supervisor-level privileges (GENERAL_ADMIN, PROJECT_MANAGER, SUPERVISOR, or PROJECT_ADMIN)"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash('يرجى تسجيل الدخول للوصول إلى هذه الصفحة', 'warning')
+            return redirect(url_for('auth.login'))
+        
+        # Allow GENERAL_ADMIN, PROJECT_MANAGER, and legacy SUPERVISOR/PROJECT_ADMIN roles
+        allowed_roles = [UserRole.GENERAL_ADMIN, UserRole.PROJECT_MANAGER]
+        
+        # Check for SUPERVISOR and PROJECT_ADMIN if they exist
+        if hasattr(UserRole, 'SUPERVISOR'):
+            allowed_roles.append(UserRole.SUPERVISOR)
+        if hasattr(UserRole, 'PROJECT_ADMIN'):
+            allowed_roles.append(UserRole.PROJECT_ADMIN)
+        
+        if current_user.role not in allowed_roles:
+            flash('هذه الصفحة متاحة للمشرفين فقط', 'danger')
+            return redirect(url_for('main.index'))
+        
+        return f(*args, **kwargs)
+    return decorated_function

@@ -249,6 +249,43 @@ def reset_password(user_id):
     return redirect(url_for('user_management.index'))
 
 
+@user_mgmt_bp.route('/<user_id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit(user_id):
+    """تعديل بيانات المستخدم"""
+    user = User.query.get_or_404(user_id)
+    
+    if request.method == 'POST':
+        user.full_name = request.form.get('full_name')
+        user.email = request.form.get('email')
+        user.phone = request.form.get('phone') or None
+        
+        role = request.form.get('role')
+        user.role = UserRole[role]
+        
+        project_id = request.form.get('project_id') or None
+        dog_id = request.form.get('dog_id') or None
+        
+        user.project_id = project_id
+        user.dog_id = dog_id
+        
+        db.session.commit()
+        
+        flash(f'تم تحديث بيانات المستخدم {user.username} بنجاح', 'success')
+        return redirect(url_for('user_management.index'))
+    
+    # GET request
+    projects = Project.query.all()
+    dogs = Dog.query.filter_by(current_status='ACTIVE').all()
+    
+    return render_template('admin/user_management/edit.html',
+                         page_title=f'تعديل مستخدم - {user.username}',
+                         user=user,
+                         projects=projects,
+                         dogs=dogs)
+
+
 @user_mgmt_bp.route('/<user_id>')
 @login_required
 @admin_required

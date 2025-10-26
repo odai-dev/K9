@@ -393,3 +393,65 @@ class Notification(db.Model):
             self.read = True
             self.read_at = datetime.utcnow()
             db.session.commit()
+
+
+# ============================================================================
+# Task Assignment Model
+# ============================================================================
+
+class TaskStatus(Enum):
+    """حالة المهمة"""
+    PENDING = "PENDING"        # قيد الانتظار
+    IN_PROGRESS = "IN_PROGRESS"  # قيد التنفيذ
+    COMPLETED = "COMPLETED"    # مكتملة
+    CANCELLED = "CANCELLED"    # ملغاة
+
+
+class TaskPriority(Enum):
+    """أولوية المهمة"""
+    LOW = "منخفضة"
+    MEDIUM = "متوسطة"
+    HIGH = "عالية"
+    URGENT = "عاجلة"
+
+
+class Task(db.Model):
+    """المهام والتكليفات"""
+    __tablename__ = 'task'
+    
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+    
+    # Task details
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(Text, nullable=True)
+    priority = db.Column(db.Enum(TaskPriority), nullable=False, default=TaskPriority.MEDIUM)
+    status = db.Column(db.Enum(TaskStatus), nullable=False, default=TaskStatus.PENDING)
+    
+    # Assignment
+    assigned_to_user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'), nullable=False)
+    created_by_user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'), nullable=False)
+    
+    # Optional project association
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=True)
+    
+    # Timing
+    due_date = db.Column(db.DateTime, nullable=True)
+    completed_at = db.Column(db.DateTime, nullable=True)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    assigned_to = db.relationship('User', foreign_keys=[assigned_to_user_id], backref='assigned_tasks')
+    created_by = db.relationship('User', foreign_keys=[created_by_user_id], backref='created_tasks')
+    project = db.relationship('Project', backref='tasks')
+    
+    __table_args__ = (
+        db.Index('idx_task_assigned_to', 'assigned_to_user_id'),
+        db.Index('idx_task_status', 'status'),
+        db.Index('idx_task_due_date', 'due_date'),
+    )
+    
+    def __repr__(self):
+        return f'<Task {self.title} - {self.status.value}>'
