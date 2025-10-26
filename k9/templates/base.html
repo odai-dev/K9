@@ -176,6 +176,9 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="managementDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-users-cog me-1"></i>الإدارة
+                            {% if admin_unread_count > 0 %}
+                            <span class="badge bg-danger rounded-pill ms-1">{{ admin_unread_count }}</span>
+                            {% endif %}
                         </a>
                         <ul class="dropdown-menu shadow">
                             {% if current_user.role.value == 'GENERAL_ADMIN' %}
@@ -199,6 +202,15 @@
                             <li>
                                 <a class="dropdown-item" href="{{ url_for('supervisor.schedules_index') }}">
                                     <i class="fas fa-calendar-alt me-2"></i>الجداول اليومية
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item d-flex justify-content-between align-items-center" href="{{ url_for('admin.notifications') }}">
+                                    <span><i class="fas fa-bell me-2"></i>الإشعارات</span>
+                                    {% if admin_unread_count > 0 %}
+                                    <span class="badge bg-danger rounded-pill">{{ admin_unread_count }}</span>
+                                    {% endif %}
                                 </a>
                             </li>
                             {% if current_user.role.value == 'GENERAL_ADMIN' %}
