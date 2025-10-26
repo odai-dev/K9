@@ -58,10 +58,12 @@ def dashboard():
     )
     
     # Get notifications
-    recent_notifications = NotificationService.get_unread_notifications(
-        str(current_user.id), limit=5
+    recent_notifications = NotificationService.get_user_notifications(
+        str(current_user.id), unread_only=True, limit=5
     )
-    unread_count = NotificationService.get_unread_count(str(current_user.id))
+    unread_count = len(NotificationService.get_user_notifications(
+        str(current_user.id), unread_only=True
+    ))
     
     # Get recent reports
     recent_reports = HandlerReport.query.filter_by(
@@ -378,7 +380,9 @@ def my_reports():
 @handler_required
 def get_unread_count():
     """API: الحصول على عدد الإشعارات غير المقروءة"""
-    count = NotificationService.get_unread_count(str(current_user.id))
+    count = len(NotificationService.get_user_notifications(
+        str(current_user.id), unread_only=True
+    ))
     return jsonify({'count': count})
 
 
