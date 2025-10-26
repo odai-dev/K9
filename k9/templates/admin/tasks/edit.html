@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل المهمة{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-edit me-2"></i>
+                تعديل المهمة
+            </h1>
+            <a href="{{ url_for('tasks.admin_view', task_id=task.id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-right me-1"></i>
+                العودة لعرض المهمة
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 col-md-10 mx-auto">
+        <!-- Task Info Card -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <div class="row text-muted small">
+                    <div class="col-md-6">
+                        <i class="fas fa-user me-1"></i>
+                        <strong>أنشأها:</strong> {{ task.created_by.full_name }}
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <i class="fas fa-calendar me-1"></i>
+                        <strong>بتاريخ:</strong> {{ task.created_at.strftime('%Y-%m-%d %H:%M') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Edit Form -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('tasks.admin_edit', task_id=task.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="mb-4">
+                        <label for="title" class="form-label">
+                            <i class="fas fa-heading me-1"></i>
+                            عنوان المهمة <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" 
+                               class="form-control form-control-lg" 
+                               id="title" 
+                               name="title" 
+                               required 
+                               value="{{ task.title }}"
+                               maxlength="200">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="description" class="form-label">
+                            <i class="fas fa-align-right me-1"></i>
+                            الوصف
+                        </label>
+                        <textarea class="form-control" 
+                                  id="description" 
+                                  name="description" 
+                                  rows="5">{{ task.description or '' }}</textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="assigned_to_user_id" class="form-label">
+                            <i class="fas fa-user me-1"></i>
+                            المكلف بالمهمة <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select form-select-lg" 
+                                id="assigned_to_user_id" 
+                                name="assigned_to_user_id" 
+                                required
+                                disabled>
+                            {% for handler in handlers %}
+                            <option value="{{ handler.id }}" {{ 'selected' if handler.id == task.assigned_to_user_id }}>
+                                {{ handler.full_name }} - {{ handler.username }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text text-warning">
+                            <i class="fas fa-info-circle me-1"></i>
+                            لا يمكن تغيير السائس المكلف بعد إنشاء المهمة
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label for="priority" class="form-label">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                الأولوية
+                            </label>
+                            <select class="form-select" id="priority" name="priority">
+                                <option value="LOW" {{ 'selected' if task.priority == TaskPriority.LOW }}>منخفضة</option>
+                                <option value="MEDIUM" {{ 'selected' if task.priority == TaskPriority.MEDIUM }}>متوسطة</option>
+                                <option value="HIGH" {{ 'selected' if task.priority == TaskPriority.HIGH }}>عالية</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="status" class="form-label">
+                                <i class="fas fa-tasks me-1"></i>
+                                الحالة
+                            </label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="PENDING" {{ 'selected' if task.status == TaskStatus.PENDING }}>قيد الانتظار</option>
+                                <option value="IN_PROGRESS" {{ 'selected' if task.status == TaskStatus.IN_PROGRESS }}>قيد التنفيذ</option>
+                                <option value="COMPLETED" {{ 'selected' if task.status == TaskStatus.COMPLETED }}>مكتملة</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="due_date" class="form-label">
+                                <i class="fas fa-calendar-alt me-1"></i>
+                                تاريخ الاستحقاق
+                            </label>
+                            <input type="datetime-local" 
+                                   class="form-control" 
+                                   id="due_date" 
+                                   name="due_date"
+                                   value="{{ task.due_date.strftime('%Y-%m-%dT%H:%M') if task.due_date else '' }}">
+                        </div>
+                    </div>
+                    
+                    {% if task.completed_at %}
+                    <div class="alert alert-success mb-4">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>المهمة مكتملة!</strong>
+                        <br>
+                        تم إكمالها بتاريخ: {{ task.completed_at.strftime('%Y-%m-%d %H:%M') }}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-between pt-3 border-top">
+                        <a href="{{ url_for('tasks.admin_view', task_id=task.id) }}" class="btn btn-lg btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>
+                            إلغاء
+                        </a>
+                        <button type="submit" class="btn btn-lg btn-primary">
+                            <i class="fas fa-save me-1"></i>
+                            حفظ التعديلات
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

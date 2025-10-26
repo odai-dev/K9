@@ -1,0 +1,452 @@
+{% extends "base.html" %}
+
+{% block title %}عرض التقرير اليومي{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-file-alt me-2"></i>
+                التقرير اليومي للسائس
+            </h1>
+            <div>
+                <button onclick="window.print()" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-print me-1"></i>
+                    طباعة
+                </button>
+                <a href="{{ url_for('supervisor.reports_index') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-right me-1"></i>
+                    العودة للقائمة
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Badge -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1">حالة التقرير</h5>
+                        {% if report.status.value == 'SUBMITTED' %}
+                            <span class="badge bg-warning fs-6">
+                                <i class="fas fa-clock me-1"></i>قيد المراجعة
+                            </span>
+                        {% elif report.status.value == 'APPROVED' %}
+                            <span class="badge bg-success fs-6">
+                                <i class="fas fa-check-circle me-1"></i>معتمد
+                            </span>
+                        {% elif report.status.value == 'REJECTED' %}
+                            <span class="badge bg-danger fs-6">
+                                <i class="fas fa-times-circle me-1"></i>مرفوض
+                            </span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if report.status.value == 'SUBMITTED' %}
+                    <div>
+                        <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#approveModal">
+                            <i class="fas fa-check me-1"></i>
+                            اعتماد
+                        </button>
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                            <i class="fas fa-times me-1"></i>
+                            رفض
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- General Information -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    المعلومات العامة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <strong>التاريخ:</strong>
+                        <p>{{ report.date.strftime('%Y-%m-%d') }} ({{ report.date.strftime('%A') }})</p>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <strong>السائس:</strong>
+                        <p>{{ report.handler.full_name }}</p>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <strong>الكلب:</strong>
+                        <p>{{ report.dog.name if report.dog else 'غير محدد' }} {% if report.dog %}({{ report.dog.code }}){% endif %}</p>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <strong>المشروع:</strong>
+                        <p>{{ report.project.name if report.project else 'غير محدد' }}</p>
+                    </div>
+                    {% if report.location %}
+                    <div class="col-md-3 mb-3">
+                        <strong>الموقع:</strong>
+                        <p>{{ report.location }}</p>
+                    </div>
+                    {% endif %}
+                    <div class="col-md-3 mb-3">
+                        <strong>تاريخ الإرسال:</strong>
+                        <p>{{ report.submitted_at.strftime('%Y-%m-%d %H:%M') if report.submitted_at else '-' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Health Check Section -->
+{% if report.health %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-heartbeat me-2"></i>
+                    الفحص الظاهري والصحة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <strong>الحالة العامة:</strong>
+                        <p>{{ report.health.general_condition or '-' }}</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong>الحالة المزاجية:</strong>
+                        <p>{{ report.health.mood or '-' }}</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong>مستوى الطاقة:</strong>
+                        <p>{{ report.health.energy_level or '-' }}</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong>الشهية:</strong>
+                        <p>{{ report.health.appetite or '-' }}</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong>درجة الحرارة:</strong>
+                        <p>{{ report.health.temperature or '-' }}</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong>حالة العيون:</strong>
+                        <p>{{ report.health.eyes_condition or '-' }}</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong>حالة الأذنين:</strong>
+                        <p>{{ report.health.ears_condition or '-' }}</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong>حالة الأنف:</strong>
+                        <p>{{ report.health.nose_condition or '-' }}</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong>حالة الفم:</strong>
+                        <p>{{ report.health.mouth_condition or '-' }}</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong>حالة الجلد والفراء:</strong>
+                        <p>{{ report.health.skin_coat_condition or '-' }}</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong>حالة المخالب:</strong>
+                        <p>{{ report.health.paws_condition or '-' }}</p>
+                    </div>
+                    {% if report.health.health_notes %}
+                    <div class="col-12 mb-3">
+                        <strong>ملاحظات صحية:</strong>
+                        <p>{{ report.health.health_notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Training Section -->
+{% if report.training %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-dumbbell me-2"></i>
+                    التدريب والنشاط
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <strong>نوع التدريب:</strong>
+                        <p>{{ report.training.training_type or '-' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>المدة (دقائق):</strong>
+                        <p>{{ report.training.duration_minutes or '-' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>مستوى الأداء:</strong>
+                        <p>{{ report.training.performance_level or '-' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>الاستجابة للأوامر:</strong>
+                        <p>{{ report.training.command_response or '-' }}</p>
+                    </div>
+                    {% if report.training.training_notes %}
+                    <div class="col-12 mb-3">
+                        <strong>ملاحظات التدريب:</strong>
+                        <p>{{ report.training.training_notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Care Section -->
+{% if report.care %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-hands-helping me-2"></i>
+                    الرعاية والعناية
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <strong>التغذية:</strong>
+                        <p>{{ report.care.feeding_notes or '-' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>الماء:</strong>
+                        <p>{{ report.care.water_notes or '-' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>العناية:</strong>
+                        <p>{{ report.care.grooming_notes or '-' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>النظافة:</strong>
+                        <p>{{ report.care.cleaning_notes or '-' }}</p>
+                    </div>
+                    {% if report.care.care_notes %}
+                    <div class="col-12 mb-3">
+                        <strong>ملاحظات عامة:</strong>
+                        <p>{{ report.care.care_notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Behavior Section -->
+{% if report.behavior %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-brain me-2"></i>
+                    السلوك والتصرفات
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <strong>الحالة السلوكية العامة:</strong>
+                        <p>{{ report.behavior.overall_behavior or '-' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>التفاعل مع البشر:</strong>
+                        <p>{{ report.behavior.human_interaction or '-' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>التفاعل مع الكلاب:</strong>
+                        <p>{{ report.behavior.dog_interaction or '-' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong>مستوى القلق:</strong>
+                        <p>{{ report.behavior.anxiety_level or '-' }}</p>
+                    </div>
+                    {% if report.behavior.behavior_notes %}
+                    <div class="col-12 mb-3">
+                        <strong>ملاحظات سلوكية:</strong>
+                        <p>{{ report.behavior.behavior_notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Incidents Section -->
+{% if report.incidents and report.incidents|length > 0 %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm border-start border-danger border-4">
+            <div class="card-header bg-white border-0 pt-3">
+                <h5 class="mb-0 text-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    الحوادث والمشاكل
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for incident in report.incidents %}
+                <div class="mb-3 p-3 border rounded">
+                    <div class="row">
+                        <div class="col-md-4 mb-2">
+                            <strong>نوع الحادث:</strong>
+                            <p>{{ incident.incident_type or '-' }}</p>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <strong>الشدة:</strong>
+                            <p>
+                                <span class="badge bg-{{ 'danger' if incident.severity == 'HIGH' else 'warning' if incident.severity == 'MEDIUM' else 'info' }}">
+                                    {{ incident.severity }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <strong>الوقت:</strong>
+                            <p>{{ incident.incident_time.strftime('%H:%M') if incident.incident_time else '-' }}</p>
+                        </div>
+                        <div class="col-12 mb-2">
+                            <strong>الوصف:</strong>
+                            <p>{{ incident.description or '-' }}</p>
+                        </div>
+                        <div class="col-12">
+                            <strong>الإجراء المتخذ:</strong>
+                            <p>{{ incident.action_taken or '-' }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Review Notes (if reviewed) -->
+{% if report.status.value in ['APPROVED', 'REJECTED'] and report.review_notes %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm border-start {{ 'border-success' if report.status.value == 'APPROVED' else 'border-danger' }} border-4">
+            <div class="card-header bg-white border-0 pt-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-comment-alt me-2"></i>
+                    ملاحظات المراجعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <p><strong>المراجع:</strong> {{ report.reviewed_by.full_name if report.reviewed_by else '-' }}</p>
+                <p><strong>تاريخ المراجعة:</strong> {{ report.reviewed_at.strftime('%Y-%m-%d %H:%M') if report.reviewed_at else '-' }}</p>
+                <p><strong>الملاحظات:</strong></p>
+                <p class="mb-0">{{ report.review_notes }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Approve Modal -->
+<div class="modal fade" id="approveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('supervisor.report_approve', report_id=report.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-check-circle me-2"></i>
+                        اعتماد التقرير
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="approveNotes" class="form-label">ملاحظات (اختياري)</label>
+                        <textarea class="form-control" id="approveNotes" name="review_notes" rows="4" placeholder="أضف ملاحظاتك حول التقرير..."></textarea>
+                    </div>
+                    <p class="mb-0 text-muted">هل أنت متأكد من اعتماد هذا التقرير؟</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check me-1"></i>
+                        اعتماد التقرير
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('supervisor.report_reject', report_id=report.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-times-circle me-2"></i>
+                        رفض التقرير
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="rejectNotes" class="form-label">سبب الرفض <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="rejectNotes" name="review_notes" rows="4" required placeholder="يرجى توضيح سبب رفض التقرير..."></textarea>
+                    </div>
+                    <p class="mb-0 text-danger">سيتم إشعار السائس بالرفض والملاحظات</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times me-1"></i>
+                        رفض التقرير
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+@media print {
+    .btn, nav, .navbar, .modal {
+        display: none !important;
+    }
+}
+</style>
+{% endblock %}

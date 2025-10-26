@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}تفاصيل المهمة{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-tasks me-2"></i>
+                تفاصيل المهمة
+            </h1>
+            <a href="{{ url_for('tasks.handler_index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-right me-1"></i>
+                العودة للقائمة
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 col-md-10 mx-auto">
+        <!-- Status and Priority Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-2">الحالة</h5>
+                        {% if task.status == TaskStatus.PENDING %}
+                            <span class="badge bg-secondary fs-6">
+                                <i class="fas fa-pause-circle me-1"></i>قيد الانتظار
+                            </span>
+                        {% elif task.status == TaskStatus.IN_PROGRESS %}
+                            <span class="badge bg-info fs-6">
+                                <i class="fas fa-spinner me-1"></i>قيد التنفيذ
+                            </span>
+                        {% elif task.status == TaskStatus.COMPLETED %}
+                            <span class="badge bg-success fs-6">
+                                <i class="fas fa-check-circle me-1"></i>مكتملة
+                            </span>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <h5 class="mb-2">الأولوية</h5>
+                        {% if task.priority == TaskPriority.LOW %}
+                            <span class="badge bg-info fs-6">
+                                <i class="fas fa-arrow-down me-1"></i>منخفضة
+                            </span>
+                        {% elif task.priority == TaskPriority.MEDIUM %}
+                            <span class="badge bg-warning fs-6">
+                                <i class="fas fa-minus me-1"></i>متوسطة
+                            </span>
+                        {% elif task.priority == TaskPriority.HIGH %}
+                            <span class="badge bg-danger fs-6">
+                                <i class="fas fa-arrow-up me-1"></i>عالية
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Overdue Alert -->
+        {% if task.is_overdue and task.status != TaskStatus.COMPLETED %}
+        <div class="alert alert-danger mb-4">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>تحذير!</strong> هذه المهمة متأخرة. يرجى إكمالها في أقرب وقت ممكن.
+        </div>
+        {% endif %}
+        
+        <!-- Task Details Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0 pt-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    معلومات المهمة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h4 class="text-primary">{{ task.title }}</h4>
+                </div>
+                
+                {% if task.description %}
+                <div class="mb-4 p-3 bg-light rounded">
+                    <h6 class="text-muted mb-2">
+                        <i class="fas fa-align-right me-1"></i>
+                        الوصف:
+                    </h6>
+                    <p class="mb-0" style="white-space: pre-wrap;">{{ task.description }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-user-tie fa-lg text-muted me-2 mt-1"></i>
+                            <div>
+                                <strong class="d-block">كلفك بها:</strong>
+                                <p class="mb-0">{{ task.created_by.full_name }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-calendar-plus fa-lg text-muted me-2 mt-1"></i>
+                            <div>
+                                <strong class="d-block">تاريخ الإنشاء:</strong>
+                                <p class="mb-0">{{ task.created_at.strftime('%Y-%m-%d') }}</p>
+                                <small class="text-muted">{{ task.created_at.strftime('%H:%M') }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if task.due_date %}
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-calendar-alt fa-lg {{ 'text-danger' if task.is_overdue and task.status != TaskStatus.COMPLETED else 'text-muted' }} me-2 mt-1"></i>
+                            <div>
+                                <strong class="d-block">تاريخ الاستحقاق:</strong>
+                                <p class="mb-0 {{ 'text-danger fw-bold' if task.is_overdue and task.status != TaskStatus.COMPLETED else '' }}">
+                                    {{ task.due_date.strftime('%Y-%m-%d') }}
+                                </p>
+                                <small class="{{ 'text-danger' if task.is_overdue and task.status != TaskStatus.COMPLETED else 'text-muted' }}">
+                                    {{ task.due_date.strftime('%H:%M') }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if task.completed_at %}
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-check-circle fa-lg text-success me-2 mt-1"></i>
+                            <div>
+                                <strong class="d-block">تاريخ الإكمال:</strong>
+                                <p class="mb-0 text-success">{{ task.completed_at.strftime('%Y-%m-%d') }}</p>
+                                <small class="text-muted">{{ task.completed_at.strftime('%H:%M') }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        {% if task.status == TaskStatus.PENDING %}
+        <div class="d-grid gap-2">
+            <button type="button" 
+                    class="btn btn-lg btn-info" 
+                    onclick="startTask('{{ task.id }}')">
+                <i class="fas fa-play me-2"></i>
+                بدء العمل على المهمة
+            </button>
+        </div>
+        {% elif task.status == TaskStatus.IN_PROGRESS %}
+        <div class="d-grid gap-2">
+            <button type="button" 
+                    class="btn btn-lg btn-success" 
+                    onclick="showCompleteModal('{{ task.id }}')">
+                <i class="fas fa-check-circle me-2"></i>
+                تم الإكمال
+            </button>
+        </div>
+        {% elif task.status == TaskStatus.COMPLETED %}
+        <div class="alert alert-success text-center">
+            <i class="fas fa-check-circle fa-2x mb-2"></i>
+            <h5 class="mb-0">تم إكمال هذه المهمة بنجاح!</h5>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Complete Task Modal -->
+{% include 'handler/tasks/completed_modal.html' %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+let currentTaskId = null;
+
+function startTask(taskId) {
+    if (confirm('هل تريد بدء العمل على هذه المهمة؟')) {
+        fetch(`/tasks/handler/${taskId}/start`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('فشل بدء المهمة: ' + (data.error || 'حدث خطأ غير معروف'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('حدث خطأ أثناء بدء المهمة');
+        });
+    }
+}
+
+function showCompleteModal(taskId) {
+    currentTaskId = taskId;
+    const modal = new bootstrap.Modal(document.getElementById('completeTaskModal'));
+    modal.show();
+}
+
+function completeTask() {
+    if (!currentTaskId) return;
+    
+    fetch(`/tasks/handler/${currentTaskId}/complete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = "{{ url_for('tasks.handler_index') }}";
+        } else {
+            alert('فشل إكمال المهمة: ' + (data.error || 'حدث خطأ غير معروف'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('حدث خطأ أثناء إكمال المهمة');
+    });
+}
+</script>
+{% endblock %}

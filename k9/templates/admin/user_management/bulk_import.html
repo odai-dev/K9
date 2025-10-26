@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}استيراد جماعي للمستخدمين{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-file-upload me-2"></i>
+                استيراد جماعي للمستخدمين
+            </h1>
+            <a href="{{ url_for('user_management.index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-right me-1"></i>
+                رجوع
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 col-md-10 mx-auto">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0 pt-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    تعليمات الاستيراد
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-info mb-4">
+                    <h6 class="alert-heading">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        كيفية استخدام الاستيراد الجماعي
+                    </h6>
+                    <ol class="mb-0">
+                        <li>قم بتحميل ملف القالب (Excel أو CSV) باستخدام الزر أدناه</li>
+                        <li>افتح الملف وأدخل بيانات المستخدمين حسب الأعمدة المحددة</li>
+                        <li>احفظ الملف وارفعه باستخدام النموذج أدناه</li>
+                        <li>سيتم عرض نتائج الاستيراد مع أي أخطاء إن وجدت</li>
+                    </ol>
+                </div>
+
+                <div class="text-center mb-4">
+                    <a href="{{ url_for('user_management.download_template') }}" 
+                       class="btn btn-success btn-lg">
+                        <i class="fas fa-download me-2"></i>
+                        تحميل قالب Excel
+                    </a>
+                </div>
+
+                <div class="card bg-light border-0 mb-4">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3">
+                            <i class="fas fa-table me-2"></i>
+                            الأعمدة المطلوبة في الملف
+                        </h6>
+                        <table class="table table-sm table-bordered mb-0 bg-white">
+                            <thead>
+                                <tr>
+                                    <th>اسم العمود</th>
+                                    <th>الوصف</th>
+                                    <th>مطلوب؟</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>name</code></td>
+                                    <td>الاسم الكامل للمستخدم</td>
+                                    <td><span class="badge bg-danger">نعم</span></td>
+                                </tr>
+                                <tr>
+                                    <td><code>username</code></td>
+                                    <td>اسم المستخدم (حروف إنجليزية وأرقام فقط)</td>
+                                    <td><span class="badge bg-danger">نعم</span></td>
+                                </tr>
+                                <tr>
+                                    <td><code>phone</code></td>
+                                    <td>رقم الهاتف</td>
+                                    <td><span class="badge bg-secondary">لا</span></td>
+                                </tr>
+                                <tr>
+                                    <td><code>email</code></td>
+                                    <td>البريد الإلكتروني (سيتم توليده تلقائياً إذا لم يُحدد)</td>
+                                    <td><span class="badge bg-secondary">لا</span></td>
+                                </tr>
+                                <tr>
+                                    <td><code>project_id</code></td>
+                                    <td>معرف المشروع (UUID)</td>
+                                    <td><span class="badge bg-secondary">لا</span></td>
+                                </tr>
+                                <tr>
+                                    <td><code>dog_id</code></td>
+                                    <td>معرف الكلب (UUID)</td>
+                                    <td><span class="badge bg-secondary">لا</span></td>
+                                </tr>
+                                <tr>
+                                    <td><code>password</code></td>
+                                    <td>كلمة المرور (سيتم توليدها تلقائياً إذا لم تُحدد)</td>
+                                    <td><span class="badge bg-secondary">لا</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>ملاحظات هامة:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>جميع المستخدمين المستوردين سيكون دورهم "سائس" (HANDLER) افتراضياً</li>
+                        <li>سيتم توليد كلمات مرور آمنة تلقائياً للمستخدمين</li>
+                        <li>تأكد من عدم تكرار أسماء المستخدمين أو البريد الإلكتروني</li>
+                        <li>الملفات المدعومة: Excel (.xlsx, .xls) و CSV (.csv)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-cloud-upload-alt me-2"></i>
+                    رفع الملف
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" 
+                      action="{{ url_for('user_management.bulk_import') }}" 
+                      enctype="multipart/form-data"
+                      id="uploadForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <div class="mb-4">
+                        <label for="file" class="form-label">
+                            اختر ملف Excel أو CSV <span class="text-danger">*</span>
+                        </label>
+                        <input type="file" 
+                               class="form-control" 
+                               id="file" 
+                               name="file" 
+                               accept=".xlsx,.xls,.csv"
+                               required>
+                        <small class="text-muted">الأنواع المدعومة: .xlsx, .xls, .csv</small>
+                    </div>
+
+                    <div id="fileInfo" class="alert alert-secondary d-none mb-4">
+                        <i class="fas fa-file me-2"></i>
+                        الملف المحدد: <strong id="fileName"></strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('user_management.index') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>
+                            إلغاء
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-upload me-1"></i>
+                            رفع واستيراد
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const fileInput = document.getElementById('file');
+const fileInfo = document.getElementById('fileInfo');
+const fileName = document.getElementById('fileName');
+const submitBtn = document.getElementById('submitBtn');
+const uploadForm = document.getElementById('uploadForm');
+
+fileInput.addEventListener('change', function() {
+    if (this.files.length > 0) {
+        const file = this.files[0];
+        fileName.textContent = file.name;
+        fileInfo.classList.remove('d-none');
+        
+        const validExtensions = ['.xlsx', '.xls', '.csv'];
+        const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+        
+        if (!validExtensions.includes(fileExtension)) {
+            alert('نوع الملف غير صالح. يرجى اختيار ملف Excel أو CSV');
+            this.value = '';
+            fileInfo.classList.add('d-none');
+        }
+    } else {
+        fileInfo.classList.add('d-none');
+    }
+});
+
+uploadForm.addEventListener('submit', function(e) {
+    if (fileInput.files.length === 0) {
+        e.preventDefault();
+        alert('يرجى اختيار ملف أولاً');
+        return false;
+    }
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> جاري الرفع...';
+});
+</script>
+{% endblock %}

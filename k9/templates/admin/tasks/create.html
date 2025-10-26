@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}إنشاء مهمة جديدة{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-plus-circle me-2"></i>
+                إنشاء مهمة جديدة
+            </h1>
+            <a href="{{ url_for('tasks.admin_index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-right me-1"></i>
+                العودة للقائمة
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 col-md-10 mx-auto">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('tasks.admin_create') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="mb-4">
+                        <label for="title" class="form-label">
+                            <i class="fas fa-heading me-1"></i>
+                            عنوان المهمة <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" 
+                               class="form-control form-control-lg" 
+                               id="title" 
+                               name="title" 
+                               required 
+                               placeholder="أدخل عنوان المهمة"
+                               maxlength="200">
+                        <div class="form-text">يجب أن يكون العنوان واضحاً ومختصراً</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="description" class="form-label">
+                            <i class="fas fa-align-right me-1"></i>
+                            الوصف
+                        </label>
+                        <textarea class="form-control" 
+                                  id="description" 
+                                  name="description" 
+                                  rows="5"
+                                  placeholder="أدخل تفاصيل المهمة والتعليمات..."></textarea>
+                        <div class="form-text">أضف تفاصيل إضافية حول المهمة إذا لزم الأمر</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="assigned_to_user_id" class="form-label">
+                            <i class="fas fa-user me-1"></i>
+                            المكلف بالمهمة <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select form-select-lg" 
+                                id="assigned_to_user_id" 
+                                name="assigned_to_user_id" 
+                                required>
+                            <option value="">-- اختر السائس --</option>
+                            {% for handler in handlers %}
+                            <option value="{{ handler.id }}">
+                                {{ handler.full_name }} - {{ handler.username }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="priority" class="form-label">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                الأولوية
+                            </label>
+                            <select class="form-select" id="priority" name="priority">
+                                <option value="LOW">منخفضة</option>
+                                <option value="MEDIUM" selected>متوسطة</option>
+                                <option value="HIGH">عالية</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="due_date" class="form-label">
+                                <i class="fas fa-calendar-alt me-1"></i>
+                                تاريخ الاستحقاق
+                            </label>
+                            <input type="datetime-local" 
+                                   class="form-control" 
+                                   id="due_date" 
+                                   name="due_date">
+                            <div class="form-text">اختياري - حدد موعد نهائي للمهمة</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="project_id" class="form-label">
+                            <i class="fas fa-project-diagram me-1"></i>
+                            المشروع (اختياري)
+                        </label>
+                        <select class="form-select" id="project_id" name="project_id">
+                            <option value="">-- بدون مشروع --</option>
+                        </select>
+                        <div class="form-text">ربط المهمة بمشروع محدد (اختياري)</div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between pt-3 border-top">
+                        <a href="{{ url_for('tasks.admin_index') }}" class="btn btn-lg btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>
+                            إلغاء
+                        </a>
+                        <button type="submit" class="btn btn-lg btn-primary">
+                            <i class="fas fa-check me-1"></i>
+                            إنشاء المهمة
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -114,7 +114,6 @@ def new_report():
         action = request.form.get('action', 'save_draft')
         dog_id = request.form.get('dog_id')
         schedule_item_id = request.form.get('schedule_item_id')
-        shift_id = request.form.get('shift_id')
         location = request.form.get('location')
         report_date = request.form.get('date')
         
@@ -124,55 +123,151 @@ def new_report():
         else:
             report_date = date.today()
         
-        # Create report
+        # Create report with parsed date
         report, error = HandlerReportService.create_report(
             handler_user_id=str(current_user.id),
-            date=report_date,
             dog_id=dog_id,
             schedule_item_id=schedule_item_id if schedule_item_id else None,
             project_id=str(current_user.project_id) if current_user.project_id else None,
-            shift_id=shift_id if shift_id else None,
-            location=location
+            location=location,
+            report_date=report_date
         )
         
         if error:
             flash(error, 'danger')
             return redirect(url_for('handler.new_report'))
         
-        # Update health section
+        # Update health section - 11 body parts
         if report.health:
-            report.health.overall_condition = request.form.get('health_overall_condition')
-            report.health.appetite = request.form.get('health_appetite')
-            report.health.energy_level = request.form.get('health_energy_level')
-            report.health.temperature = request.form.get('health_temperature') or None
-            report.health.weight = request.form.get('health_weight') or None
-            report.health.coat_condition = request.form.get('health_coat_condition')
-            report.health.injuries = request.form.get('health_injuries')
-            report.health.vet_visit_needed = bool(request.form.get('health_vet_visit_needed'))
-            report.health.vet_visit_reason = request.form.get('health_vet_visit_reason')
-            report.health.notes = request.form.get('health_notes')
+            # Eyes
+            eyes_status_val = request.form.get('eyes_status')
+            report.health.eyes_status = HealthCheckStatus(eyes_status_val) if eyes_status_val else None
+            report.health.eyes_notes = request.form.get('eyes_notes')
+            
+            # Nose
+            nose_status_val = request.form.get('nose_status')
+            report.health.nose_status = HealthCheckStatus(nose_status_val) if nose_status_val else None
+            report.health.nose_notes = request.form.get('nose_notes')
+            
+            # Ears
+            ears_status_val = request.form.get('ears_status')
+            report.health.ears_status = HealthCheckStatus(ears_status_val) if ears_status_val else None
+            report.health.ears_notes = request.form.get('ears_notes')
+            
+            # Mouth
+            mouth_status_val = request.form.get('mouth_status')
+            report.health.mouth_status = HealthCheckStatus(mouth_status_val) if mouth_status_val else None
+            report.health.mouth_notes = request.form.get('mouth_notes')
+            
+            # Teeth
+            teeth_status_val = request.form.get('teeth_status')
+            report.health.teeth_status = HealthCheckStatus(teeth_status_val) if teeth_status_val else None
+            report.health.teeth_notes = request.form.get('teeth_notes')
+            
+            # Gums
+            gums_status_val = request.form.get('gums_status')
+            report.health.gums_status = HealthCheckStatus(gums_status_val) if gums_status_val else None
+            report.health.gums_notes = request.form.get('gums_notes')
+            
+            # Front limbs
+            front_limbs_status_val = request.form.get('front_limbs_status')
+            report.health.front_limbs_status = HealthCheckStatus(front_limbs_status_val) if front_limbs_status_val else None
+            report.health.front_limbs_notes = request.form.get('front_limbs_notes')
+            
+            # Back limbs
+            back_limbs_status_val = request.form.get('back_limbs_status')
+            report.health.back_limbs_status = HealthCheckStatus(back_limbs_status_val) if back_limbs_status_val else None
+            report.health.back_limbs_notes = request.form.get('back_limbs_notes')
+            
+            # Hair
+            hair_status_val = request.form.get('hair_status')
+            report.health.hair_status = HealthCheckStatus(hair_status_val) if hair_status_val else None
+            report.health.hair_notes = request.form.get('hair_notes')
+            
+            # Tail
+            tail_status_val = request.form.get('tail_status')
+            report.health.tail_status = HealthCheckStatus(tail_status_val) if tail_status_val else None
+            report.health.tail_notes = request.form.get('tail_notes')
+            
+            # Rear
+            rear_status_val = request.form.get('rear_status')
+            report.health.rear_status = HealthCheckStatus(rear_status_val) if rear_status_val else None
+            report.health.rear_notes = request.form.get('rear_notes')
         
-        # Update care section
+        # Training section - 6 types
+        training_types_map = {
+            'fitness': TrainingType.FITNESS,
+            'agility': TrainingType.AGILITY,
+            'obedience': TrainingType.OBEDIENCE,
+            'ball': TrainingType.BALL,
+            'explosives': TrainingType.EXPLOSIVES,
+            'other': TrainingType.OTHER
+        }
+        
+        for key, training_type in training_types_map.items():
+            description = request.form.get(f'training_{key}_description')
+            time_from_str = request.form.get(f'training_{key}_from')
+            time_to_str = request.form.get(f'training_{key}_to')
+            notes = request.form.get(f'training_{key}_notes')
+            
+            # Only create if at least one field is filled
+            if description or time_from_str or time_to_str or notes:
+                from datetime import time as dt_time
+                time_from = datetime.strptime(time_from_str, '%H:%M').time() if time_from_str else None
+                time_to = datetime.strptime(time_to_str, '%H:%M').time() if time_to_str else None
+                
+                training_session = HandlerReportTraining(
+                    report_id=report.id,
+                    training_type=training_type,
+                    description=description,
+                    time_from=time_from,
+                    time_to=time_to,
+                    notes=notes
+                )
+                db.session.add(training_session)
+        
+        # Care section - matching Word document
         if report.care:
-            report.care.food_amount_kg = request.form.get('care_food_amount_kg') or None
-            report.care.water_consumption = request.form.get('care_water_consumption')
-            report.care.grooming_done = bool(request.form.get('care_grooming_done'))
-            report.care.grooming_notes = request.form.get('care_grooming_notes')
-            report.care.exercise_duration_minutes = request.form.get('care_exercise_duration_minutes') or None
-            report.care.exercise_type = request.form.get('care_exercise_type')
-            report.care.bathroom_breaks = int(request.form.get('care_bathroom_breaks', 0))
-            report.care.stool_condition = request.form.get('care_stool_condition')
-            report.care.notes = request.form.get('care_notes')
+            report.care.food_amount = request.form.get('food_amount')
+            report.care.food_type = request.form.get('food_type')
+            report.care.supplements = request.form.get('supplements')
+            report.care.water_amount = request.form.get('water_amount')
+            report.care.grooming_done = bool(request.form.get('grooming_done'))
+            report.care.washing_done = bool(request.form.get('washing_done'))
+            report.care.excretion_location = request.form.get('excretion_location')
+            
+            # Stool color
+            stool_color_val = request.form.get('stool_color')
+            report.care.stool_color = StoolColor(stool_color_val) if stool_color_val else None
+            
+            # Stool shape
+            stool_shape_val = request.form.get('stool_shape')
+            report.care.stool_shape = StoolShape(stool_shape_val) if stool_shape_val else None
         
-        # Update behavior section
+        # Behavior section
         if report.behavior:
-            report.behavior.mood = request.form.get('behavior_mood')
-            report.behavior.obedience_level = request.form.get('behavior_obedience_level')
-            report.behavior.aggression_signs = bool(request.form.get('behavior_aggression_signs'))
-            report.behavior.anxiety_signs = bool(request.form.get('behavior_anxiety_signs'))
-            report.behavior.social_interactions = request.form.get('behavior_social_interactions')
-            report.behavior.unusual_behaviors = request.form.get('behavior_unusual_behaviors')
-            report.behavior.notes = request.form.get('behavior_notes')
+            report.behavior.good_behavior_notes = request.form.get('good_behavior_notes')
+            report.behavior.bad_behavior_notes = request.form.get('bad_behavior_notes')
+        
+        # Incidents section - suspicion and detection
+        suspicion_cases = request.form.get('suspicion_cases')
+        detection_cases = request.form.get('detection_cases')
+        
+        if suspicion_cases:
+            suspicion_incident = HandlerReportIncident(
+                report_id=report.id,
+                incident_type=IncidentType.SUSPICION,
+                description=suspicion_cases
+            )
+            db.session.add(suspicion_incident)
+        
+        if detection_cases:
+            detection_incident = HandlerReportIncident(
+                report_id=report.id,
+                incident_type=IncidentType.DETECTION,
+                description=detection_cases
+            )
+            db.session.add(detection_incident)
         
         db.session.commit()
         
