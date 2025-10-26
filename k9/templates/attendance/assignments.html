@@ -218,13 +218,19 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function showAlert(type, message) {
         const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show mt-3`;
         alertDiv.innerHTML = `
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
         
-        document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.row'));
+        const container = document.querySelector('.container-fluid');
+        const firstRow = container.querySelector('.row');
+        if (firstRow) {
+            container.insertBefore(alertDiv, firstRow);
+        } else {
+            container.prepend(alertDiv);
+        }
         
         // Auto-dismiss after 5 seconds
         setTimeout(() => {
