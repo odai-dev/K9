@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+
+{% block title %}الجدول اليومي - {{ schedule.date.strftime('%Y-%m-%d') }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-calendar-day me-2"></i>
+                الجدول اليومي - {{ schedule.date.strftime('%Y-%m-%d') }}
+            </h1>
+            <div class="btn-group">
+                {% if not schedule.is_locked %}
+                <button class="btn btn-warning" onclick="lockSchedule()">
+                    <i class="fas fa-lock me-2"></i>
+                    قفل الجدول
+                </button>
+                {% else %}
+                <button class="btn btn-info" onclick="unlockSchedule()">
+                    <i class="fas fa-unlock me-2"></i>
+                    إلغاء القفل
+                </button>
+                {% endif %}
+                <a href="{{ url_for('supervisor.schedules_index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Info -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h5 class="mb-3">معلومات الجدول</h5>
+                <div class="mb-2">
+                    <strong>التاريخ:</strong>
+                    {{ schedule.date.strftime('%Y-%m-%d') }} ({{ schedule.date.strftime('%A') }})
+                </div>
+                <div class="mb-2">
+                    <strong>المشروع:</strong>
+                    {% if schedule.project %}
+                        {{ schedule.project.name }}
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </div>
+                <div class="mb-2">
+                    <strong>الحالة:</strong>
+                    {% if schedule.is_locked %}
+                        <span class="badge bg-danger ms-2">
+                            <i class="fas fa-lock me-1"></i>
+                            مقفل
+                        </span>
+                    {% else %}
+                        <span class="badge bg-success ms-2">
+                            <i class="fas fa-unlock me-1"></i>
+                            نشط
+                        </span>
+                    {% endif %}
+                </div>
+                {% if schedule.locked_at %}
+                <div class="mb-2">
+                    <strong>تاريخ القفل:</strong>
+                    {{ schedule.locked_at.strftime('%Y-%m-%d %H:%M') }}
+                </div>
+                {% endif %}
+                {% if schedule.notes %}
+                <div class="mb-2">
+                    <strong>ملاحظات:</strong>
+                    {{ schedule.notes }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h5 class="mb-3">إحصائيات</h5>
+                <div class="mb-2">
+                    <strong>عدد السائسين:</strong>
+                    <span class="badge bg-primary ms-2">{{ schedule.items|length }}</span>
+                </div>
+                <div class="mb-2">
+                    <strong>التقارير المرسلة:</strong>
+                    <span class="badge bg-success ms-2">
+                        {{ schedule.items|selectattr('report')|list|length }}
+                    </span>
+                </div>
+                <div class="mb-2">
+                    <strong>التقارير المعتمدة:</strong>
+                    <span class="badge bg-info ms-2">
+                        {{ schedule.items|selectattr('report.status.value', 'equalto', 'APPROVED')|list|length }}
+                    </span>
+                </div>
+                <div class="mb-2">
+                    <strong>التقارير المعلقة:</strong>
+                    <span class="badge bg-warning ms-2">
+                        {{ schedule.items|selectattr('report')|rejectattr('report.status.value', 'in', ['APPROVED', 'REJECTED'])|list|length }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Items -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">السائسون والكلاب</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if schedule.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>السائس</th>
+                                <th>الكلب</th>
+                                <th>الوردية</th>
+                                <th>حالة التقرير</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in schedule.items %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>
+                                    {% if item.handler %}
+                                        <i class="fas fa-user me-2"></i>
+                                        {{ item.handler.full_name }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.dog %}
+                                        <i class="fas fa-dog me-2"></i>
+                                        {{ item.dog.name }} ({{ item.dog.code }})
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.shift %}
+                                        <i class="fas fa-clock me-2"></i>
+                                        {{ item.shift.name }}
+                                        <br>
+                                        <small class="text-muted">
+                                            {{ item.shift.start_time.strftime('%H:%M') }} - 
+                                            {{ item.shift.end_time.strftime('%H:%M') }}
+                                        </small>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.report %}
+                                        {% if item.report.status.value == 'DRAFT' %}
+                                            <span class="badge bg-secondary">مسودة</span>
+                                        {% elif item.report.status.value == 'SUBMITTED' %}
+                                            <span class="badge bg-warning">قيد المراجعة</span>
+                                        {% elif item.report.status.value == 'APPROVED' %}
+                                            <span class="badge bg-success">معتمد</span>
+                                        {% elif item.report.status.value == 'REJECTED' %}
+                                            <span class="badge bg-danger">مرفوض</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-light text-dark">لم يُرسل</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        {% if item.report %}
+                                        <a href="{{ url_for('handler.view_report', report_id=item.report.id) }}" 
+                                           class="btn btn-outline-primary"
+                                           title="عرض التقرير">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% endif %}
+                                        {% if not schedule.is_locked %}
+                                        <button class="btn btn-outline-warning" 
+                                                onclick="replaceHandler('{{ item.id }}')"
+                                                title="استبدال السائس">
+                                            <i class="fas fa-exchange-alt"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-info-circle me-2"></i>
+                    لا يوجد سائسون في هذا الجدول
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Replace Handler Modal -->
+<div class="modal fade" id="replaceHandlerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">استبدال السائس</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="replaceItemId">
+                <div class="mb-3">
+                    <label class="form-label">السائس الجديد</label>
+                    <select class="form-select" id="newHandlerSelect">
+                        <option value="">اختر السائس</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">السبب (اختياري)</label>
+                    <textarea class="form-control" id="replaceReason" rows="3" 
+                              placeholder="سبب الاستبدال"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" onclick="confirmReplace()">تأكيد الاستبدال</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+const scheduleId = '{{ schedule.id }}';
+const projectId = '{{ schedule.project_id }}';
+
+function lockSchedule() {
+    if (!confirm('هل أنت متأكد من قفل هذا الجدول؟ لن يتمكن السائسون من تقديم تقارير بعد القفل.')) {
+        return;
+    }
+    
+    fetch(`/supervisor/schedules/${scheduleId}/lock`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('خطأ: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('حدث خطأ أثناء قفل الجدول');
+    });
+}
+
+function unlockSchedule() {
+    if (!confirm('هل أنت متأكد من إلغاء قفل هذا الجدول؟')) {
+        return;
+    }
+    
+    fetch(`/supervisor/schedules/${scheduleId}/unlock`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('خطأ: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('حدث خطأ أثناء إلغاء قفل الجدول');
+    });
+}
+
+function replaceHandler(itemId) {
+    document.getElementById('replaceItemId').value = itemId;
+    
+    // Load available handlers
+    fetch(`/supervisor/api/handlers-by-project/${projectId}`)
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('newHandlerSelect');
+            select.innerHTML = '<option value="">اختر السائس</option>';
+            data.handlers.forEach(handler => {
+                const option = document.createElement('option');
+                option.value = handler.id;
+                option.textContent = handler.name;
+                select.appendChild(option);
+            });
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('replaceHandlerModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('حدث خطأ أثناء تحميل السائسين');
+        });
+}
+
+function confirmReplace() {
+    const itemId = document.getElementById('replaceItemId').value;
+    const newHandlerId = document.getElementById('newHandlerSelect').value;
+    const reason = document.getElementById('replaceReason').value;
+    
+    if (!newHandlerId) {
+        alert('يجب اختيار سائس بديل');
+        return;
+    }
+    
+    fetch(`/supervisor/schedules/item/${itemId}/replace-handler`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            new_handler_id: newHandlerId,
+            reason: reason
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('خطأ: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('حدث خطأ أثناء استبدال السائس');
+    });
+}
+</script>
+{% endblock %}

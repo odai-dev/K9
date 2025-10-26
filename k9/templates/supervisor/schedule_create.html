@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}إنشاء جدول يومي جديد{% endblock %}
+
+{% block extra_css %}
+<style>
+.schedule-row {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background: #f8f9fa;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-calendar-plus me-2"></i>
+                إنشاء جدول يومي جديد
+            </h1>
+            <a href="{{ url_for('supervisor.schedules_index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-right me-2"></i>
+                العودة
+            </a>
+        </div>
+    </div>
+</div>
+
+<form method="POST" action="{{ url_for('supervisor.schedule_create') }}" id="scheduleForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <!-- Schedule Info -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">معلومات الجدول</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label required">التاريخ</label>
+                            <input type="date" name="date" class="form-control" 
+                                   value="{{ today }}" required min="{{ today }}">
+                        </div>
+                        {% if projects %}
+                        <div class="col-md-4">
+                            <label class="form-label required">المشروع</label>
+                            <select name="project_id" id="projectSelect" class="form-select" required>
+                                <option value="">اختر المشروع</option>
+                                {% for project in projects %}
+                                <option value="{{ project.id }}">{{ project.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+                        <div class="col-md-4">
+                            <label class="form-label">ملاحظات</label>
+                            <input type="text" name="notes" class="form-control" 
+                                   placeholder="ملاحظات إضافية (اختياري)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Schedule Items -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">السائسون والكلاب</h5>
+                    <button type="button" class="btn btn-sm btn-success" onclick="addScheduleRow()">
+                        <i class="fas fa-plus me-1"></i>
+                        إضافة سائس
+                    </button>
+                </div>
+                <div class="card-body" id="scheduleItemsContainer">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        اختر المشروع أولاً لتحميل السائسين والكلاب المتاحة
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>
+                    حفظ الجدول
+                </button>
+                <a href="{{ url_for('supervisor.schedules_index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-2"></i>
+                    إلغاء
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+let handlers = [];
+let dogs = [];
+let shifts = {{ shifts|tojson|safe }};
+let rowCounter = 0;
+
+// Load handlers and dogs when project changes
+document.getElementById('projectSelect')?.addEventListener('change', function() {
+    const projectId = this.value;
+    if (!projectId) return;
+    
+    // Load handlers
+    fetch(`/supervisor/api/handlers-by-project/${projectId}`)
+        .then(response => response.json())
+        .then(data => {
+            handlers = data.handlers;
+            updateAllHandlerSelects();
+        });
+    
+    // Load dogs
+    fetch(`/supervisor/api/dogs-by-project/${projectId}`)
+        .then(response => response.json())
+        .then(data => {
+            dogs = data.dogs;
+            updateAllDogSelects();
+            
+            // Clear container and add first row
+            document.getElementById('scheduleItemsContainer').innerHTML = '';
+            addScheduleRow();
+        });
+});
+
+function addScheduleRow() {
+    const container = document.getElementById('scheduleItemsContainer');
+    const rowId = `row-${rowCounter++}`;
+    
+    const row = document.createElement('div');
+    row.className = 'schedule-row';
+    row.id = rowId;
+    row.innerHTML = `
+        <div class="row align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">السائس</label>
+                <select name="handler_ids[]" class="form-select handler-select" required>
+                    <option value="">اختر السائس</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">الكلب</label>
+                <select name="dog_ids[]" class="form-select dog-select" required>
+                    <option value="">اختر الكلب</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">الوردية</label>
+                <select name="shift_ids[]" class="form-select" required>
+                    <option value="">اختر الوردية</option>
+                    ${shifts.map(shift => `
+                        <option value="${shift.id}">
+                            ${shift.name} (${shift.start_time} - ${shift.end_time})
+                        </option>
+                    `).join('')}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-danger w-100" onclick="removeRow('${rowId}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(row);
+    
+    // Populate handler and dog selects
+    const handlerSelect = row.querySelector('.handler-select');
+    const dogSelect = row.querySelector('.dog-select');
+    
+    handlers.forEach(handler => {
+        const option = document.createElement('option');
+        option.value = handler.id;
+        option.textContent = handler.name;
+        if (handler.dog_id) {
+            option.setAttribute('data-dog-id', handler.dog_id);
+        }
+        handlerSelect.appendChild(option);
+    });
+    
+    dogs.forEach(dog => {
+        const option = document.createElement('option');
+        option.value = dog.id;
+        option.textContent = `${dog.name} (${dog.code})`;
+        dogSelect.appendChild(option);
+    });
+    
+    // Auto-select dog when handler is selected
+    handlerSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const dogId = selectedOption.getAttribute('data-dog-id');
+        if (dogId) {
+            dogSelect.value = dogId;
+        }
+    });
+}
+
+function removeRow(rowId) {
+    const row = document.getElementById(rowId);
+    if (row) {
+        row.remove();
+    }
+}
+
+function updateAllHandlerSelects() {
+    document.querySelectorAll('.handler-select').forEach(select => {
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">اختر السائس</option>';
+        handlers.forEach(handler => {
+            const option = document.createElement('option');
+            option.value = handler.id;
+            option.textContent = handler.name;
+            if (handler.dog_id) {
+                option.setAttribute('data-dog-id', handler.dog_id);
+            }
+            select.appendChild(option);
+        });
+        select.value = currentValue;
+    });
+}
+
+function updateAllDogSelects() {
+    document.querySelectorAll('.dog-select').forEach(select => {
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">اختر الكلب</option>';
+        dogs.forEach(dog => {
+            const option = document.createElement('option');
+            option.value = dog.id;
+            option.textContent = `${dog.name} (${dog.code})`;
+            select.appendChild(option);
+        });
+        select.value = currentValue;
+    });
+}
+
+// Form validation
+document.getElementById('scheduleForm').addEventListener('submit', function(e) {
+    const container = document.getElementById('scheduleItemsContainer');
+    if (container.children.length === 0 || container.querySelector('.alert')) {
+        e.preventDefault();
+        alert('يجب إضافة سائس واحد على الأقل');
+    }
+});
+</script>
+{% endblock %}
