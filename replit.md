@@ -47,6 +47,33 @@ Preferred communication style: Simple, everyday language.
 - **Performance**: Optimized with database connection pooling and file size limits.
 - **Scalability**: Modular architecture and role-based data isolation.
 
+### Employee vs User/Handler Architecture
+The system uses **two distinct but complementary concepts** for managing handlers:
+
+**1. Employee Table (General Workforce Management)**
+- **Purpose**: Manages ALL employees across the organization (handlers, vets, trainers, project managers, etc.)
+- **Used by**: Attendance system, Project assignments, Training records, Veterinary records, Breeding/Production
+- **Fields**: `employee_id` (badge number), `name`, `role` (HANDLER, VET, TRAINER, etc.)
+- **Access**: Via `/employees` routes and Employee management pages
+- **Shift Assignment**: Employees must be assigned to shifts via `/attendance/assignments` to appear in attendance dropdowns
+
+**2. User Table with HANDLER Role (Authentication & Daily Operations)**
+- **Purpose**: User accounts for handlers who need system access for daily reporting
+- **Used by**: Handler Daily System (schedules, reports, notifications), Authentication/login
+- **Fields**: `username`, `password_hash`, `full_name`, `role=HANDLER`
+- **Access**: Via `/admin/users` and User management pages
+- **Schedule Assignment**: Users are assigned to daily schedules via `/supervisor/schedules/create`
+
+**Key Workflow:**
+1. **For Attendance**: Create Employee record → Assign to shift via `/attendance/assignments` → Record attendance
+2. **For Handler Daily Reports**: Create User account → Assign to daily schedule → Handler submits reports
+3. **Optional**: Link Employee and User records via `user_account_id` field for integrated functionality
+
+**Important Notes:**
+- Attendance dropdowns only show employees **assigned to shifts** (not all employees)
+- Daily schedule creation uses User accounts with HANDLER role
+- These systems can work independently or be linked through the optional `user_account_id` field
+
 ## External Dependencies
 
 ### Python Packages
