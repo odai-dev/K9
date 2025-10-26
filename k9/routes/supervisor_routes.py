@@ -141,8 +141,14 @@ def schedule_create():
     handlers = []
     dogs = []
     
-    # Get shifts
+    # Get shifts and convert to dictionaries for JSON serialization
     shifts = Shift.query.all()
+    shifts_data = [{
+        'id': str(shift.id),
+        'name': shift.name,
+        'start_time': shift.start_time.strftime('%H:%M') if shift.start_time else None,
+        'end_time': shift.end_time.strftime('%H:%M') if shift.end_time else None
+    } for shift in shifts]
     
     return render_template('supervisor/schedule_create.html',
                          page_title='إنشاء جدول يومي جديد',
@@ -150,7 +156,7 @@ def schedule_create():
                          projects=projects,
                          handlers=handlers,
                          dogs=dogs,
-                         shifts=shifts)
+                         shifts=shifts_data)
 
 
 @supervisor_bp.route('/schedules/<schedule_id>')
