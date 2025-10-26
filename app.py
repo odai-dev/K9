@@ -137,8 +137,49 @@ with app.app_context():
     # Register template functions
     from k9.utils.utils import get_user_permissions
     from datetime import date, datetime
+    
+    def get_notification_link(notification):
+        """Generate direct link for notification based on related_type and related_id"""
+        from flask import url_for
+        
+        if not notification.related_type or not notification.related_id:
+            return '#'
+        
+        if notification.related_type == 'HandlerReport':
+            # Direct link to specific report
+            return url_for('supervisor.report_detail', report_id=notification.related_id)
+        elif notification.related_type == 'DailySchedule':
+            # Direct link to specific schedule
+            return url_for('supervisor.schedule_detail', schedule_id=notification.related_id)
+        elif notification.related_type == 'DailyScheduleItem':
+            # Link to handler's schedule
+            return url_for('handler.dashboard')
+        
+        return '#'
+    
+    def get_pending_reports_count():
+        """Get count of pending handler reports for PROJECT_MANAGER and GENERAL_ADMIN"""
+        from flask_login import current_user
+        from k9.models.models import UserRole
+        from k9.models.models_handler_daily import HandlerReport, ReportStatus
+        
+        if not current_user.is_authenticated:
+            return 0
+        
+        if current_user.role not in [UserRole.GENERAL_ADMIN, UserRole.PROJECT_MANAGER]:
+            return 0
+        
+        try:
+            # Count submitted reports (pending review)
+            count = HandlerReport.query.filter_by(status=ReportStatus.SUBMITTED).count()
+            return count
+        except Exception:
+            return 0
+    
     app.jinja_env.globals.update(
         get_user_permissions=get_user_permissions,
+        get_notification_link=get_notification_link,
+        get_pending_reports_count=get_pending_reports_count,
         date=date,
         datetime=datetime
     )

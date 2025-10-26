@@ -195,8 +195,12 @@
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="{{ url_for('supervisor.reports_index') }}">
-                                    <i class="fas fa-file-alt me-2"></i>تقارير السائسين
+                                <a class="dropdown-item d-flex justify-content-between align-items-center" href="{{ url_for('supervisor.reports_index') }}">
+                                    <span><i class="fas fa-file-alt me-2"></i>تقارير السائسين</span>
+                                    {% set pending_count = get_pending_reports_count() %}
+                                    {% if pending_count > 0 %}
+                                    <span class="badge bg-warning text-dark rounded-pill">{{ pending_count }}</span>
+                                    {% endif %}
                                 </a>
                             </li>
                             <li>
