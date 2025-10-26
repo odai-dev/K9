@@ -143,6 +143,24 @@ with app.app_context():
         datetime=datetime
     )
     
+    # Context processor for Handler notifications
+    @app.context_processor
+    def inject_handler_data():
+        """Inject Handler notification data into all templates"""
+        from flask_login import current_user
+        from k9.models.models import UserRole
+        
+        data = {'handler_unread_count': 0}
+        
+        if current_user.is_authenticated and current_user.role == UserRole.HANDLER:
+            try:
+                from k9.services.handler_service import NotificationService
+                data['handler_unread_count'] = NotificationService.get_unread_count(str(current_user.id))
+            except Exception:
+                pass
+        
+        return data
+    
     # Register blueprints
     from k9.routes.main import main_bp
     from k9.routes.auth import auth_bp
