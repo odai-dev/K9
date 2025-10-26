@@ -167,13 +167,21 @@
             <p class="text-muted mb-0">مرحباً {{ current_user.full_name }}، نظرة عامة على النظام</p>
         </div>
         <div class="btn-group">
-            <a href="{{ url_for('admin.permissions_dashboard') }}" class="btn btn-primary">
-                <i class="fas fa-user-shield me-1"></i>
-                إدارة الصلاحيات
+            <a href="{{ url_for('user_management.create') }}" class="btn btn-success">
+                <i class="fas fa-user-plus me-1"></i>
+                إنشاء مستخدم جديد
             </a>
-            <a href="{{ url_for('admin.admin_profile') }}" class="btn btn-outline-primary">
-                <i class="fas fa-user-cog me-1"></i>
-                الملف الشخصي
+            <a href="{{ url_for('tasks.admin_create') }}" class="btn btn-primary">
+                <i class="fas fa-tasks me-1"></i>
+                إرسال مهمة جديدة
+            </a>
+            <a href="{{ url_for('supervisor.reports_index') }}" class="btn btn-info">
+                <i class="fas fa-file-alt me-1"></i>
+                التقارير
+            </a>
+            <a href="{{ url_for('admin.permissions_dashboard') }}" class="btn btn-outline-primary">
+                <i class="fas fa-user-shield me-1"></i>
+                الصلاحيات
             </a>
         </div>
     </div>
@@ -226,6 +234,52 @@
                 الوظائف الإدارية
             </h3>
         </div>
+        
+        <!-- User Management -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <a href="{{ url_for('user_management.index') }}" class="text-decoration-none">
+                <div class="admin-nav-card admin-card">
+                    <div class="admin-nav-icon">
+                        <i class="fas fa-users-cog"></i>
+                    </div>
+                    <div class="admin-nav-title">إدارة المستخدمين</div>
+                    <div class="admin-nav-desc">
+                        إنشاء وإدارة حسابات مديري المشاريع والسائسين
+                    </div>
+                </div>
+            </a>
+        </div>
+        
+        <!-- Task Assignment -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <a href="{{ url_for('tasks.admin_index') }}" class="text-decoration-none">
+                <div class="admin-nav-card admin-card" style="border-color: #f5576c;">
+                    <div class="admin-nav-icon" style="color: #f5576c;">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="admin-nav-title">إرسال مهام للسائسين</div>
+                    <div class="admin-nav-desc">
+                        إنشاء وتعيين المهام والتكليفات للسائسين
+                    </div>
+                </div>
+            </a>
+        </div>
+        
+        <!-- Handler Reports -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <a href="{{ url_for('supervisor.reports_index') }}" class="text-decoration-none">
+                <div class="admin-nav-card admin-card" style="border-color: #4facfe;">
+                    <div class="admin-nav-icon" style="color: #4facfe;">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="admin-nav-title">تقارير السائسين</div>
+                    <div class="admin-nav-desc">
+                        مراجعة والموافقة على التقارير اليومية للسائسين
+                    </div>
+                </div>
+            </a>
+        </div>
+        
         <div class="col-lg-4 col-md-6 mb-4">
             <a href="{{ url_for('admin.permissions_dashboard') }}" class="text-decoration-none">
                 <div class="admin-nav-card admin-card">
