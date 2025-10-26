@@ -5,6 +5,7 @@ Supervisor Interface Routes - Daily Schedule Management
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from datetime import date, datetime, timedelta
+from sqlalchemy.orm import joinedload
 from k9.services.handler_service import DailyScheduleService
 from k9.models.models_handler_daily import DailySchedule, DailyScheduleItem
 from k9.models.models import UserRole, User, Dog, Project, Shift
@@ -29,8 +30,8 @@ def schedules_index():
     project_id = request.args.get('project_id')
     status_filter = request.args.get('status')
     
-    # Build query
-    query = DailySchedule.query
+    # Build query with eager loading of items
+    query = DailySchedule.query.options(joinedload(DailySchedule.items))
     
     # Filter by project if supervisor has project
     if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
