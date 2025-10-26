@@ -290,9 +290,6 @@ def edit(user_id):
 @login_required
 @admin_required
 def view(user_id):
-    """عرض تفاصيل المستخدم"""
-    user = User.query.get_or_404(user_id)
-    
-    return render_template('admin/user_management/view.html',
-                         page_title=f'تفاصيل المستخدم - {user.username}',
-                         user=user)
+    """عرض تفاصيل المستخدم - Redirect to edit page"""
+    # Redirect to edit page since we don't have a separate view template
+    return redirect(url_for('user_management.edit', user_id=user_id))
