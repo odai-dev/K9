@@ -86,22 +86,35 @@
                     <strong>عدد السائسين:</strong>
                     <span class="badge bg-primary ms-2">{{ schedule.items.count() }}</span>
                 </div>
+                {% set items_list = schedule.items.all() %}
                 <div class="mb-2">
                     <strong>التقارير المرسلة:</strong>
                     <span class="badge bg-success ms-2">
-                        {{ schedule.items|selectattr('report')|list|length }}
+                        {{ items_list|selectattr('report')|list|length }}
                     </span>
                 </div>
                 <div class="mb-2">
                     <strong>التقارير المعتمدة:</strong>
                     <span class="badge bg-info ms-2">
-                        {{ schedule.items|selectattr('report.status.value', 'equalto', 'APPROVED')|list|length }}
+                        {% set approved_count = namespace(value=0) %}
+                        {% for item in items_list %}
+                            {% if item.report and item.report.status.value == 'APPROVED' %}
+                                {% set approved_count.value = approved_count.value + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ approved_count.value }}
                     </span>
                 </div>
                 <div class="mb-2">
                     <strong>التقارير المعلقة:</strong>
                     <span class="badge bg-warning ms-2">
-                        {{ schedule.items|selectattr('report')|rejectattr('report.status.value', 'in', ['APPROVED', 'REJECTED'])|list|length }}
+                        {% set pending_count = namespace(value=0) %}
+                        {% for item in items_list %}
+                            {% if item.report and item.report.status.value not in ['APPROVED', 'REJECTED'] %}
+                                {% set pending_count.value = pending_count.value + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ pending_count.value }}
                     </span>
                 </div>
             </div>
