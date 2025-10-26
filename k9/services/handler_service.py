@@ -147,6 +147,42 @@ class DailyScheduleService:
         ).all()
         
         return items
+    
+    @staticmethod
+    def notify_handlers_of_new_schedule(schedule_id: str):
+        """إرسال إشعارات للسائسين بالجدول الجديد"""
+        schedule = DailySchedule.query.get(schedule_id)
+        if not schedule:
+            return
+        
+        # Get all schedule items
+        items = DailyScheduleItem.query.filter_by(daily_schedule_id=schedule_id).all()
+        
+        # Notify each handler
+        for item in items:
+            # Get handler user ID from employee
+            if item.handler_user_id:
+                # Direct user ID is available
+                handler_user_id = item.handler_user_id
+            elif item.employee_id:
+                # Get user ID from employee
+                employee = Employee.query.get(item.employee_id)
+                if employee and employee.user_account_id:
+                    handler_user_id = employee.user_account_id
+                else:
+                    continue
+            else:
+                continue
+            
+            # Create notification
+            NotificationService.create_notification(
+                user_id=str(handler_user_id),
+                notification_type=NotificationType.SCHEDULE_CREATED,
+                title="جدول يومي جديد",
+                message=f"تم إنشاء جدول جديد لتاريخ {schedule.date.strftime('%Y-%m-%d')}",
+                related_id=str(schedule_id),
+                related_type="DailySchedule"
+            )
 
 
 class HandlerReportService:
