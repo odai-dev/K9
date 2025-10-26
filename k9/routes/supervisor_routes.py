@@ -282,10 +282,22 @@ def replace_handler(item_id):
 @supervisor_required
 def get_handlers_by_project(project_id):
     """API: الحصول على السائسين حسب المشروع"""
-    handlers = User.query.filter_by(
+    # Get handlers assigned to this project
+    assigned_handlers = User.query.filter_by(
         role=UserRole.HANDLER,
-        project_id=project_id
+        project_id=project_id,
+        active=True
     ).all()
+    
+    # Also include handlers not assigned to any project (available for assignment)
+    unassigned_handlers = User.query.filter_by(
+        role=UserRole.HANDLER,
+        active=True
+    ).filter(
+        User.project_id.is_(None)
+    ).all()
+    
+    all_handlers = assigned_handlers + unassigned_handlers
     
     return jsonify({
         'handlers': [
@@ -294,7 +306,7 @@ def get_handlers_by_project(project_id):
                 'name': h.full_name,
                 'dog_id': str(h.dog_id) if h.dog_id else None
             }
-            for h in handlers
+            for h in all_handlers
         ]
     })
 
