@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block title %}ربط الموظفين بحسابات المستخدمين{% endblock %}
+
+{% block content %}
+<div class="container-fluid rtl">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="h3 text-primary">
+                    <i class="fas fa-link me-2"></i>
+                    ربط الموظفين بحسابات المستخدمين
+                </h2>
+                <a href="{{ url_for('main.admin_panel') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>العودة للوحة الإدارة
+                </a>
+            </div>
+
+            <!-- Info Alert -->
+            <div class="alert alert-info border-0 shadow-sm mb-4">
+                <div class="d-flex align-items-start">
+                    <i class="fas fa-info-circle fa-2x me-3 mt-1"></i>
+                    <div>
+                        <h5 class="alert-heading mb-2">ما هو الربط بين الموظف وحساب المستخدم؟</h5>
+                        <p class="mb-2"><strong>الموظف:</strong> يُستخدم في نظام الحضور، المشاريع، التدريب، والرعاية البيطرية</p>
+                        <p class="mb-2"><strong>حساب المستخدم:</strong> يُستخدم لتسجيل الدخول وإدارة الجداول اليومية والتقارير</p>
+                        <p class="mb-0"><strong>الربط:</strong> يسمح للموظف بتسجيل الدخول واستخدام النظام مع ربط جميع بياناته معاً</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3 mb-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                            <h3 class="mb-1">{{ employees|length }}</h3>
+                            <p class="text-muted mb-0">إجمالي الموظفين</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-user-check fa-2x text-success mb-2"></i>
+                            <h3 class="mb-1">{{ (employees|length) - (unlinked_employees|length) }}</h3>
+                            <p class="text-muted mb-0">موظفين مرتبطين</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-user-times fa-2x text-warning mb-2"></i>
+                            <h3 class="mb-1">{{ unlinked_employees|length }}</h3>
+                            <p class="text-muted mb-0">موظفين غير مرتبطين</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-user-plus fa-2x text-info mb-2"></i>
+                            <h3 class="mb-1">{{ unlinked_users|length }}</h3>
+                            <p class="text-muted mb-0">حسابات غير مرتبطة</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Link Section -->
+            {% if unlinked_employees and unlinked_users %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt me-2"></i>
+                        ربط سريع
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="quickLinkForm">
+                        <div class="row">
+                            <div class="col-md-5 mb-3">
+                                <label for="quick_employee_id" class="form-label">الموظف <span class="text-danger">*</span></label>
+                                <select class="form-select" id="quick_employee_id" name="employee_id" required>
+                                    <option value="">اختر موظف غير مرتبط</option>
+                                    {% for emp in unlinked_employees %}
+                                    <option value="{{ emp.id }}">{{ emp.name }} ({{ emp.employee_id }}) - {{ emp.role.value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-5 mb-3">
+                                <label for="quick_user_id" class="form-label">حساب المستخدم <span class="text-danger">*</span></label>
+                                <select class="form-select" id="quick_user_id" name="user_id" required>
+                                    <option value="">اختر حساب غير مرتبط</option>
+                                    {% for user in unlinked_users %}
+                                    <option value="{{ user.id }}">{{ user.full_name }} ({{ user.username }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-3 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-link me-2"></i>ربط
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- All Employees Table -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-list me-2"></i>
+                            جميع الموظفين وحساباتهم
+                        </h5>
+                        <div class="input-group" style="max-width: 300px;">
+                            <input type="text" id="searchInput" class="form-control" placeholder="بحث...">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="employeesTable">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="border-0">رقم الموظف</th>
+                                    <th class="border-0">اسم الموظف</th>
+                                    <th class="border-0">الدور</th>
+                                    <th class="border-0">البريد الإلكتروني</th>
+                                    <th class="border-0">حساب المستخدم المرتبط</th>
+                                    <th class="border-0">الحالة</th>
+                                    <th class="border-0">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for employee in employees %}
+                                <tr data-search="{{ employee.name|lower }} {{ employee.employee_id|lower }} {{ employee.email|lower if employee.email }}">
+                                    <td><code>{{ employee.employee_id }}</code></td>
+                                    <td><strong>{{ employee.name }}</strong></td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ employee.role.value }}</span>
+                                    </td>
+                                    <td>{{ employee.email or '-' }}</td>
+                                    <td>
+                                        {% if employee.user_account %}
+                                        <div>
+                                            <i class="fas fa-user-check text-success me-1"></i>
+                                            <strong>{{ employee.user_account.full_name }}</strong>
+                                            <br>
+                                            <small class="text-muted">@{{ employee.user_account.username }}</small>
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted">
+                                            <i class="fas fa-unlink me-1"></i>
+                                            غير مرتبط
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if employee.user_account %}
+                                        <span class="badge bg-success">مرتبط</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">غير مرتبط</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            {% if employee.user_account %}
+                                            <button type="button" class="btn btn-outline-danger unlink-btn" 
+                                                    data-employee-id="{{ employee.id }}"
+                                                    data-employee-name="{{ employee.name }}"
+                                                    title="فك الربط">
+                                                <i class="fas fa-unlink"></i>
+                                            </button>
+                                            {% else %}
+                                            <button type="button" class="btn btn-outline-primary link-btn" 
+                                                    data-employee-id="{{ employee.id }}"
+                                                    data-employee-name="{{ employee.name }}"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#linkModal"
+                                                    title="ربط بحساب">
+                                                <i class="fas fa-link"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Link Modal -->
+<div class="modal fade" id="linkModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-link me-2"></i>
+                    ربط موظف بحساب مستخدم
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="linkModalForm">
+                <div class="modal-body">
+                    <input type="hidden" id="modal_employee_id" name="employee_id">
+                    <div class="mb-3">
+                        <label class="form-label">الموظف:</label>
+                        <p class="form-control-plaintext fw-bold" id="modal_employee_name"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_user_id" class="form-label">اختر حساب المستخدم <span class="text-danger">*</span></label>
+                        <select class="form-select" id="modal_user_id" name="user_id" required>
+                            <option value="">اختر حساب...</option>
+                            {% for user in handler_users %}
+                            <option value="{{ user.id }}" {% if user.employee_profile %}disabled{% endif %}>
+                                {{ user.full_name }} ({{ user.username }})
+                                {% if user.employee_profile %}
+                                - مرتبط بالفعل
+                                {% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">سيتم مزامنة البريد الإلكتروني تلقائياً</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>إلغاء
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-link me-2"></i>ربط الآن
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    const tableRows = document.querySelectorAll('#employeesTable tbody tr');
+    
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        
+        tableRows.forEach(row => {
+            const searchText = row.dataset.search;
+            if (searchText.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+    
+    // Quick link form
+    document.getElementById('quickLinkForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        fetch('{{ url_for("main.link_employee_to_user") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.message);
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('danger', data.error);
+            }
+        })
+        .catch(error => {
+            showAlert('danger', 'حدث خطأ في عملية الربط');
+            console.error('Error:', error);
+        });
+    });
+    
+    // Link button click handler
+    document.querySelectorAll('.link-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const employeeId = this.dataset.employeeId;
+            const employeeName = this.dataset.employeeName;
+            
+            document.getElementById('modal_employee_id').value = employeeId;
+            document.getElementById('modal_employee_name').textContent = employeeName;
+        });
+    });
+    
+    // Link modal form
+    document.getElementById('linkModalForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        fetch('{{ url_for("main.link_employee_to_user") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.message);
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('danger', data.error);
+            }
+        })
+        .catch(error => {
+            showAlert('danger', 'حدث خطأ في عملية الربط');
+            console.error('Error:', error);
+        });
+    });
+    
+    // Unlink button click handler
+    document.querySelectorAll('.unlink-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const employeeId = this.dataset.employeeId;
+            const employeeName = this.dataset.employeeName;
+            
+            if (confirm(`هل أنت متأكد من فك ربط الموظف "${employeeName}"؟\n\nسيبقى الموظف وحسابه موجودين، لكن سيتم فك الربط بينهما.`)) {
+                const formData = new FormData();
+                formData.append('employee_id', employeeId);
+                
+                fetch('{{ url_for("main.unlink_employee_from_user") }}', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert('success', data.message);
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showAlert('danger', data.error);
+                    }
+                })
+                .catch(error => {
+                    showAlert('danger', 'حدث خطأ في فك الربط');
+                    console.error('Error:', error);
+                });
+            }
+        });
+    });
+    
+    function showAlert(type, message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+        alertDiv.style.zIndex = '9999';
+        alertDiv.style.minWidth = '300px';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

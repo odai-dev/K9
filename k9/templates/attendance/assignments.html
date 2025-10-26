@@ -84,6 +84,7 @@
                                     <th class="border-0">الوردية</th>
                                     <th class="border-0">رمز الموظف</th>
                                     <th class="border-0">اسم الموظف</th>
+                                    <th class="border-0">حساب المستخدم</th>
                                     <th class="border-0">تاريخ التعيين</th>
                                     <th class="border-0">ملاحظات</th>
                                     <th class="border-0">الإجراءات</th>
@@ -100,6 +101,19 @@
                                     </td>
                                     <td><code>{{ assignment.get_entity_code() }}</code></td>
                                     <td>{{ assignment.get_entity_name() }}</td>
+                                    <td>
+                                        {% set employee = employees_dict.get(assignment.entity_id|string) %}
+                                        {% if employee and employee.user_account %}
+                                        <div>
+                                            <i class="fas fa-user-check text-success me-1"></i>
+                                            <small>@{{ employee.user_account.username }}</small>
+                                        </div>
+                                        {% else %}
+                                        <small class="text-muted">
+                                            <i class="fas fa-unlink me-1"></i>غير مرتبط
+                                        </small>
+                                        {% endif %}
+                                    </td>
                                     <td>{{ assignment.assigned_date.strftime('%Y-%m-%d') }}</td>
                                     <td>{{ assignment.notes or '-' }}</td>
                                     <td>

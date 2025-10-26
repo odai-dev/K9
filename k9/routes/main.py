@@ -3503,6 +3503,121 @@ def toggle_user_status(user_id):
     
     return redirect(url_for('main.admin_panel'))
 
+# EMPLOYEE-USER ACCOUNT LINKING SYSTEM
+@main_bp.route('/admin/employee-user-links')
+@login_required
+def employee_user_links():
+    """Manage links between employees and user accounts"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('ليس لديك صلاحية للوصول إلى إدارة الربط', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    # Get all employees with their linked user accounts
+    employees = Employee.query.order_by(Employee.name).all()
+    
+    # Get all handler users (for linking)
+    handler_users = User.query.filter_by(role=UserRole.HANDLER).order_by(User.full_name).all()
+    
+    # Get unlinked employees
+    unlinked_employees = Employee.query.filter(Employee.user_account_id.is_(None)).all()
+    
+    # Get unlinked users
+    unlinked_users = User.query.filter(
+        User.role == UserRole.HANDLER,
+        ~User.id.in_(db.session.query(Employee.user_account_id).filter(Employee.user_account_id.isnot(None)))
+    ).all()
+    
+    return render_template('admin/employee_user_links.html',
+                         employees=employees,
+                         handler_users=handler_users,
+                         unlinked_employees=unlinked_employees,
+                         unlinked_users=unlinked_users)
+
+@main_bp.route('/admin/employee-user-links/link', methods=['POST'])
+@login_required
+def link_employee_to_user():
+    """Link an employee to a user account"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        return jsonify({'success': False, 'error': 'ليس لديك صلاحية لربط الحسابات'}), 403
+    
+    try:
+        employee_id = request.form.get('employee_id')
+        user_id = request.form.get('user_id')
+        
+        if not employee_id or not user_id:
+            return jsonify({'success': False, 'error': 'يجب تحديد الموظف والمستخدم'})
+        
+        employee = Employee.query.get(employee_id)
+        user = User.query.get(user_id)
+        
+        if not employee or not user:
+            return jsonify({'success': False, 'error': 'الموظف أو المستخدم غير موجود'})
+        
+        # Check if user is already linked to another employee
+        existing_link = Employee.query.filter_by(user_account_id=user_id).first()
+        if existing_link and str(existing_link.id) != str(employee_id):
+            return jsonify({'success': False, 'error': f'المستخدم مرتبط بالفعل بالموظف: {existing_link.name}'})
+        
+        # Create the link
+        employee.user_account_id = user_id
+        
+        # Sync basic information
+        employee.email = user.email
+        
+        db.session.commit()
+        
+        log_audit(current_user.id, AuditAction.EDIT, 'Employee', employee_id,
+                 description=f'Linked employee {employee.name} to user {user.username}')
+        
+        return jsonify({
+            'success': True, 
+            'message': f'تم ربط الموظف {employee.name} بالحساب {user.username} بنجاح'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'خطأ في الربط: {str(e)}'})
+
+@main_bp.route('/admin/employee-user-links/unlink', methods=['POST'])
+@login_required
+def unlink_employee_from_user():
+    """Unlink an employee from a user account"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        return jsonify({'success': False, 'error': 'ليس لديك صلاحية لفك الربط'}), 403
+    
+    try:
+        employee_id = request.form.get('employee_id')
+        
+        if not employee_id:
+            return jsonify({'success': False, 'error': 'يجب تحديد الموظف'})
+        
+        employee = Employee.query.get(employee_id)
+        
+        if not employee:
+            return jsonify({'success': False, 'error': 'الموظف غير موجود'})
+        
+        if not employee.user_account_id:
+            return jsonify({'success': False, 'error': 'الموظف غير مرتبط بأي حساب'})
+        
+        old_user = User.query.get(employee.user_account_id)
+        old_username = old_user.username if old_user else 'Unknown'
+        
+        # Remove the link
+        employee.user_account_id = None
+        db.session.commit()
+        
+        log_audit(current_user.id, AuditAction.EDIT, 'Employee', employee_id,
+                 description=f'Unlinked employee {employee.name} from user {old_username}')
+        
+        return jsonify({
+            'success': True, 
+            'message': f'تم فك ربط الموظف {employee.name} بنجاح'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'خطأ في فك الربط: {str(e)}'})
+
 # UNIFIED GLOBAL ATTENDANCE SYSTEM
 # Only accessible to GENERAL_ADMIN users
 
@@ -3670,8 +3785,10 @@ def attendance_assignments():
     today = date.today()
     available_employees = []
     
-    # Get all employees
+    # Get all employees with their user accounts
     all_employees = Employee.query.filter_by(is_active=True).all()
+    employees_dict = {str(emp.id): emp for emp in all_employees}
+    
     for employee in all_employees:
         # Check if employee is assigned to any active project
         if not employee.is_project_owned(today):
@@ -3681,6 +3798,7 @@ def attendance_assignments():
                          assignments=assignments,
                          shifts=shifts,
                          available_employees=available_employees,
+                         employees_dict=employees_dict,
                          EntityType=EntityType)
 
 @main_bp.route('/attendance/assignments/add', methods=['POST'])
