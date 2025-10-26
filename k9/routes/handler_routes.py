@@ -418,19 +418,36 @@ def view_report(report_id):
 @handler_required
 def notifications():
     """عرض الإشعارات"""
-    all_notifications = NotificationService.get_user_notifications(
-        str(current_user.id), limit=100
+    from k9.models.models_handler_daily import Notification
+    
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    filter_type = request.args.get('filter', 'all')
+    
+    # Build query
+    query = Notification.query.filter_by(user_id=current_user.id)
+    
+    # Apply filter
+    if filter_type == 'unread':
+        query = query.filter_by(read=False)
+    elif filter_type == 'read':
+        query = query.filter_by(read=True)
+    
+    # Get pagination object
+    pagination = query.order_by(Notification.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
     )
     
-    unread_count = len(NotificationService.get_user_notifications(
-        str(current_user.id), unread_only=True
-    ))
-    
-    total_count = len(all_notifications)
+    # Get counts
+    unread_count = Notification.query.filter_by(
+        user_id=current_user.id, read=False
+    ).count()
+    total_count = Notification.query.filter_by(user_id=current_user.id).count()
     
     return render_template('handler/notifications.html',
                          page_title='الإشعارات',
-                         notifications=all_notifications,
+                         notifications=pagination.items,
+                         pagination=pagination,
                          unread_count=unread_count,
                          total_count=total_count)
 
