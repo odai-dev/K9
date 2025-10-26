@@ -123,6 +123,11 @@ def new_report():
         else:
             report_date = date.today()
         
+        # Validate required fields
+        if not dog_id:
+            flash('يجب اختيار الكلب', 'danger')
+            return redirect(url_for('handler.new_report'))
+        
         # Create report with parsed date
         report, error = HandlerReportService.create_report(
             handler_user_id=str(current_user.id),
