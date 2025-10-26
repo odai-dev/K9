@@ -17,7 +17,7 @@ Preferred communication style: Simple, everyday language.
 ### Technical Implementations
 - **Backend Framework**: Flask (Python) utilizing a modular Blueprint structure.
 - **Database**: PostgreSQL, integrated via SQLAlchemy ORM.
-- **Authentication**: Flask-Login implements session-based authentication and role-based access control with `GENERAL_ADMIN` and `PROJECT_MANAGER` tiers.
+- **Authentication**: Flask-Login implements session-based authentication and role-based access control with `GENERAL_ADMIN`, `PROJECT_MANAGER`, and `HANDLER` tiers.
 - **Database Migrations**: Flask-Migrate, powered by Alembic, for schema versioning and management.
 - **File Handling**: Local file system storage for uploads.
 - **Security**: Incorporates CSRF protection, configurable session timeouts, input validation, and audit logging.
@@ -31,6 +31,13 @@ Preferred communication style: Simple, everyday language.
 - **Excel Export System**: Comprehensive XLSX export functionality for attendance reports and permissions data with Arabic RTL support, auto-formatted columns, and styled headers.
 - **Modern Reporting Hub**: Centralized dashboard with dynamic statistics, categorized report organization (Attendance, Training, Breeding, Veterinary, Production, General), and integrated chart visualization.
 - **Data Visualization Framework**: Chart.js integration with custom RTL-aware utilities for interactive charts across all reporting modules.
+- **Handler Daily System**: Comprehensive daily operations management for K9 handlers featuring:
+  - Daily schedule creation and management with auto-locking
+  - Handler report submission with health checks, training logs, care tracking, behavior observations, and incident reporting
+  - Configurable grace period for late report submissions (HANDLER_REPORT_GRACE_MINUTES)
+  - Real-time notification system for schedule changes, report approvals/rejections
+  - User management with bulk import from Excel/CSV
+  - Automated cron jobs for schedule locking (23:59 daily) and notification cleanup (weekly)
 
 ### System Design Choices
 - **Client/Server Separation**: Clear distinction between frontend and backend.
