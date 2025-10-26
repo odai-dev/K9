@@ -307,9 +307,14 @@ def notifications():
         str(current_user.id), limit=100
     )
     
+    unread_count = len(NotificationService.get_user_notifications(
+        str(current_user.id), unread_only=True
+    ))
+    
     return render_template('handler/notifications.html',
                          page_title='الإشعارات',
-                         notifications=all_notifications)
+                         notifications=all_notifications,
+                         unread_count=unread_count)
 
 
 @handler_bp.route('/notifications/<notification_id>/read', methods=['POST'])
