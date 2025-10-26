@@ -248,10 +248,15 @@ def reset_password(user_id):
     
     if error:
         flash(error, 'danger')
+        return redirect(url_for('user_management.index'))
     else:
-        flash(f'تم إعادة تعيين كلمة المرور للمستخدم {user.username}. كلمة المرور الجديدة: {new_password}', 'success')
-    
-    return redirect(url_for('user_management.index'))
+        # Show password on success page instead of flash message
+        return render_template('admin/user_management/reset_success.html',
+                             page_title='تم إعادة تعيين كلمة المرور',
+                             username=user.username,
+                             password=new_password,
+                             full_name=user.full_name,
+                             user_role=user.role.value)
 
 
 @user_mgmt_bp.route('/<user_id>/edit', methods=['GET', 'POST'])
