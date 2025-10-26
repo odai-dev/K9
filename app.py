@@ -141,16 +141,17 @@ with app.app_context():
     def get_notification_link(notification):
         """Generate direct link for notification based on related_type and related_id"""
         from flask import url_for
+        from k9.models.models_handler_daily import NotificationType
         
         if not notification.related_type or not notification.related_id:
             return '#'
         
         if notification.related_type == 'HandlerReport':
             # Direct link to specific report
-            return url_for('supervisor.report_detail', report_id=notification.related_id)
+            return url_for('supervisor.report_view', report_id=notification.related_id)
         elif notification.related_type == 'DailySchedule':
-            # Direct link to specific schedule
-            return url_for('supervisor.schedule_detail', schedule_id=notification.related_id)
+            # Direct link to specific schedule  
+            return url_for('supervisor.schedule_view', schedule_id=notification.related_id)
         elif notification.related_type == 'DailyScheduleItem':
             # Link to handler's schedule
             return url_for('handler.dashboard')
