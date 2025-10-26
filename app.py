@@ -374,6 +374,9 @@ with app.app_context():
         
         def reschedule_backup_jobs():
             """Reschedule backup jobs based on current settings"""
+            if backup_scheduler is None:
+                return False
+                
             with app.app_context():
                 try:
                     backup_scheduler.remove_job('backup_job')
@@ -427,9 +430,9 @@ with app.app_context():
         
         reschedule_backup_jobs()
         
-        app.reschedule_backup_jobs = reschedule_backup_jobs
+        app.reschedule_backup_jobs = reschedule_backup_jobs  # type: ignore
         
     except Exception as e:
         print(f"⚠ Warning: Could not initialize backup scheduler: {e}")
         backup_scheduler = None
-        app.reschedule_backup_jobs = lambda: False
+        app.reschedule_backup_jobs = lambda: False  # type: ignore
