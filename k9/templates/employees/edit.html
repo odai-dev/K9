@@ -90,6 +90,53 @@
                         </div>
                     </div>
 
+                    <!-- Linked User Account -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-link me-2"></i>حساب المستخدم المرتبط
+                            </h6>
+                        </div>
+                        
+                        <div class="col-12">
+                            {% if employee.user_account %}
+                            <div class="alert alert-success border-0">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            <i class="fas fa-user-check me-2"></i>
+                                            مرتبط بحساب المستخدم
+                                        </h6>
+                                        <p class="mb-0">
+                                            <strong>الاسم:</strong> {{ employee.user_account.full_name }}<br>
+                                            <strong>اسم المستخدم:</strong> @{{ employee.user_account.username }}<br>
+                                            <strong>البريد:</strong> {{ employee.user_account.email }}
+                                        </p>
+                                    </div>
+                                    <a href="{{ url_for('main.employee_user_links') }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit me-1"></i>إدارة الربط
+                                    </a>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-warning border-0">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            <i class="fas fa-unlink me-2"></i>
+                                            غير مرتبط بحساب مستخدم
+                                        </h6>
+                                        <p class="mb-0">هذا الموظف غير مرتبط بحساب مستخدم للنظام. يمكنك ربطه من صفحة إدارة الروابط.</p>
+                                    </div>
+                                    <a href="{{ url_for('main.employee_user_links') }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-link me-1"></i>ربط الآن
+                                    </a>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
                     <!-- Submit Buttons -->
                     <div class="row">
                         <div class="col-12">
