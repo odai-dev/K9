@@ -187,19 +187,17 @@ let currentTaskId = null;
 
 function startTask(taskId) {
     if (confirm('هل تريد بدء العمل على هذه المهمة؟')) {
-        fetch(`/tasks/handler/${taskId}/start`, {
+        fetch(`/tasks/my-tasks/${taskId}/start`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
                 'X-CSRFToken': csrfToken
             }
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
+        .then(response => {
+            if (response.ok) {
                 window.location.reload();
             } else {
-                alert('فشل بدء المهمة: ' + (data.error || 'حدث خطأ غير معروف'));
+                alert('حدث خطأ أثناء بدء المهمة');
             }
         })
         .catch(error => {
@@ -218,19 +216,17 @@ function showCompleteModal(taskId) {
 function completeTask() {
     if (!currentTaskId) return;
     
-    fetch(`/tasks/handler/${currentTaskId}/complete`, {
+    fetch(`/tasks/my-tasks/${currentTaskId}/complete`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
             'X-CSRFToken': csrfToken
         }
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
+    .then(response => {
+        if (response.ok) {
             window.location.href = "{{ url_for('tasks.handler_index') }}";
         } else {
-            alert('فشل إكمال المهمة: ' + (data.error || 'حدث خطأ غير معروف'));
+            alert('حدث خطأ أثناء إكمال المهمة');
         }
     })
     .catch(error => {
