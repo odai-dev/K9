@@ -1155,6 +1155,7 @@ def puppy_training_add():
 # Project routes (without attendance/assignment functionality)
 @main_bp.route('/projects')
 @login_required
+@admin_or_pm_required
 def projects():
     if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.order_by(Project.created_at.desc()).all()
@@ -1205,6 +1206,7 @@ def projects():
 
 @main_bp.route('/projects/add', methods=['GET', 'POST'])
 @login_required
+@admin_or_pm_required
 def project_add():
     if request.method == 'POST':
         try:
@@ -1298,6 +1300,7 @@ def project_add():
 # Project Dashboard Route (without attendance statistics)
 @main_bp.route('/projects/<project_id>/dashboard')
 @login_required
+@admin_or_pm_required
 def project_dashboard(project_id):
     try:
         project_id = project_id
@@ -1387,6 +1390,7 @@ def project_dashboard(project_id):
 # Project Status Management
 @main_bp.route('/projects/<project_id>/status', methods=['POST'])
 @login_required
+@admin_or_pm_required
 def project_status_change(project_id):
     try:
         project_id = project_id
@@ -1446,6 +1450,7 @@ def project_status_change(project_id):
 # Project Delete Route
 @main_bp.route('/projects/<project_id>/delete', methods=['POST'])
 @login_required
+@admin_or_pm_required
 def project_delete(project_id):
     try:
         project_id = project_id
@@ -1500,6 +1505,7 @@ def project_delete(project_id):
 # Project Dog Management
 @main_bp.route('/projects/<project_id>/dogs/add', methods=['POST'])
 @login_required
+@admin_or_pm_required
 def project_dog_add(project_id):
     try:
         project_id = project_id
@@ -1542,6 +1548,7 @@ def project_dog_add(project_id):
 # Project Manager Update Route
 @main_bp.route('/projects/<project_id>/manager/update', methods=['POST'])
 @login_required
+@admin_or_pm_required
 def project_manager_update(project_id):
     try:
         project_id = project_id
@@ -1602,6 +1609,7 @@ def project_manager_update(project_id):
 # Project Assignments Management
 @main_bp.route('/projects/<project_id>/assignments')
 @login_required
+@admin_or_pm_required
 def project_assignments(project_id):
     try:
         project_id = project_id
@@ -1656,6 +1664,7 @@ def project_assignments(project_id):
                          available_employees=available_employees,
                          project_managers=project_managers)
 
+@admin_or_pm_required
 @main_bp.route('/projects/<project_id>/assignments/add', methods=['POST'])
 @login_required
 def project_assignment_add(project_id):
