@@ -178,7 +178,7 @@
 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 
 function markAsRead(notificationId) {
-    fetch(`/handler/notifications/${notificationId}/mark-read`, {
+    fetch(`/handler/notifications/${notificationId}/read`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -212,7 +212,7 @@ function markAllAsRead() {
         return;
     }
     
-    fetch('/handler/notifications/mark-all-read', {
+    fetch('/handler/notifications/read-all', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
