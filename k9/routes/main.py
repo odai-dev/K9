@@ -27,6 +27,7 @@ from k9.models.models import (Dog, Employee, TrainingSession, VeterinaryVisit, P
                    CleaningLog)
 from k9.utils.utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
 from k9.utils.permission_decorators import require_sub_permission
+from k9.decorators import admin_or_pm_required
 import os
 from datetime import datetime, date, timedelta
 import uuid
@@ -42,6 +43,10 @@ def index():
 @main_bp.route('/dashboard')
 @login_required
 def dashboard():
+    # HANDLER users should use their own dashboard
+    if current_user.role == UserRole.HANDLER:
+        return redirect(url_for('handler.dashboard'))
+    
     # Get dashboard statistics
     stats = {}
     
@@ -84,6 +89,7 @@ def dashboard():
 # Dog management routes
 @main_bp.route('/dogs')
 @login_required
+@admin_or_pm_required
 def dogs_list():
     from datetime import date
     # Use permission-based access for both roles
@@ -93,7 +99,8 @@ def dogs_list():
     return render_template('dogs/list.html', dogs=dogs, today=date.today())
 
 @main_bp.route('/dogs/add', methods=['GET', 'POST'])
-@login_required  
+@login_required
+@admin_or_pm_required  
 def dogs_add():
     # Get potential parents for dropdowns
     potential_parents = get_user_accessible_dogs(current_user)
@@ -164,6 +171,7 @@ def dogs_add():
 
 @main_bp.route('/dogs/<dog_id>')
 @login_required
+@admin_or_pm_required
 def dogs_view(dog_id):
     try:
         dog_id = dog_id
@@ -190,6 +198,7 @@ def dogs_view(dog_id):
 
 @main_bp.route('/dogs/<dog_id>/edit', methods=['GET', 'POST'])
 @login_required
+@admin_or_pm_required
 def dogs_edit(dog_id):
     try:
         dog_id = dog_id
@@ -267,6 +276,7 @@ def dogs_edit(dog_id):
 # Employee management routes
 @main_bp.route('/employees')
 @login_required
+@admin_or_pm_required
 def employees_list():
     if current_user.role == UserRole.GENERAL_ADMIN:
         employees = Employee.query.order_by(Employee.name).all()
@@ -277,6 +287,7 @@ def employees_list():
 
 @main_bp.route('/employees/add', methods=['GET', 'POST'])
 @login_required
+@admin_or_pm_required
 def employees_add():
     print(f"Employee add route called with method: {request.method}")
     if request.method == 'POST':
@@ -321,6 +332,7 @@ def employees_add():
 
 @main_bp.route('/employees/<employee_id>/edit', methods=['GET', 'POST'])
 @login_required
+@admin_or_pm_required
 def employees_edit(employee_id):
     try:
         employee_id = employee_id
@@ -379,6 +391,7 @@ def training_add():
 # Veterinary routes
 @main_bp.route('/veterinary')
 @login_required
+@admin_or_pm_required
 def veterinary_list():
     if current_user.role == UserRole.GENERAL_ADMIN:
         visits = VeterinaryVisit.query.order_by(VeterinaryVisit.created_at.desc()).all()
@@ -390,6 +403,7 @@ def veterinary_list():
 
 @main_bp.route('/veterinary/add', methods=['GET', 'POST'])
 @login_required
+@admin_or_pm_required
 def veterinary_add():
     if request.method == 'POST':
         try:
@@ -444,6 +458,7 @@ def veterinary_add():
 # Production routes
 @main_bp.route('/production')
 @login_required
+@admin_or_pm_required
 def production_list():
     if current_user.role == UserRole.GENERAL_ADMIN:
         cycles = ProductionCycle.query.order_by(ProductionCycle.created_at.desc()).all()
