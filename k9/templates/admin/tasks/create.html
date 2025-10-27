@@ -104,6 +104,11 @@
                         </label>
                         <select class="form-select" id="project_id" name="project_id">
                             <option value="">-- بدون مشروع --</option>
+                            {% for project in projects %}
+                            <option value="{{ project.id }}">
+                                {{ project.name }} - {{ project.location }}
+                            </option>
+                            {% endfor %}
                         </select>
                         <div class="form-text">ربط المهمة بمشروع محدد (اختياري)</div>
                     </div>
