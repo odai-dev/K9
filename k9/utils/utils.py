@@ -773,6 +773,20 @@ def get_user_permissions(user):
             'reports': True,
             'admin': True
         }
+    elif user.role.value == 'HANDLER':
+        # HANDLER users have NO navigation permissions
+        # They only access their own handler dashboard and reports
+        return {
+            'dogs': False,
+            'employees': False,
+            'training': False,
+            'veterinary': False,
+            'production': False,
+            'projects': False,
+            'attendance': False,
+            'reports': False,
+            'admin': False
+        }
     else:  # PROJECT_MANAGER
         # PROJECT_MANAGER gets default access to all essential sections
         # They have full access to projects, dogs, employees, training, veterinary, attendance, and reports
