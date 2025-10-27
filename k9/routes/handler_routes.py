@@ -566,6 +566,9 @@ def utility_processor():
             return url_for('handler.view_report', report_id=notification.related_id)
         elif notification.related_type == 'DailyScheduleItem':
             return url_for('handler.dashboard')
+        elif notification.related_type == 'Task':
+            # Direct link to task details for handler
+            return url_for('tasks.handler_view', task_id=notification.related_id)
         
         return '#'
     
