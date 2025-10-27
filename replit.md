@@ -20,7 +20,7 @@ Preferred communication style: Simple, everyday language.
 - **Authentication**: Flask-Login implements session-based authentication and role-based access control with `GENERAL_ADMIN`, `PROJECT_MANAGER`, and `HANDLER` tiers.
 - **Database Migrations**: Flask-Migrate, powered by Alembic, for schema versioning and management.
 - **File Handling**: Local file system storage for uploads.
-- **Security**: Incorporates CSRF protection, configurable session timeouts, input validation, and audit logging.
+- **Security**: Incorporates CSRF protection, configurable session timeouts, input validation, and audit logging. **Role-Based Access Control** enforces strict route protection with decorators (`@admin_or_pm_required`, `@handler_required`, `@admin_required`) ensuring HANDLER users can only access `/handler/*` routes and are automatically redirected from admin/PM interfaces.
 - **Database Backup & Restore**: Comprehensive backup/restore functionality using pg_dump/psql, automated scheduling via APScheduler, configurable retention, and an admin dashboard for management.
 
 ### Feature Specifications
