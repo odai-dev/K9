@@ -775,7 +775,7 @@ def get_user_permissions(user):
         }
     else:  # PROJECT_MANAGER
         # PROJECT_MANAGER gets default access to all essential sections
-        # They have full access to projects, dogs, employees, training, veterinary, and reports
+        # They have full access to projects, dogs, employees, training, veterinary, attendance, and reports
         from k9.models.models import SubPermission, Project
         permissions = {
             'dogs': True,           # Can view and manage dogs
@@ -784,7 +784,7 @@ def get_user_permissions(user):
             'veterinary': True,     # Can view veterinary records
             'production': True,     # Can view production records
             'projects': True,       # Can view and manage projects
-            'attendance': False,    # Limited attendance access (only GENERAL_ADMIN)
+            'attendance': True,     # Can schedule attendance and manage warnings for their location
             'reports': True,        # Can view and export all reports
             'admin': False          # No admin access
         }
