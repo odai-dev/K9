@@ -107,9 +107,19 @@ def admin_create():
     # GET - show form
     handlers = User.query.filter_by(role=UserRole.HANDLER, active=True).all()
     
+    # Get projects for the dropdown
+    from k9.models.models import Project
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        # Admin can see all projects
+        projects = Project.query.all()
+    else:  # PROJECT_MANAGER
+        # PM sees only projects they manage
+        projects = Project.query.filter_by(manager_id=current_user.id).all()
+    
     return render_template('admin/tasks/create.html',
                          page_title='إنشاء مهمة جديدة',
                          handlers=handlers,
+                         projects=projects,
                          TaskPriority=TaskPriority)
 
 
