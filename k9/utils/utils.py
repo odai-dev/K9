@@ -774,11 +774,22 @@ def get_user_permissions(user):
             'admin': True
         }
     else:  # PROJECT_MANAGER
-        # Load permissions from SubPermission table for PROJECT_MANAGER
+        # PROJECT_MANAGER gets default access to all essential sections
+        # They have full access to projects, dogs, employees, training, veterinary, and reports
         from k9.models.models import SubPermission, Project
-        permissions = {section: False for section in ['dogs', 'employees', 'training', 'veterinary', 'production', 'projects', 'attendance', 'reports', 'admin']}
+        permissions = {
+            'dogs': True,           # Can view and manage dogs
+            'employees': True,      # Can view and manage employees
+            'training': True,       # Can view and manage training
+            'veterinary': True,     # Can view veterinary records
+            'production': True,     # Can view production records
+            'projects': True,       # Can view and manage projects
+            'attendance': False,    # Limited attendance access (only GENERAL_ADMIN)
+            'reports': True,        # Can view and export all reports
+            'admin': False          # No admin access
+        }
         
-        # Check if user has any granted permissions in SubPermission table
+        # Check if user has any additional or restricted permissions in SubPermission table
         user_permissions = SubPermission.query.filter_by(user_id=user.id, is_granted=True).all()
         
         # Map SubPermission sections to the main sections
@@ -794,16 +805,11 @@ def get_user_permissions(user):
             'Analytics': 'reports'
         }
         
-        # If user has any granted permissions, enable those sections
+        # If user has any granted permissions, enable those sections (override defaults if needed)
         for perm in user_permissions:
             mapped_section = section_mapping.get(perm.section)
             if mapped_section and mapped_section in permissions:
                 permissions[mapped_section] = True
-                
-        # Also check assigned projects - if user has projects assigned, they should see projects section
-        user_projects = Project.query.filter_by(manager_id=user.id).all()
-        if user_projects:
-            permissions['projects'] = True
         
         return permissions
 
