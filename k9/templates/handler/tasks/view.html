@@ -150,12 +150,13 @@
         <!-- Action Buttons -->
         {% if task.status == TaskStatus.PENDING %}
         <div class="d-grid gap-2">
-            <button type="button" 
-                    class="btn btn-lg btn-info" 
-                    onclick="startTask('{{ task.id }}')">
-                <i class="fas fa-play me-2"></i>
-                بدء العمل على المهمة
-            </button>
+            <form method="POST" action="{{ url_for('tasks.handler_start', task_id=task.id) }}" onsubmit="return confirm('هل تريد بدء العمل على هذه المهمة؟')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-lg btn-info w-100">
+                    <i class="fas fa-play me-2"></i>
+                    بدء العمل على المهمة
+                </button>
+            </form>
         </div>
         {% elif task.status == TaskStatus.IN_PROGRESS %}
         <div class="d-grid gap-2">
@@ -182,57 +183,11 @@
 
 {% block extra_js %}
 <script>
-const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-let currentTaskId = null;
-
-function startTask(taskId) {
-    if (confirm('هل تريد بدء العمل على هذه المهمة؟')) {
-        fetch(`/tasks/my-tasks/${taskId}/start`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': csrfToken
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                window.location.reload();
-            } else {
-                alert('حدث خطأ أثناء بدء المهمة');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('حدث خطأ أثناء بدء المهمة');
-        });
-    }
-}
-
 function showCompleteModal(taskId) {
-    currentTaskId = taskId;
+    const form = document.getElementById('completeTaskForm');
+    form.action = "{{ url_for('tasks.handler_complete', task_id='TASK_ID') }}".replace('TASK_ID', taskId);
     const modal = new bootstrap.Modal(document.getElementById('completeTaskModal'));
     modal.show();
-}
-
-function completeTask() {
-    if (!currentTaskId) return;
-    
-    fetch(`/tasks/my-tasks/${currentTaskId}/complete`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': csrfToken
-        }
-    })
-    .then(response => {
-        if (response.ok) {
-            window.location.href = "{{ url_for('tasks.handler_index') }}";
-        } else {
-            alert('حدث خطأ أثناء إكمال المهمة');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('حدث خطأ أثناء إكمال المهمة');
-    });
 }
 </script>
 {% endblock %}
