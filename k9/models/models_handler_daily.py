@@ -27,10 +27,13 @@ class ScheduleItemStatus(Enum):
 
 class ReportStatus(Enum):
     """حالة تقرير السائس"""
-    DRAFT = "DRAFT"            # مسودة
-    SUBMITTED = "SUBMITTED"    # مرسل
-    APPROVED = "APPROVED"      # معتمد
-    REJECTED = "REJECTED"      # مرفوض
+    DRAFT = "DRAFT"                        # مسودة
+    SUBMITTED = "SUBMITTED"                # مرسل
+    APPROVED = "APPROVED"                  # معتمد (legacy)
+    REJECTED = "REJECTED"                  # مرفوض (legacy)
+    APPROVED_BY_PM = "APPROVED_BY_PM"      # معتمد من قبل مدير المشروع
+    FORWARDED_TO_ADMIN = "FORWARDED_TO_ADMIN"  # تم إرساله للمسؤول العام
+    REJECTED_BY_PM = "REJECTED_BY_PM"      # مرفوض من قبل مدير المشروع
 
 class HealthCheckStatus(Enum):
     """حالة الفحص الصحي"""
@@ -81,6 +84,8 @@ class NotificationType(Enum):
     REPORT_SUBMITTED = "REPORT_SUBMITTED"
     REPORT_APPROVED = "REPORT_APPROVED"
     REPORT_REJECTED = "REPORT_REJECTED"
+    REPORT_EDITS_REQUESTED = "REPORT_EDITS_REQUESTED"
+    REPORT_FORWARDED_TO_ADMIN = "REPORT_FORWARDED_TO_ADMIN"
 
 # ============================================================================
 # Daily Schedule Models
@@ -455,3 +460,46 @@ class Task(db.Model):
     
     def __repr__(self):
         return f'<Task {self.title} - {self.status.value}>'
+
+
+# ============================================================================
+# Report Review Audit Model
+# ============================================================================
+
+class ReportReview(db.Model):
+    """Audit trail for all report review actions across all report types"""
+    __tablename__ = 'report_review'
+    
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+    
+    # Report identification
+    report_type = db.Column(db.String(50), nullable=False)  # HANDLER, TRAINER, VET, CARETAKER
+    report_id = db.Column(db.String(36), nullable=False)    # UUID as string for compatibility
+    
+    # Review action
+    action = db.Column(db.String(50), nullable=False)  # APPROVE_AND_FORWARD, REQUEST_EDITS, REJECT
+    previous_status = db.Column(db.String(50), nullable=False)
+    new_status = db.Column(db.String(50), nullable=False)
+    
+    # Reviewer information
+    reviewed_by_user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    review_notes = db.Column(Text, nullable=True)
+    
+    # Project context
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id', ondelete='SET NULL'), nullable=True)
+    
+    # Timestamp
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+    
+    # Relationships
+    reviewed_by = db.relationship('User', backref='report_reviews')
+    project = db.relationship('Project', backref='report_reviews')
+    
+    __table_args__ = (
+        db.Index('idx_report_review_type_id', 'report_type', 'report_id'),
+        db.Index('idx_report_review_created_at', 'created_at'),
+        db.Index('idx_report_review_project', 'project_id'),
+    )
+    
+    def __repr__(self):
+        return f'<ReportReview {self.report_type}:{self.report_id} - {self.action}>'

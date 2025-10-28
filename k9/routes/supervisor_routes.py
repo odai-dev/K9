@@ -534,3 +534,206 @@ def report_reject(report_id):
     
     flash('تم رفض التقرير', 'warning')
     return jsonify({'success': True, 'message': 'تم رفض التقرير'})
+
+
+# ============================================================================
+# PM Report Review Workflow - Unified API for all report types
+# ============================================================================
+
+@supervisor_bp.route('/api/pm/reports/pending')
+@login_required
+@supervisor_required
+def pm_pending_reports():
+    """Get all pending reports for PM review (all types)"""
+    from k9.services.report_review_service import ReportReviewService
+    
+    # Only PROJECT_MANAGER can access
+    if current_user.role != UserRole.PROJECT_MANAGER:
+        return jsonify({'success': False, 'error': 'صلاحية غير كافية'}), 403
+    
+    counts = ReportReviewService.get_pending_counts(str(current_user.id))
+    reports = ReportReviewService.get_pending_reports(str(current_user.id))
+    
+    # Format reports for JSON response
+    formatted_reports = []
+    for report_type, report_list in reports.items():
+        for report in report_list:
+            formatted_report = {
+                'type': report_type,
+                'id': str(report.id),
+                'submitted_at': report.submitted_at.isoformat() if report.submitted_at else None,
+                'status': report.status
+            }
+            
+            # Add type-specific fields
+            if report_type == 'HANDLER':
+                formatted_report['date'] = report.date.isoformat() if report.date else None
+                formatted_report['handler_name'] = report.handler.full_name if report.handler else None
+            elif report_type == 'TRAINER':
+                formatted_report['session_date'] = report.session_date.isoformat() if report.session_date else None
+                formatted_report['trainer_name'] = report.trainer.full_name if report.trainer else None
+            elif report_type == 'VET':
+                formatted_report['visit_date'] = report.visit_date.isoformat() if report.visit_date else None
+                formatted_report['vet_name'] = report.vet.full_name if report.vet else None
+            elif report_type == 'CARETAKER':
+                formatted_report['date'] = report.date.isoformat() if report.date else None
+                formatted_report['caretaker_name'] = report.caretaker_employee.full_name if report.caretaker_employee else None
+            
+            formatted_reports.append(formatted_report)
+    
+    return jsonify({
+        'success': True,
+        'counts': counts,
+        'reports': formatted_reports
+    })
+
+
+@supervisor_bp.route('/api/pm/reports/<report_type>/<report_id>')
+@login_required
+@supervisor_required
+def pm_get_report(report_type, report_id):
+    """Get detailed report view for PM review"""
+    from k9.services.report_review_service import ReportReviewService
+    
+    # Only PROJECT_MANAGER can access
+    if current_user.role != UserRole.PROJECT_MANAGER:
+        return jsonify({'success': False, 'error': 'صلاحية غير كافية'}), 403
+    
+    report = ReportReviewService.get_report(report_type, report_id, str(current_user.id))
+    
+    if not report:
+        return jsonify({'success': False, 'error': 'تعذر العثور على التقرير'}), 404
+    
+    # TODO: Format report details based on type
+    return jsonify({
+        'success': True,
+        'report': {
+            'id': str(report.id),
+            'type': report_type,
+            'status': report.status,
+            'submitted_at': report.submitted_at.isoformat() if report.submitted_at else None
+        }
+    })
+
+
+@supervisor_bp.route('/api/pm/reports/<report_type>/<report_id>/approve', methods=['POST'])
+@login_required
+@supervisor_required
+def pm_approve_report(report_type, report_id):
+    """Approve report and forward to General Admin"""
+    from k9.services.report_review_service import ReportReviewService
+    
+    # Only PROJECT_MANAGER can access
+    if current_user.role != UserRole.PROJECT_MANAGER:
+        return jsonify({'success': False, 'error': 'صلاحية غير كافية'}), 403
+    
+    notes = request.json.get('notes', '') if request.json else ''
+    
+    success, message = ReportReviewService.approve_and_forward(
+        report_type,
+        report_id,
+        str(current_user.id),
+        notes
+    )
+    
+    if success:
+        return jsonify({'success': True, 'message': message})
+    else:
+        return jsonify({'success': False, 'error': message}), 400
+
+
+@supervisor_bp.route('/api/pm/reports/<report_type>/<report_id>/request-edits', methods=['POST'])
+@login_required
+@supervisor_required
+def pm_request_edits(report_type, report_id):
+    """Request edits on report (sends back to submitter as DRAFT)"""
+    from k9.services.report_review_service import ReportReviewService
+    
+    # Only PROJECT_MANAGER can access
+    if current_user.role != UserRole.PROJECT_MANAGER:
+        return jsonify({'success': False, 'error': 'صلاحية غير كافية'}), 403
+    
+    if not request.json or 'notes' not in request.json:
+        return jsonify({'success': False, 'error': 'يجب إدخال ملاحظات'}), 400
+    
+    notes = request.json.get('notes', '').strip()
+    
+    if not notes:
+        return jsonify({'success': False, 'error': 'يجب إدخال ملاحظات'}), 400
+    
+    success, message = ReportReviewService.request_edits(
+        report_type,
+        report_id,
+        str(current_user.id),
+        notes
+    )
+    
+    if success:
+        return jsonify({'success': True, 'message': message})
+    else:
+        return jsonify({'success': False, 'error': message}), 400
+
+
+@supervisor_bp.route('/api/pm/reports/<report_type>/<report_id>/reject', methods=['POST'])
+@login_required
+@supervisor_required
+def pm_reject_report(report_type, report_id):
+    """Reject report completely (final rejection)"""
+    from k9.services.report_review_service import ReportReviewService
+    
+    # Only PROJECT_MANAGER can access
+    if current_user.role != UserRole.PROJECT_MANAGER:
+        return jsonify({'success': False, 'error': 'صلاحية غير كافية'}), 403
+    
+    if not request.json or 'reason' not in request.json:
+        return jsonify({'success': False, 'error': 'يجب إدخال سبب الرفض'}), 400
+    
+    reason = request.json.get('reason', '').strip()
+    
+    if not reason:
+        return jsonify({'success': False, 'error': 'يجب إدخال سبب الرفض'}), 400
+    
+    success, message = ReportReviewService.reject_completely(
+        report_type,
+        report_id,
+        str(current_user.id),
+        reason
+    )
+    
+    if success:
+        return jsonify({'success': True, 'message': message})
+    else:
+        return jsonify({'success': False, 'error': message}), 400
+
+
+@supervisor_bp.route('/api/pm/reports/<report_type>/<report_id>/history')
+@login_required
+@supervisor_required
+def pm_report_history(report_type, report_id):
+    """Get audit trail for report"""
+    from k9.services.report_review_service import ReportReviewService
+    
+    # Only PROJECT_MANAGER can access
+    if current_user.role != UserRole.PROJECT_MANAGER:
+        return jsonify({'success': False, 'error': 'صلاحية غير كافية'}), 403
+    
+    history = ReportReviewService.get_report_history(report_type, report_id, str(current_user.id))
+    
+    if history is None:
+        return jsonify({'success': False, 'error': 'تعذر العثور على التقرير'}), 404
+    
+    formatted_history = []
+    for review in history:
+        formatted_history.append({
+            'action': review.action,
+            'previous_status': review.previous_status,
+            'new_status': review.new_status,
+            'reviewed_by': review.reviewed_by.full_name if review.reviewed_by else None,
+            'review_notes': review.review_notes,
+            'created_at': review.created_at.isoformat() if review.created_at else None
+        })
+    
+    return jsonify({
+        'success': True,
+        'history': formatted_history
+    })

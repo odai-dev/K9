@@ -477,10 +477,20 @@ class VeterinaryVisit(db.Model):
     weather = db.Column(db.String(80))    # Weather conditions
     vital_signs = db.Column(JSON, default=dict)  # Consolidated vital signs
     
+    # Workflow fields for PM review
+    status = db.Column(db.String(50), nullable=False, default='DRAFT')
+    submitted_at = db.Column(db.DateTime, nullable=True)
+    reviewed_by_user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    review_notes = db.Column(Text, nullable=True)
+    created_by_user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    
     # Relationships
     dog = db.relationship('Dog', backref='veterinary_visits')
     vet = db.relationship('Employee', backref='veterinary_visits')
     project = db.relationship('Project', backref='veterinary_visits')
+    reviewed_by = db.relationship('User', foreign_keys=[reviewed_by_user_id], backref='reviewed_veterinary_visits')
+    created_by_user = db.relationship('User', foreign_keys=[created_by_user_id], backref='created_veterinary_visits')
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -1875,6 +1885,13 @@ class BreedingTrainingActivity(db.Model):
     equipment_used = db.Column(JSON, default=list, nullable=True) # المعدات المستخدمة
     notes = db.Column(Text, nullable=True)                       # ملاحظات
     
+    # Workflow fields for PM review
+    status = db.Column(db.String(50), nullable=False, default='DRAFT')
+    submitted_at = db.Column(db.DateTime, nullable=True)
+    reviewed_by_user_id = db.Column(get_uuid_column(), db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    review_notes = db.Column(Text, nullable=True)
+    
     # Audit trail
     created_by_user_id = db.Column(get_uuid_column(), db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
@@ -1884,7 +1901,8 @@ class BreedingTrainingActivity(db.Model):
     project = db.relationship('Project', backref='breeding_training_activities')
     dog = db.relationship('Dog', backref='breeding_training_activities')
     trainer = db.relationship('Employee', backref='breeding_training_activities')
-    created_by_user = db.relationship('User', backref='breeding_training_activities')
+    created_by_user = db.relationship('User', foreign_keys=[created_by_user_id], backref='created_breeding_training_activities')
+    reviewed_by_user = db.relationship('User', foreign_keys=[reviewed_by_user_id], backref='reviewed_breeding_training_activities')
 
     # Database constraints and indexes
     __table_args__ = (
@@ -1933,6 +1951,13 @@ class CaretakerDailyLog(db.Model):
     # Additional information
     notes = db.Column(db.Text, nullable=True)  # ملاحظات
     
+    # Workflow fields for PM review
+    status = db.Column(db.String(50), nullable=False, default='DRAFT')
+    submitted_at = db.Column(db.DateTime, nullable=True)
+    reviewed_by_user_id = db.Column(get_uuid_column(), db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    review_notes = db.Column(Text, nullable=True)
+    
     # Audit trail
     created_by_user_id = db.Column(get_uuid_column(), db.ForeignKey("user.id", ondelete="SET NULL"), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
@@ -1942,7 +1967,8 @@ class CaretakerDailyLog(db.Model):
     project = db.relationship('Project', backref='caretaker_daily_logs')
     dog = db.relationship('Dog', backref='caretaker_daily_logs')
     caretaker_employee = db.relationship('Employee', backref='caretaker_daily_logs')
-    created_by_user = db.relationship('User', backref='caretaker_daily_logs')
+    created_by_user = db.relationship('User', foreign_keys=[created_by_user_id], backref='created_caretaker_daily_logs')
+    reviewed_by_user = db.relationship('User', foreign_keys=[reviewed_by_user_id], backref='reviewed_caretaker_daily_logs')
 
     # Database constraints and indexes
     __table_args__ = (
