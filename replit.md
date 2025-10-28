@@ -44,6 +44,16 @@ Preferred communication style: Simple, everyday language.
     - Separate notification pages for handlers (`/handler/notifications`) and admins (`/admin/notifications`)
     - Automatic notifications sent to project managers and admins when handlers submit reports
     - Real-time unread counters in navigation for all user roles
+- **PM Report Review Workflow**: 2-tier review process for project-based report management:
+  - Project Managers review reports from their assigned project first
+  - PM actions: Approve, Reject, Request Edits, or Forward to General Admin for final approval
+  - Covers four report types: HandlerReport, VeterinaryVisit, BreedingTrainingActivity, CaretakerDailyLog
+  - Report statuses: DRAFT, SUBMITTED, APPROVED_BY_PM, REJECTED_BY_PM, FORWARDED_TO_ADMIN, APPROVED, REJECTED
+  - Authorization enforced via ProjectManagerPermission model for proper access control
+  - ReportReview audit trail for complete review history
+  - Notification system for report submissions, approvals, rejections, and edit requests
+  - API endpoints: `/supervisor/pm-review/*` for pending reports, counts, approval, rejection, edit requests, and admin forwarding
+  - Service layer: `k9/services/report_review_service.py` handles all review workflow logic
 
 ### System Design Choices
 - **Client/Server Separation**: Clear distinction between frontend and backend.
