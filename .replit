@@ -1,4 +1,4 @@
-modules = ["web", "python-3.11", "nodejs-20", "bash", "postgresql-16"]
+modules = ["web", "python-3.11", "nodejs-20", "bash"]
 run = "run"
 
 [nix]
@@ -25,21 +25,17 @@ args = "Start application"
 name = "Start application"
 author = "agent"
 
-[workflows.workflow.metadata]
-outputType = "webview"
-
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "uv run gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app"
+args = "gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app"
 waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
 
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 35047
-externalPort = 6800
 
 [[ports]]
 localPort = 36519
@@ -56,6 +52,10 @@ externalPort = 6000
 [[ports]]
 localPort = 39507
 externalPort = 5000
+
+[[ports]]
+localPort = 42257
+externalPort = 3000
 
 [[ports]]
 localPort = 42321
