@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}تفاصيل المشروع{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-project-diagram me-2"></i>
+                {{ project.name }}
+            </h1>
+            <span class="badge {% if project.status.value == 'ACTIVE' %}bg-success{% elif project.status.value == 'PLANNED' %}bg-info{% else %}bg-secondary{% endif %} fs-6">
+                {{ project.status.value }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Project Details -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    معلومات المشروع
+                </h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="40%">الكود:</th>
+                        <td>{{ project.code }}</td>
+                    </tr>
+                    <tr>
+                        <th>تاريخ البدء:</th>
+                        <td>{{ project.start_date.strftime('%Y-%m-%d') if project.start_date else 'غير محدد' }}</td>
+                    </tr>
+                    <tr>
+                        <th>تاريخ الانتهاء المتوقع:</th>
+                        <td>{{ project.expected_completion_date.strftime('%Y-%m-%d') if project.expected_completion_date else 'غير محدد' }}</td>
+                    </tr>
+                    <tr>
+                        <th>الموقع:</th>
+                        <td>{{ project.location or 'غير محدد' }}</td>
+                    </tr>
+                    <tr>
+                        <th>نوع المهمة:</th>
+                        <td>{{ project.mission_type or 'غير محدد' }}</td>
+                    </tr>
+                    <tr>
+                        <th>الأولوية:</th>
+                        <td>
+                            <span class="badge {% if project.priority == 'HIGH' %}bg-danger{% elif project.priority == 'MEDIUM' %}bg-warning{% else %}bg-info{% endif %}">
+                                {{ project.priority or 'متوسط' }}
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-tasks me-2"></i>
+                    المهمة الرئيسية
+                </h5>
+            </div>
+            <div class="card-body">
+                <p>{{ project.main_task or 'لم يتم تحديد المهمة الرئيسية بعد' }}</p>
+                
+                {% if project.description %}
+                <hr>
+                <h6>الوصف:</h6>
+                <p class="text-muted">{{ project.description }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Project Statistics -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-dog fa-3x text-primary mb-3"></i>
+                <h3>{{ dogs|length }}</h3>
+                <p class="text-muted mb-0">الكلاب المخصصة</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-3x text-success mb-3"></i>
+                <h3>{{ employees|length }}</h3>
+                <p class="text-muted mb-0">أعضاء الفريق</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-check fa-3x text-info mb-3"></i>
+                <h3>{{ project.calculate_duration() if project.end_date else 'جاري' }}</h3>
+                <p class="text-muted mb-0">{% if project.end_date %}المدة (أيام){% else %}قيد التنفيذ{% endif %}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Links -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-link me-2"></i>
+                    روابط سريعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('pm.my_team') }}" class="btn btn-outline-info w-100">
+                            <i class="fas fa-users me-2"></i>
+                            فريق المشروع
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('pm.my_dogs') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-dog me-2"></i>
+                            كلاب المشروع
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('pm.pending_approvals') }}" class="btn btn-outline-warning w-100">
+                            <i class="fas fa-clipboard-check me-2"></i>
+                            الطلبات المعلقة
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('pm.dashboard') }}" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-tachometer-alt me-2"></i>
+                            لوحة التحكم
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

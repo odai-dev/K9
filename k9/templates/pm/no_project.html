@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}لا يوجد مشروع مخصص{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card text-center mt-5">
+            <div class="card-body py-5">
+                <i class="fas fa-project-diagram fa-5x text-muted mb-4"></i>
+                <h2 class="card-title mb-3">لم يتم تعيين مشروع لك بعد</h2>
+                <p class="card-text text-muted mb-4">
+                    يرجى الاتصال بالمسؤول لتعيين مشروع لحسابك كمدير مشروع.
+                </p>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary">
+                    <i class="fas fa-sign-out-alt me-2"></i>
+                    تسجيل الخروج
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

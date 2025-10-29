@@ -391,6 +391,15 @@ with app.app_context():
     except Exception as e:
         print(f"⚠ Warning: Could not register handler daily system: {e}")
     
+    # Register Project Manager Routes
+    try:
+        from k9.routes.pm_routes import pm_bp
+        app.register_blueprint(pm_bp)
+        print("✓ Project Manager routes registered successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Could not register PM routes: {e}")
+    
     # Initialize Security Middleware
     try:
         from k9.utils.security_middleware import SecurityMiddleware
