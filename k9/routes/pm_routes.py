@@ -85,8 +85,9 @@ def dashboard():
     stats['total_employees'] = len(project_employees)
     stats['active_employees'] = len([e for e in project_employees if e.is_active])
     
-    # Pending reports from handlers
+    # Pending reports from handlers (filtered by project)
     stats['pending_reports'] = HandlerReport.query.filter_by(
+        project_id=project.id,
         status=ReportStatus.SUBMITTED
     ).count()
     
@@ -235,8 +236,9 @@ def pending_approvals():
     ).all()
     dog_ids = [pd.dog_id for pd in project_dogs]
     
-    # Get pending handler reports
+    # Get pending handler reports (filtered by project)
     pending_reports = HandlerReport.query.filter_by(
+        project_id=project.id,
         status=ReportStatus.SUBMITTED
     ).order_by(HandlerReport.created_at.desc()).all()
     
@@ -273,7 +275,13 @@ def pending_approvals():
 @require_pm_project
 def approve_report(report_id):
     """Approve a handler report"""
+    project = get_pm_project()
     report = HandlerReport.query.get_or_404(report_id)
+    
+    # Security check: Ensure report belongs to PM's project
+    if report.project_id != project.id:
+        flash('ليس لديك صلاحية لمراجعة هذا التقرير', 'error')
+        return redirect(url_for('pm.pending_approvals'))
     
     if report.status != ReportStatus.SUBMITTED:
         flash('هذا التقرير تمت مراجعته بالفعل', 'info')
@@ -293,7 +301,13 @@ def approve_report(report_id):
 @require_pm_project
 def reject_report(report_id):
     """Reject a handler report"""
+    project = get_pm_project()
     report = HandlerReport.query.get_or_404(report_id)
+    
+    # Security check: Ensure report belongs to PM's project
+    if report.project_id != project.id:
+        flash('ليس لديك صلاحية لمراجعة هذا التقرير', 'error')
+        return redirect(url_for('pm.pending_approvals'))
     
     if report.status != ReportStatus.SUBMITTED:
         flash('هذا التقرير تمت مراجعته بالفعل', 'info')
