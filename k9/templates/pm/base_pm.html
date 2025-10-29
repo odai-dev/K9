@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token else '' }}">
+    <title>{% block title %}لوحة مدير المشروع{% endblock %}</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/company_logo.png') }}">
+    
+    <!-- Bootstrap 5 RTL CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    <!-- Arabic Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- PM Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+        <div class="container-fluid px-3">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('pm.dashboard') }}">
+                <img src="{{ url_for('static', filename='img/company_logo.png') }}" alt="شعار الشركة" class="me-2">
+                <span class="fw-bold d-none d-lg-inline">مدير المشروع</span>
+                <span class="fw-bold d-lg-none">PM</span>
+            </a>
+            
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link px-3 py-2 rounded-pill {% if request.endpoint == 'pm.dashboard' %}active bg-white bg-opacity-25{% endif %}" href="{{ url_for('pm.dashboard') }}">
+                            <i class="fas fa-chart-line me-1"></i>لوحة التحكم
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link px-3 py-2 rounded-pill {% if request.endpoint == 'pm.project_view' %}active bg-white bg-opacity-25{% endif %}" href="{{ url_for('pm.project_view') }}">
+                            <i class="fas fa-project-diagram me-1"></i>المشروع
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link px-3 py-2 rounded-pill {% if request.endpoint == 'pm.my_dogs' %}active bg-white bg-opacity-25{% endif %}" href="{{ url_for('pm.my_dogs') }}">
+                            <i class="fas fa-dog me-1"></i>الكلاب
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link px-3 py-2 rounded-pill {% if request.endpoint == 'pm.my_team' %}active bg-white bg-opacity-25{% endif %}" href="{{ url_for('pm.my_team') }}">
+                            <i class="fas fa-users me-1"></i>الفريق
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link px-3 py-2 rounded-pill position-relative {% if request.endpoint == 'pm.pending_approvals' %}active bg-white bg-opacity-25{% endif %}" href="{{ url_for('pm.pending_approvals') }}">
+                            <i class="fas fa-clipboard-check me-1"></i>الموافقات
+                            {% if pending_count is defined and pending_count > 0 %}
+                            <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-danger">
+                                {{ pending_count }}
+                            </span>
+                            {% endif %}
+                        </a>
+                    </li>
+                </ul>
+                
+                <!-- User Menu -->
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-1"></i>{{ current_user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li><h6 class="dropdown-header">{{ current_user.full_name or current_user.username }}</h6></li>
+                            <li><span class="dropdown-item-text small text-muted">مدير المشروع</span></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.change_password') }}"><i class="fas fa-key me-2"></i>تغيير كلمة المرور</a></li>
+                            {% if current_user.mfa_enabled %}
+                            <li><a class="dropdown-item" href="{{ url_for('main.mfa_status') }}"><i class="fas fa-shield-alt me-2"></i>إدارة MFA</a></li>
+                            {% else %}
+                            <li><a class="dropdown-item" href="{{ url_for('main.mfa_setup') }}"><i class="fas fa-shield-alt me-2"></i>تفعيل MFA</a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{{ url_for('main.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>تسجيل الخروج</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="main-content" style="margin-top: 76px; padding: 20px;">
+        <div class="container-fluid">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="row">
+                        <div class="col-12">
+                            {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {% if category == 'success' %}
+                                <i class="fas fa-check-circle me-2"></i>
+                                {% elif category == 'error' or category == 'danger' %}
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                {% elif category == 'warning' %}
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                {% else %}
+                                <i class="fas fa-info-circle me-2"></i>
+                                {% endif %}
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Page Content -->
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-light text-center text-muted py-3 mt-5">
+        <div class="container">
+            <small>© 2025 نظام إدارة عمليات الكلاب البوليسية - لوحة مدير المشروع</small>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

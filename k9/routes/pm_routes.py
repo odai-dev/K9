@@ -69,6 +69,42 @@ def get_project_employees(project_id):
         print(f"Error getting project employees: {e}")
         return []
 
+def get_pending_count(project):
+    """Helper to get total pending approvals count for navbar"""
+    dog_ids = get_project_dog_ids(project.id)
+    
+    # Pending handler reports
+    pending_reports = HandlerReport.query.filter_by(
+        project_id=project.id,
+        status=ReportStatus.SUBMITTED
+    ).count()
+    
+    # Pending vet visits
+    pending_vet = 0
+    if dog_ids:
+        pending_vet = VeterinaryVisit.query.filter(
+            VeterinaryVisit.dog_id.in_(dog_ids),
+            VeterinaryVisit.status == WorkflowStatus.PENDING_PM_REVIEW.value
+        ).count()
+    
+    # Pending breeding activities
+    pending_breeding = 0
+    if dog_ids:
+        pending_breeding = BreedingTrainingActivity.query.filter(
+            BreedingTrainingActivity.dog_id.in_(dog_ids),
+            BreedingTrainingActivity.status == WorkflowStatus.PENDING_PM_REVIEW.value
+        ).count()
+    
+    # Pending caretaker logs
+    pending_caretaker = 0
+    if dog_ids:
+        pending_caretaker = CaretakerDailyLog.query.filter(
+            CaretakerDailyLog.dog_id.in_(dog_ids),
+            CaretakerDailyLog.status == WorkflowStatus.PENDING_PM_REVIEW.value
+        ).count()
+    
+    return pending_reports + pending_vet + pending_breeding + pending_caretaker
+
 @pm_bp.route('/dashboard')
 @login_required
 @require_pm_project
@@ -133,7 +169,8 @@ def dashboard():
     return render_template('pm/dashboard.html', 
                          stats=stats,
                          recent_training=recent_training,
-                         recent_vet_visits=recent_vet_visits)
+                         recent_vet_visits=recent_vet_visits,
+                         pending_count=get_pending_count(project))
 
 @pm_bp.route('/project')
 @login_required
@@ -154,7 +191,8 @@ def project_view():
     return render_template('pm/project_view.html',
                          project=project,
                          dogs=dogs,
-                         employees=project_employees)
+                         employees=project_employees,
+                         pending_count=get_pending_count(project))
 
 @pm_bp.route('/my-team')
 @login_required
@@ -186,7 +224,8 @@ def my_team():
     return render_template('pm/my_team.html',
                          project=project,
                          employees=project_employees,
-                         handlers=handlers)
+                         handlers=handlers,
+                         pending_count=get_pending_count(project))
 
 @pm_bp.route('/my-dogs')
 @login_required
@@ -256,7 +295,8 @@ def my_dogs():
                          project=project,
                          dogs=dogs,
                          dog_activity=dog_activity,
-                         today=date.today())
+                         today=date.today(),
+                         pending_count=get_pending_count(project))
 
 @pm_bp.route('/pending-approvals')
 @login_required
@@ -305,7 +345,8 @@ def pending_approvals():
                          pending_reports=pending_reports,
                          pending_vet_visits=pending_vet_visits,
                          pending_breeding=pending_breeding,
-                         pending_caretaker=pending_caretaker)
+                         pending_caretaker=pending_caretaker,
+                         pending_count=get_pending_count(project))
 
 @pm_bp.route('/approve-report/<report_id>', methods=['POST'])
 @login_required
