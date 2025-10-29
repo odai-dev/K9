@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}فريقي{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-users me-2"></i>
+            فريق المشروع - {{ project.name }}
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-users me-2"></i>
+                    الموظفون ({{ employees|length }})
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if employees %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>الاسم</th>
+                                <th>رقم الموظف</th>
+                                <th>الدور</th>
+                                <th>الهاتف</th>
+                                <th>البريد الإلكتروني</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for emp in employees %}
+                            <tr>
+                                <td>
+                                    <strong>{{ emp.name }}</strong>
+                                </td>
+                                <td>{{ emp.employee_id }}</td>
+                                <td>
+                                    <span class="badge bg-primary">{{ emp.role.value }}</span>
+                                </td>
+                                <td>{{ emp.phone or '-' }}</td>
+                                <td>{{ emp.email or '-' }}</td>
+                                <td>
+                                    {% if emp.is_active %}
+                                    <span class="badge bg-success">نشط</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">غير نشط</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle me-2"></i>
+                    لا يوجد موظفون مخصصون لهذا المشروع بعد
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Handlers Section -->
+{% if handlers %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-tie me-2"></i>
+                    السائسون ({{ handlers|length }})
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>الاسم</th>
+                                <th>رقم الموظف</th>
+                                <th>حساب المستخدم</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for handler in handlers %}
+                            <tr>
+                                <td>{{ handler.employee.name }}</td>
+                                <td>{{ handler.employee.employee_id }}</td>
+                                <td>
+                                    {% if handler.has_account %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check me-1"></i>
+                                        لديه حساب
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-times me-1"></i>
+                                        لا يوجد حساب
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if handler.employee.is_active %}
+                                    <span class="badge bg-success">نشط</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">غير نشط</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

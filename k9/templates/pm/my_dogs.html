@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}كلابي{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-dog me-2"></i>
+            كلاب المشروع - {{ project.name }}
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-dog me-2"></i>
+                    الكلاب المخصصة ({{ dogs|length }})
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if dogs %}
+                <div class="row">
+                    {% for dog in dogs %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-start mb-3">
+                                    {% if dog.photo %}
+                                    <img src="{{ url_for('uploaded_file', filename=dog.photo) }}" 
+                                         alt="{{ dog.name }}" 
+                                         class="rounded-circle me-3"
+                                         style="width: 60px; height: 60px; object-fit: cover;">
+                                    {% else %}
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 60px; height: 60px;">
+                                        <i class="fas fa-dog fa-2x"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div class="flex-grow-1">
+                                        <h5 class="card-title mb-1">{{ dog.name }}</h5>
+                                        <p class="text-muted small mb-0">{{ dog.code }}</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <small class="text-muted">السلالة:</small>
+                                    <strong>{{ dog.breed }}</strong>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <small class="text-muted">الجنس:</small>
+                                    <span class="badge {% if dog.gender.value == 'MALE' %}bg-info{% else %}bg-pink{% endif %}">
+                                        {{ dog.gender.value }}
+                                    </span>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <small class="text-muted">العمر:</small>
+                                    {% if dog.birth_date %}
+                                    {{ ((today - dog.birth_date).days / 365.25) | round(1) }} سنة
+                                    {% else %}
+                                    غير محدد
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <small class="text-muted">الحالة:</small>
+                                    {% if dog.current_status.value == 'ACTIVE' %}
+                                    <span class="badge bg-success">نشط</span>
+                                    {% elif dog.current_status.value == 'RETIRED' %}
+                                    <span class="badge bg-secondary">متقاعد</span>
+                                    {% elif dog.current_status.value == 'DECEASED' %}
+                                    <span class="badge bg-dark">متوفى</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">{{ dog.current_status.value }}</span>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if dog.id in dog_activity %}
+                                <hr>
+                                <div class="small">
+                                    {% if dog_activity[dog.id].last_training %}
+                                    <div class="mb-1">
+                                        <i class="fas fa-graduation-cap text-primary me-1"></i>
+                                        آخر تدريب: {{ dog_activity[dog.id].last_training.session_date.strftime('%Y-%m-%d') }}
+                                    </div>
+                                    {% endif %}
+                                    {% if dog_activity[dog.id].last_vet %}
+                                    <div>
+                                        <i class="fas fa-stethoscope text-danger me-1"></i>
+                                        آخر فحص: {{ dog_activity[dog.id].last_vet.visit_date.strftime('%Y-%m-%d') }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                                
+                                <div class="mt-3">
+                                    <a href="{{ url_for('main.dogs_view', dog_id=dog.id) }}" class="btn btn-sm btn-primary w-100">
+                                        <i class="fas fa-eye me-1"></i>
+                                        عرض التفاصيل
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle me-2"></i>
+                    لا توجد كلاب مخصصة لهذا المشروع بعد
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

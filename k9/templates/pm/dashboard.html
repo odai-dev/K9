@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة التحكم - مدير المشروع{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-project-diagram me-2"></i>
+                {{ stats.project.name }}
+            </h1>
+            <span class="badge {% if stats.project.status.value == 'ACTIVE' %}bg-success{% elif stats.project.status.value == 'PLANNED' %}bg-info{% else %}bg-secondary{% endif %} fs-6">
+                {{ stats.project.status.value }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Project Info Card -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-info-circle me-2"></i>
+                    معلومات المشروع
+                </h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <p><strong>الكود:</strong> {{ stats.project.code }}</p>
+                        <p><strong>الموقع:</strong> {{ stats.project.location or 'غير محدد' }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <p><strong>تاريخ البدء:</strong> {{ stats.project.start_date.strftime('%Y-%m-%d') if stats.project.start_date else 'غير محدد' }}</p>
+                        <p><strong>المهمة الرئيسية:</strong> {{ stats.project.main_task or 'غير محدد' }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <p><strong>الأولوية:</strong> {{ stats.project.priority or 'متوسط' }}</p>
+                        <p><strong>نوع المهمة:</strong> {{ stats.project.mission_type or 'غير محدد' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stats-card bg-primary">
+            <div class="stats-content">
+                <div class="stats-icon">
+                    <i class="fas fa-dog"></i>
+                </div>
+                <div class="stats-info">
+                    <h3>{{ stats.total_dogs }}</h3>
+                    <p>إجمالي الكلاب</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stats-card bg-success">
+            <div class="stats-content">
+                <div class="stats-icon">
+                    <i class="fas fa-heartbeat"></i>
+                </div>
+                <div class="stats-info">
+                    <h3>{{ stats.active_dogs }}</h3>
+                    <p>الكلاب النشطة</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stats-card bg-info">
+            <div class="stats-content">
+                <div class="stats-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stats-info">
+                    <h3>{{ stats.total_employees }}</h3>
+                    <p>أعضاء الفريق</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stats-card bg-warning">
+            <a href="{{ url_for('pm.pending_approvals') }}" class="text-white text-decoration-none">
+                <div class="stats-content">
+                    <div class="stats-icon">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                    <div class="stats-info">
+                        <h3>{{ stats.pending_reports + stats.pending_vet_visits }}</h3>
+                        <p>بانتظار الموافقة</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-bolt me-2"></i>
+                    إجراءات سريعة
+                </h5>
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('pm.pending_approvals') }}" class="btn btn-warning w-100">
+                            <i class="fas fa-clipboard-check me-2"></i>
+                            مراجعة الطلبات
+                            {% if stats.pending_reports + stats.pending_vet_visits > 0 %}
+                            <span class="badge bg-danger ms-1">{{ stats.pending_reports + stats.pending_vet_visits }}</span>
+                            {% endif %}
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('pm.my_team') }}" class="btn btn-info w-100">
+                            <i class="fas fa-users me-2"></i>
+                            فريقي
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('pm.my_dogs') }}" class="btn btn-primary w-100">
+                            <i class="fas fa-dog me-2"></i>
+                            كلابي
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('pm.project_view') }}" class="btn btn-secondary w-100">
+                            <i class="fas fa-project-diagram me-2"></i>
+                            تفاصيل المشروع
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-graduation-cap me-2"></i>
+                    آخر جلسات التدريب
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_training %}
+                <div class="list-group list-group-flush">
+                    {% for session in recent_training %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ session.dog.name }}</h6>
+                                <p class="mb-1 text-muted small">{{ session.subject }}</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    {{ session.session_date.strftime('%Y-%m-%d') }}
+                                </small>
+                            </div>
+                            <div>
+                                <span class="badge bg-success">{{ session.success_rating }}/10</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    لا توجد جلسات تدريب حديثة
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-stethoscope me-2"></i>
+                    آخر الزيارات البيطرية
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_vet_visits %}
+                <div class="list-group list-group-flush">
+                    {% for visit in recent_vet_visits %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ visit.dog.name }}</h6>
+                                <p class="mb-1 text-muted small">{{ visit.visit_type.value }}</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    {{ visit.visit_date.strftime('%Y-%m-%d') }}
+                                </small>
+                            </div>
+                            <div>
+                                {% if visit.pm_workflow_status %}
+                                    {% if visit.pm_workflow_status.value == 'PENDING_PM_REVIEW' %}
+                                    <span class="badge bg-warning">بانتظار المراجعة</span>
+                                    {% elif visit.pm_workflow_status.value == 'PM_APPROVED' %}
+                                    <span class="badge bg-success">تمت الموافقة</span>
+                                    {% elif visit.pm_workflow_status.value == 'PM_REJECTED' %}
+                                    <span class="badge bg-danger">مرفوض</span>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    لا توجد زيارات بيطرية حديثة
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

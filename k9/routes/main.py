@@ -47,6 +47,10 @@ def dashboard():
     if current_user.role == UserRole.HANDLER:
         return redirect(url_for('handler.dashboard'))
     
+    # PROJECT_MANAGER users should use their own dashboard
+    if current_user.role == UserRole.PROJECT_MANAGER:
+        return redirect(url_for('pm.dashboard'))
+    
     # Get dashboard statistics
     stats = {}
     
