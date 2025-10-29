@@ -211,19 +211,19 @@ with app.app_context():
                 # Vet visits
                 total += VeterinaryVisit.query.filter(
                     VeterinaryVisit.dog_id.in_(dog_ids),
-                    VeterinaryVisit.pm_workflow_status == WorkflowStatus.PENDING_PM_REVIEW
+                    VeterinaryVisit.status == WorkflowStatus.PENDING_PM_REVIEW.value
                 ).count()
                 
                 # Breeding activities
                 total += BreedingTrainingActivity.query.filter(
                     BreedingTrainingActivity.dog_id.in_(dog_ids),
-                    BreedingTrainingActivity.pm_workflow_status == WorkflowStatus.PENDING_PM_REVIEW
+                    BreedingTrainingActivity.status == WorkflowStatus.PENDING_PM_REVIEW.value
                 ).count()
                 
                 # Caretaker logs
                 total += CaretakerDailyLog.query.filter(
                     CaretakerDailyLog.dog_id.in_(dog_ids),
-                    CaretakerDailyLog.pm_workflow_status == WorkflowStatus.PENDING_PM_REVIEW
+                    CaretakerDailyLog.status == WorkflowStatus.PENDING_PM_REVIEW.value
                 ).count()
             
             return total

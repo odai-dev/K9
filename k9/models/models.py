@@ -119,7 +119,14 @@ class ProjectStatus(Enum):
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
 
-
+class WorkflowStatus(Enum):
+    DRAFT = "DRAFT"
+    SUBMITTED = "SUBMITTED"
+    PENDING_PM_REVIEW = "PENDING_PM_REVIEW"
+    PM_APPROVED = "PM_APPROVED"
+    PM_REJECTED = "PM_REJECTED"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
 
 class ElementType(Enum):
     WEAPON = "WEAPON"
