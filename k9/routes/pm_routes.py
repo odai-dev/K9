@@ -125,7 +125,7 @@ def dashboard():
     if dog_ids:
         pending_vet_count = VeterinaryVisit.query.filter(
             VeterinaryVisit.dog_id.in_(dog_ids),
-            VeterinaryVisit.pm_workflow_status == WorkflowStatus.PENDING_PM_REVIEW
+            VeterinaryVisit.status == WorkflowStatus.PENDING_PM_REVIEW.value
         ).count()
     
     stats['pending_vet_visits'] = pending_vet_count
@@ -281,7 +281,7 @@ def pending_approvals():
     if dog_ids:
         pending_vet_visits = VeterinaryVisit.query.filter(
             VeterinaryVisit.dog_id.in_(dog_ids),
-            VeterinaryVisit.pm_workflow_status == WorkflowStatus.PENDING_PM_REVIEW
+            VeterinaryVisit.status == WorkflowStatus.PENDING_PM_REVIEW.value
         ).order_by(VeterinaryVisit.created_at.desc()).all()
     
     # Get pending breeding activities
@@ -289,7 +289,7 @@ def pending_approvals():
     if dog_ids:
         pending_breeding = BreedingTrainingActivity.query.filter(
             BreedingTrainingActivity.dog_id.in_(dog_ids),
-            BreedingTrainingActivity.pm_workflow_status == WorkflowStatus.PENDING_PM_REVIEW
+            BreedingTrainingActivity.status == WorkflowStatus.PENDING_PM_REVIEW.value
         ).order_by(BreedingTrainingActivity.created_at.desc()).all()
     
     # Get pending caretaker logs
@@ -297,7 +297,7 @@ def pending_approvals():
     if dog_ids:
         pending_caretaker = CaretakerDailyLog.query.filter(
             CaretakerDailyLog.dog_id.in_(dog_ids),
-            CaretakerDailyLog.pm_workflow_status == WorkflowStatus.PENDING_PM_REVIEW
+            CaretakerDailyLog.status == WorkflowStatus.PENDING_PM_REVIEW.value
         ).order_by(CaretakerDailyLog.created_at.desc()).all()
     
     return render_template('pm/pending_approvals.html',
@@ -399,13 +399,13 @@ def approve_vet_visit(visit_id):
             flash('ليس لديك صلاحية لمراجعة هذه الزيارة', 'error')
             return redirect(url_for('pm.pending_approvals'))
         
-        if visit.pm_workflow_status != WorkflowStatus.PENDING_PM_REVIEW:
+        if visit.status != WorkflowStatus.PENDING_PM_REVIEW.value:
             flash('هذه الزيارة تمت مراجعتها بالفعل', 'info')
             return redirect(url_for('pm.pending_approvals'))
         
-        visit.pm_workflow_status = WorkflowStatus.PM_APPROVED
-        visit.pm_reviewed_at = datetime.utcnow()
-        visit.pm_reviewed_by_id = current_user.id
+        visit.status = WorkflowStatus.PM_APPROVED.value
+        visit.reviewed_at = datetime.utcnow()
+        visit.reviewed_by_user_id = current_user.id
         
         db.session.commit()
         
@@ -435,16 +435,16 @@ def reject_vet_visit(visit_id):
             flash('ليس لديك صلاحية لمراجعة هذه الزيارة', 'error')
             return redirect(url_for('pm.pending_approvals'))
         
-        if visit.pm_workflow_status != WorkflowStatus.PENDING_PM_REVIEW:
+        if visit.status != WorkflowStatus.PENDING_PM_REVIEW.value:
             flash('هذه الزيارة تمت مراجعتها بالفعل', 'info')
             return redirect(url_for('pm.pending_approvals'))
         
         feedback = request.form.get('feedback', '')
         
-        visit.pm_workflow_status = WorkflowStatus.PM_REJECTED
-        visit.pm_reviewed_at = datetime.utcnow()
-        visit.pm_reviewed_by_id = current_user.id
-        visit.pm_feedback = feedback
+        visit.status = WorkflowStatus.PM_REJECTED.value
+        visit.reviewed_at = datetime.utcnow()
+        visit.reviewed_by_user_id = current_user.id
+        visit.review_notes = feedback
         
         db.session.commit()
         
@@ -474,13 +474,13 @@ def approve_breeding(activity_id):
             flash('ليس لديك صلاحية لمراجعة هذا النشاط', 'error')
             return redirect(url_for('pm.pending_approvals'))
         
-        if activity.pm_workflow_status != WorkflowStatus.PENDING_PM_REVIEW:
+        if activity.status != WorkflowStatus.PENDING_PM_REVIEW.value:
             flash('هذا النشاط تمت مراجعته بالفعل', 'info')
             return redirect(url_for('pm.pending_approvals'))
         
-        activity.pm_workflow_status = WorkflowStatus.PM_APPROVED
-        activity.pm_reviewed_at = datetime.utcnow()
-        activity.pm_reviewed_by_id = current_user.id
+        activity.status = WorkflowStatus.PM_APPROVED.value
+        activity.reviewed_at = datetime.utcnow()
+        activity.reviewed_by_user_id = current_user.id
         
         db.session.commit()
         
@@ -510,16 +510,16 @@ def reject_breeding(activity_id):
             flash('ليس لديك صلاحية لمراجعة هذا النشاط', 'error')
             return redirect(url_for('pm.pending_approvals'))
         
-        if activity.pm_workflow_status != WorkflowStatus.PENDING_PM_REVIEW:
+        if activity.status != WorkflowStatus.PENDING_PM_REVIEW.value:
             flash('هذا النشاط تمت مراجعته بالفعل', 'info')
             return redirect(url_for('pm.pending_approvals'))
         
         feedback = request.form.get('feedback', '')
         
-        activity.pm_workflow_status = WorkflowStatus.PM_REJECTED
-        activity.pm_reviewed_at = datetime.utcnow()
-        activity.pm_reviewed_by_id = current_user.id
-        activity.pm_feedback = feedback
+        activity.status = WorkflowStatus.PM_REJECTED.value
+        activity.reviewed_at = datetime.utcnow()
+        activity.reviewed_by_user_id = current_user.id
+        activity.review_notes = feedback
         
         db.session.commit()
         
@@ -549,13 +549,13 @@ def approve_caretaker(log_id):
             flash('ليس لديك صلاحية لمراجعة هذا السجل', 'error')
             return redirect(url_for('pm.pending_approvals'))
         
-        if log.pm_workflow_status != WorkflowStatus.PENDING_PM_REVIEW:
+        if log.status != WorkflowStatus.PENDING_PM_REVIEW.value:
             flash('هذا السجل تمت مراجعته بالفعل', 'info')
             return redirect(url_for('pm.pending_approvals'))
         
-        log.pm_workflow_status = WorkflowStatus.PM_APPROVED
-        log.pm_reviewed_at = datetime.utcnow()
-        log.pm_reviewed_by_id = current_user.id
+        log.status = WorkflowStatus.PM_APPROVED.value
+        log.reviewed_at = datetime.utcnow()
+        log.reviewed_by_user_id = current_user.id
         
         db.session.commit()
         
@@ -585,16 +585,16 @@ def reject_caretaker(log_id):
             flash('ليس لديك صلاحية لمراجعة هذا السجل', 'error')
             return redirect(url_for('pm.pending_approvals'))
         
-        if log.pm_workflow_status != WorkflowStatus.PENDING_PM_REVIEW:
+        if log.status != WorkflowStatus.PENDING_PM_REVIEW.value:
             flash('هذا السجل تمت مراجعته بالفعل', 'info')
             return redirect(url_for('pm.pending_approvals'))
         
         feedback = request.form.get('feedback', '')
         
-        log.pm_workflow_status = WorkflowStatus.PM_REJECTED
-        log.pm_reviewed_at = datetime.utcnow()
-        log.pm_reviewed_by_id = current_user.id
-        log.pm_feedback = feedback
+        log.status = WorkflowStatus.PM_REJECTED.value
+        log.reviewed_at = datetime.utcnow()
+        log.reviewed_by_user_id = current_user.id
+        log.review_notes = feedback
         
         db.session.commit()
         
