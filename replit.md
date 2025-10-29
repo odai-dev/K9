@@ -54,6 +54,16 @@ Preferred communication style: Simple, everyday language.
   - Notification system for report submissions, approvals, rejections, and edit requests
   - API endpoints: `/supervisor/pm-review/*` for pending reports, counts, approval, rejection, edit requests, and admin forwarding
   - Service layer: `k9/services/report_review_service.py` handles all review workflow logic
+- **Project Manager Dashboard**: Workflow-focused interface for PROJECT_MANAGER role:
+  - **1:1 PM-Project Relationship**: Each PM manages exactly ONE project (Project.manager_id → User.id)
+  - **Automatic Project Scoping**: All data automatically filtered to PM's assigned project - no project selection needed
+  - **PM Dashboard** (`/pm/dashboard`): Project overview with metrics, pending approvals counter, team status, and quick action buttons
+  - **My Team** (`/pm/my-team`): View all employees and handlers assigned to PM's project with account status
+  - **My Dogs** (`/pm/my-dogs`): View all dogs assigned to PM's project with recent training/vet activity
+  - **Pending Approvals** (`/pm/pending-approvals`): Centralized approval queue for handler reports, vet visits, breeding activities, and caretaker logs
+  - **Project View** (`/pm/project`): Complete project details with statistics and quick links
+  - **Security**: Strict project-scoped queries prevent cross-project data leakage; authorization checks in all approval endpoints
+  - **Routes**: Blueprint registered at `/pm/*` with `@require_pm_project` decorator ensuring PM has assigned project
 
 ### System Design Choices
 - **Client/Server Separation**: Clear distinction between frontend and backend.
