@@ -118,10 +118,44 @@
                                 <td>{{ visit.visit_type.value }}</td>
                                 <td>{{ visit.vet.name if visit.vet else 'غير محدد' }}</td>
                                 <td>
-                                    <a href="{{ url_for('main.veterinary_visit_view', visit_id=visit.id) }}" class="btn btn-sm btn-primary">
+                                    <a href="{{ url_for('main.veterinary_visit_view', visit_id=visit.id) }}" class="btn btn-sm btn-info me-1">
                                         <i class="fas fa-eye me-1"></i>
                                         عرض
                                     </a>
+                                    <form method="POST" action="{{ url_for('pm.approve_vet_visit', visit_id=visit.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-success me-1" onclick="return confirm('هل أنت متأكد من الموافقة؟')">
+                                            <i class="fas fa-check me-1"></i>
+                                            موافقة
+                                        </button>
+                                    </form>
+                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectVetModal{{ visit.id }}">
+                                        <i class="fas fa-times me-1"></i>
+                                        رفض
+                                    </button>
+                                    
+                                    <!-- Reject Modal -->
+                                    <div class="modal fade" id="rejectVetModal{{ visit.id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">رفض الزيارة البيطرية</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <form method="POST" action="{{ url_for('pm.reject_vet_visit', visit_id=visit.id) }}">
+                                                    <div class="modal-body">
+                                                        <div class="mb-3">
+                                                            <label for="feedback{{ visit.id }}" class="form-label">ملاحظات الرفض</label>
+                                                            <textarea class="form-control" id="feedback{{ visit.id }}" name="feedback" rows="3" required></textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                                        <button type="submit" class="btn btn-danger">رفض الزيارة</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -165,7 +199,40 @@
                                 <td>{{ activity.training_type.value if activity.training_type else 'غير محدد' }}</td>
                                 <td>{{ activity.trainer.name if activity.trainer else 'غير محدد' }}</td>
                                 <td>
-                                    <span class="badge bg-warning">بانتظار المراجعة</span>
+                                    <form method="POST" action="{{ url_for('pm.approve_breeding', activity_id=activity.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-success me-1" onclick="return confirm('هل أنت متأكد من الموافقة؟')">
+                                            <i class="fas fa-check me-1"></i>
+                                            موافقة
+                                        </button>
+                                    </form>
+                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectBreedingModal{{ activity.id }}">
+                                        <i class="fas fa-times me-1"></i>
+                                        رفض
+                                    </button>
+                                    
+                                    <!-- Reject Modal -->
+                                    <div class="modal fade" id="rejectBreedingModal{{ activity.id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">رفض نشاط التكاثر</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <form method="POST" action="{{ url_for('pm.reject_breeding', activity_id=activity.id) }}">
+                                                    <div class="modal-body">
+                                                        <div class="mb-3">
+                                                            <label for="feedbackBreeding{{ activity.id }}" class="form-label">ملاحظات الرفض</label>
+                                                            <textarea class="form-control" id="feedbackBreeding{{ activity.id }}" name="feedback" rows="3" required></textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                                        <button type="submit" class="btn btn-danger">رفض النشاط</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -207,7 +274,40 @@
                                 <td>{{ log.dog.name }}</td>
                                 <td>{{ log.caretaker.name if log.caretaker else 'غير محدد' }}</td>
                                 <td>
-                                    <span class="badge bg-warning">بانتظار المراجعة</span>
+                                    <form method="POST" action="{{ url_for('pm.approve_caretaker', log_id=log.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-success me-1" onclick="return confirm('هل أنت متأكد من الموافقة؟')">
+                                            <i class="fas fa-check me-1"></i>
+                                            موافقة
+                                        </button>
+                                    </form>
+                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectCaretakerModal{{ log.id }}">
+                                        <i class="fas fa-times me-1"></i>
+                                        رفض
+                                    </button>
+                                    
+                                    <!-- Reject Modal -->
+                                    <div class="modal fade" id="rejectCaretakerModal{{ log.id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">رفض سجل الرعاية</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <form method="POST" action="{{ url_for('pm.reject_caretaker', log_id=log.id) }}">
+                                                    <div class="modal-body">
+                                                        <div class="mb-3">
+                                                            <label for="feedbackCaretaker{{ log.id }}" class="form-label">ملاحظات الرفض</label>
+                                                            <textarea class="form-control" id="feedbackCaretaker{{ log.id }}" name="feedback" rows="3" required></textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                                        <button type="submit" class="btn btn-danger">رفض السجل</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
