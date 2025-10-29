@@ -177,10 +177,64 @@ with app.app_context():
         except Exception:
             return 0
     
+    def get_pm_pending_count():
+        """Get total count of all pending approvals for PROJECT_MANAGER"""
+        from flask_login import current_user
+        from k9.models.models import UserRole, Project, VeterinaryVisit, BreedingTrainingActivity, CaretakerDailyLog, WorkflowStatus, ProjectDog
+        from k9.models.models_handler_daily import HandlerReport, ReportStatus
+        
+        if not current_user.is_authenticated:
+            return 0
+        
+        if current_user.role != UserRole.PROJECT_MANAGER:
+            return 0
+        
+        try:
+            # Find PM's project
+            project = Project.query.filter_by(manager_id=current_user.id).first()
+            if not project:
+                return 0
+            
+            # Get project's dog IDs
+            project_dogs = ProjectDog.query.filter_by(project_id=project.id, is_active=True).all()
+            dog_ids = [pd.dog_id for pd in project_dogs]
+            
+            total = 0
+            
+            # Handler reports
+            total += HandlerReport.query.filter_by(
+                project_id=project.id,
+                status=ReportStatus.SUBMITTED
+            ).count()
+            
+            if dog_ids:
+                # Vet visits
+                total += VeterinaryVisit.query.filter(
+                    VeterinaryVisit.dog_id.in_(dog_ids),
+                    VeterinaryVisit.pm_workflow_status == WorkflowStatus.PENDING_PM_REVIEW
+                ).count()
+                
+                # Breeding activities
+                total += BreedingTrainingActivity.query.filter(
+                    BreedingTrainingActivity.dog_id.in_(dog_ids),
+                    BreedingTrainingActivity.pm_workflow_status == WorkflowStatus.PENDING_PM_REVIEW
+                ).count()
+                
+                # Caretaker logs
+                total += CaretakerDailyLog.query.filter(
+                    CaretakerDailyLog.dog_id.in_(dog_ids),
+                    CaretakerDailyLog.pm_workflow_status == WorkflowStatus.PENDING_PM_REVIEW
+                ).count()
+            
+            return total
+        except Exception:
+            return 0
+    
     app.jinja_env.globals.update(
         get_user_permissions=get_user_permissions,
         get_notification_link=get_notification_link,
         get_pending_reports_count=get_pending_reports_count,
+        get_pm_pending_count=get_pm_pending_count,
         date=date,
         datetime=datetime
     )

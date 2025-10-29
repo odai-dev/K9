@@ -172,6 +172,33 @@
                     </li>
                     {% endif %}
                     
+                    {% if current_user.role.value == 'PROJECT_MANAGER' %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="pmDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-project-diagram me-1"></i>إدارة المشروع
+                            {% set pm_pending_count = get_pm_pending_count() %}
+                            {% if pm_pending_count > 0 %}
+                            <span class="badge bg-warning text-dark rounded-pill ms-1">{{ pm_pending_count }}</span>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu shadow">
+                            <li><a class="dropdown-item" href="{{ url_for('pm.dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>لوحة التحكم</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item d-flex justify-content-between align-items-center" href="{{ url_for('pm.pending_approvals') }}">
+                                    <span><i class="fas fa-clipboard-check me-2"></i>الموافقات المعلقة</span>
+                                    {% if pm_pending_count > 0 %}
+                                    <span class="badge bg-warning text-dark rounded-pill">{{ pm_pending_count }}</span>
+                                    {% endif %}
+                                </a>
+                            </li>
+                            <li><a class="dropdown-item" href="{{ url_for('pm.my_team') }}"><i class="fas fa-users me-2"></i>فريقي</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('pm.my_dogs') }}"><i class="fas fa-dog me-2"></i>كلابي</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('pm.project_view') }}"><i class="fas fa-folder-open me-2"></i>تفاصيل المشروع</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                    
                     {% if current_user.role.value in ['GENERAL_ADMIN', 'PROJECT_MANAGER', 'PROJECT_ADMIN', 'SUPERVISOR'] %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="managementDropdown" role="button" data-bs-toggle="dropdown">

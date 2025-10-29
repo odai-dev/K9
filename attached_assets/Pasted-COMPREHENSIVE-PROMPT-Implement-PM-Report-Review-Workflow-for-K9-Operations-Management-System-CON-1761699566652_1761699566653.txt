@@ -1,0 +1,182 @@
+COMPREHENSIVE PROMPT: Implement PM Report Review Workflow for K9 Operations Management System
+
+CONTEXT:
+You are working on a K9 Operations Management System built with Flask, PostgreSQL, and SQLAlchemy. The system currently has Handler Daily Reports with a basic status workflow (DRAFT → SUBMITTED → APPROVED → REJECTED). We need to implement a unified PM (Project Manager) review workflow that works across ALL report types.
+
+OBJECTIVE:
+Implement a 2-tier review workflow where:
+
+Handlers/Trainers/Vets/Caretakers submit reports → PM reviews/approves → Auto-forwards to General Admin
+PM has final approval authority; General Admin has READ-ONLY access with export capability
+All review actions create immediate notifications to relevant parties
+REPORT TYPES TO SUPPORT:
+
+Handler Daily Reports (HandlerReport model) - ALREADY HAS BASIC WORKFLOW
+Trainer Daily Reports (BreedingTrainingActivity model) - needs workflow fields
+Veterinary Reports (VeterinaryVisit model) - needs workflow fields
+Caretaker Daily Logs (CaretakerDailyLog model) - needs workflow fields
+STATUS FLOW:
+
+DRAFT → SUBMITTED → APPROVED_BY_PM → FORWARDED_TO_ADMIN (final)
+                  ↓
+         REJECTED_BY_PM (final rejection)
+                  ↓
+                DRAFT (if PM requests edits)
+REQUIRED IMPLEMENTATIONS:
+
+1. DATABASE SCHEMA UPDATES:
+
+Add these fields to VeterinaryVisit, BreedingTrainingActivity, and CaretakerDailyLog models:
+
+status (String, default='DRAFT') - stores status as string for compatibility
+submitted_at (DateTime, nullable)
+reviewed_by_user_id (UUID FK to User, nullable)
+reviewed_at (DateTime, nullable)
+review_notes (Text, nullable)
+Create ReportReview audit table (if not exists):
+
+id (UUID primary key)
+report_type (String: HANDLER/TRAINER/VET/CARETAKER)
+report_id (String UUID)
+action (String: APPROVE_AND_FORWARD/REQUEST_EDITS/REJECT)
+previous_status (String)
+new_status (String)
+reviewed_by_user_id (UUID FK to User)
+review_notes (Text)
+project_id (UUID FK to Project, nullable)
+created_at (DateTime, indexed)
+Add new NotificationType enum values:
+
+REPORT_EDITS_REQUESTED
+REPORT_REJECTED
+REPORT_FORWARDED_TO_ADMIN
+Migration file: Create migrations/versions/20251028_pm_review_workflow.py
+
+2. SERVICE LAYER:
+
+Create/update k9/services/report_review_service.py with class ReportReviewService:
+
+Methods:
+
+get_pm_project(user_id) → returns PM's ONE active project
+get_pending_reports(pm_user_id) → dict of all SUBMITTED reports by type
+get_pending_counts(pm_user_id) → counts by type + TOTAL
+get_report(report_type, report_id, pm_user_id) → fetch specific report with access check
+approve_and_forward(report_type, report_id, pm_user_id, notes=None) → SUBMITTED → FORWARDED_TO_ADMIN
+request_edits(report_type, report_id, pm_user_id, notes) → SUBMITTED → DRAFT (notifies submitter)
+reject_completely(report_type, report_id, pm_user_id, reason) → SUBMITTED → REJECTED_BY_PM (final)
+get_report_history(report_type, report_id, pm_user_id) → audit trail
+_notify_submitter(submitter_id, report_type, report_id, pm_user_id, message, action, project_id) → create notification
+_notify_admin(report_type, report_id, pm_user_id, project_id) → notify all active General Admins
+Report type mappings:
+
+REPORT_TYPE_MODELS = {
+    'HANDLER': HandlerReport,
+    'TRAINER': BreedingTrainingActivity,
+    'VET': VeterinaryVisit,
+    'CARETAKER': CaretakerDailyLog
+}
+3. API ROUTES:
+
+Update k9/routes/supervisor_routes.py (PM routes):
+
+Endpoints:
+
+GET /api/pm/reports/pending → returns counts and recent reports
+GET /api/pm/reports/<report_type>/<report_id> → detailed report view
+POST /api/pm/reports/<report_type>/<report_id>/approve → approve and forward
+POST /api/pm/reports/<report_type>/<report_id>/request-edits → send back for edits (requires notes)
+POST /api/pm/reports/<report_type>/<report_id>/reject → final rejection (requires reason)
+GET /api/pm/reports/<report_type>/<report_id>/history → audit trail
+Response format example:
+
+{
+  "success": true,
+  "counts": {
+    "HANDLER": 3,
+    "TRAINER": 1,
+    "VET": 2,
+    "CARETAKER": 0,
+    "TOTAL": 6
+  },
+  "reports": [...]
+}
+4. NOTIFICATION SYSTEM:
+
+Immediate notifications (NOT batch, NOT digest):
+
+When PM requests edits → immediate notification to report submitter
+When PM approves/forwards → immediate notification to ALL active General Admins
+When PM rejects → immediate notification to report submitter
+Notification creation in service methods:
+
+notification = Notification(
+    user_id=target_user_id,
+    type=NotificationType.REPORT_EDITS_REQUESTED,
+    title="Title in Arabic",
+    message="Message in Arabic",
+    related_id=str(report_id),
+    related_type=f'{report_type}_REPORT'
+)
+db.session.add(notification)
+5. PERMISSIONS:
+
+PM (PROJECT_MANAGER role):
+
+Can review reports ONLY from their ONE assigned active project
+Has full authority: approve, reject, request edits
+Cannot review their own reports (if they submit any)
+General Admin:
+
+READ-ONLY access to FORWARDED_TO_ADMIN reports
+Can export reports as PDF/Excel
+Receives notifications for each forwarded report (NOT digest)
+6. VALIDATION RULES:
+
+PM can only review reports with status='SUBMITTED'
+Notes required when requesting edits
+Reason required when rejecting
+All status changes logged in ReportReview table
+Auto-linking to project: use report's existing project_id
+7. SUBMITTER USER ID MAPPING:
+
+Each report type has different submitter field:
+
+HandlerReport: handler_user_id
+BreedingTrainingActivity: created_by_user_id
+VeterinaryVisit: created_by_user_id
+CaretakerDailyLog: created_by_user_id
+Helper method:
+
+def _get_submitter_id(report, report_type):
+    if report_type == 'HANDLER':
+        return report.handler_user_id
+    else:
+        return report.created_by_user_id
+8. ERROR HANDLING:
+
+Return proper HTTP status codes:
+
+400: Invalid input (missing required fields)
+403: Permission denied (wrong PM, wrong project)
+404: Report not found or no access
+500: Server error
+9. EXISTING CODE TO PRESERVE:
+
+DO NOT remove batch approval functionality (already removed per requirements)
+DO NOT modify existing Handler Daily Report submission flow
+DO NOT change General Admin permissions to allow rejection
+Keep existing ReportReview model if it exists
+10. TESTING CHECKLIST:
+
+After implementation, verify:
+
+ Migration runs successfully on PostgreSQL
+ PM can see pending reports from their project only
+ Approve action changes status to FORWARDED_TO_ADMIN
+ Request edits sends notification immediately to submitter
+ Reject creates final REJECTED_BY_PM status
+ All actions logged in ReportReview table
+ General Admin receives notification for each forwarded report
+ PM cannot review reports from other projects
+ Counts display correctly in API response
