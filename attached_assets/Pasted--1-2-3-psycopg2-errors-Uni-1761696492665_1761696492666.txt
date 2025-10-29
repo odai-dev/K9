@@ -1,0 +1,22 @@
+
+إعداد النظام
+إنشاء حساب المدير الأول
+
+1
+2
+3
+حدث خطأ أثناء إنشاء الحساب: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "user_email_key" DETAIL: Key (email)=(admin@gmail.com) already exists. [SQL: INSERT INTO "user" (id, username, email, password_hash, role, full_name, active, created_at, last_login, failed_login_attempts, account_locked_until, password_changed_at, mfa_enabled, mfa_secret, backup_codes, allowed_sections, phone, project_id, dog_id) VALUES (%(id)s::UUID, %(username)s, %(email)s, %(password_hash)s, %(role)s, %(full_name)s, %(active)s, %(created_at)s, %(last_login)s, %(failed_login_attempts)s, %(account_locked_until)s, %(password_changed_at)s, %(mfa_enabled)s, %(mfa_secret)s, %(backup_codes)s::JSON, %(allowed_sections)s::JSON, %(phone)s, %(project_id)s::UUID, %(dog_id)s::UUID)] [parameters: {'id': 'ca9547d7-15ce-4c7a-ab07-b1d683f71878', 'username': 'admin', 'email': 'admin@gmail.com', 'password_hash': 'scrypt:32768:8:1$HDii3FMpvnWmb0TS$fdea75d9b34966fa51468f11ddbd61e415e3f6b9490b3056e6d4a8385793701ad082cc34a1897118c9ba941db0f3e5c23e1767a2e5403a3e3360fe0133d8f601', 'role': 'GENERAL_ADMIN', 'full_name': 'admin', 'active': True, 'created_at': datetime.datetime(2025, 10, 29, 0, 7, 37, 556947), 'last_login': None, 'failed_login_attempts': 0, 'account_locked_until': None, 'password_changed_at': datetime.datetime(2025, 10, 29, 0, 7, 37, 556950), 'mfa_enabled': False, 'mfa_secret': None, 'backup_codes': '[]', 'allowed_sections': '[]', 'phone': None, 'project_id': None, 'dog_id': None}] (Background on this error at: https://sqlalche.me/e/20/gkpj)
+ مرحباً بك! أنت على وشك إنشاء أول حساب مدير في النظام. هذا الحساب سيحصل على جميع الصلاحيات.
+الاسم الكامل
+أدخل الاسم الكامل
+اسم المستخدم
+أدخل اسم المستخدم
+سيتم استخدام هذا الاسم لتسجيل الدخول
+البريد الإلكتروني
+admin@example.com
+كلمة المرور
+أدخل كلمة مرور قوية
+يجب أن تكون كلمة المرور قوية ومعقدة
+تأكيد كلمة المرور
+أعد إدخال كلمة المرور
+© 2025 نظام إدارة عمليات الكلاب البوليسية
