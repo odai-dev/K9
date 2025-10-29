@@ -190,7 +190,7 @@
             </div>
             <div class="card-body">
                 <div class="row g-3">
-                    <div class="col-lg-3 col-md-6">
+                    <div class="col-lg-4 col-md-4">
                         <a href="{{ url_for('pm.pending_approvals') }}" class="btn btn-warning w-100 py-3 position-relative">
                             <i class="fas fa-clipboard-check d-block fs-3 mb-2"></i>
                             <span class="d-block">مراجعة الطلبات</span>
@@ -201,22 +201,16 @@
                             {% endif %}
                         </a>
                     </div>
-                    <div class="col-lg-3 col-md-6">
+                    <div class="col-lg-4 col-md-4">
                         <a href="{{ url_for('pm.my_team') }}" class="btn btn-info w-100 py-3">
                             <i class="fas fa-users d-block fs-3 mb-2"></i>
                             <span class="d-block">إدارة الفريق</span>
                         </a>
                     </div>
-                    <div class="col-lg-3 col-md-6">
+                    <div class="col-lg-4 col-md-4">
                         <a href="{{ url_for('pm.my_dogs') }}" class="btn btn-primary w-100 py-3">
                             <i class="fas fa-dog d-block fs-3 mb-2"></i>
                             <span class="d-block">إدارة الكلاب</span>
-                        </a>
-                    </div>
-                    <div class="col-lg-3 col-md-6">
-                        <a href="{{ url_for('pm.project_view') }}" class="btn btn-secondary w-100 py-3">
-                            <i class="fas fa-project-diagram d-block fs-3 mb-2"></i>
-                            <span class="d-block">تفاصيل المشروع</span>
                         </a>
                     </div>
                 </div>

@@ -45,12 +45,6 @@
                     </li>
                     
                     <li class="nav-item">
-                        <a class="nav-link px-3 py-2 rounded-pill {% if request.endpoint == 'pm.project_view' %}active bg-white bg-opacity-25{% endif %}" href="{{ url_for('pm.project_view') }}">
-                            <i class="fas fa-project-diagram me-1"></i>المشروع
-                        </a>
-                    </li>
-                    
-                    <li class="nav-item">
                         <a class="nav-link px-3 py-2 rounded-pill {% if request.endpoint == 'pm.my_dogs' %}active bg-white bg-opacity-25{% endif %}" href="{{ url_for('pm.my_dogs') }}">
                             <i class="fas fa-dog me-1"></i>الكلاب
                         </a>
