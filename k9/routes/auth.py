@@ -127,7 +127,7 @@ def setup():
                 password_hash=generate_password_hash(request.form['password']),
                 role=UserRole.GENERAL_ADMIN,
                 full_name=request.form['full_name'],
-                is_active=True
+                active=True
             )
             
             db.session.add(admin_user)
