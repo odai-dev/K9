@@ -4,15 +4,17 @@ Workflow-oriented interface for PMs managing their assigned project
 """
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
+from functools import wraps
+from datetime import datetime, date, timedelta
+from sqlalchemy import func, or_
 from app import db
 from k9.models.models import (
     User, UserRole, Project, Dog, Employee, 
     TrainingSession, VeterinaryVisit, ProductionCycle,
-    ProjectAssignment, ProjectDog, DogStatus, EmployeeRole
+    ProjectAssignment, ProjectDog, DogStatus, EmployeeRole,
+    WorkflowStatus, BreedingTrainingActivity, CaretakerDailyLog
 )
 from k9.models.models_handler_daily import HandlerReport, ReportStatus, DailySchedule
-from datetime import datetime, date, timedelta
-from sqlalchemy import func, or_
 
 pm_bp = Blueprint('pm', __name__, url_prefix='/pm')
 
@@ -27,7 +29,6 @@ def get_pm_project():
 
 def require_pm_project(f):
     """Decorator to ensure PM has an assigned project"""
-    from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if current_user.role != UserRole.PROJECT_MANAGER:
@@ -42,12 +43,40 @@ def require_pm_project(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def get_project_dog_ids(project_id):
+    """Helper to get dog IDs for a project"""
+    project_dogs = ProjectDog.query.filter_by(
+        project_id=project_id,
+        is_active=True
+    ).all()
+    return [pd.dog_id for pd in project_dogs]
+
+def get_project_employees(project_id):
+    """Helper to get employees assigned to a project - optimized query"""
+    try:
+        from sqlalchemy import Table
+        project_emp_table = Table('project_employee_assignment', db.metadata, autoload_with=db.engine)
+        
+        employees = db.session.query(Employee).join(
+            project_emp_table,
+            Employee.id == project_emp_table.c.employee_id
+        ).filter(
+            project_emp_table.c.project_id == project_id
+        ).all()
+        
+        return employees
+    except Exception as e:
+        print(f"Error getting project employees: {e}")
+        return []
+
 @pm_bp.route('/dashboard')
 @login_required
 @require_pm_project
 def dashboard():
     """PM Dashboard - Overview of their project"""
     project = get_pm_project()
+    if not project:
+        return redirect(url_for('main.index'))
     
     # Get project statistics
     stats = {
@@ -61,26 +90,14 @@ def dashboard():
     }
     
     # Get dogs assigned to this project
-    project_dogs = ProjectDog.query.filter_by(
-        project_id=project.id,
-        is_active=True
-    ).all()
-    dog_ids = [pd.dog_id for pd in project_dogs]
+    dog_ids = get_project_dog_ids(project.id)
     dogs = Dog.query.filter(Dog.id.in_(dog_ids)).all() if dog_ids else []
     
     stats['total_dogs'] = len(dogs)
     stats['active_dogs'] = len([d for d in dogs if d.current_status == DogStatus.ACTIVE])
     
     # Get employees assigned to this project
-    project_employees = db.session.query(Employee).join(
-        db.Table('project_employee_assignment', db.metadata,
-                 autoload_with=db.engine),
-        Employee.id == db.Table('project_employee_assignment', db.metadata,
-                                autoload_with=db.engine).c.employee_id
-    ).filter(
-        db.Table('project_employee_assignment', db.metadata,
-                autoload_with=db.engine).c.project_id == project.id
-    ).all()
+    project_employees = get_project_employees(project.id)
     
     stats['total_employees'] = len(project_employees)
     stats['active_employees'] = len([e for e in project_employees if e.is_active])
@@ -91,7 +108,7 @@ def dashboard():
         status=ReportStatus.SUBMITTED
     ).count()
     
-    # Recent activities for this project's dogs
+    # Recent activities for this project's dogs - optimized with limit
     recent_training = []
     recent_vet_visits = []
     if dog_ids:
@@ -104,11 +121,12 @@ def dashboard():
         ).order_by(VeterinaryVisit.created_at.desc()).limit(5).all()
     
     # Pending approvals count (vet visits needing review)
-    from k9.models.models import WorkflowStatus
-    pending_vet_count = VeterinaryVisit.query.filter(
-        VeterinaryVisit.dog_id.in_(dog_ids) if dog_ids else False,
-        VeterinaryVisit.pm_workflow_status == WorkflowStatus.PENDING_PM_REVIEW
-    ).count() if dog_ids else 0
+    pending_vet_count = 0
+    if dog_ids:
+        pending_vet_count = VeterinaryVisit.query.filter(
+            VeterinaryVisit.dog_id.in_(dog_ids),
+            VeterinaryVisit.pm_workflow_status == WorkflowStatus.PENDING_PM_REVIEW
+        ).count()
     
     stats['pending_vet_visits'] = pending_vet_count
     
@@ -123,25 +141,15 @@ def dashboard():
 def project_view():
     """View PM's project details"""
     project = get_pm_project()
+    if not project:
+        return redirect(url_for('main.index'))
     
     # Get all assigned dogs
-    project_dogs = ProjectDog.query.filter_by(
-        project_id=project.id,
-        is_active=True
-    ).all()
-    dog_ids = [pd.dog_id for pd in project_dogs]
+    dog_ids = get_project_dog_ids(project.id)
     dogs = Dog.query.filter(Dog.id.in_(dog_ids)).all() if dog_ids else []
     
     # Get all assigned employees
-    project_employees = db.session.query(Employee).join(
-        db.Table('project_employee_assignment', db.metadata,
-                 autoload_with=db.engine),
-        Employee.id == db.Table('project_employee_assignment', db.metadata,
-                                autoload_with=db.engine).c.employee_id
-    ).filter(
-        db.Table('project_employee_assignment', db.metadata,
-                autoload_with=db.engine).c.project_id == project.id
-    ).all()
+    project_employees = get_project_employees(project.id)
     
     return render_template('pm/project_view.html',
                          project=project,
@@ -154,25 +162,20 @@ def project_view():
 def my_team():
     """View team members assigned to PM's project"""
     project = get_pm_project()
+    if not project:
+        return redirect(url_for('main.index'))
     
     # Get employees assigned to this project
-    project_employees = db.session.query(Employee).join(
-        db.Table('project_employee_assignment', db.metadata,
-                 autoload_with=db.engine),
-        Employee.id == db.Table('project_employee_assignment', db.metadata,
-                                autoload_with=db.engine).c.employee_id
-    ).filter(
-        db.Table('project_employee_assignment', db.metadata,
-                autoload_with=db.engine).c.project_id == project.id
-    ).all()
+    project_employees = get_project_employees(project.id)
     
-    # Get handlers with their user accounts
+    # Get handlers with their user accounts - FIX: properly match employee to user
     handlers = []
     for emp in project_employees:
         if emp.role == EmployeeRole.HANDLER:
+            # FIX: Match user account by employee_id, not just any handler in project
             user_account = User.query.filter_by(
-                role=UserRole.HANDLER,
-                project_id=project.id
+                employee_id=emp.id,
+                role=UserRole.HANDLER
             ).first()
             handlers.append({
                 'employee': emp,
@@ -191,30 +194,63 @@ def my_team():
 def my_dogs():
     """View dogs assigned to PM's project"""
     project = get_pm_project()
+    if not project:
+        return redirect(url_for('main.index'))
     
     # Get dogs assigned to this project
-    project_dogs = ProjectDog.query.filter_by(
-        project_id=project.id,
-        is_active=True
-    ).all()
-    dog_ids = [pd.dog_id for pd in project_dogs]
+    dog_ids = get_project_dog_ids(project.id)
     dogs = Dog.query.filter(Dog.id.in_(dog_ids)).all() if dog_ids else []
     
-    # Get recent activity for each dog
+    # Get recent activity for each dog - optimized to use single query per type
     dog_activity = {}
-    for dog in dogs:
-        last_training = TrainingSession.query.filter_by(
-            dog_id=dog.id
-        ).order_by(TrainingSession.created_at.desc()).first()
+    
+    if dogs:
+        dog_id_list = [d.id for d in dogs]
         
-        last_vet = VeterinaryVisit.query.filter_by(
-            dog_id=dog.id
-        ).order_by(VeterinaryVisit.created_at.desc()).first()
+        # Get last training for all dogs in one query
+        last_trainings = db.session.query(
+            TrainingSession.dog_id,
+            func.max(TrainingSession.created_at).label('max_date')
+        ).filter(
+            TrainingSession.dog_id.in_(dog_id_list)
+        ).group_by(TrainingSession.dog_id).all()
         
-        dog_activity[dog.id] = {
-            'last_training': last_training,
-            'last_vet': last_vet
-        }
+        training_dates = {dog_id: max_date for dog_id, max_date in last_trainings}
+        
+        # Get actual training sessions
+        training_sessions = {}
+        for dog_id, max_date in training_dates.items():
+            session = TrainingSession.query.filter_by(
+                dog_id=dog_id
+            ).order_by(TrainingSession.created_at.desc()).first()
+            if session:
+                training_sessions[dog_id] = session
+        
+        # Get last vet visit for all dogs in one query
+        last_vets = db.session.query(
+            VeterinaryVisit.dog_id,
+            func.max(VeterinaryVisit.created_at).label('max_date')
+        ).filter(
+            VeterinaryVisit.dog_id.in_(dog_id_list)
+        ).group_by(VeterinaryVisit.dog_id).all()
+        
+        vet_dates = {dog_id: max_date for dog_id, max_date in last_vets}
+        
+        # Get actual vet visits
+        vet_visits = {}
+        for dog_id, max_date in vet_dates.items():
+            visit = VeterinaryVisit.query.filter_by(
+                dog_id=dog_id
+            ).order_by(VeterinaryVisit.created_at.desc()).first()
+            if visit:
+                vet_visits[dog_id] = visit
+        
+        # Build activity dict
+        for dog in dogs:
+            dog_activity[dog.id] = {
+                'last_training': training_sessions.get(dog.id),
+                'last_vet': vet_visits.get(dog.id)
+            }
     
     return render_template('pm/my_dogs.html',
                          project=project,
@@ -228,13 +264,11 @@ def my_dogs():
 def pending_approvals():
     """View all items pending PM approval"""
     project = get_pm_project()
+    if not project:
+        return redirect(url_for('main.index'))
     
     # Get project's dog IDs
-    project_dogs = ProjectDog.query.filter_by(
-        project_id=project.id,
-        is_active=True
-    ).all()
-    dog_ids = [pd.dog_id for pd in project_dogs]
+    dog_ids = get_project_dog_ids(project.id)
     
     # Get pending handler reports (filtered by project)
     pending_reports = HandlerReport.query.filter_by(
@@ -243,25 +277,28 @@ def pending_approvals():
     ).order_by(HandlerReport.created_at.desc()).all()
     
     # Get pending vet visits
-    from k9.models.models import WorkflowStatus
-    pending_vet_visits = VeterinaryVisit.query.filter(
-        VeterinaryVisit.dog_id.in_(dog_ids) if dog_ids else False,
-        VeterinaryVisit.pm_workflow_status == WorkflowStatus.PENDING_PM_REVIEW
-    ).order_by(VeterinaryVisit.created_at.desc()).all() if dog_ids else []
+    pending_vet_visits = []
+    if dog_ids:
+        pending_vet_visits = VeterinaryVisit.query.filter(
+            VeterinaryVisit.dog_id.in_(dog_ids),
+            VeterinaryVisit.pm_workflow_status == WorkflowStatus.PENDING_PM_REVIEW
+        ).order_by(VeterinaryVisit.created_at.desc()).all()
     
     # Get pending breeding activities
-    from k9.models.models import BreedingTrainingActivity
-    pending_breeding = BreedingTrainingActivity.query.filter(
-        BreedingTrainingActivity.dog_id.in_(dog_ids) if dog_ids else False,
-        BreedingTrainingActivity.pm_workflow_status == WorkflowStatus.PENDING_PM_REVIEW
-    ).order_by(BreedingTrainingActivity.created_at.desc()).all() if dog_ids else []
+    pending_breeding = []
+    if dog_ids:
+        pending_breeding = BreedingTrainingActivity.query.filter(
+            BreedingTrainingActivity.dog_id.in_(dog_ids),
+            BreedingTrainingActivity.pm_workflow_status == WorkflowStatus.PENDING_PM_REVIEW
+        ).order_by(BreedingTrainingActivity.created_at.desc()).all()
     
     # Get pending caretaker logs
-    from k9.models.models import CaretakerDailyLog
-    pending_caretaker = CaretakerDailyLog.query.filter(
-        CaretakerDailyLog.dog_id.in_(dog_ids) if dog_ids else False,
-        CaretakerDailyLog.pm_workflow_status == WorkflowStatus.PENDING_PM_REVIEW
-    ).order_by(CaretakerDailyLog.created_at.desc()).all() if dog_ids else []
+    pending_caretaker = []
+    if dog_ids:
+        pending_caretaker = CaretakerDailyLog.query.filter(
+            CaretakerDailyLog.dog_id.in_(dog_ids),
+            CaretakerDailyLog.pm_workflow_status == WorkflowStatus.PENDING_PM_REVIEW
+        ).order_by(CaretakerDailyLog.created_at.desc()).all()
     
     return render_template('pm/pending_approvals.html',
                          project=project,
@@ -276,24 +313,33 @@ def pending_approvals():
 def approve_report(report_id):
     """Approve a handler report"""
     project = get_pm_project()
-    report = HandlerReport.query.get_or_404(report_id)
-    
-    # Security check: Ensure report belongs to PM's project
-    if report.project_id != project.id:
-        flash('ليس لديك صلاحية لمراجعة هذا التقرير', 'error')
-        return redirect(url_for('pm.pending_approvals'))
-    
-    if report.status != ReportStatus.SUBMITTED:
-        flash('هذا التقرير تمت مراجعته بالفعل', 'info')
-        return redirect(url_for('pm.pending_approvals'))
-    
-    report.status = ReportStatus.APPROVED
-    report.reviewed_at = datetime.utcnow()
-    report.reviewed_by_user_id = current_user.id
-    
-    db.session.commit()
-    
-    flash('تمت الموافقة على التقرير بنجاح', 'success')
+    if not project:
+        flash('لم يتم العثور على المشروع', 'error')
+        return redirect(url_for('main.index'))
+        
+    try:
+        report = HandlerReport.query.get_or_404(report_id)
+        
+        # Security check: Ensure report belongs to PM's project
+        if report.project_id != project.id:
+            flash('ليس لديك صلاحية لمراجعة هذا التقرير', 'error')
+            return redirect(url_for('pm.pending_approvals'))
+        
+        if report.status != ReportStatus.SUBMITTED:
+            flash('هذا التقرير تمت مراجعته بالفعل', 'info')
+            return redirect(url_for('pm.pending_approvals'))
+        
+        report.status = ReportStatus.APPROVED
+        report.reviewed_at = datetime.utcnow()
+        report.reviewed_by_user_id = current_user.id
+        
+        db.session.commit()
+        
+        flash('تمت الموافقة على التقرير بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء الموافقة على التقرير: {str(e)}', 'error')
+        
     return redirect(url_for('pm.pending_approvals'))
 
 @pm_bp.route('/reject-report/<report_id>', methods=['POST'])
@@ -302,25 +348,259 @@ def approve_report(report_id):
 def reject_report(report_id):
     """Reject a handler report"""
     project = get_pm_project()
-    report = HandlerReport.query.get_or_404(report_id)
-    
-    # Security check: Ensure report belongs to PM's project
-    if report.project_id != project.id:
-        flash('ليس لديك صلاحية لمراجعة هذا التقرير', 'error')
-        return redirect(url_for('pm.pending_approvals'))
-    
-    if report.status != ReportStatus.SUBMITTED:
-        flash('هذا التقرير تمت مراجعته بالفعل', 'info')
-        return redirect(url_for('pm.pending_approvals'))
-    
-    feedback = request.form.get('feedback', '')
-    
-    report.status = ReportStatus.REJECTED
-    report.reviewed_at = datetime.utcnow()
-    report.reviewed_by_user_id = current_user.id
-    report.supervisor_feedback = feedback
-    
-    db.session.commit()
-    
-    flash('تم رفض التقرير', 'info')
+    if not project:
+        flash('لم يتم العثور على المشروع', 'error')
+        return redirect(url_for('main.index'))
+        
+    try:
+        report = HandlerReport.query.get_or_404(report_id)
+        
+        # Security check: Ensure report belongs to PM's project
+        if report.project_id != project.id:
+            flash('ليس لديك صلاحية لمراجعة هذا التقرير', 'error')
+            return redirect(url_for('pm.pending_approvals'))
+        
+        if report.status != ReportStatus.SUBMITTED:
+            flash('هذا التقرير تمت مراجعته بالفعل', 'info')
+            return redirect(url_for('pm.pending_approvals'))
+        
+        feedback = request.form.get('feedback', '')
+        
+        report.status = ReportStatus.REJECTED
+        report.reviewed_at = datetime.utcnow()
+        report.reviewed_by_user_id = current_user.id
+        report.supervisor_feedback = feedback
+        
+        db.session.commit()
+        
+        flash('تم رفض التقرير', 'info')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء رفض التقرير: {str(e)}', 'error')
+        
+    return redirect(url_for('pm.pending_approvals'))
+
+@pm_bp.route('/approve-vet-visit/<visit_id>', methods=['POST'])
+@login_required
+@require_pm_project
+def approve_vet_visit(visit_id):
+    """Approve a veterinary visit"""
+    project = get_pm_project()
+    if not project:
+        flash('لم يتم العثور على المشروع', 'error')
+        return redirect(url_for('main.index'))
+        
+    try:
+        visit = VeterinaryVisit.query.get_or_404(visit_id)
+        dog_ids = get_project_dog_ids(project.id)
+        
+        # Security check: Ensure visit belongs to PM's project
+        if visit.dog_id not in dog_ids:
+            flash('ليس لديك صلاحية لمراجعة هذه الزيارة', 'error')
+            return redirect(url_for('pm.pending_approvals'))
+        
+        if visit.pm_workflow_status != WorkflowStatus.PENDING_PM_REVIEW:
+            flash('هذه الزيارة تمت مراجعتها بالفعل', 'info')
+            return redirect(url_for('pm.pending_approvals'))
+        
+        visit.pm_workflow_status = WorkflowStatus.PM_APPROVED
+        visit.pm_reviewed_at = datetime.utcnow()
+        visit.pm_reviewed_by_id = current_user.id
+        
+        db.session.commit()
+        
+        flash('تمت الموافقة على الزيارة البيطرية بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء الموافقة على الزيارة: {str(e)}', 'error')
+        
+    return redirect(url_for('pm.pending_approvals'))
+
+@pm_bp.route('/reject-vet-visit/<visit_id>', methods=['POST'])
+@login_required
+@require_pm_project
+def reject_vet_visit(visit_id):
+    """Reject a veterinary visit"""
+    project = get_pm_project()
+    if not project:
+        flash('لم يتم العثور على المشروع', 'error')
+        return redirect(url_for('main.index'))
+        
+    try:
+        visit = VeterinaryVisit.query.get_or_404(visit_id)
+        dog_ids = get_project_dog_ids(project.id)
+        
+        # Security check: Ensure visit belongs to PM's project
+        if visit.dog_id not in dog_ids:
+            flash('ليس لديك صلاحية لمراجعة هذه الزيارة', 'error')
+            return redirect(url_for('pm.pending_approvals'))
+        
+        if visit.pm_workflow_status != WorkflowStatus.PENDING_PM_REVIEW:
+            flash('هذه الزيارة تمت مراجعتها بالفعل', 'info')
+            return redirect(url_for('pm.pending_approvals'))
+        
+        feedback = request.form.get('feedback', '')
+        
+        visit.pm_workflow_status = WorkflowStatus.PM_REJECTED
+        visit.pm_reviewed_at = datetime.utcnow()
+        visit.pm_reviewed_by_id = current_user.id
+        visit.pm_feedback = feedback
+        
+        db.session.commit()
+        
+        flash('تم رفض الزيارة البيطرية', 'info')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء رفض الزيارة: {str(e)}', 'error')
+        
+    return redirect(url_for('pm.pending_approvals'))
+
+@pm_bp.route('/approve-breeding/<activity_id>', methods=['POST'])
+@login_required
+@require_pm_project
+def approve_breeding(activity_id):
+    """Approve a breeding training activity"""
+    project = get_pm_project()
+    if not project:
+        flash('لم يتم العثور على المشروع', 'error')
+        return redirect(url_for('main.index'))
+        
+    try:
+        activity = BreedingTrainingActivity.query.get_or_404(activity_id)
+        dog_ids = get_project_dog_ids(project.id)
+        
+        # Security check: Ensure activity belongs to PM's project
+        if activity.dog_id not in dog_ids:
+            flash('ليس لديك صلاحية لمراجعة هذا النشاط', 'error')
+            return redirect(url_for('pm.pending_approvals'))
+        
+        if activity.pm_workflow_status != WorkflowStatus.PENDING_PM_REVIEW:
+            flash('هذا النشاط تمت مراجعته بالفعل', 'info')
+            return redirect(url_for('pm.pending_approvals'))
+        
+        activity.pm_workflow_status = WorkflowStatus.PM_APPROVED
+        activity.pm_reviewed_at = datetime.utcnow()
+        activity.pm_reviewed_by_id = current_user.id
+        
+        db.session.commit()
+        
+        flash('تمت الموافقة على نشاط التكاثر بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء الموافقة على النشاط: {str(e)}', 'error')
+        
+    return redirect(url_for('pm.pending_approvals'))
+
+@pm_bp.route('/reject-breeding/<activity_id>', methods=['POST'])
+@login_required
+@require_pm_project
+def reject_breeding(activity_id):
+    """Reject a breeding training activity"""
+    project = get_pm_project()
+    if not project:
+        flash('لم يتم العثور على المشروع', 'error')
+        return redirect(url_for('main.index'))
+        
+    try:
+        activity = BreedingTrainingActivity.query.get_or_404(activity_id)
+        dog_ids = get_project_dog_ids(project.id)
+        
+        # Security check: Ensure activity belongs to PM's project
+        if activity.dog_id not in dog_ids:
+            flash('ليس لديك صلاحية لمراجعة هذا النشاط', 'error')
+            return redirect(url_for('pm.pending_approvals'))
+        
+        if activity.pm_workflow_status != WorkflowStatus.PENDING_PM_REVIEW:
+            flash('هذا النشاط تمت مراجعته بالفعل', 'info')
+            return redirect(url_for('pm.pending_approvals'))
+        
+        feedback = request.form.get('feedback', '')
+        
+        activity.pm_workflow_status = WorkflowStatus.PM_REJECTED
+        activity.pm_reviewed_at = datetime.utcnow()
+        activity.pm_reviewed_by_id = current_user.id
+        activity.pm_feedback = feedback
+        
+        db.session.commit()
+        
+        flash('تم رفض نشاط التكاثر', 'info')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء رفض النشاط: {str(e)}', 'error')
+        
+    return redirect(url_for('pm.pending_approvals'))
+
+@pm_bp.route('/approve-caretaker/<log_id>', methods=['POST'])
+@login_required
+@require_pm_project
+def approve_caretaker(log_id):
+    """Approve a caretaker daily log"""
+    project = get_pm_project()
+    if not project:
+        flash('لم يتم العثور على المشروع', 'error')
+        return redirect(url_for('main.index'))
+        
+    try:
+        log = CaretakerDailyLog.query.get_or_404(log_id)
+        dog_ids = get_project_dog_ids(project.id)
+        
+        # Security check: Ensure log belongs to PM's project
+        if log.dog_id not in dog_ids:
+            flash('ليس لديك صلاحية لمراجعة هذا السجل', 'error')
+            return redirect(url_for('pm.pending_approvals'))
+        
+        if log.pm_workflow_status != WorkflowStatus.PENDING_PM_REVIEW:
+            flash('هذا السجل تمت مراجعته بالفعل', 'info')
+            return redirect(url_for('pm.pending_approvals'))
+        
+        log.pm_workflow_status = WorkflowStatus.PM_APPROVED
+        log.pm_reviewed_at = datetime.utcnow()
+        log.pm_reviewed_by_id = current_user.id
+        
+        db.session.commit()
+        
+        flash('تمت الموافقة على سجل الرعاية بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء الموافقة على السجل: {str(e)}', 'error')
+        
+    return redirect(url_for('pm.pending_approvals'))
+
+@pm_bp.route('/reject-caretaker/<log_id>', methods=['POST'])
+@login_required
+@require_pm_project
+def reject_caretaker(log_id):
+    """Reject a caretaker daily log"""
+    project = get_pm_project()
+    if not project:
+        flash('لم يتم العثور على المشروع', 'error')
+        return redirect(url_for('main.index'))
+        
+    try:
+        log = CaretakerDailyLog.query.get_or_404(log_id)
+        dog_ids = get_project_dog_ids(project.id)
+        
+        # Security check: Ensure log belongs to PM's project
+        if log.dog_id not in dog_ids:
+            flash('ليس لديك صلاحية لمراجعة هذا السجل', 'error')
+            return redirect(url_for('pm.pending_approvals'))
+        
+        if log.pm_workflow_status != WorkflowStatus.PENDING_PM_REVIEW:
+            flash('هذا السجل تمت مراجعته بالفعل', 'info')
+            return redirect(url_for('pm.pending_approvals'))
+        
+        feedback = request.form.get('feedback', '')
+        
+        log.pm_workflow_status = WorkflowStatus.PM_REJECTED
+        log.pm_reviewed_at = datetime.utcnow()
+        log.pm_reviewed_by_id = current_user.id
+        log.pm_feedback = feedback
+        
+        db.session.commit()
+        
+        flash('تم رفض سجل الرعاية', 'info')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء رفض السجل: {str(e)}', 'error')
+        
     return redirect(url_for('pm.pending_approvals'))
