@@ -25,21 +25,17 @@ args = "Start application"
 name = "Start application"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app"
-waitForPort = 5000
-
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "/home/runner/workspace/.pythonlibs/bin/gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app"
+waitForPort = 5000
 
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 38749
-externalPort = 6000
 
 [[ports]]
 localPort = 39507
@@ -48,6 +44,10 @@ externalPort = 5000
 [[ports]]
 localPort = 42321
 externalPort = 3001
+
+[[ports]]
+localPort = 42427
+externalPort = 3002
 
 [[ports]]
 localPort = 42531
