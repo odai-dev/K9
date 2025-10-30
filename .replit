@@ -30,16 +30,12 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app"
+args = "flask run --host=0.0.0.0 --port=5000"
 waitForPort = 5000
 
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 34771
-externalPort = 4200
 
 [[ports]]
 localPort = 36893
@@ -60,6 +56,10 @@ externalPort = 3003
 [[ports]]
 localPort = 44207
 externalPort = 3000
+
+[[ports]]
+localPort = 46547
+externalPort = 3002
 
 [agent]
 expertMode = true
