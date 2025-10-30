@@ -12,7 +12,8 @@ from k9.models.models import (
     User, UserRole, Project, Dog, Employee, 
     TrainingSession, VeterinaryVisit, ProductionCycle,
     ProjectAssignment, ProjectDog, DogStatus, EmployeeRole,
-    WorkflowStatus, BreedingTrainingActivity, CaretakerDailyLog
+    WorkflowStatus, BreedingTrainingActivity, CaretakerDailyLog,
+    Incident, Suspicion, PerformanceEvaluation
 )
 from k9.models.models_handler_daily import HandlerReport, ReportStatus, DailySchedule
 
@@ -109,52 +110,52 @@ def get_pending_count(project):
 @login_required
 @require_pm_project
 def dashboard():
-    """PM Dashboard - Overview of their project"""
+    """PM Dashboard - Enhanced overview similar to projects dashboard"""
     project = get_pm_project()
     if not project:
         return redirect(url_for('main.index'))
     
-    # Get project statistics
-    stats = {
-        'project': project,
-        'total_dogs': 0,
-        'active_dogs': 0,
-        'total_employees': 0,
-        'active_employees': 0,
-        'pending_reports': 0,
-        'pending_vet_visits': 0,
-    }
+    # Get dashboard statistics with ProjectAssignment system
+    dog_assignments = ProjectAssignment.query.filter_by(
+        project_id=project.id, 
+        is_active=True
+    ).filter(ProjectAssignment.dog_id.isnot(None)).count()
+    active_dog_assignments = dog_assignments
     
-    # Get dogs assigned to this project
+    employee_assignments = ProjectAssignment.query.filter_by(
+        project_id=project.id, 
+        is_active=True
+    ).filter(ProjectAssignment.employee_id.isnot(None)).count()
+    active_employee_assignments = employee_assignments
+    
+    # Incident statistics
+    total_incidents = Incident.query.filter_by(project_id=project.id).count()
+    resolved_incidents = Incident.query.filter_by(project_id=project.id, resolved=True).count()
+    pending_incidents = total_incidents - resolved_incidents
+    
+    # Suspicion statistics
+    total_suspicions = Suspicion.query.filter_by(project_id=project.id).count()
+    confirmed_suspicions = Suspicion.query.filter_by(project_id=project.id, evidence_collected=True).count()
+    
+    # Evaluation statistics
+    total_evaluations = PerformanceEvaluation.query.filter_by(project_id=project.id).count()
+    
+    # Training and veterinary statistics
+    total_training = TrainingSession.query.filter_by(project_id=project.id).count()
+    total_veterinary = VeterinaryVisit.query.filter_by(project_id=project.id).count()
+    
+    # Get dogs assigned to this project (for legacy code compatibility)
     dog_ids = get_project_dog_ids(project.id)
     dogs = Dog.query.filter(Dog.id.in_(dog_ids)).all() if dog_ids else []
     
-    stats['total_dogs'] = len(dogs)
-    stats['active_dogs'] = len([d for d in dogs if d.current_status == DogStatus.ACTIVE])
-    
-    # Get employees assigned to this project
+    # Get employees assigned to this project (for legacy code compatibility)
     project_employees = get_project_employees(project.id)
     
-    stats['total_employees'] = len(project_employees)
-    stats['active_employees'] = len([e for e in project_employees if e.is_active])
-    
     # Pending reports from handlers (filtered by project)
-    stats['pending_reports'] = HandlerReport.query.filter_by(
+    pending_reports = HandlerReport.query.filter_by(
         project_id=project.id,
         status=ReportStatus.SUBMITTED
     ).count()
-    
-    # Recent activities for this project's dogs - optimized with limit
-    recent_training = []
-    recent_vet_visits = []
-    if dog_ids:
-        recent_training = TrainingSession.query.filter(
-            TrainingSession.dog_id.in_(dog_ids)
-        ).order_by(TrainingSession.created_at.desc()).limit(5).all()
-        
-        recent_vet_visits = VeterinaryVisit.query.filter(
-            VeterinaryVisit.dog_id.in_(dog_ids)
-        ).order_by(VeterinaryVisit.created_at.desc()).limit(5).all()
     
     # Pending approvals count (vet visits needing review)
     pending_vet_count = 0
@@ -164,12 +165,122 @@ def dashboard():
             VeterinaryVisit.status == WorkflowStatus.PENDING_PM_REVIEW.value
         ).count()
     
-    stats['pending_vet_visits'] = pending_vet_count
+    # Pending breeding activities
+    pending_breeding = 0
+    if dog_ids:
+        pending_breeding = BreedingTrainingActivity.query.filter(
+            BreedingTrainingActivity.dog_id.in_(dog_ids),
+            BreedingTrainingActivity.status == WorkflowStatus.PENDING_PM_REVIEW.value
+        ).count()
+    
+    # Pending caretaker logs
+    pending_caretaker = 0
+    if dog_ids:
+        pending_caretaker = CaretakerDailyLog.query.filter(
+            CaretakerDailyLog.dog_id.in_(dog_ids),
+            CaretakerDailyLog.status == WorkflowStatus.PENDING_PM_REVIEW.value
+        ).count()
+    
+    # Compile statistics
+    stats = {
+        'dog_assignments': dog_assignments,
+        'active_dog_assignments': active_dog_assignments,
+        'employee_assignments': employee_assignments,
+        'active_employee_assignments': active_employee_assignments,
+        'total_incidents': total_incidents,
+        'resolved_incidents': resolved_incidents,
+        'pending_incidents': pending_incidents,
+        'total_suspicions': total_suspicions,
+        'confirmed_suspicions': confirmed_suspicions,
+        'total_evaluations': total_evaluations,
+        'total_training': total_training,
+        'total_veterinary': total_veterinary,
+        'total_dogs': len(dogs),
+        'active_dogs': len([d for d in dogs if d.current_status == DogStatus.ACTIVE]),
+        'total_employees': len(project_employees),
+        'active_employees': len([e for e in project_employees if e.is_active]),
+        'pending_reports': pending_reports,
+        'pending_vet_visits': pending_vet_count,
+        'pending_breeding': pending_breeding,
+        'pending_caretaker': pending_caretaker
+    }
+    
+    # Get assignment objects for display in resources section
+    assigned_dogs = ProjectAssignment.query.filter_by(
+        project_id=project.id, 
+        is_active=True
+    ).filter(ProjectAssignment.dog_id.isnot(None)).options(
+        db.joinedload(ProjectAssignment.dog)
+    ).all()
+    
+    assigned_employees = ProjectAssignment.query.filter_by(
+        project_id=project.id, 
+        is_active=True
+    ).filter(ProjectAssignment.employee_id.isnot(None)).options(
+        db.joinedload(ProjectAssignment.employee)
+    ).all()
+    
+    # Recent activities
+    recent_incidents = Incident.query.filter_by(
+        project_id=project.id
+    ).order_by(Incident.incident_date.desc()).limit(5).all()
+    
+    recent_suspicions = Suspicion.query.filter_by(
+        project_id=project.id
+    ).order_by(Suspicion.discovery_date.desc()).limit(5).all()
+    
+    recent_evaluations = PerformanceEvaluation.query.filter_by(
+        project_id=project.id
+    ).order_by(PerformanceEvaluation.evaluation_date.desc()).limit(5).all()
+    
+    recent_training = TrainingSession.query.filter_by(
+        project_id=project.id
+    ).order_by(TrainingSession.session_date.desc()).limit(5).all()
+    
+    recent_veterinary = VeterinaryVisit.query.filter_by(
+        project_id=project.id
+    ).order_by(VeterinaryVisit.visit_date.desc()).limit(5).all()
+    
+    # Get pending approvals for workflow
+    pending_handler_reports = HandlerReport.query.filter_by(
+        project_id=project.id,
+        status=ReportStatus.SUBMITTED
+    ).order_by(HandlerReport.created_at.desc()).limit(10).all()
+    
+    pending_vet_visits = []
+    pending_breeding_activities = []
+    pending_caretaker_logs = []
+    
+    if dog_ids:
+        pending_vet_visits = VeterinaryVisit.query.filter(
+            VeterinaryVisit.dog_id.in_(dog_ids),
+            VeterinaryVisit.status == WorkflowStatus.PENDING_PM_REVIEW.value
+        ).order_by(VeterinaryVisit.created_at.desc()).limit(10).all()
+        
+        pending_breeding_activities = BreedingTrainingActivity.query.filter(
+            BreedingTrainingActivity.dog_id.in_(dog_ids),
+            BreedingTrainingActivity.status == WorkflowStatus.PENDING_PM_REVIEW.value
+        ).order_by(BreedingTrainingActivity.created_at.desc()).limit(10).all()
+        
+        pending_caretaker_logs = CaretakerDailyLog.query.filter(
+            CaretakerDailyLog.dog_id.in_(dog_ids),
+            CaretakerDailyLog.status == WorkflowStatus.PENDING_PM_REVIEW.value
+        ).order_by(CaretakerDailyLog.created_at.desc()).limit(10).all()
     
     return render_template('pm/dashboard.html', 
+                         project=project,
                          stats=stats,
+                         assigned_dogs=assigned_dogs,
+                         assigned_employees=assigned_employees,
+                         recent_incidents=recent_incidents,
+                         recent_suspicions=recent_suspicions,
+                         recent_evaluations=recent_evaluations,
                          recent_training=recent_training,
-                         recent_vet_visits=recent_vet_visits,
+                         recent_veterinary=recent_veterinary,
+                         pending_handler_reports=pending_handler_reports,
+                         pending_vet_visits=pending_vet_visits,
+                         pending_breeding_activities=pending_breeding_activities,
+                         pending_caretaker_logs=pending_caretaker_logs,
                          pending_count=get_pending_count(project))
 
 @pm_bp.route('/project')
