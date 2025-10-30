@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة الحسابات{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-user-shield me-2"></i>
+                إدارة الحسابات
+            </h1>
+            <div>
+                <a href="{{ url_for('account_management.create') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus me-1"></i>
+                    منح صلاحية دخول
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    قائمة الحسابات ({{ user_accounts|length }})
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if user_accounts %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>اسم المستخدم</th>
+                                <th>الاسم الكامل</th>
+                                <th>البريد الإلكتروني</th>
+                                <th>الدور</th>
+                                <th>مربوط بموظف</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in user_accounts %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.user.username }}</strong>
+                                </td>
+                                <td>{{ item.user.full_name }}</td>
+                                <td>{{ item.user.email }}</td>
+                                <td>
+                                    {% if item.user.role.name == 'GENERAL_ADMIN' %}
+                                    <span class="badge bg-danger">مدير عام</span>
+                                    {% elif item.user.role.name == 'PROJECT_MANAGER' %}
+                                    <span class="badge bg-primary">مسؤول مشروع</span>
+                                    {% elif item.user.role.name == 'HANDLER' %}
+                                    <span class="badge bg-info">سائس</span>
+                                    {% elif item.user.role.name == 'TRAINER' %}
+                                    <span class="badge bg-success">مدرب</span>
+                                    {% elif item.user.role.name == 'BREEDER' %}
+                                    <span class="badge bg-warning">مربي</span>
+                                    {% elif item.user.role.name == 'VET' %}
+                                    <span class="badge bg-secondary">طبيب</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.employee %}
+                                    <i class="fas fa-check-circle text-success me-1"></i>
+                                    {{ item.employee.name }}
+                                    <small class="text-muted">({{ item.employee.employee_id }})</small>
+                                    {% else %}
+                                    <i class="fas fa-times-circle text-muted me-1"></i>
+                                    <span class="text-muted">غير مربوط</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.user.active %}
+                                    <span class="badge bg-success">نشط</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">معطل</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <form action="{{ url_for('account_management.toggle_status', user_id=item.user.id) }}" method="POST" style="display: inline;">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            {% if item.user.active %}
+                                            <button type="submit" class="btn btn-sm btn-outline-warning" 
+                                                    onclick="return confirm('هل أنت متأكد من تعطيل هذا الحساب؟')">
+                                                <i class="fas fa-ban"></i>
+                                            </button>
+                                            {% else %}
+                                            <button type="submit" class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-check-circle"></i>
+                                            </button>
+                                            {% endif %}
+                                        </form>
+                                        <form action="{{ url_for('account_management.reset_password', user_id=item.user.id) }}" method="POST" style="display: inline;">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-primary" 
+                                                    onclick="return confirm('هل أنت متأكد من إعادة تعيين كلمة المرور؟')">
+                                                <i class="fas fa-key"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info text-center mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    لا توجد حسابات مستخدمين بعد
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

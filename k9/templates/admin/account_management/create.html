@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}منح صلاحية دخول لموظف{% endblock %}
+
+{% block extra_css %}
+<style>
+    .employee-select {
+        min-height: 200px;
+    }
+    .employee-item {
+        padding: 10px;
+        border-bottom: 1px solid #e0e0e0;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .employee-item:hover {
+        background-color: #f5f5f5;
+    }
+    .employee-item.selected {
+        background-color: #e3f2fd;
+        border-right: 3px solid #2196F3;
+    }
+    .role-badge {
+        font-size: 0.75rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-user-plus me-2"></i>
+                منح صلاحية دخول لموظف
+            </h1>
+            <a href="{{ url_for('account_management.index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-right me-1"></i>
+                رجوع
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                {% if employees %}
+                <form method="POST" action="{{ url_for('account_management.create') }}" id="createAccountForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-user me-2"></i>
+                            اختر الموظف
+                        </label>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" class="form-control" id="employeeSearch" placeholder="ابحث بالاسم أو الرقم الوظيفي...">
+                        </div>
+                        <div class="border rounded employee-select" id="employeeList">
+                            {% for emp in employees %}
+                            <div class="employee-item" data-id="{{ emp.id }}" data-name="{{ emp.name }}" data-email="{{ emp.email or '' }}" data-phone="{{ emp.phone or '' }}" data-role="{{ emp.role.name }}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>{{ emp.name }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ emp.employee_id }}</small>
+                                    </div>
+                                    <span class="badge bg-secondary role-badge">{{ emp.role.value }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <input type="hidden" name="employee_id" id="selectedEmployeeId" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="username" class="form-label fw-bold">
+                            <i class="fas fa-at me-2"></i>
+                            اسم المستخدم
+                        </label>
+                        <input type="text" class="form-control" id="username" name="username" required 
+                               pattern="[a-zA-Z0-9_-]+" title="يجب أن يحتوي على أحرف وأرقام فقط">
+                        <div class="form-text">يجب أن يحتوي على أحرف إنجليزية وأرقام فقط</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label fw-bold">
+                            <i class="fas fa-key me-2"></i>
+                            كلمة المرور
+                        </label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="password" name="password" required minlength="8">
+                            <button class="btn btn-outline-secondary" type="button" id="generatePassword">
+                                <i class="fas fa-random me-1"></i>
+                                توليد
+                            </button>
+                        </div>
+                        <div class="form-text">يجب أن تكون على الأقل 8 أحرف</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-user-tag me-2"></i>
+                            الدور
+                        </label>
+                        <input type="text" class="form-control" id="roleDisplay" readonly>
+                        <div class="form-text">سيتم تعيين الدور تلقائياً بناءً على دور الموظف</div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-check me-2"></i>
+                            منح صلاحية الدخول
+                        </button>
+                    </div>
+                </form>
+                {% else %}
+                <div class="alert alert-warning text-center">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    لا يوجد موظفون بدون حسابات
+                    <br>
+                    <a href="{{ url_for('account_management.index') }}" class="btn btn-sm btn-primary mt-3">
+                        العودة إلى قائمة الحسابات
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const roleMap = {
+    'HANDLER': 'سائس',
+    'TRAINER': 'مدرب',
+    'BREEDER': 'مربي',
+    'VET': 'طبيب',
+    'PROJECT_MANAGER': 'مسؤول مشروع'
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    const employeeItems = document.querySelectorAll('.employee-item');
+    const selectedEmployeeInput = document.getElementById('selectedEmployeeId');
+    const usernameInput = document.getElementById('username');
+    const roleDisplay = document.getElementById('roleDisplay');
+    const employeeSearch = document.getElementById('employeeSearch');
+
+    employeeItems.forEach(item => {
+        item.addEventListener('click', function() {
+            employeeItems.forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            
+            const empId = this.dataset.id;
+            const empName = this.dataset.name;
+            const empRole = this.dataset.role;
+            
+            selectedEmployeeInput.value = empId;
+            
+            const usernameSuggestion = empName.toLowerCase()
+                .replace(/[^\u0600-\u06FFa-z0-9]/gi, '_')
+                .replace(/^[\u0600-\u06FF]+$/g, 'user_' + empId.substring(0, 8));
+            usernameInput.value = usernameSuggestion;
+            
+            roleDisplay.value = roleMap[empRole] || empRole;
+        });
+    });
+
+    employeeSearch.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        employeeItems.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    });
+
+    document.getElementById('generatePassword').addEventListener('click', async function() {
+        try {
+            const response = await fetch('{{ url_for("account_management.api_generate_password") }}');
+            const data = await response.json();
+            document.getElementById('password').value = data.password;
+        } catch (error) {
+            console.error('Error generating password:', error);
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -210,6 +210,11 @@
                         <ul class="dropdown-menu shadow">
                             {% if current_user.role.value == 'GENERAL_ADMIN' %}
                             <li>
+                                <a class="dropdown-item" href="{{ url_for('account_management.index') }}">
+                                    <i class="fas fa-user-shield me-2"></i>إدارة الحسابات
+                                </a>
+                            </li>
+                            <li>
                                 <a class="dropdown-item" href="{{ url_for('user_management.index') }}">
                                     <i class="fas fa-users me-2"></i>إدارة المستخدمين
                                 </a>
