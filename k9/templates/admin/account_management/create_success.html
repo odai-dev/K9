@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}تم إنشاء الحساب بنجاح{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-6 mx-auto">
+        <div class="card border-0 shadow-sm mt-5">
+            <div class="card-body text-center p-5">
+                <div class="mb-4">
+                    <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+                </div>
+                
+                <h2 class="mb-3">تم إنشاء الحساب بنجاح</h2>
+                <p class="text-muted mb-4">تم منح صلاحية الدخول للموظف</p>
+                
+                <div class="alert alert-warning mb-4">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>مهم:</strong> احفظ بيانات الدخول التالية وقدمها للموظف
+                </div>
+                
+                <div class="card bg-light mb-4">
+                    <div class="card-body text-end">
+                        <div class="row mb-3">
+                            <div class="col-4 text-muted">الموظف:</div>
+                            <div class="col-8"><strong>{{ employee.name }}</strong></div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-4 text-muted">الرقم الوظيفي:</div>
+                            <div class="col-8"><strong>{{ employee.employee_id }}</strong></div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-4 text-muted">الدور:</div>
+                            <div class="col-8">
+                                {% if user_role == 'HANDLER' %}
+                                <span class="badge bg-info">سائس</span>
+                                {% elif user_role == 'TRAINER' %}
+                                <span class="badge bg-success">مدرب</span>
+                                {% elif user_role == 'BREEDER' %}
+                                <span class="badge bg-warning">مربي</span>
+                                {% elif user_role == 'VET' %}
+                                <span class="badge bg-secondary">طبيب</span>
+                                {% elif user_role == 'PROJECT_MANAGER' %}
+                                <span class="badge bg-primary">مسؤول مشروع</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row mb-3">
+                            <div class="col-4 text-muted">اسم المستخدم:</div>
+                            <div class="col-8"><code class="fs-5">{{ username }}</code></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-4 text-muted">كلمة المرور:</div>
+                            <div class="col-8"><code class="fs-5">{{ password }}</code></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('account_management.create') }}" class="btn btn-primary">
+                        <i class="fas fa-user-plus me-2"></i>
+                        منح صلاحية لموظف آخر
+                    </a>
+                    <a href="{{ url_for('account_management.index') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-list me-2"></i>
+                        العودة إلى قائمة الحسابات
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

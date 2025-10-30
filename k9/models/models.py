@@ -28,6 +28,9 @@ class UserRole(Enum):
     GENERAL_ADMIN = "GENERAL_ADMIN"
     PROJECT_MANAGER = "PROJECT_MANAGER"
     HANDLER = "HANDLER"
+    TRAINER = "TRAINER"
+    BREEDER = "BREEDER"
+    VET = "VET"
 
 class EmployeeRole(Enum):
     HANDLER = "سائس"

@@ -433,11 +433,13 @@ with app.app_context():
         from k9.routes.handler_routes import handler_bp
         from k9.routes.schedule_routes import schedule_bp
         from k9.routes.user_management_routes import user_mgmt_bp
+        from k9.routes.account_management_routes import account_mgmt_bp
         from k9.routes.supervisor_routes import supervisor_bp
         from k9.routes.task_routes import task_bp
         app.register_blueprint(handler_bp)
         app.register_blueprint(schedule_bp)
         app.register_blueprint(user_mgmt_bp)
+        app.register_blueprint(account_mgmt_bp)
         app.register_blueprint(supervisor_bp)
         app.register_blueprint(task_bp)
         print("✓ Handler daily system registered successfully")

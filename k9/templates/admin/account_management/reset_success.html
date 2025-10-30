@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}تم إعادة تعيين كلمة المرور{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-6 mx-auto">
+        <div class="card border-0 shadow-sm mt-5">
+            <div class="card-body text-center p-5">
+                <div class="mb-4">
+                    <i class="fas fa-key text-primary" style="font-size: 4rem;"></i>
+                </div>
+                
+                <h2 class="mb-3">تم إعادة تعيين كلمة المرور</h2>
+                <p class="text-muted mb-4">تم تغيير كلمة المرور بنجاح</p>
+                
+                <div class="alert alert-warning mb-4">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>مهم:</strong> احفظ كلمة المرور الجديدة وقدمها للمستخدم
+                </div>
+                
+                <div class="card bg-light mb-4">
+                    <div class="card-body text-end">
+                        <div class="row mb-3">
+                            <div class="col-4 text-muted">الاسم:</div>
+                            <div class="col-8"><strong>{{ full_name }}</strong></div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-4 text-muted">الدور:</div>
+                            <div class="col-8">
+                                {% if user_role == 'GENERAL_ADMIN' %}
+                                <span class="badge bg-danger">مدير عام</span>
+                                {% elif user_role == 'PROJECT_MANAGER' %}
+                                <span class="badge bg-primary">مسؤول مشروع</span>
+                                {% elif user_role == 'HANDLER' %}
+                                <span class="badge bg-info">سائس</span>
+                                {% elif user_role == 'TRAINER' %}
+                                <span class="badge bg-success">مدرب</span>
+                                {% elif user_role == 'BREEDER' %}
+                                <span class="badge bg-warning">مربي</span>
+                                {% elif user_role == 'VET' %}
+                                <span class="badge bg-secondary">طبيب</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row mb-3">
+                            <div class="col-4 text-muted">اسم المستخدم:</div>
+                            <div class="col-8"><code class="fs-5">{{ username }}</code></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-4 text-muted">كلمة المرور الجديدة:</div>
+                            <div class="col-8"><code class="fs-5">{{ password }}</code></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid">
+                    <a href="{{ url_for('account_management.index') }}" class="btn btn-primary">
+                        <i class="fas fa-arrow-right me-2"></i>
+                        العودة إلى قائمة الحسابات
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
