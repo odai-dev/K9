@@ -17,7 +17,7 @@ Preferred communication style: Simple, everyday language.
 ### Technical Implementations
 - **Backend Framework**: Flask (Python) utilizing a modular Blueprint structure.
 - **Database**: PostgreSQL, integrated via SQLAlchemy ORM.
-- **Authentication**: Flask-Login implements session-based authentication and role-based access control with `GENERAL_ADMIN`, `PROJECT_MANAGER`, and `HANDLER` tiers.
+- **Authentication**: Flask-Login implements session-based authentication and role-based access control with `GENERAL_ADMIN`, `PROJECT_MANAGER`, `HANDLER`, `TRAINER`, `BREEDER`, and `VET` tiers.
 - **Database Migrations**: Flask-Migrate, powered by Alembic, for schema versioning and management.
 - **File Handling**: Local file system storage for uploads.
 - **Security**: Incorporates CSRF protection, configurable session timeouts, input validation, and audit logging. **Role-Based Access Control** enforces strict route protection with decorators (`@admin_or_pm_required`, `@handler_required`, `@admin_required`) ensuring HANDLER users can only access `/handler/*` routes and are automatically redirected from admin/PM interfaces.
@@ -54,6 +54,17 @@ Preferred communication style: Simple, everyday language.
   - Notification system for report submissions, approvals, rejections, and edit requests
   - API endpoints: `/supervisor/pm-review/*` for pending reports, counts, approval, rejection, edit requests, and admin forwarding
   - Service layer: `k9/services/report_review_service.py` handles all review workflow logic
+- **Account Management System**: Streamlined system access control for employees:
+  - **Centralized Interface** (`/admin/accounts`): Single page to manage all system accounts with employee linkage visibility
+  - **Employee-to-User Linking**: Grant system access to employees by creating linked user accounts
+  - **Auto-Role Mapping**: Automatically assigns User role based on Employee role (HANDLER→HANDLER, TRAINER→TRAINER, etc.)
+  - **Smart Employee Selection**: Only shows employees without existing accounts in the creation form
+  - **Searchable Interface**: Real-time search and filtering of employees for quick account creation
+  - **Password Management**: Secure password generation with manual override option
+  - **Account Controls**: Toggle account status (active/inactive) and reset passwords directly from the interface
+  - **Validation**: Prevents duplicate accounts, ensures unique usernames/emails, validates employee linkage
+  - **Security**: Full CSRF protection on all forms, proper authorization checks
+  - **User Experience**: Clean UI with success pages showing generated credentials for admin to share with employees
 - **Project Manager Dashboard**: Workflow-focused interface for PROJECT_MANAGER role:
   - **1:1 PM-Project Relationship**: Each PM manages exactly ONE project (Project.manager_id → User.id)
   - **Automatic Project Scoping**: All data automatically filtered to PM's assigned project - no project selection needed
