@@ -66,6 +66,43 @@
                             {% endif %}
                         </a>
                     </li>
+                    
+                    <!-- Veterinary Module -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="vetDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-stethoscope me-1"></i>الطب البيطري
+                        </a>
+                        <ul class="dropdown-menu shadow">
+                            <li><a class="dropdown-item" href="{{ url_for('veterinary_reports_ui.veterinary') }}"><i class="fas fa-file-medical me-2"></i>التقارير البيطرية</a></li>
+                        </ul>
+                    </li>
+                    
+                    <!-- Breeding Module -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="breedingDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-paw me-1"></i>التربية
+                        </a>
+                        <ul class="dropdown-menu shadow">
+                            <li><a class="dropdown-item" href="{{ url_for('unified_feeding_reports_ui.feeding') }}"><i class="fas fa-bone me-2"></i>التغذية</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('unified_checkup_reports_ui.checkup') }}"><i class="fas fa-heartbeat me-2"></i>الفحص اليومي</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('caretaker_daily_reports_ui.caretaker_daily') }}"><i class="fas fa-clipboard-list me-2"></i>تقارير المربي</a></li>
+                        </ul>
+                    </li>
+                    
+                    <!-- Production Module -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="productionDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-baby me-1"></i>الإنتاج
+                        </a>
+                        <ul class="dropdown-menu shadow">
+                            <li><a class="dropdown-item" href="{{ url_for('main.maturity_list') }}"><i class="fas fa-dog me-2"></i>النضج</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.heat_cycles_list') }}"><i class="fas fa-fire me-2"></i>دورات الحرارة</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.mating_list') }}"><i class="fas fa-heart me-2"></i>التزاوج</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.pregnancy_list') }}"><i class="fas fa-baby-carriage me-2"></i>الحمل</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.delivery_list') }}"><i class="fas fa-ambulance me-2"></i>الولادة</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.puppies_list') }}"><i class="fas fa-paw me-2"></i>الجراء</a></li>
+                        </ul>
+                    </li>
                 </ul>
                 
                 <!-- User Menu -->

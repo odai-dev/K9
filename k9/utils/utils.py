@@ -930,88 +930,28 @@ def get_user_assigned_projects(user):
     return []
 
 def get_user_accessible_dogs(user):
-    """Get dogs that PROJECT_MANAGER can access based on SubPermission and project assignments"""
-    from k9.models.models import Dog, UserRole, SubPermission, ProjectAssignment, Project, PermissionType
+    """Get dogs that user can access based on role and project assignments"""
+    from k9.models.models import Dog, UserRole, ProjectDog
+    from k9.utils.pm_scoping import get_scoped_dogs
     
-    if user.role == UserRole.GENERAL_ADMIN:
-        return Dog.query.all()
-    elif user.role == UserRole.PROJECT_MANAGER:
-        # Check if user has VIEW permission for Dogs
-        dogs_permission = SubPermission.query.filter_by(
-            user_id=user.id,
-            section="Dogs",
-            subsection="عرض قائمة الكلاب",
-            permission_type=PermissionType.VIEW,
-            is_granted=True
-        ).first()
-        
-        if not dogs_permission:
-            return []
-            
-        # Optimized single query: Get all dogs assigned to user's projects
-        user_project_ids = db.session.query(ProjectAssignment.project_id).filter_by(user_id=user.id).subquery()
-        
-        dogs = db.session.query(Dog).join(ProjectAssignment).filter(
-            ProjectAssignment.project_id.in_(user_project_ids),
-            ProjectAssignment.dog_id.isnot(None)
-        ).distinct().all()
-        
-        return dogs
-    
-    return []
+    # Use new scoping utility - handles both admin and PM cases
+    return get_scoped_dogs(user)
 
 def get_user_accessible_employees(user):
-    """Get employees that PROJECT_MANAGER can access based on SubPermission and project assignments"""
-    from k9.models.models import Employee, UserRole, SubPermission, ProjectAssignment, Project, PermissionType
+    """Get employees that user can access based on role and project assignments"""
+    from k9.models.models import Employee, UserRole
+    from k9.utils.pm_scoping import get_scoped_employees
     
-    if user.role == UserRole.GENERAL_ADMIN:
-        return Employee.query.all()
-    elif user.role == UserRole.PROJECT_MANAGER:
-        # Check if user has VIEW permission for Employees
-        employees_permission = SubPermission.query.filter_by(
-            user_id=user.id,
-            section="Employees",
-            subsection="عرض قائمة الموظفين",
-            permission_type=PermissionType.VIEW,
-            is_granted=True
-        ).first()
-        
-        if not employees_permission:
-            return []
-            
-        # Optimized single query: Get all employees assigned to user's projects
-        user_project_ids = db.session.query(ProjectAssignment.project_id).filter_by(user_id=user.id).subquery()
-        
-        employees = db.session.query(Employee).join(ProjectAssignment).filter(
-            ProjectAssignment.project_id.in_(user_project_ids),
-            ProjectAssignment.employee_id.isnot(None)
-        ).distinct().all()
-        
-        return employees
-    
-    return []
+    # Use new scoping utility - handles both admin and PM cases
+    return get_scoped_employees(user)
 
 def get_user_projects(user):
-    """Get projects assigned to a PROJECT_MANAGER user"""
-    from k9.models.models import Project, UserRole, Employee, EmployeeRole
+    """Get projects accessible to user based on role"""
+    from k9.models.models import Project, UserRole
+    from k9.utils.pm_scoping import get_scoped_projects
     
-    if user.role == UserRole.GENERAL_ADMIN:
-        return Project.query.all()
-    elif user.role == UserRole.PROJECT_MANAGER:
-        # Get projects where this user is the manager through employee profile
-        direct_projects = []
-        
-        # Also check through employee profile assignment
-        employee = Employee.query.filter_by(user_account_id=user.id, role=EmployeeRole.PROJECT_MANAGER).first()
-        if employee:
-            employee_projects = employee.projects
-            # Combine and deduplicate
-            all_projects = list(set(direct_projects + employee_projects))
-            return all_projects
-        
-        return direct_projects
-    
-    return []
+    # Use new scoping utility - handles both admin and PM cases
+    return get_scoped_projects(user)
 
 def check_project_access(user, project_id):
     """Check if user has access to a specific project"""
