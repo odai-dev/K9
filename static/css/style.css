@@ -76,10 +76,75 @@ body {
 .navbar-nav .nav-link {
     padding: 0.5rem 0.75rem;
     font-size: 0.95rem;
+    transition: all 0.3s ease;
+    position: relative;
 }
 
+/* Active Navigation Item */
+.navbar-nav .nav-link.active,
+.navbar-nav .nav-item.active > .nav-link {
+    background-color: rgba(255, 255, 255, 0.2);
+    font-weight: 600;
+}
+
+.navbar-nav .nav-link.active::after,
+.navbar-nav .nav-item.active > .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 10%;
+    right: 10%;
+    height: 3px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 3px 3px 0 0;
+}
+
+/* Hover States */
+.navbar-nav .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+}
+
+/* Dropdown Menu Improvements */
 .dropdown-menu {
     font-size: 0.9rem;
+    border: none;
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    animation: dropdownFadeIn 0.2s ease;
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Long Dropdown with Scroll */
+.dropdown-menu.dropdown-menu-long {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Dropdown Sections */
+.dropdown-header {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+    padding: 0.5rem 1rem 0.25rem;
+    margin-top: 0.25rem;
+}
+
+.dropdown-header:first-child {
+    margin-top: 0;
 }
 
 /* Button Styles - Make More Touch-Friendly */
@@ -195,6 +260,51 @@ a, button {
     min-height: 42px;
     display: flex;
     align-items: center;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    margin: 0.125rem 0;
+}
+
+.dropdown-item:hover {
+    background-color: rgba(13, 110, 253, 0.1);
+    transform: translateX(4px);
+}
+
+.dropdown-item:focus {
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+.dropdown-item.active {
+    background-color: rgba(13, 110, 253, 0.15);
+    font-weight: 600;
+    border-right: 3px solid var(--bs-primary);
+}
+
+.dropdown-item i {
+    width: 20px;
+    text-align: center;
+}
+
+/* Keyboard Navigation Support */
+.navbar-nav .nav-link:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.8);
+    outline-offset: 2px;
+}
+
+.dropdown-item:focus {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
+[data-bs-theme="dark"] .dropdown-item:focus {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
+
+/* Dropdown Divider */
+.dropdown-divider {
+    margin: 0.5rem 0;
+    opacity: 0.15;
 }
 
 /* Dashboard Cards Grid */
