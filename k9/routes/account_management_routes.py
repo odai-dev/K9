@@ -81,14 +81,26 @@ def create():
             flash('هذا الموظف لديه حساب بالفعل', 'danger')
             return redirect(url_for('account_management.create'))
         
-        if User.query.filter_by(username=username).first():
+        # Check if username exists
+        existing_user_by_username = User.query.filter_by(username=username).first()
+        if existing_user_by_username:
             flash('اسم المستخدم موجود بالفعل', 'danger')
             return redirect(url_for('account_management.create'))
         
+        # Check email availability
         email = employee.email or f"{username}@k9system.local"
-        if User.query.filter_by(email=email).first():
-            flash('البريد الإلكتروني موجود بالفعل', 'danger')
-            return redirect(url_for('account_management.create'))
+        existing_user_by_email = User.query.filter_by(email=email).first()
+        
+        # If email exists, check if it's linked to another employee
+        if existing_user_by_email:
+            # Check if this user is linked to a different employee
+            linked_employee = Employee.query.filter_by(user_account_id=existing_user_by_email.id).first()
+            if linked_employee:
+                flash('البريد الإلكتروني موجود بالفعل ومرتبط بموظف آخر', 'danger')
+                return redirect(url_for('account_management.create'))
+            # If user exists but not linked to any employee, use a system-generated email instead
+            email = f"{username}@k9system.local"
+            flash('تم استخدام بريد إلكتروني بديل لأن البريد الأصلي مستخدم من قبل', 'info')
         
         if not password:
             password = generate_secure_password()
