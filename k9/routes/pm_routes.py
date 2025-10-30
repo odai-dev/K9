@@ -61,18 +61,23 @@ def get_project_dog_ids(project_id):
     return [pd.dog_id for pd in project_dogs]
 
 def get_project_employees(project_id):
-    """Helper to get employees assigned to a project - optimized query"""
+    """Helper to get employees assigned to a project - uses ProjectAssignment model"""
     try:
-        from sqlalchemy import Table
-        project_emp_table = Table('project_employee_assignment', db.metadata, autoload_with=db.engine)
-        
-        employees = db.session.query(Employee).join(
-            project_emp_table,
-            Employee.id == project_emp_table.c.employee_id
+        # Query active employee assignments for this project using the ProjectAssignment model
+        employee_assignments = ProjectAssignment.query.filter_by(
+            project_id=project_id,
+            is_active=True
         ).filter(
-            project_emp_table.c.project_id == project_id
+            ProjectAssignment.employee_id.isnot(None)
         ).all()
         
+        employee_ids = [assignment.employee_id for assignment in employee_assignments]
+        
+        if not employee_ids:
+            return []
+        
+        # Return the actual Employee objects
+        employees = Employee.query.filter(Employee.id.in_(employee_ids)).all()
         return employees
     except Exception as e:
         print(f"Error getting project employees: {e}")
