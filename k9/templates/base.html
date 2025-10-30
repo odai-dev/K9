@@ -207,7 +207,7 @@
                     {% endif %}
                     
                     {% if current_user.role.value in ['GENERAL_ADMIN', 'PROJECT_MANAGER', 'PROJECT_ADMIN', 'SUPERVISOR'] %}
-                    {% set is_management_active = request.endpoint and (request.endpoint.startswith('account_management.') or request.endpoint.startswith('user_management.') or request.endpoint.startswith('tasks.admin_') or request.endpoint.startswith('supervisor.') or request.endpoint.startswith('admin.')) %}
+                    {% set is_management_active = request.endpoint and (request.endpoint.startswith('account_management.') or request.endpoint.startswith('tasks.admin_') or request.endpoint.startswith('supervisor.') or request.endpoint.startswith('admin.')) %}
                     <li class="nav-item dropdown {% if is_management_active %}active{% endif %}">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_management_active %}active{% endif %}" href="#" id="managementDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-users-cog me-1"></i>الإدارة
@@ -220,11 +220,6 @@
                             <li>
                                 <a class="dropdown-item {% if request.endpoint == 'account_management.index' %}active{% endif %}" href="{{ url_for('account_management.index') }}">
                                     <i class="fas fa-user-shield me-2"></i>إدارة الحسابات
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {% if request.endpoint == 'user_management.index' %}active{% endif %}" href="{{ url_for('user_management.index') }}">
-                                    <i class="fas fa-users me-2"></i>إدارة المستخدمين
                                 </a>
                             </li>
                             <li><hr class="dropdown-divider"></li>
