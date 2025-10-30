@@ -167,7 +167,7 @@
             <p class="text-muted mb-0">مرحباً {{ current_user.full_name }}، نظرة عامة على النظام</p>
         </div>
         <div class="btn-group">
-            <a href="{{ url_for('user_management.create') }}" class="btn btn-success">
+            <a href="{{ url_for('account_management.create') }}" class="btn btn-success">
                 <i class="fas fa-user-plus me-1"></i>
                 إنشاء مستخدم جديد
             </a>
@@ -235,14 +235,14 @@
             </h3>
         </div>
         
-        <!-- User Management -->
+        <!-- Account Management -->
         <div class="col-lg-4 col-md-6 mb-4">
-            <a href="{{ url_for('user_management.index') }}" class="text-decoration-none">
+            <a href="{{ url_for('account_management.index') }}" class="text-decoration-none">
                 <div class="admin-nav-card admin-card">
                     <div class="admin-nav-icon">
                         <i class="fas fa-users-cog"></i>
                     </div>
-                    <div class="admin-nav-title">إدارة المستخدمين</div>
+                    <div class="admin-nav-title">إدارة الحسابات</div>
                     <div class="admin-nav-desc">
                         إنشاء وإدارة حسابات مديري المشاريع والسائسين
                     </div>
