@@ -1,4 +1,4 @@
-modules = ["web", "python-3.11", "nodejs-20", "bash"]
+modules = ["web", "python-3.11", "nodejs-20", "bash", "postgresql-16"]
 run = "run"
 
 [nix]
@@ -46,6 +46,10 @@ localPort = 39507
 externalPort = 5000
 
 [[ports]]
+localPort = 40349
+externalPort = 3002
+
+[[ports]]
 localPort = 42321
 externalPort = 3001
 
@@ -56,10 +60,6 @@ externalPort = 3003
 [[ports]]
 localPort = 44207
 externalPort = 3000
-
-[[ports]]
-localPort = 46547
-externalPort = 3002
 
 [agent]
 expertMode = true
