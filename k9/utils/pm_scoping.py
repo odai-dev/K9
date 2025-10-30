@@ -5,7 +5,7 @@ Provides intelligent data filtering that works for both PM (project-scoped) and 
 
 from flask_login import current_user
 from k9.models.models import (
-    UserRole, Project, Dog, Employee, ProjectDog,
+    UserRole, Project, Dog, Employee, ProjectDog, ProjectAssignment,
     VeterinaryVisit, TrainingSession, ProductionCycle,
     HeatCycle, MatingRecord, PregnancyRecord, DeliveryRecord, PuppyRecord,
     FeedingLog, DailyCheckupLog, ExcretionLog, GroomingLog, CleaningLog,
@@ -143,22 +143,25 @@ def get_scoped_employees(user=None):
         if not project:
             return []
         
-        # Get employees assigned to this project via project_employee_assignment table
-        from sqlalchemy import Table
+        # Get employees assigned to this project via ProjectAssignment model
         from app import db
-        try:
-            project_emp_table = Table('project_employee_assignment', db.metadata, autoload_with=db.engine)
-            
-            employees = db.session.query(Employee).join(
-                project_emp_table,
-                Employee.id == project_emp_table.c.employee_id
-            ).filter(
-                project_emp_table.c.project_id == project.id
-            ).all()
-            
-            return employees
-        except Exception:
+        
+        # Query active employee assignments for this project
+        employee_assignments = ProjectAssignment.query.filter_by(
+            project_id=project.id,
+            is_active=True
+        ).filter(
+            ProjectAssignment.employee_id.isnot(None)
+        ).all()
+        
+        employee_ids = [assignment.employee_id for assignment in employee_assignments]
+        
+        if not employee_ids:
             return []
+        
+        # Return the actual Employee objects
+        employees = Employee.query.filter(Employee.id.in_(employee_ids)).all()
+        return employees
     
     return []
 

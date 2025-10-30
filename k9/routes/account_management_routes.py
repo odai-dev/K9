@@ -4,10 +4,11 @@ Account Management Routes - For granting system access to employees
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from k9.models.models import User, UserRole, Employee, EmployeeRole
+from k9.models.models import User, UserRole, Employee, EmployeeRole, ProjectAssignment, Project
 from k9.decorators import admin_required
 from werkzeug.security import generate_password_hash
 from app import db
+from k9.utils.pm_scoping import get_pm_project, is_pm
 import secrets
 import string
 
@@ -125,6 +126,26 @@ def create():
             db.session.flush()
             
             employee.user_account_id = user.id
+            
+            # Auto-assign employee to project if creator is a PM and employee has no active assignments
+            if is_pm(current_user):
+                pm_project = get_pm_project(current_user)
+                if pm_project:
+                    # Check if employee already has an active assignment to this project
+                    existing_assignment = ProjectAssignment.query.filter_by(
+                        project_id=pm_project.id,
+                        employee_id=employee.id,
+                        is_active=True
+                    ).first()
+                    
+                    if not existing_assignment:
+                        # Create new project assignment
+                        new_assignment = ProjectAssignment()
+                        new_assignment.project_id = pm_project.id
+                        new_assignment.employee_id = employee.id
+                        new_assignment.is_active = True
+                        db.session.add(new_assignment)
+                        flash('تم تعيين الموظف للمشروع تلقائياً', 'success')
             
             db.session.commit()
             
