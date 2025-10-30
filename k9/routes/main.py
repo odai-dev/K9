@@ -2186,15 +2186,6 @@ def reports_simple():
     
     return render_template('reports/index.html', stats=stats)
 
-@main_bp.route('/reports/advanced')
-@login_required
-def reports_advanced():
-    """Advanced reports interface with live preview and filtering"""
-    employees = Employee.query.filter_by(is_active=True).all()
-    # Get optional type parameter for pre-filtering
-    report_type = request.args.get('type')
-    return render_template('reports/advanced.html', employees=employees, pre_selected_type=report_type)
-
 @main_bp.route('/reports/generate', methods=['POST'])
 @login_required
 def reports_generate():
@@ -2254,7 +2245,7 @@ def reports_generate():
         return send_from_directory(upload_dir, filename, as_attachment=True)
     except Exception as e:
         flash(f'تعذّر إنشاء التقرير: {str(e)}', 'error')
-        return redirect(url_for('main.reports_advanced'))
+        return redirect(url_for('main.reports_hub'))
 
 @main_bp.route('/reports/preview', methods=['POST'])
 @login_required
