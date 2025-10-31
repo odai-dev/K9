@@ -1247,6 +1247,7 @@ def project_add():
             project.location = request.form.get('location')
             project.mission_type = request.form.get('mission_type')
             project.priority = request.form.get('priority', 'MEDIUM')
+            project.sector = request.form.get('sector')
             
             print(f"Project object created: {project.name}, {project.code}")
             
