@@ -68,7 +68,7 @@
                         
                         <div class="col-md-6 mb-3">
                             <label for="sector" class="form-label">القطاع</label>
-                            <select class="form-select" id="sector" name="sector">
+                            <select class="form-select" id="sector_select" name="sector_select">
                                 <option value="">اختر القطاع</option>
                                 <option value="موانئ">موانئ</option>
                                 <option value="مطارات">مطارات</option>
@@ -79,6 +79,13 @@
                                 <option value="فعاليات ومؤتمرات">فعاليات ومؤتمرات</option>
                                 <option value="أخرى">أخرى</option>
                             </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3" id="sector_other_container" style="display: none;">
+                            <label for="sector_other" class="form-label">اسم القطاع الآخر <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="sector_other" name="sector_other" 
+                                   placeholder="أدخل اسم القطاع...">
+                            <input type="hidden" id="sector" name="sector">
                         </div>
                         
                         <div class="col-md-6 mb-3">
@@ -177,6 +184,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     const startDateInput = document.getElementById('start_date');
     const expectedCompletionInput = document.getElementById('expected_completion_date');
+    const sectorSelect = document.getElementById('sector_select');
+    const sectorOtherContainer = document.getElementById('sector_other_container');
+    const sectorOtherInput = document.getElementById('sector_other');
+    const sectorHiddenInput = document.getElementById('sector');
     
     // Set today as default start date
     const today = new Date().toISOString().split('T')[0];
@@ -199,6 +210,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('تاريخ الانتهاء يجب أن يكون بعد تاريخ البداية');
                 this.value = '';
             }
+        }
+    });
+    
+    // Handle sector "Other" option
+    sectorSelect.addEventListener('change', function() {
+        if (this.value === 'أخرى') {
+            sectorOtherContainer.style.display = 'block';
+            sectorOtherInput.required = true;
+            sectorHiddenInput.value = '';
+        } else {
+            sectorOtherContainer.style.display = 'none';
+            sectorOtherInput.required = false;
+            sectorOtherInput.value = '';
+            sectorHiddenInput.value = this.value;
+        }
+    });
+    
+    // Update hidden field when user types in "other" field
+    sectorOtherInput.addEventListener('input', function() {
+        if (sectorSelect.value === 'أخرى') {
+            sectorHiddenInput.value = this.value;
+        }
+    });
+    
+    // Before form submit, ensure sector value is set correctly
+    document.querySelector('form').addEventListener('submit', function(e) {
+        if (sectorSelect.value === 'أخرى') {
+            if (!sectorOtherInput.value.trim()) {
+                e.preventDefault();
+                alert('يرجى إدخال اسم القطاع الآخر');
+                sectorOtherInput.focus();
+                return false;
+            }
+            sectorHiddenInput.value = sectorOtherInput.value;
+        } else {
+            sectorHiddenInput.value = sectorSelect.value;
         }
     });
 });
