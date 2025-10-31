@@ -559,6 +559,7 @@ class Project(db.Model):
     location = db.Column(db.String(200))
     mission_type = db.Column(db.String(100))
     priority = db.Column(db.String(20), default='MEDIUM')
+    sector = db.Column(db.String(100))  # القطاع
     
     # Management
     manager_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'))
