@@ -1,0 +1,49 @@
+
+================================================================================
+INTEGRATION TEST REPORT - END-TO-END WORKFLOW TESTING
+================================================================================
+Test Date: 2025-10-31 04:17:56
+Total Tests: 36
+Passed: 29 (80.6%)
+Failed: 7
+================================================================================
+
+DETAILED RESULTS:
+✓ PASS: Auth: Home page accessible
+✓ PASS: Auth: Login page accessible
+✓ PASS: Auth: Can login as GENERAL_ADMIN
+✓ PASS: Auth: Can login as PROJECT_MANAGER
+✓ PASS: Auth: Can login as HANDLER
+✓ PASS: Auth: Invalid credentials rejected
+✓ PASS: Auth: Logout redirects to home
+✗ FAIL: Dashboard: GENERAL_ADMIN can access admin dashboard - Test returned False
+✓ PASS: Dashboard: PROJECT_MANAGER can access PM dashboard
+✓ PASS: Dashboard: HANDLER can access handler dashboard
+✓ PASS: Security: HANDLER cannot access admin dashboard
+✓ PASS: Security: Unauthenticated user redirected from protected pages
+✗ FAIL: Dogs: Admin can view dogs list - Test returned False
+✓ PASS: Dogs: PM can view dogs list
+✗ FAIL: Projects: Admin can view projects list - Test returned False
+✓ PASS: MFA: MFA setup page requires authentication
+✓ PASS: MFA: Authenticated user can access MFA setup
+✓ PASS: Password: Password reset request page accessible
+✓ PASS: Password: Can submit password reset request
+✓ PASS: Handler: Handler dashboard accessible
+✓ PASS: Handler: Handler notifications page accessible
+✗ FAIL: Handler: Handler schedule page accessible - Test returned False
+✓ PASS: PM: PM dashboard accessible
+✓ PASS: PM: PM pending approvals accessible
+✗ FAIL: Admin: User management accessible - Test returned False
+✗ FAIL: Admin: Audit logs accessible - Test returned False
+✗ FAIL: Admin: Backup settings accessible - Test returned False
+✓ PASS: API: Unauthenticated API access prevented
+✓ PASS: Static: Uploads directory accessible
+✓ PASS: Static: Static files served correctly
+✓ PASS: Workflow: Handler can create reports (DB state)
+✓ PASS: Workflow: PM has project assignment for review
+✓ PASS: Workflow: Task status transitions available
+✓ PASS: Workflow: Notification types configured
+✓ PASS: Error: 404 handled gracefully
+✓ PASS: Error: Invalid route returns error
+
+================================================================================
