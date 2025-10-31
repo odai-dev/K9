@@ -1,4 +1,4 @@
-modules = ["web", "python-3.11", "nodejs-20", "bash", "postgresql-16"]
+modules = ["web", "python-3.11", "nodejs-20", "bash"]
 run = "run"
 
 [nix]
@@ -38,7 +38,7 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 37703
+localPort = 34885
 externalPort = 3002
 
 [[ports]]
