@@ -421,7 +421,7 @@ class TrainingSession(db.Model):
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     trainer_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=False)
-    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=True)  # Auto-linked project
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
     category = db.Column(db.Enum(TrainingCategory), nullable=False)
     subject = db.Column(db.String(200), nullable=False)
     session_date = db.Column(db.DateTime, nullable=False)
@@ -454,7 +454,7 @@ class VeterinaryVisit(db.Model):
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
     vet_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=False)
-    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=True)  # Auto-linked project
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
     visit_type = db.Column(db.Enum(VisitType), nullable=False)
     visit_date = db.Column(db.DateTime, nullable=False)
     
@@ -1533,7 +1533,7 @@ class FeedingLog(db.Model):
 
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
 
-    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=True)
+    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False)
     date = db.Column(db.Date, nullable=False)
     time = db.Column(db.Time, nullable=False)
 
@@ -1579,7 +1579,7 @@ class DailyCheckupLog(db.Model):
 
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
 
-    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=True)
+    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False)
     date = db.Column(db.Date, nullable=False)
     time = db.Column(db.Time, nullable=False)
 
@@ -1672,7 +1672,7 @@ class ExcretionLog(db.Model):
 
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
 
-    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=True)
+    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False)
     date = db.Column(db.Date, nullable=False)
     time = db.Column(db.Time, nullable=False)
 
@@ -1722,7 +1722,7 @@ class GroomingLog(db.Model):
 
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
 
-    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=True)
+    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False)
     date = db.Column(db.Date, nullable=False)
     time = db.Column(db.Time, nullable=False)
 
@@ -1767,7 +1767,7 @@ class DewormingLog(db.Model):
 
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
 
-    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=True)
+    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False)
     date = db.Column(db.Date, nullable=False)
     time = db.Column(db.Time, nullable=False)
 
@@ -1868,8 +1868,8 @@ class BreedingTrainingActivity(db.Model):
 
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
 
-    # Optional project assignment (nullable for compatibility with PROJECT_MANAGER scoping)
-    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=True)
+    # Project assignment is now mandatory
+    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False)
     
     # Core training session data
     dog_id = db.Column(get_uuid_column(), db.ForeignKey("dog.id", ondelete="CASCADE"), nullable=False)
@@ -1940,7 +1940,7 @@ class CaretakerDailyLog(db.Model):
     
     # Core identifiers
     date = db.Column(db.Date, nullable=False)
-    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=True)
+    project_id = db.Column(get_uuid_column(), db.ForeignKey("project.id", ondelete="CASCADE"), nullable=False)
     dog_id = db.Column(get_uuid_column(), db.ForeignKey("dog.id", ondelete="CASCADE"), nullable=False)
     caretaker_employee_id = db.Column(get_uuid_column(), db.ForeignKey("employee.id", ondelete="SET NULL"), nullable=True)
     
