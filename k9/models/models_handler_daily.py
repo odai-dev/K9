@@ -97,7 +97,7 @@ class DailySchedule(db.Model):
     
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     date = db.Column(db.Date, nullable=False, index=True)
-    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=True)
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
     status = db.Column(db.Enum(ScheduleStatus), nullable=False, default=ScheduleStatus.OPEN)
     notes = db.Column(Text, nullable=True)
     
@@ -175,7 +175,7 @@ class HandlerReport(db.Model):
     schedule_item_id = db.Column(get_uuid_column(), db.ForeignKey('daily_schedule_item.id'), nullable=True)
     handler_user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'), nullable=False)
     dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
-    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=True)
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
     
     # General info
     location = db.Column(db.String(200), nullable=True)
