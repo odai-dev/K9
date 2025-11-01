@@ -1,9 +1,19 @@
 from functools import wraps
-from flask import abort, request, flash, redirect, url_for
+from flask import abort, request, flash, redirect, url_for, session
 from flask_login import current_user
 from k9.utils.utils import get_project_manager_permissions, check_project_access
 from k9.models.models import UserRole, PermissionType
 from k9.utils.permission_utils import has_permission
+
+
+def _is_admin_mode(user):
+    """Helper to check if user is GENERAL_ADMIN in general admin mode (not PM mode)"""
+    if not hasattr(user, 'is_authenticated') or not user.is_authenticated:
+        return False
+    if user.role != UserRole.GENERAL_ADMIN:
+        return False
+    admin_mode = session.get('admin_mode', 'general_admin')
+    return admin_mode == 'general_admin'
 
 def require_permission(permission_type, project_id_param='project_id'):
     """
@@ -19,8 +29,9 @@ def require_permission(permission_type, project_id_param='project_id'):
             if not current_user.is_authenticated:
                 abort(401)
             
-            # GENERAL_ADMIN always has access
-            if current_user.role == UserRole.GENERAL_ADMIN:
+            # GENERAL_ADMIN in general admin mode always has access
+            # GENERAL_ADMIN in PM mode will be treated like PROJECT_MANAGER
+            if _is_admin_mode(current_user):
                 return f(*args, **kwargs)
             
             # Get project_id from various sources
@@ -63,8 +74,9 @@ def require_project_access(project_id_param='project_id'):
             if not current_user.is_authenticated:
                 abort(401)
             
-            # GENERAL_ADMIN always has access
-            if current_user.role == UserRole.GENERAL_ADMIN:
+            # GENERAL_ADMIN in general admin mode always has access
+            # GENERAL_ADMIN in PM mode will be treated like PROJECT_MANAGER
+            if _is_admin_mode(current_user):
                 return f(*args, **kwargs)
             
             # Get project_id
@@ -121,8 +133,9 @@ def require_sub_permission(section, subsection, permission_type, project_id_para
             if not current_user.is_authenticated:
                 abort(401)
             
-            # GENERAL_ADMIN always has access
-            if current_user.role == UserRole.GENERAL_ADMIN:
+            # GENERAL_ADMIN in general admin mode always has access
+            # GENERAL_ADMIN in PM mode will be treated like PROJECT_MANAGER
+            if _is_admin_mode(current_user):
                 return f(*args, **kwargs)
             
             # Get project_id from various sources
@@ -159,8 +172,9 @@ def require_any_sub_permission(section, subsection, permission_types, project_id
             if not current_user.is_authenticated:
                 abort(401)
             
-            # GENERAL_ADMIN always has access
-            if current_user.role == UserRole.GENERAL_ADMIN:
+            # GENERAL_ADMIN in general admin mode always has access
+            # GENERAL_ADMIN in PM mode will be treated like PROJECT_MANAGER
+            if _is_admin_mode(current_user):
                 return f(*args, **kwargs)
             
             # Get project_id

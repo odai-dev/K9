@@ -345,6 +345,29 @@
                         <ul class="dropdown-menu dropdown-menu-end shadow">
                             <li><h6 class="dropdown-header">الحساب الشخصي</h6></li>
                             {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                                <!-- Mode Switcher for General Admin -->
+                                <li class="px-3 py-2">
+                                    <div class="d-flex align-items-center justify-content-between bg-light rounded p-2">
+                                        <span class="small">
+                                            <i class="fas fa-user-cog me-1"></i>
+                                            الوضع الحالي: 
+                                            <strong>
+                                                {% if session.get('admin_mode') == 'project_manager' %}
+                                                    مدير مشروع
+                                                {% else %}
+                                                    مدير عام
+                                                {% endif %}
+                                            </strong>
+                                        </span>
+                                        <form method="POST" action="{{ url_for('auth.switch_mode') }}" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                            <button type="submit" class="btn btn-sm btn-primary" title="تبديل الوضع">
+                                                <i class="fas fa-exchange-alt"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}"><i class="fas fa-user-shield me-2"></i>لوحة التحكم</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('admin.admin_profile') }}"><i class="fas fa-user-cog me-2"></i>ملف الحساب الشخصي</a></li>
                             <li><hr class="dropdown-divider"></li>
@@ -366,6 +389,29 @@
                         <ul class="dropdown-menu dropdown-menu-end shadow">
                             <li><h6 class="dropdown-header">{{ current_user.full_name }}</h6></li>
                             {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                                <!-- Mode Switcher for General Admin (Mobile) -->
+                                <li class="px-3 py-2">
+                                    <div class="d-flex align-items-center justify-content-between bg-light rounded p-2">
+                                        <span class="small">
+                                            <i class="fas fa-user-cog me-1"></i>
+                                            الوضع: 
+                                            <strong>
+                                                {% if session.get('admin_mode') == 'project_manager' %}
+                                                    PM
+                                                {% else %}
+                                                    Admin
+                                                {% endif %}
+                                            </strong>
+                                        </span>
+                                        <form method="POST" action="{{ url_for('auth.switch_mode') }}" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                            <button type="submit" class="btn btn-sm btn-primary" title="تبديل">
+                                                <i class="fas fa-exchange-alt"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}"><i class="fas fa-user-shield me-2"></i>لوحة التحكم</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('admin.admin_profile') }}"><i class="fas fa-user-cog me-2"></i>ملف الحساب الشخصي</a></li>
                             <li><hr class="dropdown-divider"></li>

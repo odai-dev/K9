@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>اختيار وضع العمل - نظام إدارة عمليات الكلاب البوليسية</title>
+
+        <!-- Bootstrap 5 RTL CSS -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css"
+            rel="stylesheet"
+        />
+
+        <!-- Font Awesome -->
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css"
+        />
+
+        <!-- Arabic Font -->
+        <link
+            href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+
+        <style>
+            body {
+                font-family: "Noto Sans Arabic", sans-serif;
+                background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+            }
+
+            .mode-card {
+                background: white;
+                border-radius: 20px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+            }
+
+            .mode-header {
+                background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+                color: white;
+                padding: 2rem;
+                text-align: center;
+            }
+
+            .mode-option {
+                border: 3px solid #e9ecef;
+                border-radius: 15px;
+                padding: 2rem;
+                margin: 1rem 0;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                text-align: center;
+            }
+
+            .mode-option:hover {
+                border-color: #2c5282;
+                box-shadow: 0 5px 15px rgba(44, 82, 130, 0.2);
+                transform: translateY(-5px);
+            }
+
+            .mode-option.selected {
+                border-color: #2c5282;
+                background-color: #f0f7ff;
+            }
+
+            .mode-icon {
+                font-size: 4rem;
+                margin-bottom: 1rem;
+                color: #2c5282;
+            }
+
+            .btn-primary {
+                background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+                border: none;
+                border-radius: 10px;
+                padding: 0.75rem 2rem;
+                font-size: 1.1rem;
+                font-weight: 600;
+            }
+
+            .btn-primary:hover {
+                background: linear-gradient(135deg, #15294a 0%, #234166 100%);
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(26, 54, 93, 0.3);
+            }
+
+            .alert {
+                border: none;
+                border-radius: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-10 col-lg-8">
+                    <div class="mode-card">
+                        <div class="mode-header">
+                            <i class="fas fa-user-cog fa-3x mb-3"></i>
+                            <h2 class="mb-2">مرحباً {{ current_user.full_name }}</h2>
+                            <p class="mb-0">اختر وضع العمل للجلسة الحالية</p>
+                        </div>
+
+                        <div class="p-4">
+                            {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                            {% for category, message in messages %}
+                            <div
+                                class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
+                                role="alert"
+                            >
+                                {{ message }}
+                                <button
+                                    type="button"
+                                    class="btn-close"
+                                    data-bs-dismiss="alert"
+                                ></button>
+                            </div>
+                            {% endfor %}
+                            {% endif %}
+                            {% endwith %}
+
+                            <form method="POST" id="modeForm">
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="{{ csrf_token() }}"
+                                />
+                                <input type="hidden" name="mode" id="selectedMode" />
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div
+                                            class="mode-option"
+                                            data-mode="general_admin"
+                                            onclick="selectMode('general_admin')"
+                                        >
+                                            <div class="mode-icon">
+                                                <i class="fas fa-crown"></i>
+                                            </div>
+                                            <h4 class="mb-3">المدير العام</h4>
+                                            <p class="text-muted">
+                                                <i class="fas fa-check-circle text-success me-2"></i>
+                                                الوصول الكامل لجميع المشاريع
+                                            </p>
+                                            <p class="text-muted">
+                                                <i class="fas fa-check-circle text-success me-2"></i>
+                                                إدارة المستخدمين والصلاحيات
+                                            </p>
+                                            <p class="text-muted">
+                                                <i class="fas fa-check-circle text-success me-2"></i>
+                                                إنشاء وحذف المشاريع
+                                            </p>
+                                            <p class="text-muted">
+                                                <i class="fas fa-check-circle text-success me-2"></i>
+                                                تقارير على مستوى النظام
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div
+                                            class="mode-option"
+                                            data-mode="project_manager"
+                                            onclick="selectMode('project_manager')"
+                                        >
+                                            <div class="mode-icon">
+                                                <i class="fas fa-project-diagram"></i>
+                                            </div>
+                                            <h4 class="mb-3">مدير المشروع</h4>
+                                            <p class="text-muted">
+                                                <i class="fas fa-check-circle text-success me-2"></i>
+                                                العمل ضمن مشروع محدد
+                                            </p>
+                                            <p class="text-muted">
+                                                <i class="fas fa-check-circle text-success me-2"></i>
+                                                إدارة فريق المشروع
+                                            </p>
+                                            <p class="text-muted">
+                                                <i class="fas fa-check-circle text-success me-2"></i>
+                                                مراجعة التقارير اليومية
+                                            </p>
+                                            <p class="text-muted">
+                                                <i class="fas fa-check-circle text-success me-2"></i>
+                                                إضافة سجلات للمشروع
+                                            </p>
+                                            {% if not assigned_project %}
+                                            <div class="alert alert-warning mt-3">
+                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                لم يتم تعيينك لمشروع بعد
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid mt-4">
+                                    <button
+                                        type="submit"
+                                        class="btn btn-primary"
+                                        id="submitBtn"
+                                        disabled
+                                    >
+                                        <i class="fas fa-check me-2"></i>تأكيد وابدأ العمل
+                                    </button>
+                                </div>
+                            </form>
+
+                            <div class="text-center mt-4">
+                                <p class="text-muted">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    يمكنك تغيير الوضع في أي وقت من القائمة العلوية
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+        <script>
+            function selectMode(mode) {
+                // Remove selected class from all options
+                document.querySelectorAll('.mode-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                
+                // Add selected class to clicked option
+                document.querySelector(`[data-mode="${mode}"]`).classList.add('selected');
+                
+                // Set hidden input value
+                document.getElementById('selectedMode').value = mode;
+                
+                // Enable submit button
+                document.getElementById('submitBtn').disabled = false;
+            }
+        </script>
+    </body>
+</html>

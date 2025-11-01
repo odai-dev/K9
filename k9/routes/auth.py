@@ -95,6 +95,17 @@ def login():
             'mfa_used': user.mfa_enabled
         })
         
+        # Check if user is GENERAL_ADMIN with linked Employee - show mode selection
+        if user.role == UserRole.GENERAL_ADMIN:
+            from k9.models.models import Employee
+            employee = Employee.query.filter_by(user_account_id=user.id).first()
+            if employee:
+                # Store pending mode selection in session
+                session['pending_mode_selection'] = True
+                session['pending_user_id'] = str(user.id)
+                return redirect(url_for('auth.select_mode'))
+        
+        # For other users or admins without employee records, go to dashboard
         next_page = request.args.get('next')
         if next_page:
             return redirect(next_page)
@@ -120,27 +131,139 @@ def setup():
     
     if request.method == 'POST':
         try:
+            from k9.models.models import Employee, EmployeeRole
+            from datetime import datetime
+            
+            # Validate password
+            password = request.form['password']
+            confirm_password = request.form['confirm_password']
+            if password != confirm_password:
+                flash('كلمات المرور غير متطابقة', 'error')
+                return render_template('auth/setup.html')
+            
+            # Parse hire date
+            hire_date_str = request.form.get('hire_date')
+            try:
+                hire_date = datetime.strptime(hire_date_str, '%Y-%m-%d').date() if hire_date_str else datetime.utcnow().date()
+            except ValueError:
+                hire_date = datetime.utcnow().date()
+            
             # Create the first admin user
             admin_user = User(
                 username=request.form['username'],
                 email=request.form['email'],
-                password_hash=generate_password_hash(request.form['password']),
+                password_hash=generate_password_hash(password),
                 role=UserRole.GENERAL_ADMIN,
                 full_name=request.form['full_name'],
+                phone=request.form.get('phone', ''),
                 active=True
             )
             
             db.session.add(admin_user)
+            db.session.flush()  # Get the user ID
+            
+            # Create corresponding Employee record with PROJECT_MANAGER role
+            # This allows the admin to be assigned to projects and work in PM mode
+            admin_employee = Employee(
+                name=request.form['full_name'],
+                employee_id=request.form['employee_id'],
+                role=EmployeeRole.PROJECT_MANAGER,  # Admin can work as PM when in project-scoped mode
+                phone=request.form.get('phone', ''),
+                email=request.form['email'],
+                hire_date=hire_date,
+                is_active=True,
+                user_account_id=admin_user.id  # Link employee to user account
+            )
+            
+            db.session.add(admin_employee)
             db.session.commit()
             
-            flash('تم إنشاء حساب المدير الأول بنجاح', 'success')
+            log_audit(admin_user.id, 'SETUP', 'User', str(admin_user.id), {
+                'username': admin_user.username,
+                'employee_id': admin_employee.employee_id,
+                'note': 'Initial system setup with linked User and Employee records'
+            })
+            
+            flash('تم إنشاء حساب المدير الأول بنجاح. يمكنك الآن تسجيل الدخول.', 'success')
             return redirect(url_for('auth.login'))
             
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء إنشاء الحساب: {str(e)}', 'error')
     
-    return render_template('auth/setup.html')
+    from datetime import date
+    return render_template('auth/setup.html', current_date=date.today().isoformat())
+
+@auth_bp.route('/select-mode', methods=['GET', 'POST'])
+@login_required
+def select_mode():
+    """Allow GENERAL_ADMIN users to select their working mode"""
+    from k9.models.models import Employee, Project
+    
+    # Only for GENERAL_ADMIN users
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        return redirect(url_for('main.dashboard'))
+    
+    # Get linked employee record
+    employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+    if not employee:
+        # No employee record - default to general admin mode
+        session['admin_mode'] = 'general_admin'
+        session.pop('pending_mode_selection', None)
+        return redirect(url_for('main.dashboard'))
+    
+    if request.method == 'POST':
+        mode = request.form.get('mode')
+        if mode in ['general_admin', 'project_manager']:
+            session['admin_mode'] = mode
+            session.pop('pending_mode_selection', None)
+            
+            log_audit(current_user.id, 'MODE_SELECTION', 'User', str(current_user.id), {
+                'mode': mode,
+                'username': current_user.username
+            })
+            
+            flash(f'تم تبديل الوضع بنجاح إلى: {"المدير العام" if mode == "general_admin" else "مدير المشروع"}', 'success')
+            return redirect(url_for('main.dashboard'))
+        else:
+            flash('وضع غير صالح', 'error')
+    
+    # Check if user has an assigned project
+    assigned_project = Project.query.filter_by(manager_id=current_user.id).first()
+    
+    return render_template('auth/mode_selection.html', 
+                         employee=employee,
+                         assigned_project=assigned_project)
+
+@auth_bp.route('/switch-mode', methods=['POST'])
+@login_required
+def switch_mode():
+    """Allow GENERAL_ADMIN to switch between modes without re-logging"""
+    from k9.models.models import Employee
+    
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('ليس لديك صلاحية لتبديل الأوضاع', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    # Verify employee record exists
+    employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+    if not employee:
+        flash('لا يمكن التبديل: لا يوجد سجل موظف مرتبط', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    # Toggle mode
+    current_mode = session.get('admin_mode', 'general_admin')
+    new_mode = 'project_manager' if current_mode == 'general_admin' else 'general_admin'
+    session['admin_mode'] = new_mode
+    
+    log_audit(current_user.id, 'MODE_SWITCH', 'User', str(current_user.id), {
+        'from_mode': current_mode,
+        'to_mode': new_mode,
+        'username': current_user.username
+    })
+    
+    flash(f'تم التبديل إلى وضع: {"المدير العام" if new_mode == "general_admin" else "مدير المشروع"}', 'success')
+    return redirect(url_for('main.dashboard'))
 
 @auth_bp.route('/create_manager', methods=['GET', 'POST'])
 @login_required

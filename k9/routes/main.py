@@ -43,9 +43,17 @@ def index():
 @main_bp.route('/dashboard')
 @login_required
 def dashboard():
+    from flask import session
+    
     # HANDLER users should use their own dashboard
     if current_user.role == UserRole.HANDLER:
         return redirect(url_for('handler.dashboard'))
+    
+    # GENERAL_ADMIN in PM mode should use PM dashboard
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        admin_mode = session.get('admin_mode', 'general_admin')
+        if admin_mode == 'project_manager':
+            return redirect(url_for('pm.dashboard'))
     
     # PROJECT_MANAGER users should use their own dashboard
     if current_user.role == UserRole.PROJECT_MANAGER:
