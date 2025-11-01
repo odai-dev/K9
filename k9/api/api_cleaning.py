@@ -8,7 +8,7 @@ from flask import Blueprint, request, jsonify, abort
 from flask_login import login_required, current_user
 from app import db
 from k9.models.models import (CleaningLog, Project, Dog, Employee, User, UserRole, ProjectStatus)
-from k9.utils.utils import get_user_assigned_projects, get_user_accessible_dogs, log_audit
+from k9.utils.utils import get_user_assigned_projects, get_user_accessible_dogs, log_audit, validate_required_project_id, get_project_id_for_user
 from datetime import datetime, date, time, timedelta
 from sqlalchemy import func, and_, or_
 from k9.utils.permission_decorators import require_permission
@@ -171,22 +171,17 @@ def create_cleaning_log():
             if not data.get(field):
                 return jsonify({'error': f'Missing required field: {field}'}), 400
         
-        # Verify project access for PROJECT_MANAGER
-        if current_user.role == UserRole.PROJECT_MANAGER:
-            if not data.get('project_id'):
-                return jsonify({'error': 'Project ID is required for project managers'}), 400
-            
-            assigned_projects = get_user_assigned_projects(current_user)
-            project_ids = [str(p.id) for p in assigned_projects]
-            if str(data['project_id']) not in project_ids:
-                return jsonify({'error': 'Access denied to this project'}), 403
+        # Validate and get project_id - now mandatory for all records
+        success, result = get_project_id_for_user(current_user, data.get('project_id'))
+        if not success:
+            return jsonify({'error': result}), 400
         
-        # Verify project exists (if provided)
-        project = None
-        if data.get('project_id'):
-            project = Project.query.get(data['project_id'])
-            if not project:
-                return jsonify({'error': 'Project not found'}), 404
+        project_id = result
+        
+        # Verify project exists
+        project = Project.query.get(project_id)
+        if not project:
+            return jsonify({'error': 'Project not found'}), 404
         
         dog = Dog.query.get(data['dog_id'])
         if not dog:
@@ -212,9 +207,8 @@ def create_cleaning_log():
             return jsonify({'error': 'At least one action, materials, or notes must be provided'}), 400
         
         # Check for duplicate entry
-        project_id_value = data['project_id'] if data.get('project_id') else None
         existing = CleaningLog.query.filter(
-            CleaningLog.project_id == project_id_value,
+            CleaningLog.project_id == project_id,
             CleaningLog.dog_id == data['dog_id'],
             CleaningLog.date == log_date,
             CleaningLog.time == log_time
@@ -225,7 +219,7 @@ def create_cleaning_log():
         
         # Create new log with sanitized text fields
         cleaning_log = CleaningLog()
-        cleaning_log.project_id = data['project_id'] if data.get('project_id') else None
+        cleaning_log.project_id = project_id
         cleaning_log.dog_id = data['dog_id']
         cleaning_log.date = log_date
         cleaning_log.time = log_time

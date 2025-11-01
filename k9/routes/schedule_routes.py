@@ -9,6 +9,7 @@ from k9.services.handler_service import DailyScheduleService, NotificationServic
 from k9.models.models_handler_daily import DailySchedule, DailyScheduleItem
 from k9.models.models import Employee, Dog, Shift, Project
 from k9.decorators import admin_or_pm_required
+from k9.utils.utils import validate_required_project_id, get_project_id_for_user
 from app import db
 
 
@@ -52,8 +53,15 @@ def create():
     """إنشاء جدول يومي جديد"""
     if request.method == 'POST':
         schedule_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-        project_id = request.form.get('project_id') or None
         notes = request.form.get('notes')
+        
+        # Get project_id - either from form or automatically based on user role
+        success, result = get_project_id_for_user(current_user, request.form.get('project_id'))
+        if not success:
+            flash(result, 'danger')  # result contains error message
+            return redirect(url_for('schedule.create'))
+        
+        project_id = result
         
         schedule, error = DailyScheduleService.create_schedule(
             date=schedule_date,

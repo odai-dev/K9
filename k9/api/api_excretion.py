@@ -8,7 +8,7 @@ from sqlalchemy import and_, or_
 from datetime import datetime, date
 from k9.models.models import db, ExcretionLog, Project, Dog, Employee, UserRole
 from k9.utils.permission_decorators import require_sub_permission
-from k9.utils.utils import get_user_assigned_projects
+from k9.utils.utils import get_user_assigned_projects, validate_required_project_id, get_project_id_for_user
 
 bp = Blueprint('api_excretion', __name__)
 
@@ -143,22 +143,20 @@ def create_excretion_log():
             if not data.get(field):
                 return jsonify({'error': f'Missing required field: {field}'}), 400
         
-        # Verify project access for PROJECT_MANAGER
-        if current_user.role == UserRole.PROJECT_MANAGER:
-            if data.get('project_id'):
-                assigned_projects = get_user_assigned_projects(current_user)
-                project_ids = [str(p.id) for p in assigned_projects]
-                if str(data['project_id']) not in project_ids:
-                    return jsonify({'error': 'Access denied to this project'}), 403
+        # Validate and get project_id - now mandatory for all records
+        success, result = get_project_id_for_user(current_user, data.get('project_id'))
+        if not success:
+            return jsonify({'error': result}), 400
         
-        # Verify project and dog exist with better error handling
-        if data.get('project_id'):
-            try:
-                project = Project.query.get(data['project_id'])
-                if not project:
-                    return jsonify({'error': 'المشروع المحدد غير موجود'}), 404
-            except Exception as e:
-                return jsonify({'error': 'معرف المشروع غير صالح'}), 400
+        project_id = result
+        
+        # Verify project exists
+        try:
+            project = Project.query.get(project_id)
+            if not project:
+                return jsonify({'error': 'المشروع المحدد غير موجود'}), 404
+        except Exception as e:
+            return jsonify({'error': 'معرف المشروع غير صالح'}), 400
         
         try:
             dog = Dog.query.get(data['dog_id'])
@@ -186,10 +184,9 @@ def create_excretion_log():
             return jsonify({'error': 'At least one observation (stool, urine, or vomit) must be provided'}), 400
         
         # Check for duplicate entry
-        project_id_value = data.get('project_id') if data.get('project_id') else None
         existing = ExcretionLog.query.filter(
             and_(
-                ExcretionLog.project_id == project_id_value,
+                ExcretionLog.project_id == project_id,
                 ExcretionLog.dog_id == data['dog_id'],
                 ExcretionLog.date == log_date,
                 ExcretionLog.time == log_time
@@ -199,14 +196,9 @@ def create_excretion_log():
         if existing:
             return jsonify({'error': 'An excretion log already exists for this dog, project, date, and time'}), 400
         
-        # Create new log with comprehensive safety checks
+        # Create new log
         excretion_log = ExcretionLog()
-        # CRITICAL: Ensure project_id is properly handled for nullable constraint
-        project_id_value = data.get('project_id')
-        if project_id_value is None or project_id_value == '' or project_id_value == 'null':
-            excretion_log.project_id = None
-        else:
-            excretion_log.project_id = project_id_value
+        excretion_log.project_id = project_id
         excretion_log.dog_id = data['dog_id']
         excretion_log.recorder_employee_id = data.get('recorder_employee_id')
         excretion_log.date = log_date
