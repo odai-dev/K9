@@ -10,6 +10,7 @@ from k9.services.handler_service import DailyScheduleService
 from k9.models.models_handler_daily import DailySchedule, DailyScheduleItem
 from k9.models.models import UserRole, User, Dog, Project, Shift
 from k9.decorators import supervisor_required
+from k9.utils.utils import validate_required_project_id, get_project_id_for_user
 from app import db
 
 
@@ -72,12 +73,15 @@ def schedule_create():
     """إنشاء جدول يومي جديد"""
     if request.method == 'POST':
         schedule_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
-        project_id = request.form.get('project_id')
         notes = request.form.get('notes')
         
-        # Validate project access
-        if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
-            project_id = str(current_user.project_id)
+        # Get project_id - either from form or automatically based on user role
+        success, result = get_project_id_for_user(current_user, request.form.get('project_id'))
+        if not success:
+            flash(result, 'danger')  # result contains error message
+            return redirect(url_for('supervisor.schedule_create'))
+        
+        project_id = result
         
         # Check if schedule already exists
         existing = DailySchedule.query.filter_by(

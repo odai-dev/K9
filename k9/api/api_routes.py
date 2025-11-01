@@ -196,7 +196,7 @@ def get_attendance_statistics():
 # =============================================
 
 from k9.utils.permission_utils import has_permission
-from k9.utils.utils import get_user_assigned_projects, get_user_accessible_dogs
+from k9.utils.utils import get_user_assigned_projects, get_user_accessible_dogs, validate_required_project_id, get_project_id_for_user
 from sqlalchemy.orm import joinedload
 from sqlalchemy import and_, func
 import json
@@ -333,19 +333,18 @@ def feeding_log_create():
         if not data:
             return jsonify({'error': 'بيانات JSON مطلوبة'}), 400
         
-        # Validate required fields (project_id can be null for "No project")
+        # Validate required fields
         required_fields = ['date', 'time', 'dog_id']
         for field in required_fields:
             if field not in data or not data[field]:
                 return jsonify({'error': f'الحقل {field} مطلوب'}), 400
         
-        # Check PROJECT_MANAGER scoping (only if project_id is provided)
-        project_id = data.get('project_id')
-        if current_user.role == UserRole.PROJECT_MANAGER and project_id:
-            assigned_projects = get_user_assigned_projects(current_user)
-            project_ids = [p.id for p in assigned_projects]
-            if project_id not in project_ids:
-                return jsonify({'error': 'غير مصرح لك بالعمل على هذا المشروع'}), 403
+        # Validate and get project_id - now mandatory for all records
+        success, result = get_project_id_for_user(current_user, data.get('project_id'))
+        if not success:
+            return jsonify({'error': result}), 400
+        
+        project_id = result
         
         # Validate meal type (at least one must be True)
         if not data.get('meal_type_fresh', False) and not data.get('meal_type_dry', False):

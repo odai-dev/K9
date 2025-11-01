@@ -486,7 +486,7 @@ class ReportReview(db.Model):
     review_notes = db.Column(Text, nullable=True)
     
     # Project context
-    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id', ondelete='SET NULL'), nullable=True)
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id', ondelete='CASCADE'), nullable=False)
     
     # Timestamp
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
