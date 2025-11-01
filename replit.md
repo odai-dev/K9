@@ -18,6 +18,13 @@ Preferred communication style: Simple, everyday language.
 - **Backend Framework**: Flask (Python) utilizing a modular Blueprint structure.
 - **Database**: PostgreSQL, integrated via SQLAlchemy ORM.
 - **Authentication**: Flask-Login implements session-based authentication and role-based access control with `GENERAL_ADMIN`, `PROJECT_MANAGER`, `HANDLER`, `TRAINER`, `BREEDER`, and `VET` tiers.
+  - **Dual-Mode GENERAL_ADMIN System**: Allows GENERAL_ADMIN users to operate in two distinct modes:
+    - **General Admin Mode**: Full unrestricted access to all projects, employees, dogs, and system functions
+    - **Project Manager Mode**: Project-scoped access identical to PROJECT_MANAGER role, limited to a single assigned project
+  - **Mode Selection**: After login, GENERAL_ADMIN users choose their operating mode via a modal interface
+  - **Mode Switching**: In-session mode switching via navbar toggle allows dynamic role shifting without re-login
+  - **Session-Based Scoping**: `session['admin_mode']` drives all permission checks, data filtering, and route access
+  - **Setup Integration**: Initial setup creates both User (GENERAL_ADMIN) and linked Employee (PROJECT_MANAGER) records for proper project assignment
 - **Database Migrations**: Flask-Migrate, powered by Alembic, for schema versioning and management.
 - **File Handling**: Local file system storage for uploads.
 - **Security**: Incorporates CSRF protection, configurable session timeouts, input validation, and audit logging. **Role-Based Access Control** enforces strict route protection with decorators (`@admin_or_pm_required`, `@handler_required`, `@admin_required`) ensuring HANDLER users can only access `/handler/*` routes and are automatically redirected from admin/PM interfaces.
