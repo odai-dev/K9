@@ -35,10 +35,35 @@ class SecurityMiddleware:
         if self._is_request_too_large():
             abort(413)  # Request Entity Too Large
         
+        # Enforce admin mode selection for GENERAL_ADMIN users
+        self._enforce_admin_mode_selection()
+        
         # Set security context
         g.request_start_time = datetime.utcnow()
         g.client_ip = self._get_client_ip()
         g.user_agent = request.headers.get('User-Agent', '')
+    
+    def _enforce_admin_mode_selection(self):
+        """Enforce that GENERAL_ADMIN users with pending mode selection go to select-mode page."""
+        from flask import session, redirect, url_for
+        from flask_login import current_user
+        
+        # Skip if user is not authenticated
+        if not current_user.is_authenticated:
+            return
+        
+        # Skip if no pending mode selection
+        if not session.get('pending_mode_selection'):
+            return
+        
+        # Allow access to the select-mode page itself and related auth endpoints
+        exempt_endpoints = ['auth.select_mode', 'auth.logout', 'static']
+        if request.endpoint in exempt_endpoints:
+            return
+        
+        # Redirect to select-mode if user has pending selection
+        from werkzeug.exceptions import HTTPException
+        raise HTTPException(response=redirect(url_for('auth.select_mode')))
     
     def after_request(self, response):
         """Execute after each request."""
