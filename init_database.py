@@ -11,7 +11,10 @@ def init_database():
         try:
             # Drop all existing tables if any
             print("Dropping existing tables if any...")
-            db.drop_all()
+            # Use raw SQL to drop all tables with CASCADE to handle circular dependencies
+            db.session.execute(text("DROP SCHEMA public CASCADE"))
+            db.session.execute(text("CREATE SCHEMA public"))
+            db.session.commit()
             
             # Create all tables - SQLAlchemy will handle the circular dependencies
             print("Creating all tables...")

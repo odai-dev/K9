@@ -3,12 +3,36 @@ Permission management utilities for K9 Operations Management System
 """
 
 from functools import wraps
-from flask import abort, request, flash, redirect, url_for
+from flask import abort, request, flash, redirect, url_for, session
 from flask_login import current_user
 from k9.models.models import User, Project, SubPermission, PermissionAuditLog, PermissionType, UserRole
 from app import db
 import json
 from datetime import datetime
+
+
+def _is_admin_mode(user):
+    """Helper to check if user is GENERAL_ADMIN in general admin mode (not PM mode)"""
+    if not user or not hasattr(user, 'role'):
+        return False
+    if user.role != UserRole.GENERAL_ADMIN and user.role.value != "GENERAL_ADMIN":
+        return False
+    admin_mode = session.get('admin_mode', 'general_admin')
+    return admin_mode == 'general_admin'
+
+
+def _is_pm_mode(user):
+    """Helper to check if user should be treated as PM (regular PM or GENERAL_ADMIN in PM mode)"""
+    if not user or not hasattr(user, 'role'):
+        return False
+    # Regular PROJECT_MANAGER
+    if user.role == UserRole.PROJECT_MANAGER or user.role.value == "PROJECT_MANAGER":
+        return True
+    # GENERAL_ADMIN in PM mode
+    if user.role == UserRole.GENERAL_ADMIN or user.role.value == "GENERAL_ADMIN":
+        admin_mode = session.get('admin_mode', 'general_admin')
+        return admin_mode == 'project_manager'
+    return False
 
 # Permission structure - comprehensive permission system
 PERMISSION_STRUCTURE = {
@@ -114,8 +138,9 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
     if not user or not user.role:
         return False
         
-    # GENERAL_ADMIN has all permissions
-    if user.role.value == "GENERAL_ADMIN":
+    # GENERAL_ADMIN in general admin mode has all permissions
+    # GENERAL_ADMIN in PM mode will be treated like PROJECT_MANAGER
+    if _is_admin_mode(user):
         return True
         
     # Handle backward compatibility with old 4-argument format
@@ -124,14 +149,14 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
         # New format: has_permission(user, "Reports", "Feeding Daily", "VIEW")
         category = permission_key.lower()
         if category in ["breeding", "تربية"]:
-            return user.role.value == "GENERAL_ADMIN"  # Only admin can access breeding for now
+            return _is_admin_mode(user)  # Only admin can access breeding for now
         elif category in ["training", "تدريب"]:
             return True  # Allow project managers to access training
         elif category in ["veterinary", "طبي"]:
             return True  # Allow project managers to access veterinary
         elif category == "reports":
             # Handle reports permissions - check against the new structure
-            if user.role.value == "PROJECT_MANAGER":
+            if _is_pm_mode(user):
                 # Map subsection names to permission keys
                 subsection_lower = sub_permission.lower()
                 action_lower = action.value.lower() if hasattr(action, 'value') else str(action).lower()
@@ -173,12 +198,12 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
                 ]
                 return perm_key in allowed_permissions
             else:
-                return user.role.value == "GENERAL_ADMIN"
+                return _is_admin_mode(user)
         else:
-            return user.role.value == "GENERAL_ADMIN"
+            return _is_admin_mode(user)
     
-    # PROJECT_MANAGER permissions are more limited
-    if user.role.value == "PROJECT_MANAGER":
+    # PROJECT_MANAGER permissions are more limited (includes GENERAL_ADMIN in PM mode)
+    if _is_pm_mode(user):
         # Define allowed permissions for project managers
         allowed_permissions = [
             "projects.view",
@@ -214,7 +239,9 @@ def get_user_permissions_matrix(user_id, project_id=None):
     """Get comprehensive permissions matrix for a user"""
     user = User.query.get_or_404(user_id)
     
-    if user.role == UserRole.GENERAL_ADMIN:
+    # GENERAL_ADMIN in general admin mode has all permissions
+    # GENERAL_ADMIN in PM mode will be treated like PROJECT_MANAGER
+    if _is_admin_mode(user):
         # General admin has all permissions
         matrix = {}
         for section, subsections in PERMISSION_STRUCTURE.items():

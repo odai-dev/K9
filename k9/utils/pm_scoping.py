@@ -15,12 +15,26 @@ from sqlalchemy import and_
 
 
 def get_pm_project(user=None):
-    """Get the PM's assigned project or None if not a PM or not assigned"""
+    """Get the PM's assigned project or None if not a PM or not assigned
+    
+    Now supports GENERAL_ADMIN in PM mode - they should be assigned to a project
+    just like regular PROJECT_MANAGERs.
+    """
     if user is None:
         user = current_user
     
-    if not hasattr(user, 'is_authenticated') or not user.is_authenticated or user.role != UserRole.PROJECT_MANAGER:
+    # Check if user should be treated as PM (regular PM or GENERAL_ADMIN in PM mode)
+    if not hasattr(user, 'is_authenticated') or not user.is_authenticated:
         return None
+    
+    # GENERAL_ADMIN in PM mode should be treated like PROJECT_MANAGER
+    from flask import session
+    if user.role == UserRole.GENERAL_ADMIN:
+        admin_mode = session.get('admin_mode', 'general_admin')
+        if admin_mode != 'project_manager':
+            return None  # Not in PM mode, so no project scoping
+    elif user.role != UserRole.PROJECT_MANAGER:
+        return None  # Not a PM and not an admin in PM mode
     
     # Find project where user is the manager (direct User FK)
     project = Project.query.filter_by(manager_id=user.id).first()
@@ -35,17 +49,50 @@ def get_pm_project(user=None):
 
 
 def is_pm(user=None):
-    """Check if user is a Project Manager"""
+    """Check if user should be treated as a Project Manager
+    
+    Returns True for:
+    - Regular PROJECT_MANAGER users
+    - GENERAL_ADMIN users in PM mode (session['admin_mode'] == 'project_manager')
+    """
     if user is None:
         user = current_user
-    return hasattr(user, 'is_authenticated') and user.is_authenticated and user.role == UserRole.PROJECT_MANAGER
+    
+    if not hasattr(user, 'is_authenticated') or not user.is_authenticated:
+        return False
+    
+    # Regular PROJECT_MANAGER
+    if user.role == UserRole.PROJECT_MANAGER:
+        return True
+    
+    # GENERAL_ADMIN in PM mode
+    if user.role == UserRole.GENERAL_ADMIN:
+        from flask import session
+        admin_mode = session.get('admin_mode', 'general_admin')
+        return admin_mode == 'project_manager'
+    
+    return False
 
 
 def is_admin(user=None):
-    """Check if user is a General Admin"""
+    """Check if user should be treated as a General Admin with full access
+    
+    Returns True only for GENERAL_ADMIN users NOT in PM mode.
+    When GENERAL_ADMIN is in PM mode, they should be treated as PROJECT_MANAGER.
+    """
     if user is None:
         user = current_user
-    return hasattr(user, 'is_authenticated') and user.is_authenticated and user.role == UserRole.GENERAL_ADMIN
+    
+    if not hasattr(user, 'is_authenticated') or not user.is_authenticated:
+        return False
+    
+    if user.role != UserRole.GENERAL_ADMIN:
+        return False
+    
+    # Check if in PM mode - if so, not acting as admin
+    from flask import session
+    admin_mode = session.get('admin_mode', 'general_admin')
+    return admin_mode == 'general_admin'
 
 
 def get_scoped_dogs(user=None):

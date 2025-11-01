@@ -144,8 +144,7 @@
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle me-2"></i>
                                 <strong>مرحباً بك!</strong> أنت على وشك إنشاء
-                                أول حساب مدير في النظام. هذا الحساب سيحصل على
-                                جميع الصلاحيات.
+                                أول حساب مدير في النظام. سيتم إنشاء حساب مستخدم وملف موظف مرتبط به.
                             </div>
 
                             <form method="POST">
@@ -154,6 +153,11 @@
                                     name="csrf_token"
                                     value="{{ csrf_token() }}"
                                 />
+                                
+                                <h5 class="mb-3 text-primary">
+                                    <i class="fas fa-user-circle me-2"></i>معلومات المستخدم
+                                </h5>
+                                
                                 <div class="mb-4">
                                     <label for="full_name" class="form-label">
                                         <i class="fas fa-user me-2"></i>الاسم
@@ -235,6 +239,56 @@
                                         name="confirm_password"
                                         required
                                         placeholder="أعد إدخال كلمة المرور"
+                                    />
+                                </div>
+                                
+                                <hr class="my-4">
+                                
+                                <h5 class="mb-3 text-primary">
+                                    <i class="fas fa-id-card me-2"></i>معلومات الموظف
+                                </h5>
+                                
+                                <div class="mb-4">
+                                    <label for="employee_id" class="form-label">
+                                        <i class="fas fa-id-badge me-2"></i>الرقم الوظيفي
+                                    </label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="employee_id"
+                                        name="employee_id"
+                                        required
+                                        placeholder="مثال: EMP001"
+                                    />
+                                    <div class="form-text">
+                                        رقم تعريف فريد للموظف في النظام
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label for="phone" class="form-label">
+                                        <i class="fas fa-phone me-2"></i>رقم الهاتف
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        class="form-control"
+                                        id="phone"
+                                        name="phone"
+                                        placeholder="+966XXXXXXXXX"
+                                    />
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label for="hire_date" class="form-label">
+                                        <i class="fas fa-calendar me-2"></i>تاريخ التعيين
+                                    </label>
+                                    <input
+                                        type="date"
+                                        class="form-control"
+                                        id="hire_date"
+                                        name="hire_date"
+                                        required
+                                        value="{{ current_date }}"
                                     />
                                 </div>
 
