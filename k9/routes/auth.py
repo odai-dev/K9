@@ -224,7 +224,12 @@ def select_mode():
             })
             
             flash(f'تم تبديل الوضع بنجاح إلى: {"المدير العام" if mode == "general_admin" else "مدير المشروع"}', 'success')
-            return redirect(url_for('main.dashboard'))
+            
+            # Redirect directly to appropriate dashboard
+            if mode == 'project_manager':
+                return redirect(url_for('pm.dashboard'))
+            else:
+                return redirect(url_for('main.dashboard'))
         else:
             flash('وضع غير صالح', 'error')
     
@@ -263,7 +268,12 @@ def switch_mode():
     })
     
     flash(f'تم التبديل إلى وضع: {"المدير العام" if new_mode == "general_admin" else "مدير المشروع"}', 'success')
-    return redirect(url_for('main.dashboard'))
+    
+    # Redirect directly to appropriate dashboard
+    if new_mode == 'project_manager':
+        return redirect(url_for('pm.dashboard'))
+    else:
+        return redirect(url_for('main.dashboard'))
 
 @auth_bp.route('/create_manager', methods=['GET', 'POST'])
 @login_required
@@ -272,6 +282,25 @@ def create_manager():
     if current_user.role != UserRole.GENERAL_ADMIN:
         flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
         return redirect(url_for('main.dashboard'))
+    
+    # Define variables needed by both GET and POST
+    available_sections = [
+        {'key': 'dogs', 'name': 'إدارة الكلاب'},
+        {'key': 'employees', 'name': 'إدارة الموظفين'},
+        {'key': 'training', 'name': 'التدريب'},
+        {'key': 'veterinary', 'name': 'الطبابة'},
+        {'key': 'breeding', 'name': 'التكاثر'},
+        {'key': 'projects', 'name': 'المشاريع'},
+        {'key': 'attendance', 'name': 'الحضور والغياب'},
+        {'key': 'reports', 'name': 'التقارير'},
+    ]
+    
+    from k9.models.models import Employee, EmployeeRole
+    employees_without_accounts = Employee.query.filter_by(
+        role=EmployeeRole.PROJECT_MANAGER,
+        user_account_id=None, 
+        is_active=True
+    ).all()
     
     if request.method == 'POST':
         try:
@@ -316,26 +345,6 @@ def create_manager():
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء إنشاء الحساب: {str(e)}', 'error')
-    
-    # Available sections that can be assigned to project managers
-    available_sections = [
-        {'key': 'dogs', 'name': 'إدارة الكلاب'},
-        {'key': 'employees', 'name': 'إدارة الموظفين'},
-        {'key': 'training', 'name': 'التدريب'},
-        {'key': 'veterinary', 'name': 'الطبابة'},
-        {'key': 'breeding', 'name': 'التكاثر'},
-        {'key': 'projects', 'name': 'المشاريع'},
-        {'key': 'attendance', 'name': 'الحضور والغياب'},
-        {'key': 'reports', 'name': 'التقارير'},
-    ]
-    
-    # Get employees who are project managers and don't have user accounts yet
-    from k9.models.models import Employee, EmployeeRole
-    employees_without_accounts = Employee.query.filter_by(
-        role=EmployeeRole.PROJECT_MANAGER,
-        user_account_id=None, 
-        is_active=True
-    ).all()
     
     return render_template('auth/create_manager.html', 
                          available_sections=available_sections,

@@ -1235,3 +1235,77 @@ def get_project_linked_activities(project_id, start_date=None, end_date=None):
     activities['suspicions'] = suspicion_query.all()
     
     return activities
+
+
+def validate_required_project_id(project_id, error_message='يجب اختيار المشروع'):
+    """
+    Validate that project_id is provided and not empty.
+    This should be used in forms/APIs where project_id is required by the database schema.
+    
+    Args:
+        project_id: The project_id value from request (can be None, empty string, etc.)
+        error_message: Custom error message in Arabic
+        
+    Returns:
+        tuple: (is_valid: bool, project_id_or_none: str|None, error_msg: str|None)
+        
+    Usage in routes:
+        project_id = request.form.get('project_id')
+        is_valid, project_id, error_msg = validate_required_project_id(project_id)
+        if not is_valid:
+            flash(error_msg, 'error')
+            return redirect(...)
+    """
+    if not project_id or project_id == '' or project_id == 'null' or project_id == 'None':
+        return False, None, error_message
+    
+    # Try to validate it's a valid UUID
+    try:
+        import uuid
+        uuid.UUID(str(project_id))
+        return True, str(project_id), None
+    except (ValueError, AttributeError):
+        return False, None, 'معرف المشروع غير صالح'
+
+
+def get_project_id_for_user(user=None):
+    """
+    Get the project_id for the current user based on their role.
+    
+    - For GENERAL_ADMIN in PM mode: Returns their assigned project
+    - For PROJECT_MANAGER: Returns their assigned project
+    - For GENERAL_ADMIN in admin mode: Returns None (they should select manually)
+    - For HANDLER: Returns their assigned project
+    
+    Returns:
+        str|None: The project ID or None if user should select manually
+    """
+    from flask_login import current_user
+    from k9.utils.pm_scoping import get_pm_project, is_pm
+    from k9.models.models import UserRole
+    
+    if user is None:
+        user = current_user
+    
+    if not user or not user.is_authenticated:
+        return None
+    
+    # For PM users (including GENERAL_ADMIN in PM mode), auto-get their project
+    if is_pm(user):
+        project = get_pm_project(user)
+        return str(project.id) if project else None
+    
+    # For HANDLER, get their assigned project via employee record
+    if user.role == UserRole.HANDLER:
+        from k9.models.models import Employee, ProjectAssignment
+        employee = Employee.query.filter_by(user_account_id=user.id).first()
+        if employee:
+            assignment = ProjectAssignment.query.filter_by(
+                employee_id=employee.id,
+                is_active=True
+            ).first()
+            if assignment:
+                return str(assignment.project_id)
+    
+    # For GENERAL_ADMIN in admin mode or others, return None (manual selection)
+    return None
