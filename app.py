@@ -533,7 +533,11 @@ with app.app_context():
                 except:
                     pass
                 
-                settings = BackupSettings.get_settings()
+                try:
+                    settings = BackupSettings.get_settings()
+                except Exception:
+                    # Tables don't exist yet (during migration), skip backup scheduling
+                    return False
                 
                 if settings.auto_backup_enabled and settings.backup_frequency != BackupFrequency.DISABLED:
                     if settings.backup_frequency == BackupFrequency.DAILY:
