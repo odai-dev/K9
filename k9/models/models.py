@@ -156,6 +156,8 @@ class AuditAction(Enum):
     LOGOUT = "LOGOUT"
     SECURITY_EVENT = "SECURITY_EVENT"
     MODE_SELECTION = "MODE_SELECTION"
+    MODE_SWITCH = "MODE_SWITCH"
+    SETUP = "SETUP"
 
 # New enums for attendance system
 class EntityType(Enum):
