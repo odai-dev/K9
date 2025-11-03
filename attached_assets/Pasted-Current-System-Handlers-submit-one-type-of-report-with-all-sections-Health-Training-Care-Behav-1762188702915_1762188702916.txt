@@ -1,0 +1,65 @@
+Current System:
+Handlers submit one type of report with all sections (Health, Training, Care, Behavior, Incidents)
+No restrictions - handlers can create multiple reports on the same day
+If a handler works multiple shifts or with multiple dogs, it's unclear how to handle reporting
+The Problem You Identified:
+Handlers may work:
+
+Multiple shifts in one day
+Different dogs in different shifts
+Need to report quickly during/after each shift
+Need comprehensive daily summary per dog at end of day
+Proposed Changes: Two-Tier Reporting System
+1. Shift Reports (NEW - Quick & Lightweight)
+Purpose: Quick reporting during or right after each shift
+
+Content: Only 3 sections:
+
+✅ Health Section (11 body part checks)
+✅ Behavior Section (good/bad behavior notes)
+✅ Incidents Section (suspicion/detection cases with photos)
+When: Created for each shift worked
+
+Linked to the schedule item (your work assignment for that shift)
+Example: Morning shift with Dog Rex → Create shift report for Rex
+2. Daily Reports (EXISTING - Enhanced)
+Purpose: Comprehensive end-of-day report per dog
+
+Content: ALL 6 sections:
+
+✅ Health Section
+✅ Training Section (6 types of training)
+✅ Care Section (feeding, grooming, excretion)
+✅ Behavior Section
+✅ Incidents Section
+✅ Attachments
+When: Created at end of day
+
+One daily report per unique dog you worked with that day
+New validation: Cannot create duplicate daily reports for same dog on same day
+Can pull information from shift reports to help fill it out
+Example Workflow:
+Handler Ahmed on November 3rd:
+
+Morning Shift (8am-12pm) - Dog Rex:
+
+Works morning shift
+Creates Shift Report #1: Quick health check, behavior notes for Rex
+Submits it
+Afternoon Shift (2pm-6pm) - Dog Max:
+
+Works afternoon shift with different dog
+Creates Shift Report #2: Quick health check, behavior notes for Max
+Submits it
+End of Day (6pm):
+
+Creates Daily Report for Rex: Full report including training, care, behavior, incidents from the whole day
+Creates Daily Report for Max: Full report including training, care, behavior, incidents from the whole day
+Both daily reports can reference the earlier shift reports
+Key Features to Add:
+New database tables for ShiftReport (lightweight version)
+Validation - prevent duplicate daily reports for same dog/day
+Quick shift report button on handler dashboard
+Smart daily report creation - shows all dogs worked with that day
+Visual indicators - which dogs still need daily reports
+Pre-population - daily reports can pull data from shift reports
