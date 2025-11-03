@@ -76,6 +76,11 @@ class StoolShape(Enum):
     SOFT = "لين"
     LIQUID = "سائل"
 
+class ReportType(Enum):
+    """نوع التقرير"""
+    SHIFT = "SHIFT"    # تقرير الوردية - خفيف وسريع
+    DAILY = "DAILY"    # تقرير يومي - شامل
+
 class NotificationType(Enum):
     """نوع الإشعار"""
     SCHEDULE_CREATED = "SCHEDULE_CREATED"
@@ -171,6 +176,7 @@ class HandlerReport(db.Model):
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     
     # Report metadata
+    report_type = db.Column(db.Enum(ReportType), nullable=False, default=ReportType.DAILY)
     date = db.Column(db.Date, nullable=False, index=True)
     schedule_item_id = db.Column(get_uuid_column(), db.ForeignKey('daily_schedule_item.id'), nullable=True)
     handler_user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'), nullable=False)
@@ -209,10 +215,11 @@ class HandlerReport(db.Model):
         db.Index('idx_handler_report_date', 'date'),
         db.Index('idx_handler_report_handler', 'handler_user_id'),
         db.Index('idx_handler_report_status', 'status'),
+        db.Index('idx_handler_report_type', 'report_type'),
     )
     
     def __repr__(self):
-        return f'<HandlerReport {self.date} - Handler:{self.handler_user_id}>'
+        return f'<HandlerReport {self.report_type.value} {self.date} - Handler:{self.handler_user_id}>'
 
 
 class HandlerReportHealth(db.Model):
@@ -354,6 +361,157 @@ class HandlerReportAttachment(db.Model):
     
     def __repr__(self):
         return f'<HandlerReportAttachment {self.filename}>'
+
+
+# ============================================================================
+# Shift Report Models (Lightweight - Quick reporting during shifts)
+# ============================================================================
+
+class ShiftReport(db.Model):
+    """تقرير الوردية - سريع وخفيف"""
+    __tablename__ = 'shift_report'
+    
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+    
+    # Report metadata
+    schedule_item_id = db.Column(get_uuid_column(), db.ForeignKey('daily_schedule_item.id'), nullable=False, unique=True)
+    handler_user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'), nullable=False)
+    dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False, index=True)
+    
+    # General info
+    location = db.Column(db.String(200), nullable=True)
+    
+    # Status and approval
+    status = db.Column(db.Enum(ReportStatus), nullable=False, default=ReportStatus.DRAFT)
+    submitted_at = db.Column(db.DateTime, nullable=True)
+    reviewed_by_user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    review_notes = db.Column(Text, nullable=True)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    schedule_item = db.relationship('DailyScheduleItem', backref='shift_reports')
+    handler = db.relationship('User', foreign_keys=[handler_user_id], backref='submitted_shift_reports')
+    reviewer = db.relationship('User', foreign_keys=[reviewed_by_user_id], backref='reviewed_shift_reports')
+    dog = db.relationship('Dog', backref='shift_reports')
+    project = db.relationship('Project', backref='shift_reports')
+    
+    # Related report sections (only 3 sections for shift reports)
+    health = db.relationship('ShiftReportHealth', backref='shift_report', uselist=False, cascade='all, delete-orphan')
+    behavior = db.relationship('ShiftReportBehavior', backref='shift_report', uselist=False, cascade='all, delete-orphan')
+    incidents = db.relationship('ShiftReportIncident', backref='shift_report', cascade='all, delete-orphan')
+    
+    __table_args__ = (
+        db.Index('idx_shift_report_date', 'date'),
+        db.Index('idx_shift_report_handler', 'handler_user_id'),
+        db.Index('idx_shift_report_status', 'status'),
+    )
+    
+    def __repr__(self):
+        return f'<ShiftReport {self.date} - Handler:{self.handler_user_id}>'
+
+
+class ShiftReportHealth(db.Model):
+    """الفحص الصحي للكلب - تقرير الوردية"""
+    __tablename__ = 'shift_report_health'
+    
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+    shift_report_id = db.Column(get_uuid_column(), db.ForeignKey('shift_report.id', ondelete='CASCADE'), nullable=False, unique=True)
+    
+    # Health check fields - same as HandlerReportHealth
+    eyes_status = db.Column(db.Enum(HealthCheckStatus), nullable=True)
+    eyes_notes = db.Column(db.String(500), nullable=True)
+    
+    nose_status = db.Column(db.Enum(HealthCheckStatus), nullable=True)
+    nose_notes = db.Column(db.String(500), nullable=True)
+    
+    ears_status = db.Column(db.Enum(HealthCheckStatus), nullable=True)
+    ears_notes = db.Column(db.String(500), nullable=True)
+    
+    mouth_status = db.Column(db.Enum(HealthCheckStatus), nullable=True)
+    mouth_notes = db.Column(db.String(500), nullable=True)
+    
+    teeth_status = db.Column(db.Enum(HealthCheckStatus), nullable=True)
+    teeth_notes = db.Column(db.String(500), nullable=True)
+    
+    gums_status = db.Column(db.Enum(HealthCheckStatus), nullable=True)
+    gums_notes = db.Column(db.String(500), nullable=True)
+    
+    front_limbs_status = db.Column(db.Enum(HealthCheckStatus), nullable=True)
+    front_limbs_notes = db.Column(db.String(500), nullable=True)
+    
+    back_limbs_status = db.Column(db.Enum(HealthCheckStatus), nullable=True)
+    back_limbs_notes = db.Column(db.String(500), nullable=True)
+    
+    hair_status = db.Column(db.Enum(HealthCheckStatus), nullable=True)
+    hair_notes = db.Column(db.String(500), nullable=True)
+    
+    tail_status = db.Column(db.Enum(HealthCheckStatus), nullable=True)
+    tail_notes = db.Column(db.String(500), nullable=True)
+    
+    rear_status = db.Column(db.Enum(HealthCheckStatus), nullable=True)
+    rear_notes = db.Column(db.String(500), nullable=True)
+    
+    def __repr__(self):
+        return f'<ShiftReportHealth ShiftReport:{self.shift_report_id}>'
+
+
+class ShiftReportBehavior(db.Model):
+    """سلوك الكلب - تقرير الوردية"""
+    __tablename__ = 'shift_report_behavior'
+    
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+    shift_report_id = db.Column(get_uuid_column(), db.ForeignKey('shift_report.id', ondelete='CASCADE'), nullable=False, unique=True)
+    
+    good_behavior_notes = db.Column(Text, nullable=True)  # السلوك الجيد
+    bad_behavior_notes = db.Column(Text, nullable=True)   # السلوك السيئ
+    
+    def __repr__(self):
+        return f'<ShiftReportBehavior ShiftReport:{self.shift_report_id}>'
+
+
+class ShiftReportIncident(db.Model):
+    """حالات الاشتباه والكشف - تقرير الوردية"""
+    __tablename__ = 'shift_report_incident'
+    
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+    shift_report_id = db.Column(get_uuid_column(), db.ForeignKey('shift_report.id', ondelete='CASCADE'), nullable=False)
+    
+    incident_type = db.Column(db.Enum(IncidentType), nullable=False)
+    description = db.Column(Text, nullable=False)
+    incident_datetime = db.Column(db.DateTime, nullable=True)
+    location = db.Column(db.String(200), nullable=True)
+    
+    # Attachments
+    attachments = db.relationship('ShiftReportAttachment', backref='incident', cascade='all, delete-orphan')
+    
+    def __repr__(self):
+        return f'<ShiftReportIncident {self.incident_type.value}>'
+
+
+class ShiftReportAttachment(db.Model):
+    """مرفقات تقرير الوردية"""
+    __tablename__ = 'shift_report_attachment'
+    
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+    incident_id = db.Column(get_uuid_column(), db.ForeignKey('shift_report_incident.id', ondelete='CASCADE'), nullable=False)
+    
+    filename = db.Column(db.String(255), nullable=False)
+    original_filename = db.Column(db.String(255), nullable=False)
+    file_path = db.Column(db.String(500), nullable=False)
+    file_type = db.Column(db.String(50), nullable=False)
+    file_size = db.Column(db.Integer, nullable=False)
+    sha256_hash = db.Column(db.String(64), nullable=False)
+    
+    uploaded_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<ShiftReportAttachment {self.filename}>'
 
 
 # ============================================================================
