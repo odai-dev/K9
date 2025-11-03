@@ -198,7 +198,8 @@ def setup():
 @login_required
 def select_mode():
     """Allow GENERAL_ADMIN users to select their working mode"""
-    from k9.models.models import Employee, Project
+    from k9.models.models import Employee
+    from k9.utils.pm_scoping import get_pm_project
     
     # Only for GENERAL_ADMIN users
     if current_user.role != UserRole.GENERAL_ADMIN:
@@ -233,8 +234,15 @@ def select_mode():
         else:
             flash('وضع غير صالح', 'error')
     
-    # Check if user has an assigned project
-    assigned_project = Project.query.filter_by(manager_id=current_user.id).first()
+    # Check if user has an assigned project using proper scoping function
+    # Temporarily set admin_mode to check project assignment
+    old_mode = session.get('admin_mode')
+    session['admin_mode'] = 'project_manager'
+    assigned_project = get_pm_project(current_user)
+    if old_mode:
+        session['admin_mode'] = old_mode
+    else:
+        session.pop('admin_mode', None)
     
     return render_template('auth/mode_selection.html', 
                          employee=employee,
