@@ -40,7 +40,13 @@ Preferred communication style: Simple, everyday language.
 - **Data Visualization Framework**: Chart.js integration with custom RTL-aware utilities for interactive charts across all reporting modules.
 - **Handler Daily System**: Comprehensive daily operations management for K9 handlers featuring:
   - Daily schedule creation and management with auto-locking
-  - Handler report submission with health checks, training logs, care tracking, behavior observations, and incident reporting
+  - **Two-Tier Reporting System**:
+    - **Shift Reports** (Lightweight): Quick reports linked to specific schedule items covering 3 sections (Health, Behavior, Incidents)
+    - **Daily Reports** (Comprehensive): Detailed end-of-day reports covering 6 sections (Health, Training, Care, Behavior, Incidents, Notes)
+    - **Duplicate Prevention**: Enforces unique constraint - one shift report per schedule item, one daily report per dog per day
+    - **Smart Pre-population**: Daily reports can auto-populate data from all shift reports for the same dog on the same day
+    - **Visual Indicators**: Dashboard shows which dogs worked with today need daily reports with status badges
+    - **Smart Selection View**: Dedicated page (`/handler/daily-reports/select`) displays all dogs worked with and their report completion status
   - Configurable grace period for late report submissions (HANDLER_REPORT_GRACE_MINUTES)
   - Real-time notification system for schedule changes, report approvals/rejections
   - User management with bulk import from Excel/CSV
