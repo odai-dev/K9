@@ -57,10 +57,6 @@ externalPort = 3000
 localPort = 45783
 externalPort = 3001
 
-[[ports]]
-localPort = 46115
-externalPort = 5173
-
 [agent]
 expertMode = true
 integrations = ["python_database:1.0.0"]
