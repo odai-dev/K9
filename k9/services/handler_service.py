@@ -8,8 +8,9 @@ from k9.models.models_handler_daily import (
     DailySchedule, DailyScheduleItem, HandlerReport,
     HandlerReportHealth, HandlerReportTraining, HandlerReportCare,
     HandlerReportBehavior, HandlerReportIncident, HandlerReportAttachment,
+    ShiftReport, ShiftReportHealth, ShiftReportBehavior, ShiftReportIncident, ShiftReportAttachment,
     Notification, ScheduleStatus, ScheduleItemStatus, ReportStatus,
-    NotificationType
+    NotificationType, ReportType
 )
 from k9.models.models import User, Employee, Dog, Project, Shift
 from sqlalchemy import and_, or_
@@ -338,6 +339,158 @@ class HandlerReportService:
         )
         
         return True, None
+
+
+class ShiftReportService:
+    """خدمة إدارة تقارير الوردية"""
+    
+    @staticmethod
+    def can_create_shift_report(schedule_item_id: str) -> tuple:
+        """التحقق من إمكانية إنشاء تقرير وردية"""
+        item = DailyScheduleItem.query.get(schedule_item_id)
+        if not item:
+            return False, "لم يتم العثور على عنصر الجدول"
+        
+        # Check if shift report already exists for this schedule item
+        existing = ShiftReport.query.filter_by(schedule_item_id=schedule_item_id).first()
+        if existing:
+            return False, "يوجد تقرير وردية لهذا العنصر بالفعل"
+        
+        return True, None
+    
+    @staticmethod
+    def create_shift_report(schedule_item_id: str, handler_user_id: str, 
+                           dog_id: str, project_id: str, report_date: date,
+                           location: Optional[str] = None) -> tuple:
+        """إنشاء تقرير وردية جديد"""
+        # Verify can create
+        can_create, error = ShiftReportService.can_create_shift_report(schedule_item_id)
+        if not can_create:
+            return None, error
+        
+        # Create shift report
+        shift_report = ShiftReport(
+            schedule_item_id=schedule_item_id,
+            handler_user_id=handler_user_id,
+            dog_id=dog_id,
+            project_id=project_id,
+            date=report_date,
+            location=location,
+            status=ReportStatus.DRAFT
+        )
+        
+        # Create related sections (only 3 for shift reports)
+        shift_report.health = ShiftReportHealth(shift_report=shift_report)
+        shift_report.behavior = ShiftReportBehavior(shift_report=shift_report)
+        
+        db.session.add(shift_report)
+        db.session.commit()
+        
+        return shift_report, None
+    
+    @staticmethod
+    def submit_shift_report(shift_report_id: str) -> tuple:
+        """إرسال تقرير الوردية للمراجعة"""
+        shift_report = ShiftReport.query.get(shift_report_id)
+        if not shift_report:
+            return False, "التقرير غير موجود"
+        
+        if shift_report.status != ReportStatus.DRAFT:
+            return False, "التقرير تم إرساله مسبقاً"
+        
+        shift_report.status = ReportStatus.SUBMITTED
+        shift_report.submitted_at = datetime.utcnow()
+        db.session.commit()
+        
+        # Notify project manager
+        if shift_report.project_id:
+            from k9.models.models import Project, Employee
+            project = Project.query.get(shift_report.project_id)
+            
+            if project and project.project_manager_id:
+                employee = Employee.query.get(project.project_manager_id)
+                if employee and employee.user_account_id:
+                    NotificationService.create_notification(
+                        user_id=str(employee.user_account_id),
+                        notification_type=NotificationType.REPORT_SUBMITTED,
+                        title="تقرير وردية جديد",
+                        message=f"تم رفع تقرير وردية جديد بتاريخ {shift_report.date.strftime('%Y-%m-%d')} - المشروع: {project.name}",
+                        related_id=str(shift_report_id),
+                        related_type="ShiftReport"
+                    )
+        
+        # Notify all admins
+        from k9.models.models import UserRole
+        admins = User.query.filter_by(role=UserRole.GENERAL_ADMIN, is_active=True).all()
+        for admin in admins:
+            NotificationService.create_notification(
+                user_id=str(admin.id),
+                notification_type=NotificationType.REPORT_SUBMITTED,
+                title="تقرير وردية جديد",
+                message=f"تم رفع تقرير وردية جديد بتاريخ {shift_report.date.strftime('%Y-%m-%d')}",
+                related_id=str(shift_report_id),
+                related_type="ShiftReport"
+            )
+        
+        return True, None
+    
+    @staticmethod
+    def approve_shift_report(shift_report_id: str, reviewer_user_id: str, notes: Optional[str] = None) -> tuple:
+        """اعتماد تقرير الوردية"""
+        shift_report = ShiftReport.query.get(shift_report_id)
+        if not shift_report:
+            return False, "التقرير غير موجود"
+        
+        shift_report.status = ReportStatus.APPROVED
+        shift_report.reviewed_by_user_id = reviewer_user_id
+        shift_report.reviewed_at = datetime.utcnow()
+        shift_report.review_notes = notes
+        db.session.commit()
+        
+        # Notify handler
+        NotificationService.create_notification(
+            user_id=str(shift_report.handler_user_id),
+            notification_type=NotificationType.REPORT_APPROVED,
+            title="تم اعتماد تقرير الوردية",
+            message=f"تم اعتماد تقرير الوردية بتاريخ {shift_report.date}",
+            related_id=str(shift_report_id),
+            related_type="ShiftReport"
+        )
+        
+        return True, None
+    
+    @staticmethod
+    def reject_shift_report(shift_report_id: str, reviewer_user_id: str, notes: str) -> tuple:
+        """رفض تقرير الوردية"""
+        shift_report = ShiftReport.query.get(shift_report_id)
+        if not shift_report:
+            return False, "التقرير غير موجود"
+        
+        shift_report.status = ReportStatus.REJECTED
+        shift_report.reviewed_by_user_id = reviewer_user_id
+        shift_report.reviewed_at = datetime.utcnow()
+        shift_report.review_notes = notes
+        db.session.commit()
+        
+        # Notify handler
+        NotificationService.create_notification(
+            user_id=str(shift_report.handler_user_id),
+            notification_type=NotificationType.REPORT_REJECTED,
+            title="تم رفض تقرير الوردية",
+            message=f"تم رفض تقرير الوردية بتاريخ {shift_report.date}. السبب: {notes}",
+            related_id=str(shift_report_id),
+            related_type="ShiftReport"
+        )
+        
+        return True, None
+    
+    @staticmethod
+    def get_shift_reports_for_dog_date(dog_id: str, report_date: date):
+        """الحصول على تقارير الوردية لكلب في يوم معين"""
+        return ShiftReport.query.filter_by(
+            dog_id=dog_id,
+            date=report_date
+        ).all()
 
 
 class NotificationService:

@@ -6,11 +6,12 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from datetime import date, datetime
 from k9.services.handler_service import (
-    DailyScheduleService, HandlerReportService, NotificationService, AttachmentService
+    DailyScheduleService, HandlerReportService, ShiftReportService, NotificationService, AttachmentService
 )
 from k9.models.models_handler_daily import (
     HandlerReport, HandlerReportHealth, HandlerReportTraining,
     HandlerReportCare, HandlerReportBehavior, HandlerReportIncident,
+    ShiftReport, ShiftReportHealth, ShiftReportBehavior, ShiftReportIncident, ShiftReportAttachment,
     TrainingType, BehaviorType, IncidentType, StoolColor, StoolShape,
     HealthCheckStatus
 )
@@ -551,6 +552,215 @@ def delete_report(report_id):
     db.session.commit()
     
     return jsonify({'success': True})
+
+
+@handler_bp.route('/shift-report/new/<schedule_item_id>', methods=['GET', 'POST'])
+@login_required
+@handler_required
+def new_shift_report(schedule_item_id):
+    """إنشاء تقرير وردية جديد"""
+    from k9.models.models_handler_daily import DailyScheduleItem, ReportStatus
+    
+    # Get schedule item
+    schedule_item = DailyScheduleItem.query.get_or_404(schedule_item_id)
+    
+    # Verify ownership - check if this schedule item belongs to current handler
+    if str(schedule_item.handler_user_id) != str(current_user.id):
+        flash('غير مصرح لك بإنشاء تقرير لهذه الوردية', 'danger')
+        return redirect(url_for('handler.dashboard'))
+    
+    # Check if shift report already exists for this schedule item
+    existing_report = ShiftReport.query.filter_by(schedule_item_id=schedule_item_id).first()
+    if existing_report:
+        flash('يوجد تقرير وردية لهذا العنصر بالفعل', 'warning')
+        return redirect(url_for('handler.dashboard'))
+    
+    if request.method == 'POST':
+        action = request.form.get('action', 'save_draft')
+        location = request.form.get('location')
+        
+        # Get dog_id from schedule item or form
+        dog_id = schedule_item.dog_id if schedule_item.dog_id else request.form.get('dog_id')
+        
+        if not dog_id:
+            flash('يجب تحديد الكلب', 'danger')
+            return redirect(url_for('handler.new_shift_report', schedule_item_id=schedule_item_id))
+        
+        # Create shift report
+        shift_report, error = ShiftReportService.create_shift_report(
+            schedule_item_id=schedule_item_id,
+            handler_user_id=str(current_user.id),
+            dog_id=str(dog_id),
+            project_id=str(current_user.project_id) if current_user.project_id else str(schedule_item.schedule.project_id),
+            report_date=schedule_item.schedule.date,
+            location=location
+        )
+        
+        if error:
+            flash(error, 'danger')
+            return redirect(url_for('handler.dashboard'))
+        
+        # Update Health section - 11 body parts
+        if shift_report.health:
+            # Eyes
+            eyes_status_val = request.form.get('eyes_status')
+            shift_report.health.eyes_status = HealthCheckStatus(eyes_status_val) if eyes_status_val else None
+            shift_report.health.eyes_notes = request.form.get('eyes_notes')
+            
+            # Nose
+            nose_status_val = request.form.get('nose_status')
+            shift_report.health.nose_status = HealthCheckStatus(nose_status_val) if nose_status_val else None
+            shift_report.health.nose_notes = request.form.get('nose_notes')
+            
+            # Ears
+            ears_status_val = request.form.get('ears_status')
+            shift_report.health.ears_status = HealthCheckStatus(ears_status_val) if ears_status_val else None
+            shift_report.health.ears_notes = request.form.get('ears_notes')
+            
+            # Mouth
+            mouth_status_val = request.form.get('mouth_status')
+            shift_report.health.mouth_status = HealthCheckStatus(mouth_status_val) if mouth_status_val else None
+            shift_report.health.mouth_notes = request.form.get('mouth_notes')
+            
+            # Teeth
+            teeth_status_val = request.form.get('teeth_status')
+            shift_report.health.teeth_status = HealthCheckStatus(teeth_status_val) if teeth_status_val else None
+            shift_report.health.teeth_notes = request.form.get('teeth_notes')
+            
+            # Gums
+            gums_status_val = request.form.get('gums_status')
+            shift_report.health.gums_status = HealthCheckStatus(gums_status_val) if gums_status_val else None
+            shift_report.health.gums_notes = request.form.get('gums_notes')
+            
+            # Front limbs
+            front_limbs_status_val = request.form.get('front_limbs_status')
+            shift_report.health.front_limbs_status = HealthCheckStatus(front_limbs_status_val) if front_limbs_status_val else None
+            shift_report.health.front_limbs_notes = request.form.get('front_limbs_notes')
+            
+            # Back limbs
+            back_limbs_status_val = request.form.get('back_limbs_status')
+            shift_report.health.back_limbs_status = HealthCheckStatus(back_limbs_status_val) if back_limbs_status_val else None
+            shift_report.health.back_limbs_notes = request.form.get('back_limbs_notes')
+            
+            # Hair
+            hair_status_val = request.form.get('hair_status')
+            shift_report.health.hair_status = HealthCheckStatus(hair_status_val) if hair_status_val else None
+            shift_report.health.hair_notes = request.form.get('hair_notes')
+            
+            # Tail
+            tail_status_val = request.form.get('tail_status')
+            shift_report.health.tail_status = HealthCheckStatus(tail_status_val) if tail_status_val else None
+            shift_report.health.tail_notes = request.form.get('tail_notes')
+            
+            # Rear
+            rear_status_val = request.form.get('rear_status')
+            shift_report.health.rear_status = HealthCheckStatus(rear_status_val) if rear_status_val else None
+            shift_report.health.rear_notes = request.form.get('rear_notes')
+        
+        # Behavior section
+        if shift_report.behavior:
+            shift_report.behavior.good_behavior_notes = request.form.get('good_behavior_notes')
+            shift_report.behavior.bad_behavior_notes = request.form.get('bad_behavior_notes')
+        
+        # Incidents section - suspicion and detection
+        suspicion_cases = request.form.get('suspicion_cases')
+        detection_cases = request.form.get('detection_cases')
+        
+        # Handle suspicion incident
+        if suspicion_cases:
+            suspicion_incident = ShiftReportIncident(
+                shift_report_id=shift_report.id,
+                incident_type=IncidentType.SUSPICION,
+                description=suspicion_cases
+            )
+            db.session.add(suspicion_incident)
+            db.session.flush()  # Get the incident ID
+            
+            # Handle file uploads for suspicion
+            suspicion_files = request.files.getlist('suspicion_attachments')
+            if suspicion_files:
+                for file in suspicion_files:
+                    if file and file.filename:
+                        attachment, error = AttachmentService.save_attachment(
+                            file=file,
+                            incident_id=str(suspicion_incident.id),
+                            upload_folder='uploads/shift_reports'
+                        )
+                        if error:
+                            flash(f'خطأ في رفع المرفق: {error}', 'warning')
+        
+        # Handle detection incident
+        if detection_cases:
+            detection_incident = ShiftReportIncident(
+                shift_report_id=shift_report.id,
+                incident_type=IncidentType.DETECTION,
+                description=detection_cases
+            )
+            db.session.add(detection_incident)
+            db.session.flush()  # Get the incident ID
+            
+            # Handle file uploads for detection
+            detection_files = request.files.getlist('detection_attachments')
+            if detection_files:
+                for file in detection_files:
+                    if file and file.filename:
+                        attachment, error = AttachmentService.save_attachment(
+                            file=file,
+                            incident_id=str(detection_incident.id),
+                            upload_folder='uploads/shift_reports'
+                        )
+                        if error:
+                            flash(f'خطأ في رفع المرفق: {error}', 'warning')
+        
+        db.session.commit()
+        
+        # Submit if requested
+        if action == 'submit':
+            success, error = ShiftReportService.submit_shift_report(str(shift_report.id))
+            if success:
+                flash('تم إرسال تقرير الوردية للمراجعة بنجاح', 'success')
+                return redirect(url_for('handler.dashboard'))
+            else:
+                flash(f'تم حفظ التقرير لكن فشل الإرسال: {error}', 'warning')
+        else:
+            flash('تم حفظ تقرير الوردية كمسودة', 'success')
+        
+        return redirect(url_for('handler.dashboard'))
+    
+    # GET request
+    # Get dog from schedule item
+    dog = None
+    if schedule_item.dog_id:
+        dog = Dog.query.get(schedule_item.dog_id)
+    
+    return render_template('handler/new_shift_report.html',
+                         page_title='تقرير وردية جديد',
+                         schedule_item=schedule_item,
+                         dog=dog,
+                         today=schedule_item.schedule.date.strftime('%Y-%m-%d'))
+
+
+@handler_bp.route('/shift-report/submit/<shift_report_id>', methods=['POST'])
+@login_required
+@handler_required
+def submit_shift_report(shift_report_id):
+    """إرسال تقرير الوردية للمراجعة"""
+    shift_report = ShiftReport.query.get_or_404(shift_report_id)
+    
+    # Verify ownership
+    if str(shift_report.handler_user_id) != str(current_user.id):
+        flash('غير مصرح لك بإرسال هذا التقرير', 'danger')
+        return redirect(url_for('handler.dashboard'))
+    
+    # Submit the report
+    success, error = ShiftReportService.submit_shift_report(shift_report_id)
+    
+    if success:
+        flash('تم إرسال تقرير الوردية للمراجعة بنجاح', 'success')
+    else:
+        flash(f'فشل إرسال التقرير: {error}', 'danger')
+    
+    return redirect(url_for('handler.dashboard'))
 
 
 # Context processor for notification links

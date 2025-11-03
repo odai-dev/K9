@@ -1,0 +1,521 @@
+{% extends "base.html" %}
+
+{% block title %}إنشاء تقرير وردية{% endblock %}
+
+{% block extra_css %}
+<style>
+.section-card {
+    border-right: 4px solid #0d6efd;
+    margin-bottom: 1.5rem;
+}
+.form-section-header {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #0d6efd;
+    padding: 1rem;
+    font-weight: bold;
+}
+.health-check-row {
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem 0;
+}
+.health-check-row:last-child {
+    border-bottom: none;
+}
+.incident-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background-color: #f8f9fa;
+}
+.incident-card .card-header {
+    background-color: #e9ecef;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.5rem 1rem;
+    margin: -1rem -1rem 1rem -1rem;
+    border-radius: 0.375rem 0.375rem 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-clock me-2"></i>
+                تقرير الوردية
+            </h1>
+            <a href="{{ url_for('handler.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-right me-2"></i>
+                العودة
+            </a>
+        </div>
+    </div>
+</div>
+
+<form method="POST" action="{{ url_for('handler.new_shift_report') }}" enctype="multipart/form-data" id="shiftReportForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <!-- أولاً: المعلومات العامة -->
+    <div class="card section-card border-0 shadow-sm">
+        <div class="form-section-header">
+            <h5 class="mb-0">أولاً: المعلومات العامة</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">اسم الكلب</label>
+                    <select name="dog_id" class="form-select" required {{ 'disabled' if schedule_item else '' }}>
+                        {% if schedule_item and schedule_item.dog %}
+                            <option value="{{ schedule_item.dog.id }}" selected>
+                                {{ schedule_item.dog.name }} - {{ schedule_item.dog.code }}
+                            </option>
+                        {% elif assigned_dog %}
+                            <option value="{{ assigned_dog.id }}" selected>
+                                {{ assigned_dog.name }} - {{ assigned_dog.code }}
+                            </option>
+                        {% else %}
+                            <option value="">اختر كلباً</option>
+                            {% for dog in available_dogs %}
+                            <option value="{{ dog.id }}">{{ dog.name }} - {{ dog.code }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                    {% if schedule_item and schedule_item.dog %}
+                    <input type="hidden" name="dog_id" value="{{ schedule_item.dog.id }}">
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">موقع العمل</label>
+                    <input type="text" name="location" class="form-control" placeholder="أدخل موقع العمل">
+                </div>
+                <input type="hidden" name="date" value="{{ schedule_item.schedule.date if schedule_item else today }}">
+                {% if schedule_item %}
+                <input type="hidden" name="schedule_item_id" value="{{ schedule_item.id }}">
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ثانياً: فحص الكلب/صحة الكلب -->
+    <div class="card section-card border-0 shadow-sm">
+        <div class="form-section-header">
+            <h5 class="mb-0">ثانياً: فحص الكلب/صحة الكلب</h5>
+        </div>
+        <div class="card-body">
+            <!-- العين (Eyes) -->
+            <div class="health-check-row">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <label class="fw-bold">1. العين</label>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="eyes_status" id="eyes_normal" value="سليم">
+                            <label class="btn btn-outline-success" for="eyes_normal">سليم</label>
+                            
+                            <input type="radio" class="btn-check" name="eyes_status" id="eyes_abnormal" value="غير طبيعي">
+                            <label class="btn btn-outline-danger" for="eyes_abnormal">غير طبيعي</label>
+                            
+                            <input type="radio" class="btn-check" name="eyes_status" id="eyes_needs" value="يحتاج متابعة">
+                            <label class="btn btn-outline-warning" for="eyes_needs">يحتاج متابعة</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="eyes_notes" class="form-control" placeholder="ملاحظات">
+                    </div>
+                </div>
+            </div>
+
+            <!-- الانف (Nose) -->
+            <div class="health-check-row">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <label class="fw-bold">2. الانف</label>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="nose_status" id="nose_normal" value="سليم">
+                            <label class="btn btn-outline-success" for="nose_normal">سليم</label>
+                            
+                            <input type="radio" class="btn-check" name="nose_status" id="nose_abnormal" value="غير طبيعي">
+                            <label class="btn btn-outline-danger" for="nose_abnormal">غير طبيعي</label>
+                            
+                            <input type="radio" class="btn-check" name="nose_status" id="nose_needs" value="يحتاج متابعة">
+                            <label class="btn btn-outline-warning" for="nose_needs">يحتاج متابعة</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="nose_notes" class="form-control" placeholder="ملاحظات">
+                    </div>
+                </div>
+            </div>
+
+            <!-- الأذن (Ears) -->
+            <div class="health-check-row">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <label class="fw-bold">3. الأذن</label>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="ears_status" id="ears_normal" value="سليم">
+                            <label class="btn btn-outline-success" for="ears_normal">سليم</label>
+                            
+                            <input type="radio" class="btn-check" name="ears_status" id="ears_abnormal" value="غير طبيعي">
+                            <label class="btn btn-outline-danger" for="ears_abnormal">غير طبيعي</label>
+                            
+                            <input type="radio" class="btn-check" name="ears_status" id="ears_needs" value="يحتاج متابعة">
+                            <label class="btn btn-outline-warning" for="ears_needs">يحتاج متابعة</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="ears_notes" class="form-control" placeholder="ملاحظات">
+                    </div>
+                </div>
+            </div>
+
+            <!-- الفم (Mouth) -->
+            <div class="health-check-row">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <label class="fw-bold">4. الفم</label>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="mouth_status" id="mouth_normal" value="سليم">
+                            <label class="btn btn-outline-success" for="mouth_normal">سليم</label>
+                            
+                            <input type="radio" class="btn-check" name="mouth_status" id="mouth_abnormal" value="غير طبيعي">
+                            <label class="btn btn-outline-danger" for="mouth_abnormal">غير طبيعي</label>
+                            
+                            <input type="radio" class="btn-check" name="mouth_status" id="mouth_needs" value="يحتاج متابعة">
+                            <label class="btn btn-outline-warning" for="mouth_needs">يحتاج متابعة</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="mouth_notes" class="form-control" placeholder="ملاحظات">
+                    </div>
+                </div>
+            </div>
+
+            <!-- الاسنان (Teeth) -->
+            <div class="health-check-row">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <label class="fw-bold">5. الاسنان</label>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="teeth_status" id="teeth_normal" value="سليم">
+                            <label class="btn btn-outline-success" for="teeth_normal">سليم</label>
+                            
+                            <input type="radio" class="btn-check" name="teeth_status" id="teeth_abnormal" value="غير طبيعي">
+                            <label class="btn btn-outline-danger" for="teeth_abnormal">غير طبيعي</label>
+                            
+                            <input type="radio" class="btn-check" name="teeth_status" id="teeth_needs" value="يحتاج متابعة">
+                            <label class="btn btn-outline-warning" for="teeth_needs">يحتاج متابعة</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="teeth_notes" class="form-control" placeholder="ملاحظات">
+                    </div>
+                </div>
+            </div>
+
+            <!-- اللثة (Gums) -->
+            <div class="health-check-row">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <label class="fw-bold">6. اللثة</label>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="gums_status" id="gums_normal" value="سليم">
+                            <label class="btn btn-outline-success" for="gums_normal">سليم</label>
+                            
+                            <input type="radio" class="btn-check" name="gums_status" id="gums_abnormal" value="غير طبيعي">
+                            <label class="btn btn-outline-danger" for="gums_abnormal">غير طبيعي</label>
+                            
+                            <input type="radio" class="btn-check" name="gums_status" id="gums_needs" value="يحتاج متابعة">
+                            <label class="btn btn-outline-warning" for="gums_needs">يحتاج متابعة</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="gums_notes" class="form-control" placeholder="ملاحظات">
+                    </div>
+                </div>
+            </div>
+
+            <!-- الاطراف الامامية (Front legs) -->
+            <div class="health-check-row">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <label class="fw-bold">7. الاطراف الامامية</label>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="front_limbs_status" id="front_limbs_normal" value="سليم">
+                            <label class="btn btn-outline-success" for="front_limbs_normal">سليم</label>
+                            
+                            <input type="radio" class="btn-check" name="front_limbs_status" id="front_limbs_abnormal" value="غير طبيعي">
+                            <label class="btn btn-outline-danger" for="front_limbs_abnormal">غير طبيعي</label>
+                            
+                            <input type="radio" class="btn-check" name="front_limbs_status" id="front_limbs_needs" value="يحتاج متابعة">
+                            <label class="btn btn-outline-warning" for="front_limbs_needs">يحتاج متابعة</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="front_limbs_notes" class="form-control" placeholder="ملاحظات">
+                    </div>
+                </div>
+            </div>
+
+            <!-- الاطراف الخلفية (Back legs) -->
+            <div class="health-check-row">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <label class="fw-bold">8. الاطراف الخلفية</label>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="back_limbs_status" id="back_limbs_normal" value="سليم">
+                            <label class="btn btn-outline-success" for="back_limbs_normal">سليم</label>
+                            
+                            <input type="radio" class="btn-check" name="back_limbs_status" id="back_limbs_abnormal" value="غير طبيعي">
+                            <label class="btn btn-outline-danger" for="back_limbs_abnormal">غير طبيعي</label>
+                            
+                            <input type="radio" class="btn-check" name="back_limbs_status" id="back_limbs_needs" value="يحتاج متابعة">
+                            <label class="btn btn-outline-warning" for="back_limbs_needs">يحتاج متابعة</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="back_limbs_notes" class="form-control" placeholder="ملاحظات">
+                    </div>
+                </div>
+            </div>
+
+            <!-- الشعر (Hair) -->
+            <div class="health-check-row">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <label class="fw-bold">9. الشعر</label>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="hair_status" id="hair_normal" value="سليم">
+                            <label class="btn btn-outline-success" for="hair_normal">سليم</label>
+                            
+                            <input type="radio" class="btn-check" name="hair_status" id="hair_abnormal" value="غير طبيعي">
+                            <label class="btn btn-outline-danger" for="hair_abnormal">غير طبيعي</label>
+                            
+                            <input type="radio" class="btn-check" name="hair_status" id="hair_needs" value="يحتاج متابعة">
+                            <label class="btn btn-outline-warning" for="hair_needs">يحتاج متابعة</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="hair_notes" class="form-control" placeholder="ملاحظات">
+                    </div>
+                </div>
+            </div>
+
+            <!-- الذيل (Tail) -->
+            <div class="health-check-row">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <label class="fw-bold">10. الذيل</label>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="tail_status" id="tail_normal" value="سليم">
+                            <label class="btn btn-outline-success" for="tail_normal">سليم</label>
+                            
+                            <input type="radio" class="btn-check" name="tail_status" id="tail_abnormal" value="غير طبيعي">
+                            <label class="btn btn-outline-danger" for="tail_abnormal">غير طبيعي</label>
+                            
+                            <input type="radio" class="btn-check" name="tail_status" id="tail_needs" value="يحتاج متابعة">
+                            <label class="btn btn-outline-warning" for="tail_needs">يحتاج متابعة</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="tail_notes" class="form-control" placeholder="ملاحظات">
+                    </div>
+                </div>
+            </div>
+
+            <!-- المؤخرة (Rear) -->
+            <div class="health-check-row">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <label class="fw-bold">11. المؤخرة</label>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="rear_status" id="rear_normal" value="سليم">
+                            <label class="btn btn-outline-success" for="rear_normal">سليم</label>
+                            
+                            <input type="radio" class="btn-check" name="rear_status" id="rear_abnormal" value="غير طبيعي">
+                            <label class="btn btn-outline-danger" for="rear_abnormal">غير طبيعي</label>
+                            
+                            <input type="radio" class="btn-check" name="rear_status" id="rear_needs" value="يحتاج متابعة">
+                            <label class="btn btn-outline-warning" for="rear_needs">يحتاج متابعة</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="rear_notes" class="form-control" placeholder="ملاحظات">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ثالثاً: سلوك الكلب -->
+    <div class="card section-card border-0 shadow-sm">
+        <div class="form-section-header">
+            <h5 class="mb-0">ثالثاً: سلوك الكلب</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label fw-bold">السلوك الجيد للكلب/الملاحظات</label>
+                    <textarea name="good_behavior_notes" class="form-control" rows="4" placeholder="اكتب الملاحظات حول السلوك الجيد للكلب..."></textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-bold">السلوك السيء للكلب/الملاحظات</label>
+                    <textarea name="bad_behavior_notes" class="form-control" rows="4" placeholder="اكتب الملاحظات حول السلوك السيء للكلب..."></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- رابعاً: حالات الاشتباه والكشف -->
+    <div class="card section-card border-0 shadow-sm">
+        <div class="form-section-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">رابعاً: حالات الاشتباه والكشف</h5>
+            <button type="button" class="btn btn-sm btn-success" onclick="addIncident()">
+                <i class="fas fa-plus me-2"></i>
+                إضافة حادثة
+            </button>
+        </div>
+        <div class="card-body">
+            <div id="incidentsContainer">
+                <p class="text-muted text-center" id="noIncidentsMessage">لا توجد حالات مسجلة. اضغط على "إضافة حادثة" لإضافة حالة جديدة.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex gap-2 justify-content-end">
+                <a href="{{ url_for('handler.dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-times me-2"></i>
+                    إلغاء
+                </a>
+                <button type="submit" name="action" value="save_draft" class="btn btn-outline-primary">
+                    <i class="fas fa-save me-2"></i>
+                    حفظ كمسودة
+                </button>
+                <button type="submit" name="action" value="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane me-2"></i>
+                    إرسال للمراجعة
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let incidentCount = 0;
+
+function addIncident() {
+    incidentCount++;
+    const container = document.getElementById('incidentsContainer');
+    const noMessage = document.getElementById('noIncidentsMessage');
+    
+    if (noMessage) {
+        noMessage.style.display = 'none';
+    }
+    
+    const incidentDiv = document.createElement('div');
+    incidentDiv.className = 'incident-card';
+    incidentDiv.id = `incident-${incidentCount}`;
+    incidentDiv.innerHTML = `
+        <div class="card-header">
+            <strong>حادثة #${incidentCount}</strong>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeIncident(${incidentCount})">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label fw-bold">نوع الحادثة</label>
+                <select name="incidents[${incidentCount}][type]" class="form-select" required>
+                    <option value="">اختر نوع الحادثة</option>
+                    <option value="اشتباه">اشتباه</option>
+                    <option value="كشف">كشف</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold">التاريخ والوقت</label>
+                <input type="datetime-local" name="incidents[${incidentCount}][datetime]" class="form-control">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold">الموقع</label>
+                <input type="text" name="incidents[${incidentCount}][location]" class="form-control" placeholder="أدخل موقع الحادثة">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold">المرفقات (صور/ملفات)</label>
+                <input type="file" name="incidents[${incidentCount}][files]" class="form-control" multiple accept="image/*,.pdf">
+                <small class="form-text text-muted">يمكنك تحميل ملفات متعددة (صور أو PDF)</small>
+            </div>
+            <div class="col-12">
+                <label class="form-label fw-bold">وصف الحادثة</label>
+                <textarea name="incidents[${incidentCount}][description]" class="form-control" rows="4" placeholder="اكتب وصف تفصيلي للحادثة..." required></textarea>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(incidentDiv);
+}
+
+function removeIncident(id) {
+    const incident = document.getElementById(`incident-${id}`);
+    if (incident) {
+        incident.remove();
+    }
+    
+    // Check if there are any incidents left
+    const container = document.getElementById('incidentsContainer');
+    const incidents = container.querySelectorAll('.incident-card');
+    if (incidents.length === 0) {
+        const noMessage = document.getElementById('noIncidentsMessage');
+        if (noMessage) {
+            noMessage.style.display = 'block';
+        }
+    }
+}
+
+// Form validation
+document.getElementById('shiftReportForm').addEventListener('submit', function(e) {
+    const action = e.submitter.value;
+    
+    // If submitting (not saving as draft), validate dog selection
+    if (action === 'submit') {
+        const dogId = document.querySelector('select[name="dog_id"]').value;
+        
+        if (!dogId) {
+            e.preventDefault();
+            alert('الرجاء اختيار الكلب');
+            return false;
+        }
+    }
+});
+</script>
+{% endblock %}
