@@ -21,7 +21,14 @@ pm_bp = Blueprint('pm', __name__, url_prefix='/pm')
 
 def get_pm_project():
     """Get the PM's assigned project or None if not assigned"""
-    if current_user.role != UserRole.PROJECT_MANAGER:
+    from flask import session
+    
+    # Allow PROJECT_MANAGER role OR GENERAL_ADMIN in PM mode
+    is_pm_mode = (current_user.role == UserRole.PROJECT_MANAGER or 
+                  (current_user.role == UserRole.GENERAL_ADMIN and 
+                   session.get('admin_mode') == 'project_manager'))
+    
+    if not is_pm_mode:
         return None
     
     # Find project where current user is the manager (direct User FK)
@@ -40,7 +47,14 @@ def require_pm_project(f):
     """Decorator to ensure PM has an assigned project"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if current_user.role != UserRole.PROJECT_MANAGER:
+        from flask import session
+        
+        # Allow PROJECT_MANAGER role OR GENERAL_ADMIN in PM mode
+        is_pm_mode = (current_user.role == UserRole.PROJECT_MANAGER or 
+                      (current_user.role == UserRole.GENERAL_ADMIN and 
+                       session.get('admin_mode') == 'project_manager'))
+        
+        if not is_pm_mode:
             flash('الوصول مرفوض', 'error')
             return redirect(url_for('main.index'))
         
