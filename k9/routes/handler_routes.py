@@ -58,6 +58,9 @@ def dashboard():
         str(current_user.id), today
     )
     
+    # Get dogs worked with today and their report status
+    dogs_worked_today = HandlerReportService.get_dogs_worked_today(str(current_user.id), today)
+    
     # Get notifications
     recent_notifications = NotificationService.get_user_notifications(
         str(current_user.id), unread_only=True, limit=5
@@ -97,10 +100,34 @@ def dashboard():
                          project=project,
                          assigned_dog=assigned_dog,
                          today_schedule=today_schedule,
+                         dogs_worked_today=dogs_worked_today,
                          recent_notifications=recent_notifications,
                          unread_count=unread_count,
                          recent_reports=recent_reports,
                          stats=stats)
+
+
+@handler_bp.route('/daily-reports/select', methods=['GET'])
+@login_required
+@handler_required
+def select_daily_report():
+    """عرض الكلاب المتاحة لإنشاء تقرير يومي"""
+    today = date.today()
+    target_date_str = request.args.get('date')
+    
+    if target_date_str:
+        target_date = datetime.strptime(target_date_str, '%Y-%m-%d').date()
+    else:
+        target_date = today
+    
+    # Get all dogs worked with on target date and their report status
+    dogs_info = HandlerReportService.get_dogs_worked_today(str(current_user.id), target_date)
+    
+    return render_template('handler/select_daily_report.html',
+                         page_title='اختر كلب لإنشاء تقرير يومي',
+                         dogs_info=dogs_info,
+                         target_date=target_date,
+                         today=today)
 
 
 @handler_bp.route('/report/new', methods=['GET', 'POST'])
@@ -109,7 +136,7 @@ def dashboard():
 def new_report():
     """إنشاء تقرير يومي جديد"""
     from k9.models.models import Shift
-    from k9.models.models_handler_daily import DailyScheduleItem
+    from k9.models.models_handler_daily import DailyScheduleItem, ReportType
     
     if request.method == 'POST':
         action = request.form.get('action', 'save_draft')
@@ -293,6 +320,14 @@ def new_report():
     # GET request
     today = date.today()
     schedule_item_id = request.args.get('schedule_item_id')
+    dog_id = request.args.get('dog_id')
+    report_date_str = request.args.get('date')
+    
+    # Parse report date
+    if report_date_str:
+        report_date = datetime.strptime(report_date_str, '%Y-%m-%d').date()
+    else:
+        report_date = today
     
     # Get schedule item if provided
     schedule_item = None
@@ -303,6 +338,54 @@ def new_report():
     assigned_dog = None
     if current_user.dog_id:
         assigned_dog = Dog.query.get(current_user.dog_id)
+    
+    # Get pre-population data from shift reports if dog_id provided
+    shift_reports = []
+    prepopulated_data = {}
+    if dog_id:
+        shift_reports = HandlerReportService.get_shift_reports_for_prepopulation(dog_id, report_date)
+        
+        # Compile data from shift reports for pre-population
+        if shift_reports:
+            # Aggregate health data from all shift reports
+            health_notes = {}
+            for sr in shift_reports:
+                if sr.health:
+                    for field in ['eyes', 'nose', 'ears', 'mouth', 'teeth', 'gums', 
+                                 'front_limbs', 'back_limbs', 'hair', 'tail', 'rear']:
+                        status = getattr(sr.health, f'{field}_status', None)
+                        notes = getattr(sr.health, f'{field}_notes', None)
+                        if status or notes:
+                            if field not in health_notes:
+                                health_notes[field] = {'status': status, 'notes': []}
+                            if notes:
+                                health_notes[field]['notes'].append(notes)
+            
+            prepopulated_data['health'] = health_notes
+            
+            # Aggregate behavior notes
+            good_behaviors = []
+            bad_behaviors = []
+            for sr in shift_reports:
+                if sr.behavior:
+                    if sr.behavior.good_behavior_notes:
+                        good_behaviors.append(sr.behavior.good_behavior_notes)
+                    if sr.behavior.bad_behavior_notes:
+                        bad_behaviors.append(sr.behavior.bad_behavior_notes)
+            
+            prepopulated_data['good_behavior'] = '\n'.join(good_behaviors) if good_behaviors else ''
+            prepopulated_data['bad_behavior'] = '\n'.join(bad_behaviors) if bad_behaviors else ''
+            
+            # List incidents
+            incidents = {'suspicion': [], 'detection': []}
+            for sr in shift_reports:
+                for incident in sr.incidents:
+                    if incident.incident_type == IncidentType.SUSPICION:
+                        incidents['suspicion'].append(incident)
+                    elif incident.incident_type == IncidentType.DETECTION:
+                        incidents['detection'].append(incident)
+            
+            prepopulated_data['incidents'] = incidents
     
     # Get available dogs (project dogs or all if no project)
     available_dogs = []
@@ -340,7 +423,11 @@ def new_report():
                          schedule_item=schedule_item,
                          assigned_dog=assigned_dog,
                          available_dogs=available_dogs,
-                         shifts=shifts)
+                         shifts=shifts,
+                         shift_reports=shift_reports,
+                         prepopulated_data=prepopulated_data,
+                         report_date=report_date.strftime('%Y-%m-%d'),
+                         selected_dog_id=dog_id)
 
 
 @handler_bp.route('/report/<report_id>/edit', methods=['GET', 'POST'])

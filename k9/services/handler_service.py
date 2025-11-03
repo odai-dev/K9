@@ -217,14 +217,113 @@ class HandlerReportService:
         return True, None
     
     @staticmethod
+    def can_create_daily_report(dog_id: str, report_date: date) -> tuple:
+        """التحقق من إمكانية إنشاء تقرير يومي - منع التكرار لنفس الكلب في نفس اليوم"""
+        # Check if daily report already exists for this dog on this date
+        existing = HandlerReport.query.filter_by(
+            dog_id=dog_id,
+            date=report_date,
+            report_type=ReportType.DAILY
+        ).first()
+        
+        if existing:
+            return False, f"يوجد تقرير يومي لهذا الكلب بتاريخ {report_date.strftime('%Y-%m-%d')} بالفعل"
+        
+        return True, None
+    
+    @staticmethod
+    def get_dogs_worked_today(handler_user_id: str, target_date: Optional[date] = None) -> List[Dict]:
+        """الحصول على قائمة الكلاب التي عمل معها السائس اليوم مع حالة التقارير"""
+        if target_date is None:
+            target_date = date.today()
+        
+        # Get user and project
+        user = User.query.get(handler_user_id)
+        if not user or not user.project_id:
+            return []
+        
+        schedule = DailySchedule.query.filter_by(
+            date=target_date,
+            project_id=user.project_id
+        ).first()
+        
+        if not schedule:
+            return []
+        
+        # Get employee associated with this user (same pattern as get_handler_schedule_for_date)
+        employee = Employee.query.filter_by(user_account_id=handler_user_id).first()
+        if not employee:
+            return []
+        
+        # Get schedule items where this handler is assigned (as primary or replacement)
+        items = DailyScheduleItem.query.filter(
+            and_(
+                DailyScheduleItem.daily_schedule_id == schedule.id,
+                or_(
+                    DailyScheduleItem.employee_id == employee.id,
+                    DailyScheduleItem.replacement_employee_id == employee.id
+                )
+            )
+        ).all()
+        
+        dogs_info = []
+        seen_dogs = set()
+        
+        for item in items:
+            if not item.dog_id or str(item.dog_id) in seen_dogs:
+                continue
+            
+            seen_dogs.add(str(item.dog_id))
+            
+            # Check if shift report exists
+            shift_report = ShiftReport.query.filter_by(schedule_item_id=item.id).first()
+            
+            # Check if daily report exists
+            daily_report = HandlerReport.query.filter_by(
+                dog_id=item.dog_id,
+                date=target_date,
+                report_type=ReportType.DAILY
+            ).first()
+            
+            dogs_info.append({
+                'dog': item.dog,
+                'dog_id': str(item.dog_id),
+                'shift_report': shift_report,
+                'daily_report': daily_report,
+                'has_shift_report': shift_report is not None,
+                'has_daily_report': daily_report is not None,
+                'schedule_item': item
+            })
+        
+        return dogs_info
+    
+    @staticmethod
+    def get_shift_reports_for_prepopulation(dog_id: str, report_date: date) -> List[ShiftReport]:
+        """الحصول على تقارير الورديات لكلب معين في يوم معين لملء التقرير اليومي"""
+        shift_reports = ShiftReport.query.filter_by(
+            dog_id=dog_id,
+            date=report_date
+        ).all()
+        
+        return shift_reports
+    
+    @staticmethod
     def create_report(handler_user_id: str, dog_id: str, schedule_item_id: Optional[str],
-                     project_id: Optional[str], location: Optional[str], report_date: Optional[date] = None) -> tuple:
+                     project_id: Optional[str], location: Optional[str], report_date: Optional[date] = None,
+                     report_type: ReportType = ReportType.DAILY) -> tuple:
         """إنشاء تقرير جديد"""
         if report_date is None:
             report_date = date.today()
         
+        # Validate for daily reports only (shift reports are validated separately)
+        if report_type == ReportType.DAILY:
+            can_create, error = HandlerReportService.can_create_daily_report(dog_id, report_date)
+            if not can_create:
+                return None, error
+        
         report = HandlerReport(
             date=report_date,
+            report_type=report_type,
             schedule_item_id=schedule_item_id,
             handler_user_id=handler_user_id,
             dog_id=dog_id,
