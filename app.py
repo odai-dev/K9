@@ -114,8 +114,12 @@ with app.app_context():
     import k9.models.models_attendance_reporting  # noqa: F401
     import k9.models.models_handler_daily  # noqa: F401
 
-    # Always skip automatic table creation, use migrations instead
-    # db.create_all() - disabled for proper migration handling
+    # Bootstrap database on fresh import - creates all tables
+    # For production, use migrations instead
+    try:
+        db.create_all()
+    except Exception as e:
+        print(f"Warning: Could not create tables: {e}")
     
     # User creation is handled via migrations and manual setup
     # No automatic user creation during app initialization
