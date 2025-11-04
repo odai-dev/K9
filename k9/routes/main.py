@@ -27,7 +27,9 @@ from k9.models.models import (Dog, Employee, TrainingSession, VeterinaryVisit, P
                    CleaningLog)
 from k9.utils.utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
 from k9.utils.permission_decorators import require_sub_permission
+from k9.utils.validators import validate_yemen_phone
 from k9.decorators import admin_or_pm_required
+from sqlalchemy.exc import IntegrityError
 import os
 from datetime import datetime, date, timedelta
 import uuid
@@ -305,6 +307,19 @@ def employees_add():
     if request.method == 'POST':
         print(f"Form data: {dict(request.form)}")
         try:
+            # Validate phone number format
+            phone = request.form.get('phone', '').strip()
+            is_valid, error_message = validate_yemen_phone(phone)
+            if not is_valid:
+                flash(error_message, 'error')
+                return render_template('employees/add.html', roles=EmployeeRole)
+            
+            # Check if phone number already exists
+            existing_phone = Employee.query.filter_by(phone=phone).first()
+            if existing_phone:
+                flash('رقم الهاتف مستخدم بالفعل من قبل موظف آخر', 'error')
+                return render_template('employees/add.html', roles=EmployeeRole)
+            
             # Determine who the employee should be assigned to
             assigned_to_user_id = current_user.id if current_user.role == UserRole.PROJECT_MANAGER else None
             
@@ -320,7 +335,7 @@ def employees_add():
                 'PROJECT_MANAGER': EmployeeRole.PROJECT_MANAGER
             }
             employee.role = role_mapping[request.form['role']]
-            employee.phone = request.form.get('phone')
+            employee.phone = phone
             employee.email = request.form.get('email')
             employee.hire_date = datetime.strptime(request.form['hire_date'], '%Y-%m-%d').date() if request.form['hire_date'] else None
             employee.is_active = True
@@ -333,6 +348,15 @@ def employees_add():
             flash('تم إضافة الموظف بنجاح', 'success')
             return redirect(url_for('main.employees_list'))
             
+        except IntegrityError as e:
+            db.session.rollback()
+            print(f"Integrity error adding employee: {e}")
+            if 'employee_id' in str(e):
+                flash('رقم الموظف مستخدم بالفعل', 'error')
+            elif 'phone' in str(e):
+                flash('رقم الهاتف مستخدم بالفعل', 'error')
+            else:
+                flash('حدث خطأ: البيانات المدخلة مكررة', 'error')
         except Exception as e:
             db.session.rollback()
             print(f"Error adding employee: {e}")
