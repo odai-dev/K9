@@ -311,7 +311,7 @@ def employees_add():
             phone = request.form.get('phone', '').strip()
             is_valid, error_message = validate_yemen_phone(phone)
             if not is_valid:
-                flash(error_message, 'error')
+                flash(error_message or 'رقم الهاتف غير صحيح', 'error')
                 return render_template('employees/add.html', roles=EmployeeRole)
             
             # Check if phone number already exists
