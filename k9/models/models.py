@@ -352,7 +352,7 @@ class Employee(db.Model):
     name = db.Column(db.String(100), nullable=False)
     employee_id = db.Column(db.String(20), unique=True, nullable=False)
     role = db.Column(db.Enum(EmployeeRole), nullable=False)
-    phone = db.Column(db.String(20))
+    phone = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(120))
     hire_date = db.Column(db.Date, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
