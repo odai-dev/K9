@@ -267,15 +267,25 @@
                                 
                                 <div class="mb-4">
                                     <label for="phone" class="form-label">
-                                        <i class="fas fa-phone me-2"></i>رقم الهاتف
+                                        <i class="fas fa-phone me-2"></i>رقم الهاتف <span class="text-danger">*</span>
                                     </label>
                                     <input
                                         type="tel"
                                         class="form-control"
                                         id="phone"
                                         name="phone"
-                                        placeholder="+966XXXXXXXXX"
+                                        required
+                                        pattern="^(77|78|73|70|71)[0-9]{7}$"
+                                        placeholder="771234567"
+                                        maxlength="9"
                                     />
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        الصيغة: 9 أرقام تبدأ بـ (77، 78، 73، 70، 71) بدون مسافات
+                                    </div>
+                                    <div class="invalid-feedback">
+                                        رقم الهاتف يجب أن يكون 9 أرقام ويبدأ بـ: 77 أو 78 أو 73 أو 70 أو 71
+                                    </div>
                                 </div>
                                 
                                 <div class="mb-4">

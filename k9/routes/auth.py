@@ -5,6 +5,8 @@ from app import db, csrf
 from k9.models.models import User, UserRole, AuditLog
 from k9.utils.utils import log_audit
 from k9.utils.security_utils import PasswordValidator, AccountLockoutManager, MFAManager, SecurityHelper
+from k9.utils.validators import validate_yemen_phone
+from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 
 auth_bp = Blueprint('auth', __name__)
@@ -141,6 +143,19 @@ def setup():
                 flash('كلمات المرور غير متطابقة', 'error')
                 return render_template('auth/setup.html')
             
+            # Validate phone number format
+            phone = request.form.get('phone', '').strip()
+            is_valid, error_message = validate_yemen_phone(phone)
+            if not is_valid:
+                flash(error_message or 'رقم الهاتف غير صحيح', 'error')
+                return render_template('auth/setup.html')
+            
+            # Check if phone number already exists
+            existing_phone = Employee.query.filter_by(phone=phone).first()
+            if existing_phone:
+                flash('رقم الهاتف مستخدم بالفعل من قبل موظف آخر', 'error')
+                return render_template('auth/setup.html')
+            
             # Parse hire date
             hire_date_str = request.form.get('hire_date')
             try:
@@ -155,7 +170,7 @@ def setup():
                 password_hash=generate_password_hash(password),
                 role=UserRole.GENERAL_ADMIN,
                 full_name=request.form['full_name'],
-                phone=request.form.get('phone', ''),
+                phone=phone,
                 active=True
             )
             
@@ -168,7 +183,7 @@ def setup():
                 name=request.form['full_name'],
                 employee_id=request.form['employee_id'],
                 role=EmployeeRole.PROJECT_MANAGER,  # Admin can work as PM when in project-scoped mode
-                phone=request.form.get('phone', ''),
+                phone=phone,
                 email=request.form['email'],
                 hire_date=hire_date,
                 is_active=True,
@@ -187,6 +202,18 @@ def setup():
             flash('تم إنشاء حساب المدير الأول بنجاح. يمكنك الآن تسجيل الدخول.', 'success')
             return redirect(url_for('auth.login'))
             
+        except IntegrityError as e:
+            db.session.rollback()
+            if 'employee_id' in str(e):
+                flash('رقم الموظف مستخدم بالفعل', 'error')
+            elif 'phone' in str(e):
+                flash('رقم الهاتف مستخدم بالفعل', 'error')
+            elif 'username' in str(e):
+                flash('اسم المستخدم مستخدم بالفعل', 'error')
+            elif 'email' in str(e):
+                flash('البريد الإلكتروني مستخدم بالفعل', 'error')
+            else:
+                flash('حدث خطأ: البيانات المدخلة مكررة', 'error')
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء إنشاء الحساب: {str(e)}', 'error')
