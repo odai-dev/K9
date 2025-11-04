@@ -320,6 +320,26 @@ def employees_add():
                 flash('رقم الهاتف مستخدم بالفعل من قبل موظف آخر', 'error')
                 return render_template('employees/add.html', roles=EmployeeRole)
             
+            # Handle employee photo upload
+            employee_photo_filename = None
+            if 'employee_photo' in request.files and request.files['employee_photo'].filename:
+                photo = request.files['employee_photo']
+                if photo.filename and allowed_file(photo.filename):
+                    safe_filename = secure_filename(photo.filename or 'image')
+                    employee_photo_filename = f"{uuid.uuid4()}_{safe_filename}"
+                    photo_path = os.path.join(current_app.config['UPLOAD_FOLDER'], employee_photo_filename)
+                    photo.save(photo_path)
+            
+            # Handle ID card photo upload
+            id_card_photo_filename = None
+            if 'id_card_photo' in request.files and request.files['id_card_photo'].filename:
+                id_card = request.files['id_card_photo']
+                if id_card.filename and allowed_file(id_card.filename):
+                    safe_id_filename = secure_filename(id_card.filename or 'id_card')
+                    id_card_photo_filename = f"{uuid.uuid4()}_{safe_id_filename}"
+                    id_card_path = os.path.join(current_app.config['UPLOAD_FOLDER'], id_card_photo_filename)
+                    id_card.save(id_card_path)
+            
             # Determine who the employee should be assigned to
             assigned_to_user_id = current_user.id if current_user.role == UserRole.PROJECT_MANAGER else None
             
@@ -340,6 +360,16 @@ def employees_add():
             employee.hire_date = datetime.strptime(request.form['hire_date'], '%Y-%m-%d').date() if request.form['hire_date'] else None
             employee.is_active = True
             employee.assigned_to_user_id = assigned_to_user_id
+            
+            # Add new personal information fields
+            employee.national_id = request.form.get('national_id')
+            employee.full_name = request.form.get('full_name')
+            employee.birth_place = request.form.get('birth_place')
+            employee.birth_date = datetime.strptime(request.form['birth_date'], '%Y-%m-%d').date() if request.form.get('birth_date') else None
+            employee.current_residence = request.form.get('current_residence')
+            employee.residence_google_map_link = request.form.get('residence_google_map_link')
+            employee.employee_photo = employee_photo_filename
+            employee.id_card_photo = id_card_photo_filename
             
             db.session.add(employee)
             db.session.commit()

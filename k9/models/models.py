@@ -360,6 +360,16 @@ class Employee(db.Model):
     # Additional info
     certifications = db.Column(JSON, default=list)
     
+    # New personal information fields
+    national_id = db.Column(db.String(50))
+    full_name = db.Column(db.String(200))
+    birth_place = db.Column(db.String(200))
+    birth_date = db.Column(db.Date)
+    current_residence = db.Column(db.String(300))
+    residence_google_map_link = db.Column(db.String(500))
+    employee_photo = db.Column(db.String(255))
+    id_card_photo = db.Column(db.String(255))
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     

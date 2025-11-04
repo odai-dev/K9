@@ -28,7 +28,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form method="POST">
+                <form method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <!-- Basic Information -->
                     <div class="row mb-4">
@@ -64,6 +64,47 @@
                         </div>
                     </div>
 
+                    <!-- Personal Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">المعلومات الشخصية</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="national_id" class="form-label">الرقم الوطني</label>
+                            <input type="text" class="form-control" id="national_id" name="national_id">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="full_name" class="form-label">الاسم الرباعي</label>
+                            <input type="text" class="form-control" id="full_name" name="full_name">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="birth_place" class="form-label">مكان الميلاد</label>
+                            <input type="text" class="form-control" id="birth_place" name="birth_place">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="birth_date" class="form-label">تاريخ الميلاد</label>
+                            <input type="date" class="form-control" id="birth_date" name="birth_date">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="current_residence" class="form-label">موقع السكن الحالي</label>
+                            <input type="text" class="form-control" id="current_residence" name="current_residence">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="residence_google_map_link" class="form-label">رابط الموقع على جوجل ماب</label>
+                            <input type="url" class="form-control" id="residence_google_map_link" name="residence_google_map_link" placeholder="https://maps.google.com/...">
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                يمكنك نسخ رابط الموقع من خرائط جوجل
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Contact Information -->
                     <div class="row mb-4">
                         <div class="col-12">
@@ -89,6 +130,31 @@
                         <div class="col-md-6 mb-3">
                             <label for="email" class="form-label">البريد الإلكتروني</label>
                             <input type="email" class="form-control" id="email" name="email">
+                        </div>
+                    </div>
+
+                    <!-- Documents and Photos -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">الصور والوثائق</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="employee_photo" class="form-label">صورة الموظف</label>
+                            <input type="file" class="form-control" id="employee_photo" name="employee_photo" accept="image/*">
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                يمكنك رفع صورة شخصية للموظف (JPG, PNG)
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="id_card_photo" class="form-label">صورة البطاقة الشخصية</label>
+                            <input type="file" class="form-control" id="id_card_photo" name="id_card_photo" accept="image/*">
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                يمكنك رفع صورة البطاقة الشخصية (JPG, PNG)
+                            </div>
                         </div>
                     </div>
 
