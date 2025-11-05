@@ -368,6 +368,20 @@ def employees_add():
             employee.birth_date = datetime.strptime(request.form['birth_date'], '%Y-%m-%d').date() if request.form.get('birth_date') else None
             employee.current_residence = request.form.get('current_residence')
             employee.residence_google_map_link = request.form.get('residence_google_map_link')
+            
+            # Add geolocation coordinates
+            if request.form.get('residence_latitude'):
+                try:
+                    employee.residence_latitude = float(request.form.get('residence_latitude'))
+                except (ValueError, TypeError):
+                    employee.residence_latitude = None
+            
+            if request.form.get('residence_longitude'):
+                try:
+                    employee.residence_longitude = float(request.form.get('residence_longitude'))
+                except (ValueError, TypeError):
+                    employee.residence_longitude = None
+            
             employee.employee_photo = employee_photo_filename
             employee.id_card_photo = id_card_photo_filename
             

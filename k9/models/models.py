@@ -367,6 +367,8 @@ class Employee(db.Model):
     birth_date = db.Column(db.Date)
     current_residence = db.Column(db.String(300))
     residence_google_map_link = db.Column(db.String(500))
+    residence_latitude = db.Column(db.Float)
+    residence_longitude = db.Column(db.Float)
     employee_photo = db.Column(db.String(255))
     id_card_photo = db.Column(db.String(255))
     
