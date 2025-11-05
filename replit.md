@@ -45,7 +45,8 @@ Preferred communication style: Simple, everyday language.
 - **Flexible Data Storage**: JSON fields for metadata and audit logs.
 - **Performance**: Optimized with database connection pooling and file size limits.
 - **Scalability**: Modular architecture and role-based data isolation.
-- **Employee vs User/Handler Architecture**: Distinct `Employee` table for general workforce management and `User` table with `HANDLER` role for system access and daily operations, with optional linking.
+- **Employee vs User/Handler Architecture**: Distinct `Employee` table for general workforce management and `User` table with `HANDLER` role for system access and daily operations, with **mandatory** linking. All system users must be linked to employee records for enhanced security and data integrity.
+- **User-Employee Enforcement**: Required `employee_id` foreign key in User model ensures all users have linked employee records. Includes validation at model level and login security checks.
 
 ## External Dependencies
 
