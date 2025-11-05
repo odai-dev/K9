@@ -1268,17 +1268,23 @@ def validate_required_project_id(project_id, error_message='يجب اختيار 
         return False, None, 'معرف المشروع غير صالح'
 
 
-def get_project_id_for_user(user=None):
+def get_project_id_for_user(user=None, form_project_id=None):
     """
-    Get the project_id for the current user based on their role.
+    Get the project_id for the current user based on their role and form input.
     
     - For GENERAL_ADMIN in PM mode: Returns their assigned project
     - For PROJECT_MANAGER: Returns their assigned project
-    - For GENERAL_ADMIN in admin mode: Returns None (they should select manually)
+    - For GENERAL_ADMIN in admin mode: Uses form_project_id if provided
     - For HANDLER: Returns their assigned project
     
+    Args:
+        user: The user object (defaults to current_user)
+        form_project_id: The project_id from form/request data
+    
     Returns:
-        str|None: The project ID or None if user should select manually
+        tuple: (success: bool, result: str|error_message)
+        - If success: (True, project_id)
+        - If error: (False, error_message)
     """
     from flask_login import current_user
     from k9.utils.pm_scoping import get_pm_project, is_pm
@@ -1288,12 +1294,15 @@ def get_project_id_for_user(user=None):
         user = current_user
     
     if not user or not user.is_authenticated:
-        return None
+        return False, 'المستخدم غير مصرح له'
     
     # For PM users (including GENERAL_ADMIN in PM mode), auto-get their project
     if is_pm(user):
         project = get_pm_project(user)
-        return str(project.id) if project else None
+        if project:
+            return True, str(project.id)
+        else:
+            return False, 'لم يتم تعيين مشروع لهذا المستخدم'
     
     # For HANDLER, get their assigned project via employee record
     if user.role == UserRole.HANDLER:
@@ -1305,7 +1314,18 @@ def get_project_id_for_user(user=None):
                 is_active=True
             ).first()
             if assignment:
-                return str(assignment.project_id)
+                return True, str(assignment.project_id)
+        return False, 'لم يتم تعيين مشروع لهذا المعالج'
     
-    # For GENERAL_ADMIN in admin mode or others, return None (manual selection)
-    return None
+    # For GENERAL_ADMIN in admin mode, use form_project_id if provided
+    if form_project_id and form_project_id != '' and form_project_id != 'null' and form_project_id != 'None':
+        # Validate the project_id
+        try:
+            import uuid
+            uuid.UUID(str(form_project_id))
+            return True, str(form_project_id)
+        except (ValueError, AttributeError):
+            return False, 'معرف المشروع غير صالح'
+    
+    # No project_id available
+    return False, 'يجب تحديد المشروع'
