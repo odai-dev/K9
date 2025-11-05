@@ -29,7 +29,7 @@ class DailyScheduleService:
         if existing:
             return None, "يوجد جدول لهذا اليوم بالفعل"
         
-        schedule = DailySchedule(
+        schedule = DailySchedule(  # type: ignore
             date=date,
             project_id=project_id,
             created_by_user_id=created_by_user_id,
@@ -45,7 +45,7 @@ class DailyScheduleService:
     def add_schedule_item(schedule_id: str, handler_user_id: str, dog_id: Optional[str], 
                          shift_id: Optional[str]) -> tuple:
         """إضافة عنصر للجدول"""
-        item = DailyScheduleItem(
+        item = DailyScheduleItem(  # type: ignore
             daily_schedule_id=schedule_id,
             handler_user_id=handler_user_id,
             dog_id=dog_id,
@@ -230,18 +230,13 @@ class HandlerReportService:
         if not schedule:
             return []
         
-        # Get employee associated with this user (same pattern as get_handler_schedule_for_date)
-        employee = Employee.query.filter_by(user_account_id=handler_user_id).first()
-        if not employee:
-            return []
-        
         # Get schedule items where this handler is assigned (as primary or replacement)
         items = DailyScheduleItem.query.filter(
             and_(
                 DailyScheduleItem.daily_schedule_id == schedule.id,
                 or_(
-                    DailyScheduleItem.employee_id == employee.id,
-                    DailyScheduleItem.replacement_employee_id == employee.id
+                    DailyScheduleItem.handler_user_id == handler_user_id,
+                    DailyScheduleItem.replacement_handler_id == handler_user_id
                 )
             )
         ).all()
@@ -301,7 +296,7 @@ class HandlerReportService:
             if not can_create:
                 return None, error
         
-        report = HandlerReport(
+        report = HandlerReport(  # type: ignore
             date=report_date,
             report_type=report_type,
             schedule_item_id=schedule_item_id,
@@ -313,9 +308,9 @@ class HandlerReportService:
         )
         
         # Create related sections
-        report.health = HandlerReportHealth(report=report)
-        report.care = HandlerReportCare(report=report)
-        report.behavior = HandlerReportBehavior(report=report)
+        report.health = HandlerReportHealth(report=report)  # type: ignore
+        report.care = HandlerReportCare(report=report)  # type: ignore
+        report.behavior = HandlerReportBehavior(report=report)  # type: ignore
         
         db.session.add(report)
         db.session.commit()
@@ -427,13 +422,32 @@ class ShiftReportService:
     def can_create_shift_report(schedule_item_id: str) -> tuple:
         """التحقق من إمكانية إنشاء تقرير وردية"""
         item = DailyScheduleItem.query.get(schedule_item_id)
-        if not item:
-            return False, "لم يتم العثور على عنصر الجدول"
+        if not item or not item.shift:
+            return False, "لم يتم العثور على عنصر الجدول أو الوردية"
         
         # Check if shift report already exists for this schedule item
         existing = ShiftReport.query.filter_by(schedule_item_id=schedule_item_id).first()
         if existing:
             return False, "يوجد تقرير وردية لهذا العنصر بالفعل"
+        
+        # Timing validation: Can only create from shift end until end of same day
+        shift = item.shift
+        if not shift.end_time:
+            return False, "وقت نهاية الوردية غير محدد"
+        
+        # Combine schedule date with shift end time
+        shift_end_datetime = datetime.combine(item.schedule.date, shift.end_time)
+        
+        # End of same day (23:59:59)
+        day_end = datetime.combine(item.schedule.date, time(23, 59, 59))
+        
+        now = datetime.now()
+        
+        if now < shift_end_datetime:
+            return False, f"لا يمكن إنشاء التقرير قبل انتهاء الوردية. انتهاء الوردية: {shift_end_datetime.strftime('%H:%M')}"
+        
+        if now > day_end:
+            return False, f"انتهت فترة تقديم تقرير الوردية. آخر موعد كان: {day_end.strftime('%Y-%m-%d %H:%M')}"
         
         return True, None
     
@@ -448,7 +462,7 @@ class ShiftReportService:
             return None, error
         
         # Create shift report
-        shift_report = ShiftReport(
+        shift_report = ShiftReport(  # type: ignore
             schedule_item_id=schedule_item_id,
             handler_user_id=handler_user_id,
             dog_id=dog_id,
@@ -459,8 +473,8 @@ class ShiftReportService:
         )
         
         # Create related sections (only 3 for shift reports)
-        shift_report.health = ShiftReportHealth(shift_report=shift_report)
-        shift_report.behavior = ShiftReportBehavior(shift_report=shift_report)
+        shift_report.health = ShiftReportHealth(shift_report=shift_report)  # type: ignore
+        shift_report.behavior = ShiftReportBehavior(shift_report=shift_report)  # type: ignore
         
         db.session.add(shift_report)
         db.session.commit()
@@ -581,7 +595,7 @@ class NotificationService:
                           related_id: Optional[str] = None,
                           related_type: Optional[str] = None):
         """إنشاء إشعار جديد"""
-        notification = Notification(
+        notification = Notification(  # type: ignore
             user_id=user_id,
             type=notification_type,
             title=title,
@@ -670,7 +684,7 @@ class AttachmentService:
         file_type = 'pdf' if file_ext == 'pdf' else 'image'
         
         # Create attachment record
-        attachment = HandlerReportAttachment(
+        attachment = HandlerReportAttachment(  # type: ignore
             incident_id=incident_id,
             filename=unique_filename,
             original_filename=filename,
