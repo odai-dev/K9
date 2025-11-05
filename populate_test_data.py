@@ -21,10 +21,18 @@ def create_test_data():
     with app.app_context():
         print("🚀 Starting test data creation...")
         
-        # Clear existing data
-        print("🗑️  Clearing existing schedule data...")
+        # Clear existing data (in reverse order of dependencies)
+        print("🗑️  Clearing existing test data...")
         DailyScheduleItem.query.delete()
         DailySchedule.query.delete()
+        
+        # Only delete test users/data if they exist
+        User.query.filter(User.username.in_(['admin', 'pm1', 'supervisor1', 'handler1', 'handler2', 'handler3'])).delete(synchronize_session=False)
+        Dog.query.filter(Dog.code.in_(['DOG-001', 'DOG-002', 'DOG-003', 'DOG-004', 'DOG-005'])).delete(synchronize_session=False)
+        Shift.query.filter(Shift.name.in_(['الوردية الصباحية', 'الوردية المسائية', 'الوردية الليلية'])).delete(synchronize_session=False)
+        Project.query.filter(Project.code == 'SEC-001').delete(synchronize_session=False)
+        
+        db.session.commit()
         
         # 1. Create Projects
         print("📁 Creating projects...")
