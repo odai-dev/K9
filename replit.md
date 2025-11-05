@@ -146,3 +146,21 @@ The system uses **two distinct but complementary concepts** for managing handler
 - **UUID Compatibility**: Native UUID support for PostgreSQL, automatic string fallback for SQLite.
 - **Connection Pooling**: Configured for production PostgreSQL.
 - **Migration Support**: Flask-Migrate with Alembic.
+
+## Recent Changes (November 5, 2025)
+
+### Employee Geolocation Feature
+- **Automatic Location Capture**: Added browser-based geolocation functionality to employee add form (`/employees/add`)
+- **Database Schema**: Added `residence_latitude` and `residence_longitude` FLOAT columns to Employee model
+- **User Interface**: 
+  - Replaced manual Google Maps link input with a "تحديد الموقع" (Capture Location) button
+  - Real-time location capture using HTML5 Geolocation API
+  - Visual feedback with loading states and accuracy information
+  - Automatic Google Maps link generation from captured coordinates
+- **Security**: High accuracy GPS positioning with 10-second timeout
+- **Error Handling**: Comprehensive error messages in Arabic for:
+  - Browser geolocation not supported
+  - Permission denied
+  - Position unavailable
+  - Request timeout
+- **Data Storage**: Stores latitude, longitude, and auto-generated Google Maps link for each employee's residence

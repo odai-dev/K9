@@ -96,11 +96,20 @@
                         </div>
                         
                         <div class="col-md-6 mb-3">
-                            <label for="residence_google_map_link" class="form-label">رابط الموقع على جوجل ماب</label>
-                            <input type="url" class="form-control" id="residence_google_map_link" name="residence_google_map_link" placeholder="https://maps.google.com/...">
-                            <div class="form-text">
+                            <label for="residence_location" class="form-label">موقع السكن (GPS)</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="residence_location" name="residence_location" readonly placeholder="اضغط على الزر لتحديد الموقع">
+                                <button type="button" class="btn btn-primary" id="captureLocationBtn" onclick="captureCurrentLocation()">
+                                    <i class="fas fa-map-marker-alt me-1"></i>
+                                    تحديد الموقع
+                                </button>
+                            </div>
+                            <input type="hidden" id="residence_latitude" name="residence_latitude">
+                            <input type="hidden" id="residence_longitude" name="residence_longitude">
+                            <input type="hidden" id="residence_google_map_link" name="residence_google_map_link">
+                            <div class="form-text" id="location_status">
                                 <i class="fas fa-info-circle me-1"></i>
-                                يمكنك نسخ رابط الموقع من خرائط جوجل
+                                سيتم تحديد موقعك الحالي تلقائياً عند الضغط على الزر
                             </div>
                         </div>
                     </div>
@@ -308,5 +317,78 @@ document.addEventListener('change', function(e) {
         }
     }
 });
+
+function captureCurrentLocation() {
+    const locationInput = document.getElementById('residence_location');
+    const latitudeInput = document.getElementById('residence_latitude');
+    const longitudeInput = document.getElementById('residence_longitude');
+    const googleMapLinkInput = document.getElementById('residence_google_map_link');
+    const locationStatus = document.getElementById('location_status');
+    const captureBtn = document.getElementById('captureLocationBtn');
+    
+    // Check if geolocation is supported
+    if (!navigator.geolocation) {
+        locationStatus.innerHTML = '<i class="fas fa-exclamation-triangle me-1 text-danger"></i>المتصفح لا يدعم تحديد الموقع';
+        return;
+    }
+    
+    // Show loading state
+    captureBtn.disabled = true;
+    captureBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>جاري التحديد...';
+    locationStatus.innerHTML = '<i class="fas fa-spinner fa-spin me-1 text-primary"></i>جاري الحصول على موقعك الحالي...';
+    
+    // Get current position
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+            
+            // Update form fields
+            latitudeInput.value = latitude;
+            longitudeInput.value = longitude;
+            locationInput.value = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+            
+            // Generate Google Maps link
+            const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+            googleMapLinkInput.value = googleMapsLink;
+            
+            // Update status
+            locationStatus.innerHTML = `<i class="fas fa-check-circle me-1 text-success"></i>تم تحديد الموقع بنجاح (دقة: ${Math.round(accuracy)} متر)`;
+            
+            // Reset button
+            captureBtn.disabled = false;
+            captureBtn.innerHTML = '<i class="fas fa-map-marker-alt me-1"></i>تحديد الموقع';
+        },
+        function(error) {
+            // Handle errors
+            let errorMessage = '';
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = 'تم رفض الإذن للوصول إلى الموقع. يرجى السماح بتحديد الموقع من إعدادات المتصفح';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = 'معلومات الموقع غير متاحة حالياً';
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = 'انتهت مهلة طلب تحديد الموقع';
+                    break;
+                default:
+                    errorMessage = 'حدث خطأ غير معروف أثناء تحديد الموقع';
+            }
+            
+            locationStatus.innerHTML = `<i class="fas fa-exclamation-triangle me-1 text-danger"></i>${errorMessage}`;
+            
+            // Reset button
+            captureBtn.disabled = false;
+            captureBtn.innerHTML = '<i class="fas fa-map-marker-alt me-1"></i>تحديد الموقع';
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
+}
 </script>
 {% endblock %}
