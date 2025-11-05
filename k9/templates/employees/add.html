@@ -167,6 +167,30 @@
                         </div>
                     </div>
 
+                    <!-- Employee Documents -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                <h6 class="text-primary mb-0">المستندات الإضافية</h6>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addDocumentField()">
+                                    <i class="fas fa-plus me-1"></i>
+                                    إضافة مستند
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                يمكنك إرفاق مستندات إضافية مثل: أوامر فش وتشبيه، شهادات، وثائق رسمية، إلخ
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div id="documentsContainer"></div>
+                        </div>
+                    </div>
+
 
 
                     <!-- Project Manager Account Creation (only visible for General Admin) -->
@@ -389,6 +413,60 @@ function captureCurrentLocation() {
             maximumAge: 0
         }
     );
+}
+
+// Document management functions
+let documentCounter = 0;
+
+function addDocumentField() {
+    documentCounter++;
+    const container = document.getElementById('documentsContainer');
+    
+    const documentDiv = document.createElement('div');
+    documentDiv.className = 'card mb-3 document-item';
+    documentDiv.id = `document-${documentCounter}`;
+    
+    documentDiv.innerHTML = `
+        <div class="card-body">
+            <div class="row align-items-end">
+                <div class="col-md-4 mb-3">
+                    <label for="doc_type_${documentCounter}" class="form-label">نوع المستند <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="doc_type_${documentCounter}" 
+                           name="document_types[]" placeholder="مثال: أمر فش وتشبيه" required>
+                </div>
+                <div class="col-md-5 mb-3">
+                    <label for="doc_file_${documentCounter}" class="form-label">الملف <span class="text-danger">*</span></label>
+                    <input type="file" class="form-control" id="doc_file_${documentCounter}" 
+                           name="document_files[]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.txt" required>
+                    <div class="form-text">
+                        <i class="fas fa-info-circle me-1"></i>
+                        الصيغ المسموحة: PDF, DOC, DOCX, JPG, PNG, GIF, TXT
+                    </div>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="button" class="btn btn-danger w-100" onclick="removeDocumentField(${documentCounter})">
+                        <i class="fas fa-trash me-1"></i>
+                        حذف
+                    </button>
+                </div>
+                <div class="col-12 mb-2">
+                    <label for="doc_notes_${documentCounter}" class="form-label">ملاحظات (اختياري)</label>
+                    <textarea class="form-control" id="doc_notes_${documentCounter}" 
+                              name="document_notes[]" rows="2" placeholder="أي ملاحظات إضافية عن هذا المستند"></textarea>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(documentDiv);
+}
+
+function removeDocumentField(id) {
+    const element = document.getElementById(`document-${id}`);
+    if (element) {
+        element.remove();
+    }
 }
 </script>
 {% endblock %}
