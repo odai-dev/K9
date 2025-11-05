@@ -61,6 +61,7 @@ def create_test_data():
                     employee.employee_id = emp_id
                     employee.role = role
                     employee.email = f"{emp_id.lower()}@k9unit.local"
+                    employee.phone = f"+966 5{random.randint(10000000, 99999999)}"
                     employee.hire_date = date.today() - timedelta(days=random.randint(30, 500))
                     employee.is_active = True
                     db.session.add(employee)
@@ -116,11 +117,12 @@ def create_test_data():
             
             # 5. Create Training Sessions
             trainers = [e for e in employees if e.role == EmployeeRole.TRAINER]
-            if trainers and dogs:
+            if trainers and dogs and projects:
                 for _ in range(30):
                     session = TrainingSession()
                     session.dog_id = random.choice(dogs).id
                     session.trainer_id = random.choice(trainers).id
+                    session.project_id = random.choice(projects).id
                     session.session_date = datetime.now() - timedelta(days=random.randint(1, 60))
                     session.duration = random.randint(60, 120)
                     session.category = random.choice(list(TrainingCategory))
@@ -134,11 +136,12 @@ def create_test_data():
             
             # 6. Create Veterinary Visits
             vets = [e for e in employees if e.role == EmployeeRole.VET]
-            if vets and dogs:
+            if vets and dogs and projects:
                 for _ in range(25):
                     visit = VeterinaryVisit()
                     visit.dog_id = random.choice(dogs).id
                     visit.vet_id = random.choice(vets).id
+                    visit.project_id = random.choice(projects).id
                     visit.visit_date = datetime.now() - timedelta(days=random.randint(1, 90))
                     visit.visit_type = random.choice(list(VisitType))
                     visit.symptoms = "Routine checkup"
