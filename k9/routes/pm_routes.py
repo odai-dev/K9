@@ -344,15 +344,12 @@ def my_team():
     # Get employees assigned to this project
     project_employees = get_project_employees(project.id)
     
-    # Get handlers with their user accounts - FIX: properly match employee to user
+    # Get handlers with their user accounts
     handlers = []
     for emp in project_employees:
         if emp.role == EmployeeRole.HANDLER:
-            # FIX: Match user account by employee_id, not just any handler in project
-            user_account = User.query.filter_by(
-                employee_id=emp.id,
-                role=UserRole.HANDLER
-            ).first()
+            # Use existing relationship: Employee.user_account links to User
+            user_account = emp.user_account if emp.user_account and emp.user_account.role == UserRole.HANDLER else None
             handlers.append({
                 'employee': emp,
                 'user_account': user_account,
