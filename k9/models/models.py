@@ -280,9 +280,6 @@ class User(UserMixin, db.Model):
     # For project managers - which sections they can access
     allowed_sections = db.Column(JSON, default=list)
     
-    # Link to Employee record (optional - not all users may be employees)
-    employee_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=True)
-    
     # Handler-specific fields
     phone = db.Column(db.String(20))  # رقم الهاتف للسائس
     project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=True)  # المشروع المخصص للسائس
@@ -290,9 +287,6 @@ class User(UserMixin, db.Model):
     
     # Relationship to project manager permissions
     pm_permissions = db.relationship('ProjectManagerPermission', backref='user', lazy='dynamic', cascade='all, delete-orphan')
-    
-    # Relationship to employee
-    employee = db.relationship('Employee', backref='user_account', foreign_keys=[employee_id])
     
     # Relationships for handler
     assigned_project = db.relationship('Project', backref='handler_users', foreign_keys=[project_id])
