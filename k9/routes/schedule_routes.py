@@ -7,7 +7,7 @@ from flask_login import login_required, current_user
 from datetime import date, datetime, timedelta
 from k9.services.handler_service import DailyScheduleService, NotificationService
 from k9.models.models_handler_daily import DailySchedule, DailyScheduleItem
-from k9.models.models import Employee, Dog, Shift, Project
+from k9.models.models import Employee, Dog, Shift, Project, User
 from k9.decorators import admin_or_pm_required
 from k9.utils.utils import validate_required_project_id, get_project_id_for_user
 from app import db
@@ -103,13 +103,13 @@ def edit(schedule_id):
         action = request.form.get('action')
         
         if action == 'add_item':
-            employee_id = request.form.get('employee_id')
+            handler_user_id = request.form.get('handler_user_id')
             dog_id = request.form.get('dog_id') or None
             shift_id = request.form.get('shift_id') or None
             
             item, error = DailyScheduleService.add_schedule_item(
                 schedule_id=schedule_id,
-                employee_id=employee_id,
+                handler_user_id=handler_user_id,
                 dog_id=dog_id,
                 shift_id=shift_id
             )
@@ -133,11 +133,11 @@ def edit(schedule_id):
         
         elif action == 'replace':
             item_id = request.form.get('item_id')
-            replacement_id = request.form.get('replacement_employee_id')
+            replacement_handler_id = request.form.get('replacement_handler_id')
             reason = request.form.get('replacement_reason')
             notes = request.form.get('replacement_notes')
             
-            DailyScheduleService.replace_employee(item_id, replacement_id, reason, notes)
+            DailyScheduleService.replace_handler(item_id, replacement_handler_id, reason, notes)
             flash('تم تسجيل الاستبدال', 'success')
         
         elif action == 'lock':
@@ -148,14 +148,21 @@ def edit(schedule_id):
         return redirect(url_for('schedule.edit', schedule_id=schedule_id))
     
     # GET request
-    employees = Employee.query.filter_by(is_active=True).all()
+    from k9.models.models import UserRole
+    # Get handler users for the project
+    handlers = User.query.filter_by(
+        role=UserRole.HANDLER,
+        project_id=schedule.project_id,
+        is_active=True
+    ).all()
+    
     dogs = Dog.query.filter_by(current_status='ACTIVE').all()
     shifts = Shift.query.filter_by(is_active=True).all()
     
     return render_template('schedule/edit.html',
                          page_title='تعديل الجدول اليومي',
                          schedule=schedule,
-                         employees=employees,
+                         handlers=handlers,
                          dogs=dogs,
                          shifts=shifts)
 
