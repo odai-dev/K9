@@ -6,7 +6,7 @@ Handles Arabic/RTL caretaker daily reports under Reports → Breeding
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 from k9.utils.permission_utils import has_permission
-from k9.utils.utils import get_user_projects
+from k9.utils.pm_scoping import get_scoped_projects
 from k9.utils.template_utils import get_base_template
 
 # Create blueprint
@@ -23,8 +23,8 @@ def caretaker_daily():
         flash('ليس لديك صلاحية لعرض تقارير الرعاية اليومية', 'error')
         return redirect(url_for('main.dashboard'))
     
-    # Get accessible projects for current user
-    projects = get_user_projects(current_user)
+    # Get accessible projects for current user using PM scoping
+    projects = get_scoped_projects()
     
     # Get any URL parameters for state preservation
     initial_params = {
