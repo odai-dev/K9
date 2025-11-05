@@ -34,6 +34,161 @@ def handler_required(f):
     return decorated_function
 
 
+# Helper functions for form parsing
+HEALTH_FIELDS = ['eyes', 'nose', 'ears', 'mouth', 'teeth', 'gums', 
+                 'front_limbs', 'back_limbs', 'hair', 'tail', 'rear']
+
+
+def parse_health_data(form_data, health_object):
+    """Parse health section data from form and update health object"""
+    for field in HEALTH_FIELDS:
+        status_val = form_data.get(f'{field}_status')
+        # Always set status - either to the selected value or None if cleared
+        if status_val:
+            setattr(health_object, f'{field}_status', HealthCheckStatus(status_val))
+        else:
+            setattr(health_object, f'{field}_status', None)
+        # Always update notes (can be empty string to clear)
+        setattr(health_object, f'{field}_notes', form_data.get(f'{field}_notes'))
+
+
+def parse_training_data(form_data, report):
+    """Parse training section data from form and create training sessions"""
+    training_types_map = {
+        'fitness': TrainingType.FITNESS,
+        'agility': TrainingType.AGILITY,
+        'obedience': TrainingType.OBEDIENCE,
+        'ball': TrainingType.BALL,
+        'explosives': TrainingType.EXPLOSIVES,
+        'other': TrainingType.OTHER
+    }
+    
+    for key, training_type in training_types_map.items():
+        description = form_data.get(f'training_{key}_description')
+        time_from_str = form_data.get(f'training_{key}_from')
+        time_to_str = form_data.get(f'training_{key}_to')
+        notes = form_data.get(f'training_{key}_notes')
+        
+        # Only create if at least one field is filled
+        if description or time_from_str or time_to_str or notes:
+            try:
+                time_from = datetime.strptime(time_from_str, '%H:%M').time() if time_from_str else None
+                time_to = datetime.strptime(time_to_str, '%H:%M').time() if time_to_str else None
+            except ValueError:
+                continue  # Skip invalid time formats
+            
+            training_session = HandlerReportTraining(  # type: ignore
+                report_id=report.id,
+                training_type=training_type,
+                description=description,
+                time_from=time_from,
+                time_to=time_to,
+                notes=notes
+            )
+            db.session.add(training_session)
+
+
+def parse_care_data(form_data, care_object):
+    """Parse care section data from form and update care object"""
+    care_object.food_amount = form_data.get('food_amount')
+    care_object.food_type = form_data.get('food_type')
+    care_object.supplements = form_data.get('supplements')
+    care_object.water_amount = form_data.get('water_amount')
+    care_object.grooming_done = bool(form_data.get('grooming_done'))
+    care_object.washing_done = bool(form_data.get('washing_done'))
+    care_object.excretion_location = form_data.get('excretion_location')
+    
+    # Stool color
+    stool_color_val = form_data.get('stool_color')
+    if stool_color_val:
+        care_object.stool_color = StoolColor(stool_color_val)
+    
+    # Stool shape
+    stool_shape_val = form_data.get('stool_shape')
+    if stool_shape_val:
+        care_object.stool_shape = StoolShape(stool_shape_val)
+
+
+def parse_behavior_data(form_data, behavior_object):
+    """Parse behavior section data from form and update behavior object"""
+    behavior_object.good_behavior_notes = form_data.get('good_behavior_notes')
+    behavior_object.bad_behavior_notes = form_data.get('bad_behavior_notes')
+
+
+def parse_incidents_data(form_data, report):
+    """Parse incidents section data from form and create incident records"""
+    suspicion_cases = form_data.get('suspicion_cases')
+    detection_cases = form_data.get('detection_cases')
+    
+    if suspicion_cases:
+        suspicion_incident = HandlerReportIncident(  # type: ignore
+            report_id=report.id,
+            incident_type=IncidentType.SUSPICION,
+            description=suspicion_cases
+        )
+        db.session.add(suspicion_incident)
+    
+    if detection_cases:
+        detection_incident = HandlerReportIncident(  # type: ignore
+            report_id=report.id,
+            incident_type=IncidentType.DETECTION,
+            description=detection_cases
+        )
+        db.session.add(detection_incident)
+
+
+def parse_shift_incidents_data(form_data, shift_report, request_obj):
+    """Parse shift report incidents and handle file uploads"""
+    suspicion_cases = form_data.get('suspicion_cases')
+    detection_cases = form_data.get('detection_cases')
+    
+    # Handle suspicion incident
+    if suspicion_cases:
+        suspicion_incident = ShiftReportIncident(  # type: ignore
+            shift_report_id=shift_report.id,
+            incident_type=IncidentType.SUSPICION,
+            description=suspicion_cases
+        )
+        db.session.add(suspicion_incident)
+        db.session.flush()  # Get the incident ID
+        
+        # Handle file uploads for suspicion
+        suspicion_files = request_obj.files.getlist('suspicion_attachments')
+        if suspicion_files:
+            for file in suspicion_files:
+                if file and file.filename:
+                    attachment, error = AttachmentService.save_attachment(
+                        file=file,
+                        incident_id=str(suspicion_incident.id),
+                        upload_folder='uploads/shift_reports'
+                    )
+                    if error:
+                        flash(f'خطأ في رفع المرفق: {error}', 'warning')
+    
+    # Handle detection incident
+    if detection_cases:
+        detection_incident = ShiftReportIncident(  # type: ignore
+            shift_report_id=shift_report.id,
+            incident_type=IncidentType.DETECTION,
+            description=detection_cases
+        )
+        db.session.add(detection_incident)
+        db.session.flush()  # Get the incident ID
+        
+        # Handle file uploads for detection
+        detection_files = request_obj.files.getlist('detection_attachments')
+        if detection_files:
+            for file in detection_files:
+                if file and file.filename:
+                    attachment, error = AttachmentService.save_attachment(
+                        file=file,
+                        incident_id=str(detection_incident.id),
+                        upload_folder='uploads/shift_reports'
+                    )
+                    if error:
+                        flash(f'خطأ في رفع المرفق: {error}', 'warning')
+
+
 @handler_bp.route('/dashboard')
 @login_required
 @handler_required
@@ -61,13 +216,12 @@ def dashboard():
     # Get dogs worked with today and their report status
     dogs_worked_today = HandlerReportService.get_dogs_worked_today(str(current_user.id), today)
     
-    # Get notifications
-    recent_notifications = NotificationService.get_user_notifications(
-        str(current_user.id), unread_only=True, limit=5
-    )
-    unread_count = len(NotificationService.get_user_notifications(
+    # Get notifications - optimized to avoid duplicate query
+    all_unread_notifications = NotificationService.get_user_notifications(
         str(current_user.id), unread_only=True
-    ))
+    )
+    unread_count = len(all_unread_notifications)
+    recent_notifications = all_unread_notifications[:5]
     
     # Get recent reports
     recent_reports = HandlerReport.query.filter_by(
@@ -116,7 +270,11 @@ def select_daily_report():
     target_date_str = request.args.get('date')
     
     if target_date_str:
-        target_date = datetime.strptime(target_date_str, '%Y-%m-%d').date()
+        try:
+            target_date = datetime.strptime(target_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            flash('تاريخ غير صحيح', 'danger')
+            return redirect(url_for('handler.dashboard'))
     else:
         target_date = today
     
@@ -145,9 +303,13 @@ def new_report():
         location = request.form.get('location')
         report_date = request.form.get('date')
         
-        # Parse date
+        # Parse date with error handling
         if report_date:
-            report_date = datetime.strptime(report_date, '%Y-%m-%d').date()
+            try:
+                report_date = datetime.strptime(report_date, '%Y-%m-%d').date()
+            except ValueError:
+                flash('تاريخ غير صحيح', 'danger')
+                return redirect(url_for('handler.new_report'))
         else:
             report_date = date.today()
         
@@ -170,137 +332,23 @@ def new_report():
             flash(error, 'danger')
             return redirect(url_for('handler.new_report'))
         
-        # Update health section - 11 body parts
+        # Update health section using helper function
         if report.health:
-            # Eyes
-            eyes_status_val = request.form.get('eyes_status')
-            report.health.eyes_status = HealthCheckStatus(eyes_status_val) if eyes_status_val else None
-            report.health.eyes_notes = request.form.get('eyes_notes')
-            
-            # Nose
-            nose_status_val = request.form.get('nose_status')
-            report.health.nose_status = HealthCheckStatus(nose_status_val) if nose_status_val else None
-            report.health.nose_notes = request.form.get('nose_notes')
-            
-            # Ears
-            ears_status_val = request.form.get('ears_status')
-            report.health.ears_status = HealthCheckStatus(ears_status_val) if ears_status_val else None
-            report.health.ears_notes = request.form.get('ears_notes')
-            
-            # Mouth
-            mouth_status_val = request.form.get('mouth_status')
-            report.health.mouth_status = HealthCheckStatus(mouth_status_val) if mouth_status_val else None
-            report.health.mouth_notes = request.form.get('mouth_notes')
-            
-            # Teeth
-            teeth_status_val = request.form.get('teeth_status')
-            report.health.teeth_status = HealthCheckStatus(teeth_status_val) if teeth_status_val else None
-            report.health.teeth_notes = request.form.get('teeth_notes')
-            
-            # Gums
-            gums_status_val = request.form.get('gums_status')
-            report.health.gums_status = HealthCheckStatus(gums_status_val) if gums_status_val else None
-            report.health.gums_notes = request.form.get('gums_notes')
-            
-            # Front limbs
-            front_limbs_status_val = request.form.get('front_limbs_status')
-            report.health.front_limbs_status = HealthCheckStatus(front_limbs_status_val) if front_limbs_status_val else None
-            report.health.front_limbs_notes = request.form.get('front_limbs_notes')
-            
-            # Back limbs
-            back_limbs_status_val = request.form.get('back_limbs_status')
-            report.health.back_limbs_status = HealthCheckStatus(back_limbs_status_val) if back_limbs_status_val else None
-            report.health.back_limbs_notes = request.form.get('back_limbs_notes')
-            
-            # Hair
-            hair_status_val = request.form.get('hair_status')
-            report.health.hair_status = HealthCheckStatus(hair_status_val) if hair_status_val else None
-            report.health.hair_notes = request.form.get('hair_notes')
-            
-            # Tail
-            tail_status_val = request.form.get('tail_status')
-            report.health.tail_status = HealthCheckStatus(tail_status_val) if tail_status_val else None
-            report.health.tail_notes = request.form.get('tail_notes')
-            
-            # Rear
-            rear_status_val = request.form.get('rear_status')
-            report.health.rear_status = HealthCheckStatus(rear_status_val) if rear_status_val else None
-            report.health.rear_notes = request.form.get('rear_notes')
+            parse_health_data(request.form, report.health)
         
-        # Training section - 6 types
-        training_types_map = {
-            'fitness': TrainingType.FITNESS,
-            'agility': TrainingType.AGILITY,
-            'obedience': TrainingType.OBEDIENCE,
-            'ball': TrainingType.BALL,
-            'explosives': TrainingType.EXPLOSIVES,
-            'other': TrainingType.OTHER
-        }
+        # Training section using helper function
+        parse_training_data(request.form, report)
         
-        for key, training_type in training_types_map.items():
-            description = request.form.get(f'training_{key}_description')
-            time_from_str = request.form.get(f'training_{key}_from')
-            time_to_str = request.form.get(f'training_{key}_to')
-            notes = request.form.get(f'training_{key}_notes')
-            
-            # Only create if at least one field is filled
-            if description or time_from_str or time_to_str or notes:
-                from datetime import time as dt_time
-                time_from = datetime.strptime(time_from_str, '%H:%M').time() if time_from_str else None
-                time_to = datetime.strptime(time_to_str, '%H:%M').time() if time_to_str else None
-                
-                training_session = HandlerReportTraining(
-                    report_id=report.id,
-                    training_type=training_type,
-                    description=description,
-                    time_from=time_from,
-                    time_to=time_to,
-                    notes=notes
-                )
-                db.session.add(training_session)
-        
-        # Care section - matching Word document
+        # Care section using helper function
         if report.care:
-            report.care.food_amount = request.form.get('food_amount')
-            report.care.food_type = request.form.get('food_type')
-            report.care.supplements = request.form.get('supplements')
-            report.care.water_amount = request.form.get('water_amount')
-            report.care.grooming_done = bool(request.form.get('grooming_done'))
-            report.care.washing_done = bool(request.form.get('washing_done'))
-            report.care.excretion_location = request.form.get('excretion_location')
-            
-            # Stool color
-            stool_color_val = request.form.get('stool_color')
-            report.care.stool_color = StoolColor(stool_color_val) if stool_color_val else None
-            
-            # Stool shape
-            stool_shape_val = request.form.get('stool_shape')
-            report.care.stool_shape = StoolShape(stool_shape_val) if stool_shape_val else None
+            parse_care_data(request.form, report.care)
         
-        # Behavior section
+        # Behavior section using helper function
         if report.behavior:
-            report.behavior.good_behavior_notes = request.form.get('good_behavior_notes')
-            report.behavior.bad_behavior_notes = request.form.get('bad_behavior_notes')
+            parse_behavior_data(request.form, report.behavior)
         
-        # Incidents section - suspicion and detection
-        suspicion_cases = request.form.get('suspicion_cases')
-        detection_cases = request.form.get('detection_cases')
-        
-        if suspicion_cases:
-            suspicion_incident = HandlerReportIncident(
-                report_id=report.id,
-                incident_type=IncidentType.SUSPICION,
-                description=suspicion_cases
-            )
-            db.session.add(suspicion_incident)
-        
-        if detection_cases:
-            detection_incident = HandlerReportIncident(
-                report_id=report.id,
-                incident_type=IncidentType.DETECTION,
-                description=detection_cases
-            )
-            db.session.add(detection_incident)
+        # Incidents section using helper function
+        parse_incidents_data(request.form, report)
         
         db.session.commit()
         
@@ -323,9 +371,13 @@ def new_report():
     dog_id = request.args.get('dog_id')
     report_date_str = request.args.get('date')
     
-    # Parse report date
+    # Parse report date with error handling
     if report_date_str:
-        report_date = datetime.strptime(report_date_str, '%Y-%m-%d').date()
+        try:
+            report_date = datetime.strptime(report_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            flash('تاريخ غير صحيح', 'danger')
+            return redirect(url_for('handler.dashboard'))
     else:
         report_date = today
     
@@ -379,7 +431,7 @@ def new_report():
             # List incidents
             incidents = {'suspicion': [], 'detection': []}
             for sr in shift_reports:
-                for incident in sr.incidents:
+                for incident in sr.incidents:  # type: ignore
                     if incident.incident_type == IncidentType.SUSPICION:
                         incidents['suspicion'].append(incident)
                     elif incident.incident_type == IncidentType.DETECTION:
@@ -448,20 +500,30 @@ def edit_report(report_id):
         return redirect(url_for('handler.view_report', report_id=report_id))
     
     if request.method == 'POST':
-        # Save report data from form
-        # This is simplified - you'd parse all the form fields
-        
         # Update general info
         report.location = request.form.get('location')
         
-        # Update health section
-        if not report.health:
-            report.health = HandlerReportHealth(report_id=report.id)  # type: ignore
+        # Update health section using helper function
+        if report.health:
+            parse_health_data(request.form, report.health)
         
-        report.health.eyes_status = request.form.get('eyes_status')  # type: ignore
-        report.health.eyes_notes = request.form.get('eyes_notes')  # type: ignore
+        # Update training - delete old and create new
+        for training in report.training_sessions:
+            db.session.delete(training)
+        parse_training_data(request.form, report)
         
-        # ... (continue for all fields)
+        # Update care section using helper function
+        if report.care:
+            parse_care_data(request.form, report.care)
+        
+        # Update behavior section using helper function
+        if report.behavior:
+            parse_behavior_data(request.form, report.behavior)
+        
+        # Update incidents - delete old and create new
+        for incident in report.incidents:
+            db.session.delete(incident)
+        parse_incidents_data(request.form, report)
         
         db.session.commit()
         flash('تم حفظ التقرير', 'success')
@@ -687,117 +749,16 @@ def new_shift_report(schedule_item_id):
             flash(error, 'danger')
             return redirect(url_for('handler.dashboard'))
         
-        # Update Health section - 11 body parts
+        # Update Health section using helper function
         if shift_report.health:
-            # Eyes
-            eyes_status_val = request.form.get('eyes_status')
-            shift_report.health.eyes_status = HealthCheckStatus(eyes_status_val) if eyes_status_val else None
-            shift_report.health.eyes_notes = request.form.get('eyes_notes')
-            
-            # Nose
-            nose_status_val = request.form.get('nose_status')
-            shift_report.health.nose_status = HealthCheckStatus(nose_status_val) if nose_status_val else None
-            shift_report.health.nose_notes = request.form.get('nose_notes')
-            
-            # Ears
-            ears_status_val = request.form.get('ears_status')
-            shift_report.health.ears_status = HealthCheckStatus(ears_status_val) if ears_status_val else None
-            shift_report.health.ears_notes = request.form.get('ears_notes')
-            
-            # Mouth
-            mouth_status_val = request.form.get('mouth_status')
-            shift_report.health.mouth_status = HealthCheckStatus(mouth_status_val) if mouth_status_val else None
-            shift_report.health.mouth_notes = request.form.get('mouth_notes')
-            
-            # Teeth
-            teeth_status_val = request.form.get('teeth_status')
-            shift_report.health.teeth_status = HealthCheckStatus(teeth_status_val) if teeth_status_val else None
-            shift_report.health.teeth_notes = request.form.get('teeth_notes')
-            
-            # Gums
-            gums_status_val = request.form.get('gums_status')
-            shift_report.health.gums_status = HealthCheckStatus(gums_status_val) if gums_status_val else None
-            shift_report.health.gums_notes = request.form.get('gums_notes')
-            
-            # Front limbs
-            front_limbs_status_val = request.form.get('front_limbs_status')
-            shift_report.health.front_limbs_status = HealthCheckStatus(front_limbs_status_val) if front_limbs_status_val else None
-            shift_report.health.front_limbs_notes = request.form.get('front_limbs_notes')
-            
-            # Back limbs
-            back_limbs_status_val = request.form.get('back_limbs_status')
-            shift_report.health.back_limbs_status = HealthCheckStatus(back_limbs_status_val) if back_limbs_status_val else None
-            shift_report.health.back_limbs_notes = request.form.get('back_limbs_notes')
-            
-            # Hair
-            hair_status_val = request.form.get('hair_status')
-            shift_report.health.hair_status = HealthCheckStatus(hair_status_val) if hair_status_val else None
-            shift_report.health.hair_notes = request.form.get('hair_notes')
-            
-            # Tail
-            tail_status_val = request.form.get('tail_status')
-            shift_report.health.tail_status = HealthCheckStatus(tail_status_val) if tail_status_val else None
-            shift_report.health.tail_notes = request.form.get('tail_notes')
-            
-            # Rear
-            rear_status_val = request.form.get('rear_status')
-            shift_report.health.rear_status = HealthCheckStatus(rear_status_val) if rear_status_val else None
-            shift_report.health.rear_notes = request.form.get('rear_notes')
+            parse_health_data(request.form, shift_report.health)
         
-        # Behavior section
+        # Behavior section using helper function
         if shift_report.behavior:
-            shift_report.behavior.good_behavior_notes = request.form.get('good_behavior_notes')
-            shift_report.behavior.bad_behavior_notes = request.form.get('bad_behavior_notes')
+            parse_behavior_data(request.form, shift_report.behavior)
         
-        # Incidents section - suspicion and detection
-        suspicion_cases = request.form.get('suspicion_cases')
-        detection_cases = request.form.get('detection_cases')
-        
-        # Handle suspicion incident
-        if suspicion_cases:
-            suspicion_incident = ShiftReportIncident(
-                shift_report_id=shift_report.id,
-                incident_type=IncidentType.SUSPICION,
-                description=suspicion_cases
-            )
-            db.session.add(suspicion_incident)
-            db.session.flush()  # Get the incident ID
-            
-            # Handle file uploads for suspicion
-            suspicion_files = request.files.getlist('suspicion_attachments')
-            if suspicion_files:
-                for file in suspicion_files:
-                    if file and file.filename:
-                        attachment, error = AttachmentService.save_attachment(
-                            file=file,
-                            incident_id=str(suspicion_incident.id),
-                            upload_folder='uploads/shift_reports'
-                        )
-                        if error:
-                            flash(f'خطأ في رفع المرفق: {error}', 'warning')
-        
-        # Handle detection incident
-        if detection_cases:
-            detection_incident = ShiftReportIncident(
-                shift_report_id=shift_report.id,
-                incident_type=IncidentType.DETECTION,
-                description=detection_cases
-            )
-            db.session.add(detection_incident)
-            db.session.flush()  # Get the incident ID
-            
-            # Handle file uploads for detection
-            detection_files = request.files.getlist('detection_attachments')
-            if detection_files:
-                for file in detection_files:
-                    if file and file.filename:
-                        attachment, error = AttachmentService.save_attachment(
-                            file=file,
-                            incident_id=str(detection_incident.id),
-                            upload_folder='uploads/shift_reports'
-                        )
-                        if error:
-                            flash(f'خطأ في رفع المرفق: {error}', 'warning')
+        # Incidents section with file uploads using helper function
+        parse_shift_incidents_data(request.form, shift_report, request)
         
         db.session.commit()
         
