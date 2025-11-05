@@ -390,6 +390,45 @@ def employees_add():
             db.session.add(employee)
             db.session.commit()
             
+            # Handle employee documents (multiple files)
+            document_types = request.form.getlist('document_types[]')
+            document_files = request.files.getlist('document_files[]')
+            document_notes = request.form.getlist('document_notes[]')
+            
+            rejected_files = []
+            if document_types and document_files:
+                for i, (doc_type, doc_file) in enumerate(zip(document_types, document_files)):
+                    if doc_file and doc_file.filename:
+                        if allowed_file(doc_file.filename):
+                            from k9.models.models import EmployeeDocument
+                            
+                            safe_doc_filename = secure_filename(doc_file.filename or 'document')
+                            unique_doc_filename = f"employee_{employee.id}_{uuid.uuid4()}_{safe_doc_filename}"
+                            
+                            doc_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'employees', str(employee.id))
+                            os.makedirs(doc_folder, exist_ok=True)
+                            
+                            doc_path = os.path.join(doc_folder, unique_doc_filename)
+                            doc_file.save(doc_path)
+                            
+                            employee_doc = EmployeeDocument()
+                            employee_doc.employee_id = employee.id
+                            employee_doc.document_type = doc_type
+                            employee_doc.file_path = os.path.join('employees', str(employee.id), unique_doc_filename)
+                            employee_doc.original_filename = doc_file.filename
+                            employee_doc.uploaded_by_id = current_user.id
+                            if i < len(document_notes):
+                                employee_doc.notes = document_notes[i] if document_notes[i].strip() else None
+                            
+                            db.session.add(employee_doc)
+                        else:
+                            rejected_files.append(doc_file.filename)
+                
+                db.session.commit()
+                
+                if rejected_files:
+                    flash(f'تنبيه: تم رفض بعض الملفات بسبب صيغة غير مسموحة: {", ".join(rejected_files)}', 'warning')
+            
             log_audit(current_user.id, AuditAction.CREATE, 'Employee', employee.id, f'أضيف موظف جديد: {employee.name}', None, {'name': employee.name, 'role': employee.role.value})
             flash('تم إضافة الموظف بنجاح', 'success')
             return redirect(url_for('main.employees_list'))

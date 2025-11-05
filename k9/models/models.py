@@ -432,6 +432,26 @@ class Employee(db.Model):
     def __repr__(self):
         return f'<Employee {self.name} ({self.employee_id})>'
 
+class EmployeeDocument(db.Model):
+    """Model for storing employee documents"""
+    __tablename__ = 'employee_document'
+    
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+    employee_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=False)
+    document_type = db.Column(db.String(200), nullable=False)
+    file_path = db.Column(db.String(500), nullable=False)
+    original_filename = db.Column(db.String(300))
+    upload_date = db.Column(db.DateTime, default=datetime.utcnow)
+    uploaded_by_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'))
+    notes = db.Column(Text)
+    
+    # Relationships
+    employee = db.relationship('Employee', backref=db.backref('documents', lazy='dynamic', cascade='all, delete-orphan'))
+    uploaded_by = db.relationship('User', backref='uploaded_documents')
+    
+    def __repr__(self):
+        return f'<EmployeeDocument {self.document_type} for Employee {self.employee_id}>'
+
 class TrainingSession(db.Model):
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=False)

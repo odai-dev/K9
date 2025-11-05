@@ -149,6 +149,36 @@ The system uses **two distinct but complementary concepts** for managing handler
 
 ## Recent Changes (November 5, 2025)
 
+### Employee Document Management System
+- **New Feature**: Added comprehensive document attachment system for employee records (`/employees/add`)
+- **Database Schema**: 
+  - Created new `EmployeeDocument` model with fields:
+    - `document_type`: User-defined document category (e.g., "أمر فش وتشبيه", "شهادات", etc.)
+    - `file_path`: Secure file storage path in organized employee folders
+    - `original_filename`: Preservation of original file names
+    - `upload_date`: Automatic timestamp
+    - `uploaded_by_id`: Audit trail linking to user who uploaded
+    - `notes`: Optional field for document-specific notes
+  - Relationship: One-to-many between Employee and EmployeeDocument with cascade delete
+- **File Organization**: 
+  - Documents stored in dedicated employee folders: `uploads/employees/{employee_id}/`
+  - Unique filename generation with UUID to prevent conflicts
+  - Supports multiple file formats: PDF, DOC, DOCX, JPG, PNG, TXT
+- **User Interface**:
+  - Dynamic document fields - users can add unlimited documents per employee
+  - Each document includes:
+    - Text input for document type (customizable)
+    - File upload with format validation
+    - Optional notes textarea
+    - Remove button for flexibility
+  - Clean card-based layout for each document
+  - "إضافة مستند" (Add Document) button for adding more documents
+- **Security & Validation**:
+  - File type validation using `allowed_file()` function
+  - Secure filename handling with `secure_filename()`
+  - User authentication tracking for uploads
+- **Use Cases**: Stores dismissal orders, certificates, ID documents, contracts, and any employment-related files
+
 ### Employee Geolocation Feature
 - **Automatic Location Capture**: Added browser-based geolocation functionality to employee add form (`/employees/add`)
 - **Database Schema**: Added `residence_latitude` and `residence_longitude` FLOAT columns to Employee model
