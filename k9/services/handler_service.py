@@ -42,12 +42,12 @@ class DailyScheduleService:
         return schedule, None
     
     @staticmethod
-    def add_schedule_item(schedule_id: str, employee_id: str, dog_id: Optional[str], 
+    def add_schedule_item(schedule_id: str, handler_user_id: str, dog_id: Optional[str], 
                          shift_id: Optional[str]) -> tuple:
         """إضافة عنصر للجدول"""
         item = DailyScheduleItem(
             daily_schedule_id=schedule_id,
-            employee_id=employee_id,
+            handler_user_id=handler_user_id,
             dog_id=dog_id,
             shift_id=shift_id,
             status=ScheduleItemStatus.PLANNED
@@ -78,28 +78,25 @@ class DailyScheduleService:
         return False
     
     @staticmethod
-    def replace_employee(item_id: str, replacement_employee_id: str, reason: str, notes: Optional[str] = None) -> bool:
-        """استبدال موظف"""
+    def replace_handler(item_id: str, replacement_handler_id: str, reason: str, notes: Optional[str] = None) -> bool:
+        """استبدال سائس"""
         item = DailyScheduleItem.query.get(item_id)
         if item:
             item.status = ScheduleItemStatus.REPLACED
-            item.replacement_employee_id = replacement_employee_id
+            item.replacement_handler_id = replacement_handler_id
             item.absence_reason = reason
             item.replacement_notes = notes
             db.session.commit()
             
-            # Get the user_id from employee
-            replacement_employee = Employee.query.get(replacement_employee_id)
-            if replacement_employee and replacement_employee.user_account_id:
-                # Create notification for replacement employee's user account
-                NotificationService.create_notification(
-                    user_id=replacement_employee.user_account_id,
-                    notification_type=NotificationType.EMPLOYEE_REPLACED,
-                    title="تم تكليفك كبديل",
-                    message=f"تم تكليفك كبديل في جدول {item.schedule.date}",
-                    related_id=str(item_id),
-                    related_type="DailyScheduleItem"
-                )
+            # Create notification for replacement handler
+            NotificationService.create_notification(
+                user_id=str(replacement_handler_id),
+                notification_type=NotificationType.EMPLOYEE_REPLACED,
+                title="تم تكليفك كبديل",
+                message=f"تم تكليفك كبديل في جدول {item.schedule.date}",
+                related_id=str(item_id),
+                related_type="DailyScheduleItem"
+            )
             return True
         return False
     
@@ -132,17 +129,13 @@ class DailyScheduleService:
         if not schedule:
             return []
         
-        # Get employee associated with this user
-        employee = Employee.query.filter_by(user_account_id=handler_user_id).first()
-        if not employee:
-            return []
-        
+        # Query schedule items for this handler (either as primary or replacement)
         items = DailyScheduleItem.query.filter(
             and_(
                 DailyScheduleItem.daily_schedule_id == schedule.id,
                 or_(
-                    DailyScheduleItem.employee_id == employee.id,
-                    DailyScheduleItem.replacement_employee_id == employee.id
+                    DailyScheduleItem.handler_user_id == handler_user_id,
+                    DailyScheduleItem.replacement_handler_id == handler_user_id
                 )
             )
         ).all()
@@ -161,29 +154,16 @@ class DailyScheduleService:
         
         # Notify each handler
         for item in items:
-            # Get handler user ID from employee
             if item.handler_user_id:
-                # Direct user ID is available
-                handler_user_id = item.handler_user_id
-            elif item.employee_id:
-                # Get user ID from employee
-                employee = Employee.query.get(item.employee_id)
-                if employee and employee.user_account_id:
-                    handler_user_id = employee.user_account_id
-                else:
-                    continue
-            else:
-                continue
-            
-            # Create notification
-            NotificationService.create_notification(
-                user_id=str(handler_user_id),
-                notification_type=NotificationType.SCHEDULE_CREATED,
-                title="جدول يومي جديد",
-                message=f"تم إنشاء جدول جديد لتاريخ {schedule.date.strftime('%Y-%m-%d')}",
-                related_id=str(schedule_id),
-                related_type="DailySchedule"
-            )
+                # Create notification
+                NotificationService.create_notification(
+                    user_id=str(item.handler_user_id),
+                    notification_type=NotificationType.SCHEDULE_CREATED,
+                    title="جدول يومي جديد",
+                    message=f"تم إنشاء جدول جديد لتاريخ {schedule.date.strftime('%Y-%m-%d')}",
+                    related_id=str(schedule_id),
+                    related_type="DailySchedule"
+                )
 
 
 class HandlerReportService:
