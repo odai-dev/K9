@@ -370,15 +370,17 @@ def employees_add():
             employee.residence_google_map_link = request.form.get('residence_google_map_link')
             
             # Add geolocation coordinates
-            if request.form.get('residence_latitude'):
+            latitude_str = request.form.get('residence_latitude')
+            if latitude_str:
                 try:
-                    employee.residence_latitude = float(request.form.get('residence_latitude'))
+                    employee.residence_latitude = float(latitude_str)
                 except (ValueError, TypeError):
                     employee.residence_latitude = None
             
-            if request.form.get('residence_longitude'):
+            longitude_str = request.form.get('residence_longitude')
+            if longitude_str:
                 try:
-                    employee.residence_longitude = float(request.form.get('residence_longitude'))
+                    employee.residence_longitude = float(longitude_str)
                 except (ValueError, TypeError):
                     employee.residence_longitude = None
             
