@@ -210,13 +210,13 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="{{ url_for('handler.view_report', id=report.id) }}" 
+                                            <a href="{{ url_for('handler.view_report', report_id=report.id) }}" 
                                                class="btn btn-outline-primary" 
                                                title="عرض">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             {% if report.status.value == 'DRAFT' %}
-                                            <a href="{{ url_for('handler.edit_report', id=report.id) }}" 
+                                            <a href="{{ url_for('handler.edit_report', report_id=report.id) }}" 
                                                class="btn btn-outline-warning" 
                                                title="تعديل">
                                                 <i class="fas fa-edit"></i>
