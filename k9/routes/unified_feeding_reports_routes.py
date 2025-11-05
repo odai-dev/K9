@@ -8,6 +8,7 @@ from flask_login import login_required, current_user
 from k9.utils.permission_utils import has_permission
 from k9.models.models import Project
 from k9.utils.utils import get_user_projects
+from k9.utils.template_utils import get_base_template
 
 # Create blueprint
 bp = Blueprint('unified_feeding_reports_ui', __name__)
@@ -38,7 +39,11 @@ def feeding():
         'dog_id': request.args.get('dog_id', '')
     }
     
+    # Get correct base template for PM vs Admin
+    base_template = get_base_template()
+    
     return render_template('reports/breeding/feeding.html', 
                          accessible_projects=projects,
                          initial_params=initial_params,
-                         title='تقرير التغذية')
+                         title='تقرير التغذية',
+                         base_template=base_template)
