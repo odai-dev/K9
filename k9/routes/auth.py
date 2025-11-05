@@ -80,6 +80,25 @@ def login():
                 flash('رمز المصادقة الثنائية غير صحيح', 'error')
                 return render_template('auth/mfa_verify.html', user=user)
         
+        # Security check: Ensure user has employee record (all users must be employees)
+        from k9.models.models import Employee
+        if not user.employee_id:
+            SecurityHelper.log_security_event(user.id, 'LOGIN_DENIED_NO_EMPLOYEE', {
+                'username': username,
+                'reason': 'User account not linked to employee record'
+            })
+            flash('خطأ في النظام: حساب المستخدم غير مرتبط بسجل موظف. يرجى الاتصال بالإدارة.', 'error')
+            return render_template('login.html')
+        
+        employee = Employee.query.get(user.employee_id)
+        if not employee or not employee.is_active:
+            SecurityHelper.log_security_event(user.id, 'LOGIN_DENIED_INACTIVE_EMPLOYEE', {
+                'username': username,
+                'reason': 'Employee record not found or inactive'
+            })
+            flash('حساب الموظف غير نشط. يرجى الاتصال بالإدارة.', 'error')
+            return render_template('login.html')
+        
         # Successful login
         AccountLockoutManager.reset_failed_attempts(user)
         login_user(user, remember=remember)
@@ -163,22 +182,7 @@ def setup():
             except ValueError:
                 hire_date = datetime.utcnow().date()
             
-            # Create the first admin user
-            admin_user = User(
-                username=request.form['username'],
-                email=request.form['email'],
-                password_hash=generate_password_hash(password),
-                role=UserRole.GENERAL_ADMIN,
-                full_name=request.form['full_name'],
-                phone=phone,
-                active=True
-            )
-            
-            db.session.add(admin_user)
-            db.session.flush()  # Get the user ID
-            
-            # Create corresponding Employee record with PROJECT_MANAGER role
-            # This allows the admin to be assigned to projects and work in PM mode
+            # Create Employee record first (required for User.employee_id foreign key)
             admin_employee = Employee(
                 name=request.form['full_name'],
                 employee_id=request.form['employee_id'],
@@ -186,11 +190,30 @@ def setup():
                 phone=phone,
                 email=request.form['email'],
                 hire_date=hire_date,
-                is_active=True,
-                user_account_id=admin_user.id  # Link employee to user account
+                is_active=True
             )
             
             db.session.add(admin_employee)
+            db.session.flush()  # Get the employee ID
+            
+            # Create the first admin user linked to the employee
+            admin_user = User(
+                username=request.form['username'],
+                email=request.form['email'],
+                password_hash=generate_password_hash(password),
+                role=UserRole.GENERAL_ADMIN,
+                full_name=request.form['full_name'],
+                phone=phone,
+                active=True,
+                employee_id=admin_employee.id  # Link user to employee (required)
+            )
+            
+            db.session.add(admin_user)
+            db.session.flush()  # Get the user ID
+            
+            # Update employee with user account link (for backward compatibility)
+            admin_employee.user_account_id = admin_user.id
+            
             db.session.commit()
             
             log_audit(admin_user.id, 'SETUP', 'User', str(admin_user.id), {

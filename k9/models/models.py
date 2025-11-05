@@ -5,6 +5,7 @@ from enum import Enum
 import uuid
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy import String, Text
+from sqlalchemy.orm import validates
 import os
 
 # Use String for UUID when using SQLite, UUID when using PostgreSQL
@@ -256,6 +257,8 @@ class User(UserMixin, db.Model):
     full_name = db.Column(db.String(100), nullable=False)
     active = db.Column(db.Boolean, default=True)
     
+    employee_id = db.Column(get_uuid_column(), db.ForeignKey('employee.id'), nullable=False)
+    
     @property
     def is_active(self):
         return self.active
@@ -285,12 +288,22 @@ class User(UserMixin, db.Model):
     project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=True)  # المشروع المخصص للسائس
     dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=True)  # الكلب المخصص للسائس
     
+    # Required relationship to employee
+    employee = db.relationship('Employee', foreign_keys=[employee_id], backref='user_account', uselist=False)
+    
     # Relationship to project manager permissions
     pm_permissions = db.relationship('ProjectManagerPermission', backref='user', lazy='dynamic', cascade='all, delete-orphan')
     
     # Relationships for handler
     assigned_project = db.relationship('Project', backref='handler_users', foreign_keys=[project_id])
     assigned_dog = db.relationship('Dog', backref='handler_users', foreign_keys=[dog_id])
+    
+    @validates('employee_id')
+    def validate_employee_id(self, key, employee_id):
+        """Validate that employee_id is set (all users must be employees)"""
+        if employee_id is None:
+            raise ValueError("All users must be linked to an employee record. employee_id cannot be None.")
+        return employee_id
     
     def __repr__(self):
         return f'<User {self.username}>'

@@ -23,7 +23,8 @@ def create_admin_user():
     # Import Flask app and models
     try:
         from app import app, db
-        from k9.models.models import User, UserRole
+        from k9.models.models import User, UserRole, Employee, EmployeeRole
+        from datetime import datetime, date
     except ImportError as e:
         print(f"Error importing application modules: {e}")
         print("Make sure you're running this script from the application directory.")
@@ -57,6 +58,17 @@ def create_admin_user():
         if not full_name:
             full_name = "System Administrator"
         
+        # Get employee details (required for all users)
+        employee_id = input("Enter employee ID: ").strip()
+        if not employee_id:
+            print("Employee ID cannot be empty.")
+            sys.exit(1)
+        
+        phone = input("Enter phone number: ").strip()
+        if not phone:
+            print("Phone number cannot be empty.")
+            sys.exit(1)
+        
         # Get password securely
         password = getpass.getpass("Enter password: ")
         if not password:
@@ -74,16 +86,39 @@ def create_admin_user():
         
         try:
             if existing_user:
-                # Update existing user
+                # Update existing user and ensure employee exists
                 user = existing_user
                 user.email = email
                 user.full_name = full_name
                 user.password_hash = generate_password_hash(password)
                 user.role = UserRole.GENERAL_ADMIN
                 user.active = True
+                
+                # Ensure employee record exists
+                employee = Employee.query.get(user.employee_id)
+                if not employee:
+                    print("Error: User exists but has no linked employee record.")
+                    sys.exit(1)
                 action = "updated"
             else:
-                # Create new user
+                # Create employee record first (required for User.employee_id)
+                existing_employee = Employee.query.filter_by(employee_id=employee_id).first()
+                if existing_employee:
+                    print(f"Employee ID '{employee_id}' already exists.")
+                    sys.exit(1)
+                
+                employee = Employee()
+                employee.name = full_name
+                employee.employee_id = employee_id
+                employee.role = EmployeeRole.PROJECT_MANAGER
+                employee.phone = phone
+                employee.email = email
+                employee.hire_date = date.today()
+                employee.is_active = True
+                db.session.add(employee)
+                db.session.flush()  # Get employee ID
+                
+                # Create new user linked to employee
                 user = User()
                 user.username = username
                 user.email = email
@@ -91,7 +126,13 @@ def create_admin_user():
                 user.password_hash = generate_password_hash(password)
                 user.role = UserRole.GENERAL_ADMIN
                 user.active = True
+                user.employee_id = employee.id  # Link to employee (required)
+                user.phone = phone
                 db.session.add(user)
+                db.session.flush()
+                
+                # Update employee with user account link (for backward compatibility)
+                employee.user_account_id = user.id
                 action = "created"
             
             db.session.commit()
