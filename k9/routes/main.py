@@ -28,6 +28,8 @@ from k9.models.models import (Dog, Employee, TrainingSession, VeterinaryVisit, P
 from k9.utils.utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
 from k9.utils.permission_decorators import require_sub_permission
 from k9.utils.validators import validate_yemen_phone
+from k9.utils.template_utils import get_base_template, is_pm_view
+from k9.utils.pm_scoping import get_scoped_dogs, get_scoped_employees, get_scoped_projects, is_pm, is_admin
 from k9.decorators import admin_or_pm_required
 from sqlalchemy.exc import IntegrityError
 import os
@@ -514,13 +516,19 @@ def training_add():
 @login_required
 @admin_or_pm_required
 def veterinary_list():
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        visits = VeterinaryVisit.query.order_by(VeterinaryVisit.created_at.desc()).all()
-    else:
-        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
-        visits = VeterinaryVisit.query.filter(VeterinaryVisit.dog_id.in_(assigned_dog_ids)).order_by(VeterinaryVisit.created_at.desc()).all()
+    # Get scoped dogs using PM scoping utility
+    scoped_dogs = get_scoped_dogs()
+    dog_ids = [d.id for d in scoped_dogs] if scoped_dogs else []
     
-    return render_template('veterinary/list.html', visits=visits)
+    if dog_ids:
+        visits = VeterinaryVisit.query.filter(VeterinaryVisit.dog_id.in_(dog_ids)).order_by(VeterinaryVisit.created_at.desc()).all()
+    else:
+        visits = []
+    
+    # Get correct base template for PM vs Admin
+    base_template = get_base_template()
+    
+    return render_template('veterinary/list.html', visits=visits, base_template=base_template)
 
 @main_bp.route('/veterinary/add', methods=['GET', 'POST'])
 @login_required
@@ -566,15 +574,17 @@ def veterinary_add():
             db.session.rollback()
             flash(f'حدث خطأ أثناء تسجيل الزيارة البيطرية: {str(e)}', 'error')
     
-    # Get available dogs and vets for the form
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
-        vets = Employee.query.filter_by(role=EmployeeRole.VET, is_active=True).all()
-    else:
-        dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
-        vets = Employee.query.filter_by(assigned_to_user_id=current_user.id, role=EmployeeRole.VET, is_active=True).all()
+    # Get scoped dogs and vets using PM scoping utility
+    scoped_dogs = get_scoped_dogs()
+    dogs = [d for d in scoped_dogs if d.current_status == DogStatus.ACTIVE] if scoped_dogs else []
     
-    return render_template('veterinary/add.html', dogs=dogs, vets=vets, visit_types=VisitType)
+    scoped_employees = get_scoped_employees()
+    vets = [e for e in scoped_employees if e.role == EmployeeRole.VET and e.is_active] if scoped_employees else []
+    
+    # Get correct base template for PM vs Admin
+    base_template = get_base_template()
+    
+    return render_template('veterinary/add.html', dogs=dogs, vets=vets, visit_types=VisitType, base_template=base_template)
 
 # Production routes
 @main_bp.route('/production')
@@ -652,19 +662,27 @@ def production_add():
 # Individual production component routes
 @main_bp.route('/production/maturity')
 @login_required
+@admin_or_pm_required
 def maturity_list():
     from k9.models.models import DogMaturity
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        maturity_records = DogMaturity.query.order_by(DogMaturity.created_at.desc()).all()
-    else:
-        # Get assigned dogs and their maturity records
-        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
-        maturity_records = DogMaturity.query.filter(DogMaturity.dog_id.in_(assigned_dog_ids)).order_by(DogMaturity.created_at.desc()).all()
     
-    return render_template('production/maturity_list.html', records=maturity_records, maturities=maturity_records)
+    # Get scoped dogs using PM scoping utility
+    scoped_dogs = get_scoped_dogs()
+    dog_ids = [d.id for d in scoped_dogs] if scoped_dogs else []
+    
+    if dog_ids:
+        maturity_records = DogMaturity.query.filter(DogMaturity.dog_id.in_(dog_ids)).order_by(DogMaturity.created_at.desc()).all()
+    else:
+        maturity_records = []
+    
+    # Get correct base template for PM vs Admin
+    base_template = get_base_template()
+    
+    return render_template('production/maturity_list.html', records=maturity_records, maturities=maturity_records, base_template=base_template)
 
 @main_bp.route('/production/maturity/add', methods=['GET', 'POST'])
 @login_required
+@admin_or_pm_required
 def maturity_add():
     if request.method == 'POST':
         try:
@@ -697,29 +715,38 @@ def maturity_add():
             traceback.print_exc()
             flash(f'حدث خطأ: {str(e)}', 'error')
     
-    # Get available dogs for the form
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
-    else:
-        dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+    # Get scoped dogs using PM scoping utility
+    scoped_dogs = get_scoped_dogs()
+    dogs = [d for d in scoped_dogs if d.current_status == DogStatus.ACTIVE] if scoped_dogs else []
     
-    return render_template('production/maturity_add.html', dogs=dogs)
+    # Get correct base template for PM vs Admin
+    base_template = get_base_template()
+    
+    return render_template('production/maturity_add.html', dogs=dogs, base_template=base_template)
 
 @main_bp.route('/production/heat-cycles')
-@login_required  
+@login_required
+@admin_or_pm_required
 def heat_cycles_list():
     from k9.models.models import HeatCycle
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        heat_cycles = HeatCycle.query.order_by(HeatCycle.created_at.desc()).all()
-    else:
-        # Get assigned dogs and their heat cycles
-        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
-        heat_cycles = HeatCycle.query.filter(HeatCycle.dog_id.in_(assigned_dog_ids)).order_by(HeatCycle.created_at.desc()).all()
     
-    return render_template('production/heat_cycles_list.html', records=heat_cycles, heat_cycles=heat_cycles)
+    # Get scoped dogs using PM scoping utility
+    scoped_dogs = get_scoped_dogs()
+    dog_ids = [d.id for d in scoped_dogs] if scoped_dogs else []
+    
+    if dog_ids:
+        heat_cycles = HeatCycle.query.filter(HeatCycle.dog_id.in_(dog_ids)).order_by(HeatCycle.created_at.desc()).all()
+    else:
+        heat_cycles = []
+    
+    # Get correct base template for PM vs Admin
+    base_template = get_base_template()
+    
+    return render_template('production/heat_cycles_list.html', records=heat_cycles, heat_cycles=heat_cycles, base_template=base_template)
 
 @main_bp.route('/production/heat-cycles/add', methods=['GET', 'POST'])
 @login_required
+@admin_or_pm_required
 def heat_cycles_add():
     if request.method == 'POST':
         try:
@@ -757,33 +784,41 @@ def heat_cycles_add():
             traceback.print_exc()
             flash(f'حدث خطأ: {str(e)}', 'error')
     
-    # Get available female dogs for the form
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        all_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
-    else:
-        all_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
-    
+    # Get scoped dogs using PM scoping utility
+    scoped_dogs = get_scoped_dogs()
+    all_dogs = [d for d in scoped_dogs if d.current_status == DogStatus.ACTIVE] if scoped_dogs else []
     females = [dog for dog in all_dogs if dog.gender == DogGender.FEMALE]
     
-    return render_template('production/heat_cycles_add.html', females=females)
+    # Get correct base template for PM vs Admin
+    base_template = get_base_template()
+    
+    return render_template('production/heat_cycles_add.html', females=females, base_template=base_template)
 
 @main_bp.route('/production/mating')
 @login_required
+@admin_or_pm_required
 def mating_list():
     from k9.models.models import MatingRecord
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        mating_records = MatingRecord.query.order_by(MatingRecord.created_at.desc()).all()
-    else:
-        # Get assigned dogs and their mating records
-        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
-        mating_records = MatingRecord.query.filter(
-            db.or_(MatingRecord.female_id.in_(assigned_dog_ids), MatingRecord.male_id.in_(assigned_dog_ids))
-        ).order_by(MatingRecord.created_at.desc()).all()
     
-    return render_template('production/mating_list.html', records=mating_records, matings=mating_records)
+    # Get scoped dogs using PM scoping utility
+    scoped_dogs = get_scoped_dogs()
+    dog_ids = [d.id for d in scoped_dogs] if scoped_dogs else []
+    
+    if dog_ids:
+        mating_records = MatingRecord.query.filter(
+            db.or_(MatingRecord.female_id.in_(dog_ids), MatingRecord.male_id.in_(dog_ids))
+        ).order_by(MatingRecord.created_at.desc()).all()
+    else:
+        mating_records = []
+    
+    # Get correct base template for PM vs Admin
+    base_template = get_base_template()
+    
+    return render_template('production/mating_list.html', records=mating_records, matings=mating_records, base_template=base_template)
 
 @main_bp.route('/production/mating/add', methods=['GET', 'POST'])
 @login_required
+@admin_or_pm_required
 def mating_add():
     if request.method == 'POST':
         try:
@@ -830,34 +865,43 @@ def mating_add():
             traceback.print_exc()
             flash(f'حدث خطأ: {str(e)}', 'error')
     
-    # Get available dogs and employees for the form
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        all_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
-        employees = Employee.query.filter_by(is_active=True).all()
-    else:
-        all_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
-        employees = Employee.query.filter_by(assigned_to_user_id=current_user.id, is_active=True).all()
-    
+    # Get scoped dogs and employees using PM scoping utility
+    scoped_dogs = get_scoped_dogs()
+    all_dogs = [d for d in scoped_dogs if d.current_status == DogStatus.ACTIVE] if scoped_dogs else []
     females = [dog for dog in all_dogs if dog.gender == DogGender.FEMALE]
     males = [dog for dog in all_dogs if dog.gender == DogGender.MALE]
     
-    return render_template('production/mating_add.html', females=females, males=males, employees=employees)
+    scoped_employees = get_scoped_employees()
+    employees = [e for e in scoped_employees if e.is_active] if scoped_employees else []
+    
+    # Get correct base template for PM vs Admin
+    base_template = get_base_template()
+    
+    return render_template('production/mating_add.html', females=females, males=males, employees=employees, base_template=base_template)
 
 @main_bp.route('/production/pregnancy')
 @login_required
+@admin_or_pm_required
 def pregnancy_list():
     from k9.models.models import PregnancyRecord
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        pregnancy_records = PregnancyRecord.query.order_by(PregnancyRecord.created_at.desc()).all()
-    else:
-        # Get assigned dogs and their pregnancy records
-        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
-        pregnancy_records = PregnancyRecord.query.filter(PregnancyRecord.dog_id.in_(assigned_dog_ids)).order_by(PregnancyRecord.created_at.desc()).all()
     
-    return render_template('production/pregnancy_list.html', pregnancies=pregnancy_records, records=pregnancy_records)
+    # Get scoped dogs using PM scoping utility
+    scoped_dogs = get_scoped_dogs()
+    dog_ids = [d.id for d in scoped_dogs] if scoped_dogs else []
+    
+    if dog_ids:
+        pregnancy_records = PregnancyRecord.query.filter(PregnancyRecord.dog_id.in_(dog_ids)).order_by(PregnancyRecord.created_at.desc()).all()
+    else:
+        pregnancy_records = []
+    
+    # Get correct base template for PM vs Admin
+    base_template = get_base_template()
+    
+    return render_template('production/pregnancy_list.html', pregnancies=pregnancy_records, records=pregnancy_records, base_template=base_template)
 
 @main_bp.route('/production/pregnancy/add', methods=['GET', 'POST'])
 @login_required
+@admin_or_pm_required
 def pregnancy_add():
     if request.method == 'POST':
         try:
@@ -892,47 +936,53 @@ def pregnancy_add():
             traceback.print_exc()
             flash(f'حدث خطأ: {str(e)}', 'error')
     
-    # Get available females and mating records for pregnancy
+    # Get scoped dogs and mating records using PM scoping utility
     from k9.models.models import MatingRecord
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        all_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
-        mating_records = MatingRecord.query.order_by(MatingRecord.created_at.desc()).all()
-    else:
-        all_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
-        assigned_dog_ids = [d.id for d in all_dogs]
-        mating_records = MatingRecord.query.filter(
-            db.or_(MatingRecord.female_id.in_(assigned_dog_ids), MatingRecord.male_id.in_(assigned_dog_ids))
-        ).order_by(MatingRecord.created_at.desc()).all()
-    
+    scoped_dogs = get_scoped_dogs()
+    all_dogs = [d for d in scoped_dogs if d.current_status == DogStatus.ACTIVE] if scoped_dogs else []
     females = [dog for dog in all_dogs if dog.gender == DogGender.FEMALE]
     
-    return render_template('production/pregnancy_add.html', females=females, matings=mating_records)
+    dog_ids = [d.id for d in scoped_dogs] if scoped_dogs else []
+    if dog_ids:
+        mating_records = MatingRecord.query.filter(
+            db.or_(MatingRecord.female_id.in_(dog_ids), MatingRecord.male_id.in_(dog_ids))
+        ).order_by(MatingRecord.created_at.desc()).all()
+    else:
+        mating_records = []
+    
+    # Get correct base template for PM vs Admin
+    base_template = get_base_template()
+    
+    return render_template('production/pregnancy_add.html', females=females, matings=mating_records, base_template=base_template)
 
 @main_bp.route('/production/delivery')
 @login_required
+@admin_or_pm_required
 def delivery_list():
     from k9.models.models import DeliveryRecord
     try:
-        if current_user.role == UserRole.GENERAL_ADMIN:
-            delivery_records = DeliveryRecord.query.order_by(DeliveryRecord.created_at.desc()).all()
+        # Get scoped dogs using PM scoping utility
+        scoped_dogs = get_scoped_dogs()
+        dog_ids = [d.id for d in scoped_dogs] if scoped_dogs else []
+        
+        if dog_ids:
+            delivery_records = DeliveryRecord.query.join(PregnancyRecord).filter(
+                PregnancyRecord.dog_id.in_(dog_ids)
+            ).order_by(DeliveryRecord.created_at.desc()).all()
         else:
-            # Get accessible dogs for this user
-            assigned_dogs = get_user_accessible_dogs(current_user)
-            assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
-            if assigned_dog_ids:
-                delivery_records = DeliveryRecord.query.join(PregnancyRecord).filter(
-                    PregnancyRecord.dog_id.in_(assigned_dog_ids)
-                ).order_by(DeliveryRecord.created_at.desc()).all()
-            else:
-                delivery_records = []
+            delivery_records = []
     except Exception as e:
         print(f"Error fetching delivery records: {e}")
         delivery_records = []
     
-    return render_template('production/delivery_list.html', deliveries=delivery_records, records=delivery_records)
+    # Get correct base template for PM vs Admin
+    base_template = get_base_template()
+    
+    return render_template('production/delivery_list.html', deliveries=delivery_records, records=delivery_records, base_template=base_template)
 
 @main_bp.route('/production/delivery/add', methods=['GET', 'POST'])
 @login_required
+@admin_or_pm_required
 def delivery_add():
     if request.method == 'POST':
         try:
@@ -987,43 +1037,52 @@ def delivery_add():
             traceback.print_exc()
             flash(f'حدث خطأ: {str(e)}', 'error')
     
-    # Get available pregnancies and employees for delivery
+    # Get scoped dogs and employees using PM scoping utility
     from k9.models.models import PregnancyRecord, PregnancyStatus
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        pregnancies = PregnancyRecord.query.filter_by(status=PregnancyStatus.PREGNANT).order_by(PregnancyRecord.expected_delivery_date.asc()).all()
-        employees = Employee.query.filter_by(is_active=True).all()
-    else:
-        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
-        pregnancies = PregnancyRecord.query.filter(PregnancyRecord.dog_id.in_(assigned_dog_ids), PregnancyRecord.status == PregnancyStatus.PREGNANT).order_by(PregnancyRecord.expected_delivery_date.asc()).all()
-        employees = Employee.query.filter_by(assigned_to_user_id=current_user.id, is_active=True).all()
+    scoped_dogs = get_scoped_dogs()
+    dog_ids = [d.id for d in scoped_dogs] if scoped_dogs else []
     
-    return render_template('production/delivery_add.html', pregnancies=pregnancies, employees=employees)
+    if dog_ids:
+        pregnancies = PregnancyRecord.query.filter(PregnancyRecord.dog_id.in_(dog_ids), PregnancyRecord.status == PregnancyStatus.PREGNANT).order_by(PregnancyRecord.expected_delivery_date.asc()).all()
+    else:
+        pregnancies = []
+    
+    scoped_employees = get_scoped_employees()
+    employees = [e for e in scoped_employees if e.is_active] if scoped_employees else []
+    
+    # Get correct base template for PM vs Admin
+    base_template = get_base_template()
+    
+    return render_template('production/delivery_add.html', pregnancies=pregnancies, employees=employees, base_template=base_template)
 
 @main_bp.route('/production/puppies')
 @login_required
+@admin_or_pm_required
 def puppies_list():
     from k9.models.models import PuppyRecord, DeliveryRecord
     try:
-        if current_user.role == UserRole.GENERAL_ADMIN:
-            puppies = PuppyRecord.query.order_by(PuppyRecord.created_at.desc()).all()
+        # Get scoped dogs using PM scoping utility
+        scoped_dogs = get_scoped_dogs()
+        dog_ids = [d.id for d in scoped_dogs] if scoped_dogs else []
+        
+        if dog_ids:
+            puppies = PuppyRecord.query.join(DeliveryRecord).join(PregnancyRecord).filter(
+                PregnancyRecord.dog_id.in_(dog_ids)
+            ).order_by(PuppyRecord.created_at.desc()).all()
         else:
-            # Get accessible dogs for this user
-            assigned_dogs = get_user_accessible_dogs(current_user)
-            assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
-            if assigned_dog_ids:
-                puppies = PuppyRecord.query.join(DeliveryRecord).join(PregnancyRecord).filter(
-                    PregnancyRecord.dog_id.in_(assigned_dog_ids)
-                ).order_by(PuppyRecord.created_at.desc()).all()
-            else:
-                puppies = []
+            puppies = []
     except Exception as e:
         print(f"Error fetching puppy records: {e}")
         puppies = []
     
-    return render_template('production/puppies_list.html', puppies=puppies)
+    # Get correct base template for PM vs Admin
+    base_template = get_base_template()
+    
+    return render_template('production/puppies_list.html', puppies=puppies, base_template=base_template)
 
 @main_bp.route('/production/puppies/add', methods=['GET', 'POST'])
 @login_required
+@admin_or_pm_required
 def puppies_add():
     if request.method == 'POST':
         try:
@@ -1063,21 +1122,18 @@ def puppies_add():
             db.session.rollback()
             flash(f'حدث خطأ أثناء تسجيل الجرو: {str(e)}', 'error')
     
-    # Get delivery records for puppies dropdown
+    # Get delivery records for puppies dropdown using PM scoping utility
     from k9.models.models import DeliveryRecord, PregnancyRecord
     try:
-        if current_user.role == UserRole.GENERAL_ADMIN:
-            deliveries = DeliveryRecord.query.order_by(DeliveryRecord.delivery_date.desc()).all()
+        scoped_dogs = get_scoped_dogs()
+        dog_ids = [d.id for d in scoped_dogs] if scoped_dogs else []
+        
+        if dog_ids:
+            deliveries = DeliveryRecord.query.join(PregnancyRecord).filter(
+                PregnancyRecord.dog_id.in_(dog_ids)
+            ).order_by(DeliveryRecord.delivery_date.desc()).all()
         else:
-            # Get assigned dogs and their delivery records
-            assigned_dogs = get_user_accessible_dogs(current_user)
-            assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
-            if assigned_dog_ids:
-                deliveries = DeliveryRecord.query.join(PregnancyRecord).filter(
-                    PregnancyRecord.dog_id.in_(assigned_dog_ids)
-                ).order_by(DeliveryRecord.delivery_date.desc()).all()
-            else:
-                deliveries = []
+            deliveries = []
     except Exception as e:
         print(f"Error fetching delivery records: {e}")
         deliveries = []
@@ -1086,7 +1142,10 @@ def puppies_add():
     if not deliveries:
         flash('لا توجد سجلات ولادة متاحة. يجب إنشاء سجلات الحمل والولادة أولاً من قسم التربية.', 'info')
     
-    return render_template('production/puppies_add.html', deliveries=deliveries)
+    # Get correct base template for PM vs Admin
+    base_template = get_base_template()
+    
+    return render_template('production/puppies_add.html', deliveries=deliveries, base_template=base_template)
 
 # View routes for all breeding sections
 @main_bp.route('/production/maturity/view/<id>')

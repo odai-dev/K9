@@ -6,6 +6,7 @@ from flask_login import login_required, current_user
 
 from k9.utils.permission_utils import has_permission
 from k9.utils.utils import get_user_projects, get_user_accessible_dogs
+from k9.utils.template_utils import get_base_template
 
 bp = Blueprint('veterinary_reports_ui', __name__)
 
@@ -37,8 +38,12 @@ def veterinary():
         'show_kpis': request.args.get('show_kpis', '1')
     }
     
+    # Get correct base template for PM vs Admin
+    base_template = get_base_template()
+    
     return render_template('reports/breeding/veterinary.html', 
                          accessible_projects=projects,
                          accessible_dogs=dogs,
                          initial_params=initial_params,
-                         title='التقرير البيطري (موحّد)')
+                         title='التقرير البيطري (موحّد)',
+                         base_template=base_template)

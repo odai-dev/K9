@@ -7,6 +7,7 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 from k9.utils.permission_utils import has_permission
 from k9.utils.utils import get_user_projects
+from k9.utils.template_utils import get_base_template
 
 # Create blueprint
 bp = Blueprint('caretaker_daily_reports_ui', __name__)
@@ -37,7 +38,11 @@ def caretaker_daily():
         'dog_id': request.args.get('dog_id', '')
     }
     
+    # Get correct base template for PM vs Admin
+    base_template = get_base_template()
+    
     return render_template('reports/breeding/caretaker_daily.html', 
                          accessible_projects=projects,
                          initial_params=initial_params,
-                         title='تقرير الرعاية اليومية')
+                         title='تقرير الرعاية اليومية',
+                         base_template=base_template)
