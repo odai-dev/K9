@@ -4,7 +4,7 @@ Task Management Routes
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from k9.utils.permission_decorators import supervisor_required, handler_required
+from k9.utils.permission_decorators import admin_or_pm_required, handler_required
 from k9.services.task_service import TaskService
 from k9.models.models_handler_daily import Task, TaskStatus, TaskPriority
 from k9.models.models import User, UserRole
@@ -19,7 +19,7 @@ task_bp = Blueprint('tasks', __name__, url_prefix='/tasks')
 
 @task_bp.route('/admin')
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def admin_index():
     """قائمة المهام للمشرف"""
     # Get filter parameters
@@ -63,7 +63,7 @@ def admin_index():
 
 @task_bp.route('/admin/create', methods=['GET', 'POST'])
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def admin_create():
     """إنشاء مهمة جديدة"""
     if request.method == 'POST':
@@ -125,7 +125,7 @@ def admin_create():
 
 @task_bp.route('/admin/<task_id>')
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def admin_view(task_id):
     """عرض تفاصيل المهمة"""
     task = TaskService.get_task(task_id)
@@ -142,7 +142,7 @@ def admin_view(task_id):
 
 @task_bp.route('/admin/<task_id>/edit', methods=['GET', 'POST'])
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def admin_edit(task_id):
     """تعديل مهمة"""
     task = TaskService.get_task(task_id)
@@ -196,7 +196,7 @@ def admin_edit(task_id):
 
 @task_bp.route('/admin/<task_id>/delete', methods=['POST'])
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def admin_delete(task_id):
     """حذف مهمة"""
     success, error = TaskService.delete_task(task_id)

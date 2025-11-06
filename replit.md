@@ -17,10 +17,10 @@ Preferred communication style: Simple, everyday language.
 ### Technical Implementations
 - **Backend Framework**: Flask (Python) utilizing a modular Blueprint structure.
 - **Database**: PostgreSQL, integrated via SQLAlchemy ORM.
-- **Authentication**: Flask-Login implements session-based authentication and role-based access control with `GENERAL_ADMIN`, `PROJECT_MANAGER`, `HANDLER`, `TRAINER`, `BREEDER`, and `VET` tiers. Includes a dual-mode `GENERAL_ADMIN` system for flexible access.
+- **Authentication**: Flask-Login implements session-based authentication and strict role-based access control with `GENERAL_ADMIN`, `PROJECT_MANAGER`, `HANDLER`, `TRAINER`, `BREEDER`, and `VET` tiers. Includes a dual-mode `GENERAL_ADMIN` system for flexible access with enforced mode switching (GENERAL_ADMIN users in PM mode cannot access admin-only routes).
 - **Database Migrations**: Flask-Migrate, powered by Alembic, for schema versioning and management.
 - **File Handling**: Local file system storage for uploads.
-- **Security**: Incorporates CSRF protection, configurable session timeouts, input validation, audit logging, and strict Role-Based Access Control.
+- **Security**: Incorporates CSRF protection, configurable session timeouts, input validation, audit logging, and strict Role-Based Access Control with consolidated permission decorators. All decorators enforce admin_mode checking to prevent privilege escalation.
 - **Database Backup & Restore**: Comprehensive backup/restore functionality using pg_dump/psql, automated scheduling via APScheduler, configurable retention, and an admin dashboard for management.
 
 ### Feature Specifications
@@ -47,6 +47,8 @@ Preferred communication style: Simple, everyday language.
 - **Scalability**: Modular architecture and role-based data isolation.
 - **Employee vs User/Handler Architecture**: Distinct `Employee` table for general workforce management and `User` table with `HANDLER` role for system access and daily operations, with **mandatory** linking. All system users must be linked to employee records for enhanced security and data integrity.
 - **User-Employee Enforcement**: Required `employee_id` foreign key in User model ensures all users have linked employee records. Includes validation at model level and login security checks.
+- **Unified Permission Decorators**: All role-based access decorators consolidated in `k9/utils/permission_decorators.py` with consistent admin_mode enforcement to prevent security bypasses.
+- **Navbar Access Control**: Template-level role checking ensures PROJECT_MANAGER users see only PM-specific navbar, GENERAL_ADMIN users see admin navbar only when in general_admin mode.
 
 ## External Dependencies
 

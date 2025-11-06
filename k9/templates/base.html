@@ -206,7 +206,7 @@
                     </li>
                     {% endif %}
                     
-                    {% if current_user.role.value in ['GENERAL_ADMIN', 'PROJECT_MANAGER', 'PROJECT_ADMIN', 'SUPERVISOR'] %}
+                    {% if current_user.role.value == 'GENERAL_ADMIN' %}
                     {% set is_management_active = request.endpoint and (request.endpoint.startswith('account_management.') or request.endpoint.startswith('tasks.admin_') or request.endpoint.startswith('supervisor.') or request.endpoint.startswith('admin.')) %}
                     <li class="nav-item dropdown {% if is_management_active %}active{% endif %}">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_management_active %}active{% endif %}" href="#" id="managementDropdown" role="button" data-bs-toggle="dropdown">
