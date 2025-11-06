@@ -11,7 +11,7 @@ from werkzeug.security import generate_password_hash
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app import app, db
-from k9.models.models import User, UserRole, Project, Dog, DogGender, DogStatus, Shift
+from k9.models.models import User, UserRole, Employee, EmployeeRole, Project, Dog, DogGender, DogStatus, Shift
 from k9.models.models_handler_daily import DailySchedule, DailyScheduleItem, ScheduleStatus, ScheduleItemStatus
 
 
@@ -28,13 +28,14 @@ def create_test_data():
         
         # Only delete test users/data if they exist
         User.query.filter(User.username.in_(['admin', 'pm1', 'supervisor1', 'handler1', 'handler2', 'handler3'])).delete(synchronize_session=False)
+        Employee.query.filter(Employee.employee_id.in_(['EMP-ADMIN', 'EMP-PM1', 'EMP-SUP1', 'EMP-H1', 'EMP-H2', 'EMP-H3'])).delete(synchronize_session=False)
         Dog.query.filter(Dog.code.in_(['DOG-001', 'DOG-002', 'DOG-003', 'DOG-004', 'DOG-005'])).delete(synchronize_session=False)
         Shift.query.filter(Shift.name.in_(['الوردية الصباحية', 'الوردية المسائية', 'الوردية الليلية'])).delete(synchronize_session=False)
         Project.query.filter(Project.code == 'SEC-001').delete(synchronize_session=False)
         
         db.session.commit()
         
-        # 1. Create Projects
+        # 1. Create Projects (optional)
         print("📁 Creating projects...")
         project1 = Project(
             name="مشروع تدريب الكلاب الأمنية",
@@ -49,9 +50,81 @@ def create_test_data():
         db.session.flush()
         print(f"   ✓ Created project: {project1.name}")
         
-        # 2. Create Users
-        print("👥 Creating users...")
-        password = "test123"  # Simple password for testing
+        # 2. Create Employees FIRST (required before users)
+        print("👷 Creating employees...")
+        employees = [
+            Employee(
+                name="مدير النظام",
+                employee_id="EMP-ADMIN",
+                role=EmployeeRole.PROJECT_MANAGER,
+                phone="+966500000001",
+                email="admin@k9system.com",
+                hire_date=date.today() - timedelta(days=365),
+                is_active=True,
+                full_name="مدير النظام العام"
+            ),
+            Employee(
+                name="أحمد المدير",
+                employee_id="EMP-PM1",
+                role=EmployeeRole.PROJECT_MANAGER,
+                phone="+966500000002",
+                email="pm@k9system.com",
+                hire_date=date.today() - timedelta(days=180),
+                is_active=True,
+                full_name="أحمد بن محمد المدير"
+            ),
+            Employee(
+                name="محمد المشرف",
+                employee_id="EMP-SUP1",
+                role=EmployeeRole.PROJECT_MANAGER,
+                phone="+966500000003",
+                email="supervisor@k9system.com",
+                hire_date=date.today() - timedelta(days=150),
+                is_active=True,
+                full_name="محمد بن عبدالله المشرف"
+            ),
+            Employee(
+                name="خالد السائس",
+                employee_id="EMP-H1",
+                role=EmployeeRole.HANDLER,
+                phone="+966500000004",
+                email="handler1@k9system.com",
+                hire_date=date.today() - timedelta(days=90),
+                is_active=True,
+                full_name="خالد بن سعد السائس"
+            ),
+            Employee(
+                name="سعيد السائس",
+                employee_id="EMP-H2",
+                role=EmployeeRole.HANDLER,
+                phone="+966500000005",
+                email="handler2@k9system.com",
+                hire_date=date.today() - timedelta(days=60),
+                is_active=True,
+                full_name="سعيد بن ناصر السائس"
+            ),
+            Employee(
+                name="فهد السائس",
+                employee_id="EMP-H3",
+                role=EmployeeRole.HANDLER,
+                phone="+966500000006",
+                email="handler3@k9system.com",
+                hire_date=date.today() - timedelta(days=30),
+                is_active=True,
+                full_name="فهد بن راشد السائس"
+            )
+        ]
+        
+        for emp in employees:
+            db.session.add(emp)
+        db.session.flush()
+        
+        for emp in employees:
+            print(f"   ✓ Created employee: {emp.name} ({emp.employee_id})")
+        
+        # 3. Create Users linked to Employees
+        print("👥 Creating user accounts...")
+        password = "test123"
         
         # General Admin user
         admin = User(
@@ -60,6 +133,7 @@ def create_test_data():
             full_name="مدير النظام",
             role=UserRole.GENERAL_ADMIN,
             active=True,
+            employee_id=employees[0].id,
             password_hash=generate_password_hash(password)
         )
         db.session.add(admin)
@@ -71,18 +145,20 @@ def create_test_data():
             full_name="أحمد المدير",
             role=UserRole.PROJECT_MANAGER,
             active=True,
+            employee_id=employees[1].id,
             project_id=project1.id,
             password_hash=generate_password_hash(password)
         )
         db.session.add(pm)
         
-        # Use PM as supervisor (or another PM)
+        # Supervisor
         supervisor = User(
             username="supervisor1",
             email="supervisor@k9system.com",
             full_name="محمد المشرف",
             role=UserRole.PROJECT_MANAGER,
             active=True,
+            employee_id=employees[2].id,
             project_id=project1.id,
             password_hash=generate_password_hash(password)
         )
@@ -95,6 +171,7 @@ def create_test_data():
             full_name="خالد السائس",
             role=UserRole.HANDLER,
             active=True,
+            employee_id=employees[3].id,
             project_id=project1.id,
             password_hash=generate_password_hash(password)
         )
@@ -106,6 +183,7 @@ def create_test_data():
             full_name="سعيد السائس",
             role=UserRole.HANDLER,
             active=True,
+            employee_id=employees[4].id,
             project_id=project1.id,
             password_hash=generate_password_hash(password)
         )
@@ -117,20 +195,21 @@ def create_test_data():
             full_name="فهد السائس",
             role=UserRole.HANDLER,
             active=True,
+            employee_id=employees[5].id,
             project_id=project1.id,
             password_hash=generate_password_hash(password)
         )
         db.session.add(handler3)
         
         db.session.flush()
-        print(f"   ✓ Created admin: {admin.username}")
-        print(f"   ✓ Created PM: {pm.username}")
-        print(f"   ✓ Created supervisor: {supervisor.username}")
-        print(f"   ✓ Created handler: {handler1.username}")
-        print(f"   ✓ Created handler: {handler2.username}")
-        print(f"   ✓ Created handler: {handler3.username}")
+        print(f"   ✓ Created user account: {admin.username}")
+        print(f"   ✓ Created user account: {pm.username}")
+        print(f"   ✓ Created user account: {supervisor.username}")
+        print(f"   ✓ Created user account: {handler1.username}")
+        print(f"   ✓ Created user account: {handler2.username}")
+        print(f"   ✓ Created user account: {handler3.username}")
         
-        # 3. Create Dogs
+        # 4. Create Dogs
         print("🐕 Creating dogs...")
         dogs = [
             Dog(
@@ -191,7 +270,7 @@ def create_test_data():
         
         db.session.flush()
         
-        # 4. Create Shifts
+        # 5. Create Shifts
         print("⏰ Creating shifts...")
         shifts = [
             Shift(
@@ -220,7 +299,7 @@ def create_test_data():
         
         db.session.flush()
         
-        # 5. Create Daily Schedule for Today
+        # 6. Create Daily Schedule for Today
         print("📅 Creating daily schedule for today...")
         today = date.today()
         
@@ -235,7 +314,7 @@ def create_test_data():
         db.session.flush()
         print(f"   ✓ Created schedule for {today}")
         
-        # 6. Create Schedule Items
+        # 7. Create Schedule Items
         print("📋 Creating schedule items...")
         schedule_items = [
             # Handler 1 - Morning shift with رعد
@@ -301,12 +380,14 @@ def create_test_data():
         
         print("\n📊 Summary:")
         print(f"   • Projects: 1")
-        print(f"   • Users: 6 (1 admin, 1 PM, 1 supervisor, 3 handlers)")
+        print(f"   • Employees: 6 (1 admin, 2 managers, 3 handlers)")
+        print(f"   • User Accounts: 6 (linked to employees above)")
         print(f"   • Dogs: 5")
         print(f"   • Shifts: 3")
         print(f"   • Daily Schedules: 1 (for {today})")
         print(f"   • Schedule Items: {len(schedule_items)}")
         print("\n🎯 You can now login as handler1, handler2, or handler3 to see their daily schedules!")
+        print("Note: All user accounts are properly linked to employee records (employee_id constraint enforced)")
 
 
 if __name__ == '__main__':
