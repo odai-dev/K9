@@ -392,10 +392,6 @@ class Employee(db.Model):
     assigned_to_user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'))
     assigned_to_user = db.relationship('User', foreign_keys=[assigned_to_user_id], backref='assigned_employees')
     
-    # For project managers - link to their user account
-    user_account_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'))
-    user_account = db.relationship('User', foreign_keys=[user_account_id], backref='employee_profile')
-    
     # Many-to-many relationships
     assigned_dogs = db.relationship('Dog', secondary=employee_dog_assignment, back_populates='assigned_employees')
     projects = db.relationship('Project', secondary=project_employee_assignment, back_populates='assigned_employees')
