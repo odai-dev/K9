@@ -41,7 +41,7 @@ def get_pm_project(user=None):
     
     # If not found, check via Employee link (project_manager_id)
     if not project:
-        employee = Employee.query.filter_by(user_account_id=user.id).first()
+        employee = user.employee
         if employee:
             project = Project.query.filter_by(project_manager_id=employee.id).first()
     

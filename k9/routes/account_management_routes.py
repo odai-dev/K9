@@ -44,9 +44,7 @@ def index():
     
     user_accounts = []
     for user in users:
-        employee = None
-        if hasattr(user, 'employee_profile') and user.employee_profile:
-            employee = user.employee_profile
+        employee = user.employee if user.employee else None
         
         user_accounts.append({
             'user': user,
@@ -78,7 +76,7 @@ def create():
             flash('الموظف غير موجود', 'danger')
             return redirect(url_for('account_management.create'))
         
-        if employee.user_account_id:
+        if employee.user_account is not None:
             flash('هذا الموظف لديه حساب بالفعل', 'danger')
             return redirect(url_for('account_management.create'))
         
@@ -95,7 +93,7 @@ def create():
         # If email exists, check if it's linked to another employee
         if existing_user_by_email:
             # Check if this user is linked to a different employee
-            linked_employee = Employee.query.filter_by(user_account_id=existing_user_by_email.id).first()
+            linked_employee = existing_user_by_email.employee
             if linked_employee:
                 flash('البريد الإلكتروني موجود بالفعل ومرتبط بموظف آخر', 'danger')
                 return redirect(url_for('account_management.create'))
@@ -125,7 +123,7 @@ def create():
             db.session.add(user)
             db.session.flush()
             
-            employee.user_account_id = user.id
+            user.employee_id = employee.id
             
             # Auto-assign employee to project if creator is a PM and employee has no active assignments
             if is_pm(current_user):
@@ -162,7 +160,7 @@ def create():
             return redirect(url_for('account_management.create'))
     
     employees_without_accounts = Employee.query.filter(
-        Employee.user_account_id.is_(None),
+        ~Employee.id.in_(db.session.query(User.employee_id).filter(User.employee_id.isnot(None))),
         Employee.is_active == True
     ).order_by(Employee.name).all()
     
@@ -188,7 +186,7 @@ def api_search_employees():
     search_term = request.args.get('q', '')
     
     query = Employee.query.filter(
-        Employee.user_account_id.is_(None),
+        ~Employee.id.in_(db.session.query(User.employee_id).filter(User.employee_id.isnot(None))),
         Employee.is_active == True
     )
     

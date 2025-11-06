@@ -119,7 +119,7 @@ def login():
         # Check if user is GENERAL_ADMIN with linked Employee - show mode selection
         if user.role == UserRole.GENERAL_ADMIN:
             from k9.models.models import Employee
-            employee = Employee.query.filter_by(user_account_id=user.id).first()
+            employee = user.employee
             if employee:
                 # Store pending mode selection in session
                 session['pending_mode_selection'] = True
@@ -209,10 +209,6 @@ def setup():
             )
             
             db.session.add(admin_user)
-            db.session.flush()  # Get the user ID
-            
-            # Update employee with user account link (for backward compatibility)
-            admin_employee.user_account_id = admin_user.id
             
             db.session.commit()
             
@@ -256,7 +252,7 @@ def select_mode():
         return redirect(url_for('main.dashboard'))
     
     # Get linked employee record
-    employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+    employee = current_user.employee
     if not employee:
         # No employee record - default to general admin mode
         session['admin_mode'] = 'general_admin'
@@ -309,7 +305,7 @@ def switch_mode():
         return redirect(url_for('main.dashboard'))
     
     # Verify employee record exists
-    employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+    employee = current_user.employee
     if not employee:
         flash('لا يمكن التبديل: لا يوجد سجل موظف مرتبط', 'error')
         return redirect(url_for('main.dashboard'))
@@ -354,10 +350,10 @@ def create_manager():
     ]
     
     from k9.models.models import Employee, EmployeeRole
-    employees_without_accounts = Employee.query.filter_by(
-        role=EmployeeRole.PROJECT_MANAGER,
-        user_account_id=None, 
-        is_active=True
+    employees_without_accounts = Employee.query.filter(
+        Employee.role == EmployeeRole.PROJECT_MANAGER,
+        ~Employee.id.in_(db.session.query(User.employee_id).filter(User.employee_id.isnot(None))),
+        Employee.is_active == True
     ).all()
     
     if request.method == 'POST':
@@ -390,7 +386,7 @@ def create_manager():
                 from k9.models.models import Employee
                 employee = Employee.query.get(request.form['employee_id'])
                 if employee:
-                    employee.user_account_id = manager.id
+                    manager.employee_id = employee.id
             
             db.session.commit()
             
