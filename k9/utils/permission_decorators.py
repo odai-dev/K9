@@ -102,14 +102,21 @@ def require_project_access(project_id_param='project_id'):
     return decorator
 
 def admin_or_pm_required(f):
-    """Require GENERAL_ADMIN or PROJECT_MANAGER role"""
+    """Require GENERAL_ADMIN (in admin mode) or PROJECT_MANAGER role"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
             flash('يرجى تسجيل الدخول للوصول إلى هذه الصفحة', 'warning')
             return redirect(url_for('auth.login'))
         
-        if current_user.role not in [UserRole.GENERAL_ADMIN, UserRole.PROJECT_MANAGER]:
+        # GENERAL_ADMIN in PM mode should NOT pass this check
+        if current_user.role == UserRole.GENERAL_ADMIN:
+            admin_mode = session.get('admin_mode', 'general_admin')
+            if admin_mode == 'project_manager':
+                # Treat as PM, not admin - allow access but they should be scoped
+                pass
+            # Only GENERAL_ADMIN in general_admin mode is fully allowed
+        elif current_user.role != UserRole.PROJECT_MANAGER:
             flash('غير مصرح لك بالوصول إلى هذه الصفحة', 'danger')
             return redirect(url_for('main.index'))
         
@@ -157,30 +164,6 @@ def handler_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-
-def supervisor_required(f):
-    """Require supervisor-level privileges (GENERAL_ADMIN, PROJECT_MANAGER, SUPERVISOR, or PROJECT_ADMIN)"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated:
-            flash('يرجى تسجيل الدخول للوصول إلى هذه الصفحة', 'warning')
-            return redirect(url_for('auth.login'))
-        
-        # Allow GENERAL_ADMIN, PROJECT_MANAGER, and legacy SUPERVISOR/PROJECT_ADMIN roles
-        allowed_roles = [UserRole.GENERAL_ADMIN, UserRole.PROJECT_MANAGER]
-        
-        # Check for SUPERVISOR and PROJECT_ADMIN if they exist (backward compatibility)
-        if hasattr(UserRole, 'SUPERVISOR'):
-            allowed_roles.append(UserRole.SUPERVISOR)
-        if hasattr(UserRole, 'PROJECT_ADMIN'):
-            allowed_roles.append(UserRole.PROJECT_ADMIN)
-        
-        if current_user.role not in allowed_roles:
-            flash('هذه الصفحة متاحة للمشرفين فقط', 'danger')
-            return redirect(url_for('main.index'))
-        
-        return f(*args, **kwargs)
-    return decorated_function
 
 def require_sub_permission(section, subsection, permission_type, project_id_param='project_id'):
     """

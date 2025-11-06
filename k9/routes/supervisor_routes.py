@@ -9,7 +9,7 @@ from sqlalchemy.orm import joinedload
 from k9.services.handler_service import DailyScheduleService
 from k9.models.models_handler_daily import DailySchedule, DailyScheduleItem
 from k9.models.models import UserRole, User, Dog, Project, Shift
-from k9.utils.permission_decorators import supervisor_required
+from k9.utils.permission_decorators import admin_or_pm_required
 from k9.utils.utils import validate_required_project_id, get_project_id_for_user
 from app import db
 
@@ -19,7 +19,7 @@ supervisor_bp = Blueprint('supervisor', __name__, url_prefix='/supervisor')
 
 @supervisor_bp.route('/schedules')
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def schedules_index():
     """قائمة الجداول اليومية"""
     page = request.args.get('page', 1, type=int)
@@ -68,7 +68,7 @@ def schedules_index():
 
 @supervisor_bp.route('/schedules/create', methods=['GET', 'POST'])
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def schedule_create():
     """إنشاء جدول يومي جديد"""
     if request.method == 'POST':
@@ -166,7 +166,7 @@ def schedule_create():
 
 @supervisor_bp.route('/schedules/<schedule_id>')
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def schedule_view(schedule_id):
     """عرض الجدول اليومي"""
     schedule = DailySchedule.query.get_or_404(schedule_id)
@@ -184,7 +184,7 @@ def schedule_view(schedule_id):
 
 @supervisor_bp.route('/schedules/<schedule_id>/lock', methods=['POST'])
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def schedule_lock(schedule_id):
     """قفل الجدول اليومي"""
     schedule = DailySchedule.query.get_or_404(schedule_id)
@@ -203,7 +203,7 @@ def schedule_lock(schedule_id):
 
 @supervisor_bp.route('/schedules/<schedule_id>/unlock', methods=['POST'])
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def schedule_unlock(schedule_id):
     """إلغاء قفل الجدول اليومي"""
     schedule = DailySchedule.query.get_or_404(schedule_id)
@@ -225,7 +225,7 @@ def schedule_unlock(schedule_id):
 
 @supervisor_bp.route('/schedules/<schedule_id>/delete', methods=['POST'])
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def schedule_delete(schedule_id):
     """حذف الجدول اليومي"""
     schedule = DailySchedule.query.get_or_404(schedule_id)
@@ -258,7 +258,7 @@ def schedule_delete(schedule_id):
 
 @supervisor_bp.route('/schedules/item/<item_id>/replace-handler', methods=['POST'])
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def replace_handler(item_id):
     """استبدال سائس في عنصر من الجدول"""
     item = DailyScheduleItem.query.get_or_404(item_id)
@@ -284,7 +284,7 @@ def replace_handler(item_id):
 
 @supervisor_bp.route('/api/handlers-by-project/<project_id>')
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def get_handlers_by_project(project_id):
     """API: الحصول على السائسين حسب المشروع"""
     # Get handlers assigned to this project
@@ -318,7 +318,7 @@ def get_handlers_by_project(project_id):
 
 @supervisor_bp.route('/api/dogs-by-project/<project_id>')
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def get_dogs_by_project(project_id):
     """API: الحصول على الكلاب حسب المشروع"""
     # Dogs are assigned to handlers, and handlers are assigned to projects
@@ -361,7 +361,7 @@ def get_dogs_by_project(project_id):
 
 @supervisor_bp.route('/reports')
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def reports_index():
     """قائمة تقارير السائسين للمراجعة"""
     from k9.models.models_handler_daily import HandlerReport, ReportStatus
@@ -438,7 +438,7 @@ def reports_index():
 
 @supervisor_bp.route('/reports/<report_id>')
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def report_view(report_id):
     """عرض تفاصيل التقرير"""
     from k9.models.models_handler_daily import HandlerReport, ReportStatus
@@ -459,7 +459,7 @@ def report_view(report_id):
 
 @supervisor_bp.route('/reports/<report_id>/approve', methods=['POST'])
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def report_approve(report_id):
     """اعتماد التقرير"""
     from k9.models.models_handler_daily import HandlerReport, ReportStatus
@@ -499,7 +499,7 @@ def report_approve(report_id):
 
 @supervisor_bp.route('/reports/<report_id>/reject', methods=['POST'])
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def report_reject(report_id):
     """رفض التقرير"""
     from k9.models.models_handler_daily import HandlerReport, ReportStatus
@@ -546,7 +546,7 @@ def report_reject(report_id):
 
 @supervisor_bp.route('/api/pm/reports/pending')
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def pm_pending_reports():
     """Get all pending reports for PM review (all types)"""
     from k9.services.report_review_service import ReportReviewService
@@ -594,7 +594,7 @@ def pm_pending_reports():
 
 @supervisor_bp.route('/api/pm/reports/<report_type>/<report_id>')
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def pm_get_report(report_type, report_id):
     """Get detailed report view for PM review"""
     from k9.services.report_review_service import ReportReviewService
@@ -622,7 +622,7 @@ def pm_get_report(report_type, report_id):
 
 @supervisor_bp.route('/api/pm/reports/<report_type>/<report_id>/approve', methods=['POST'])
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def pm_approve_report(report_type, report_id):
     """Approve report and forward to General Admin"""
     from k9.services.report_review_service import ReportReviewService
@@ -648,7 +648,7 @@ def pm_approve_report(report_type, report_id):
 
 @supervisor_bp.route('/api/pm/reports/<report_type>/<report_id>/request-edits', methods=['POST'])
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def pm_request_edits(report_type, report_id):
     """Request edits on report (sends back to submitter as DRAFT)"""
     from k9.services.report_review_service import ReportReviewService
@@ -680,7 +680,7 @@ def pm_request_edits(report_type, report_id):
 
 @supervisor_bp.route('/api/pm/reports/<report_type>/<report_id>/reject', methods=['POST'])
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def pm_reject_report(report_type, report_id):
     """Reject report completely (final rejection)"""
     from k9.services.report_review_service import ReportReviewService
@@ -712,7 +712,7 @@ def pm_reject_report(report_type, report_id):
 
 @supervisor_bp.route('/api/pm/reports/<report_type>/<report_id>/history')
 @login_required
-@supervisor_required
+@admin_or_pm_required
 def pm_report_history(report_type, report_id):
     """Get audit trail for report"""
     from k9.services.report_review_service import ReportReviewService
