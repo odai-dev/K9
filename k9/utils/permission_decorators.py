@@ -101,18 +101,83 @@ def require_project_access(project_id_param='project_id'):
         return decorated_function
     return decorator
 
+def admin_or_pm_required(f):
+    """Require GENERAL_ADMIN or PROJECT_MANAGER role"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash('يرجى تسجيل الدخول للوصول إلى هذه الصفحة', 'warning')
+            return redirect(url_for('auth.login'))
+        
+        if current_user.role not in [UserRole.GENERAL_ADMIN, UserRole.PROJECT_MANAGER]:
+            flash('غير مصرح لك بالوصول إلى هذه الصفحة', 'danger')
+            return redirect(url_for('main.index'))
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 def admin_required(f):
     """
-    Decorator to restrict access to GENERAL_ADMIN only.
+    Decorator to restrict access to GENERAL_ADMIN in general admin mode only.
+    GENERAL_ADMIN users in PM mode will be rejected.
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
-            abort(401)
+            flash('يرجى تسجيل الدخول للوصول إلى هذه الصفحة', 'warning')
+            return redirect(url_for('auth.login'))
         
         if current_user.role != UserRole.GENERAL_ADMIN:
             flash('هذه الصفحة مخصصة للمدير العام فقط', 'error')
             return redirect(url_for('main.dashboard'))
+        
+        # Check admin mode to prevent GENERAL_ADMIN in PM mode from accessing admin routes
+        admin_mode = session.get('admin_mode', 'general_admin')
+        if admin_mode != 'general_admin':
+            flash('هذه الصفحة متاحة في وضع المدير العام فقط', 'error')
+            return redirect(url_for('main.dashboard'))
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def handler_required(f):
+    """Require HANDLER role only"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash('يرجى تسجيل الدخول للوصول إلى هذه الصفحة', 'warning')
+            return redirect(url_for('auth.login'))
+        
+        if current_user.role != UserRole.HANDLER:
+            flash('هذه الصفحة متاحة للسائسين فقط', 'danger')
+            return redirect(url_for('main.index'))
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def supervisor_required(f):
+    """Require supervisor-level privileges (GENERAL_ADMIN, PROJECT_MANAGER, SUPERVISOR, or PROJECT_ADMIN)"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash('يرجى تسجيل الدخول للوصول إلى هذه الصفحة', 'warning')
+            return redirect(url_for('auth.login'))
+        
+        # Allow GENERAL_ADMIN, PROJECT_MANAGER, and legacy SUPERVISOR/PROJECT_ADMIN roles
+        allowed_roles = [UserRole.GENERAL_ADMIN, UserRole.PROJECT_MANAGER]
+        
+        # Check for SUPERVISOR and PROJECT_ADMIN if they exist (backward compatibility)
+        if hasattr(UserRole, 'SUPERVISOR'):
+            allowed_roles.append(UserRole.SUPERVISOR)
+        if hasattr(UserRole, 'PROJECT_ADMIN'):
+            allowed_roles.append(UserRole.PROJECT_ADMIN)
+        
+        if current_user.role not in allowed_roles:
+            flash('هذه الصفحة متاحة للمشرفين فقط', 'danger')
+            return redirect(url_for('main.index'))
         
         return f(*args, **kwargs)
     return decorated_function
@@ -148,7 +213,7 @@ def require_sub_permission(section, subsection, permission_type, project_id_para
                 project_id = request.form.get(project_id_param)
             
             # Check permission using the enhanced system
-            if not has_permission(current_user, section, subsection, permission_type, project_id):
+            if not has_permission(current_user, section, subsection, permission_type):
                 flash(f'ليس لديك صلاحية: {subsection} في قسم {section}', 'error')
                 return redirect(url_for('main.dashboard'))
             
@@ -189,7 +254,7 @@ def require_any_sub_permission(section, subsection, permission_types, project_id
             # Check if user has ANY of the required permissions
             has_any_permission = False
             for perm_type in permission_types:
-                if has_permission(current_user, section, subsection, perm_type, project_id):
+                if has_permission(current_user, section, subsection, perm_type):
                     has_any_permission = True
                     break
             

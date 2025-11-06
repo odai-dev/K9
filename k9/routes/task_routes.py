@@ -4,7 +4,7 @@ Task Management Routes
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from k9.decorators import supervisor_required, handler_required
+from k9.utils.permission_decorators import supervisor_required, handler_required
 from k9.services.task_service import TaskService
 from k9.models.models_handler_daily import Task, TaskStatus, TaskPriority
 from k9.models.models import User, UserRole
