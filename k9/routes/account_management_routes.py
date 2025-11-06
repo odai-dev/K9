@@ -5,7 +5,7 @@ Account Management Routes - For granting system access to employees
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from k9.models.models import User, UserRole, Employee, EmployeeRole, ProjectAssignment, Project
-from k9.decorators import admin_required
+from k9.utils.permission_decorators import admin_required
 from werkzeug.security import generate_password_hash
 from app import db
 from k9.utils.pm_scoping import get_pm_project, is_pm

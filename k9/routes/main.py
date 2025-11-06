@@ -26,11 +26,10 @@ from k9.models.models import (Dog, Employee, TrainingSession, VeterinaryVisit, P
                    # Cleaning models
                    CleaningLog)
 from k9.utils.utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
-from k9.utils.permission_decorators import require_sub_permission
+from k9.utils.permission_decorators import require_sub_permission, admin_or_pm_required
 from k9.utils.validators import validate_yemen_phone
 from k9.utils.template_utils import get_base_template, is_pm_view
 from k9.utils.pm_scoping import get_scoped_dogs, get_scoped_employees, get_scoped_projects, is_pm, is_admin
-from k9.decorators import admin_or_pm_required
 from sqlalchemy.exc import IntegrityError
 import os
 from datetime import datetime, date, timedelta
