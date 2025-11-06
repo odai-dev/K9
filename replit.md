@@ -34,7 +34,7 @@ Preferred communication style: Simple, everyday language.
 - **Handler Daily System**: Comprehensive daily operations management for K9 handlers including schedule creation, two-tier reporting (Shift and Daily Reports), duplicate prevention, smart pre-population, visual indicators, and a modern notification system.
 - **PM Report Review Workflow**: A 2-tier review process for project-based reports (HandlerReport, VeterinaryVisit, BreedingTrainingActivity, CaretakerDailyLog) with statuses, audit trails, and notifications.
 - **Account Management System**: Streamlined system access control for employees, linking employee records to user accounts, auto-role mapping, and secure password management.
-- **Project Manager Dashboard**: Workflow-focused interface for the `PROJECT_MANAGER` role, providing a project overview, pending approvals, team status, and project-scoped data views.
+- **Project Manager Dashboard**: Workflow-focused interface for the `PROJECT_MANAGER` role, providing a project overview, pending approvals, team status, and project-scoped data views. Features a dedicated PM navigation bar with streamlined access to Dogs, Team, Approvals, Veterinary, Breeding, Production, and Administration modules (task assignment, handler reports, schedules, notifications).
 - **Employee Document Management System**: Comprehensive document attachment system for employee records with categorized document types, secure file storage, and user interface for management.
 - **Employee Geolocation Feature**: Automatic browser-based geolocation capture for employee residence with database storage and Google Maps link generation.
 
