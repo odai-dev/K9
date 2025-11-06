@@ -339,9 +339,9 @@ class HandlerReportService:
             if project and project.project_manager_id:
                 # Find user account for project manager
                 employee = Employee.query.get(project.project_manager_id)
-                if employee and employee.user_account_id:
+                if employee and employee.user_account is not None:
                     NotificationService.create_notification(
-                        user_id=str(employee.user_account_id),
+                        user_id=str(employee.user_account.id),
                         notification_type=NotificationType.REPORT_SUBMITTED,
                         title="تقرير سائس جديد",
                         message=f"تم رفع تقرير جديد من السائس بتاريخ {report.date.strftime('%Y-%m-%d')} - المشروع: {project.name}",
@@ -502,9 +502,9 @@ class ShiftReportService:
             
             if project and project.project_manager_id:
                 employee = Employee.query.get(project.project_manager_id)
-                if employee and employee.user_account_id:
+                if employee and employee.user_account is not None:
                     NotificationService.create_notification(
-                        user_id=str(employee.user_account_id),
+                        user_id=str(employee.user_account.id),
                         notification_type=NotificationType.REPORT_SUBMITTED,
                         title="تقرير وردية جديد",
                         message=f"تم رفع تقرير وردية جديد بتاريخ {shift_report.date.strftime('%Y-%m-%d')} - المشروع: {project.name}",

@@ -1341,7 +1341,7 @@ def projects():
         projects = Project.query.order_by(Project.created_at.desc()).all()
     else:
         # PROJECT_MANAGER users - get projects where they are assigned as project manager via Employee relationship
-        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        employee = current_user.employee
         if employee:
             projects = Project.query.filter_by(project_manager_id=employee.id).order_by(Project.created_at.desc()).all()
         else:
@@ -1494,7 +1494,7 @@ def project_dashboard(project_id):
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
     if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
     if not has_access:
@@ -1584,7 +1584,7 @@ def project_status_change(project_id):
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
     if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
     if not has_access:
@@ -1699,7 +1699,7 @@ def project_dog_add(project_id):
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
     if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
     if not has_access:
@@ -1803,7 +1803,7 @@ def project_assignments(project_id):
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
     if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
     if not has_access:
@@ -1860,7 +1860,7 @@ def project_assignment_add(project_id):
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
     if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
     if not has_access:
@@ -1978,7 +1978,7 @@ def project_assignment_remove(project_id, assignment_id):
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
     if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
     if not has_access:
@@ -2015,7 +2015,7 @@ def project_assignment_edit(project_id, assignment_id):
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
     if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
     if not has_access:
@@ -2050,7 +2050,7 @@ def project_incidents(project_id):
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
     if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
     if not has_access:
@@ -2075,7 +2075,7 @@ def project_incident_add(project_id):
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
     if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
     if not has_access:
@@ -2123,7 +2123,7 @@ def project_resolve_incident(project_id):
     # Check permissions
     has_access = current_user.role == UserRole.GENERAL_ADMIN
     if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
     if not has_access:
@@ -2170,7 +2170,7 @@ def project_suspicions(project_id):
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
     if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
     if not has_access:
@@ -2195,7 +2195,7 @@ def project_suspicion_add(project_id):
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
     if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
     if not has_access:
@@ -2247,7 +2247,7 @@ def project_evaluations(project_id):
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
     if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
     if not has_access:
@@ -2272,7 +2272,7 @@ def project_evaluation_add(project_id):
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
     if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
     if not has_access:
@@ -3597,9 +3597,9 @@ def update_user_credentials():
             old_values['password_changed'] = True
         
         # Update corresponding employee record
-        if user.employee_profile:
-            user.employee_profile.name = full_name
-            user.employee_profile.email = email
+        if user.employee:
+            user.employee.name = full_name
+            user.employee.email = email
         
         db.session.commit()
         
@@ -3715,12 +3715,14 @@ def employee_user_links():
     handler_users = User.query.filter_by(role=UserRole.HANDLER).order_by(User.full_name).all()
     
     # Get unlinked employees
-    unlinked_employees = Employee.query.filter(Employee.user_account_id.is_(None)).all()
+    unlinked_employees = Employee.query.filter(
+        ~Employee.id.in_(db.session.query(User.employee_id).filter(User.employee_id.isnot(None)))
+    ).all()
     
     # Get unlinked users
     unlinked_users = User.query.filter(
         User.role == UserRole.HANDLER,
-        ~User.id.in_(db.session.query(Employee.user_account_id).filter(Employee.user_account_id.isnot(None)))
+        User.employee_id.is_(None)
     ).all()
     
     return render_template('admin/employee_user_links.html',
@@ -3750,12 +3752,12 @@ def link_employee_to_user():
             return jsonify({'success': False, 'error': 'الموظف أو المستخدم غير موجود'})
         
         # Check if user is already linked to another employee
-        existing_link = Employee.query.filter_by(user_account_id=user_id).first()
+        existing_link = user.employee
         if existing_link and str(existing_link.id) != str(employee_id):
             return jsonify({'success': False, 'error': f'المستخدم مرتبط بالفعل بالموظف: {existing_link.name}'})
         
         # Create the link
-        employee.user_account_id = user_id
+        user.employee_id = employee.id
         
         # Sync basic information
         employee.email = user.email
@@ -3792,14 +3794,15 @@ def unlink_employee_from_user():
         if not employee:
             return jsonify({'success': False, 'error': 'الموظف غير موجود'})
         
-        if not employee.user_account_id:
+        if employee.user_account is None:
             return jsonify({'success': False, 'error': 'الموظف غير مرتبط بأي حساب'})
         
-        old_user = User.query.get(employee.user_account_id)
+        old_user = employee.user_account
         old_username = old_user.username if old_user else 'Unknown'
         
         # Remove the link
-        employee.user_account_id = None
+        if old_user:
+            old_user.employee_id = None
         db.session.commit()
         
         log_audit(current_user.id, AuditAction.EDIT, 'Employee', employee_id,

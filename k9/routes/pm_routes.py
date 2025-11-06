@@ -36,8 +36,8 @@ def get_pm_project():
     
     # If not found, check via Employee link (project_manager_id)
     if not project:
-        # Find employee record linked to this user account
-        employee = Employee.query.filter_by(user_account_id=current_user.id).first()
+        # Get employee record linked to this user account via the relationship
+        employee = current_user.employee
         if employee:
             project = Project.query.filter_by(project_manager_id=employee.id).first()
     

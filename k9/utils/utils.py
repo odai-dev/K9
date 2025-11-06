@@ -962,7 +962,7 @@ def check_project_access(user, project_id):
     elif user.role == UserRole.PROJECT_MANAGER:
         project = Project.query.get(project_id)
         # Check through employee profile
-        employee = Employee.query.filter_by(user_account_id=user.id).first()
+        employee = user.employee
         return project and employee and project.project_manager_id == employee.id
     
     return False
@@ -993,7 +993,10 @@ def ensure_employee_user_linkage():
     import secrets
     
     # Find PROJECT_MANAGER employees without user accounts
-    pm_employees = Employee.query.filter_by(role=EmployeeRole.PROJECT_MANAGER, user_account_id=None).all()
+    pm_employees = Employee.query.filter(
+        Employee.role == EmployeeRole.PROJECT_MANAGER,
+        ~Employee.id.in_(db.session.query(User.employee_id).filter(User.employee_id.isnot(None)))
+    ).all()
     
     created_users = []
     for employee in pm_employees:
@@ -1013,7 +1016,7 @@ def ensure_employee_user_linkage():
         db.session.flush()
         
         # Link employee to user
-        employee.user_account_id = new_user.id
+        new_user.employee_id = employee.id
         
         created_users.append({
             'user': new_user,
@@ -1030,7 +1033,10 @@ def get_employee_profile_for_user(user):
     """Get the employee profile for a PROJECT_MANAGER user"""
     from k9.models.models import Employee, EmployeeRole
     
-    return Employee.query.filter_by(user_account_id=user.id, role=EmployeeRole.PROJECT_MANAGER).first()
+    employee = user.employee
+    if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
+        return employee
+    return None
 
 def get_user_active_projects(user):
     """Get active projects for a PROJECT_MANAGER user"""
@@ -1043,7 +1049,7 @@ def get_user_active_projects(user):
         active_projects = []
         
         # Also check through employee profile assignment for active projects
-        employee = Employee.query.filter_by(user_account_id=user.id, role=EmployeeRole.PROJECT_MANAGER).first()
+        employee = user.employee
         if employee:
             employee_active_projects = [p for p in employee.projects if p.status == ProjectStatus.ACTIVE]
             # Combine and deduplicate
@@ -1065,7 +1071,7 @@ def get_user_all_projects(user):
         manager_projects = []
         
         # Also check through employee profile assignment
-        employee = Employee.query.filter_by(user_account_id=user.id, role=EmployeeRole.PROJECT_MANAGER).first()
+        employee = user.employee
         if employee:
             employee_projects = employee.projects
             # Combine and deduplicate
@@ -1307,7 +1313,7 @@ def get_project_id_for_user(user=None, form_project_id=None):
     # For HANDLER, get their assigned project via employee record
     if user.role == UserRole.HANDLER:
         from k9.models.models import Employee, ProjectAssignment
-        employee = Employee.query.filter_by(user_account_id=user.id).first()
+        employee = user.employee
         if employee:
             assignment = ProjectAssignment.query.filter_by(
                 employee_id=employee.id,
