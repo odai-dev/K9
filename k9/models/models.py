@@ -289,7 +289,7 @@ class User(UserMixin, db.Model):
     dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=True)  # الكلب المخصص للسائس
     
     # Required relationship to employee
-    employee = db.relationship('Employee', foreign_keys=[employee_id], backref='user_account', uselist=False)
+    employee = db.relationship('Employee', foreign_keys=[employee_id], backref=db.backref('user_account', uselist=False), uselist=False)
     
     # Relationship to project manager permissions
     pm_permissions = db.relationship('ProjectManagerPermission', backref='user', lazy='dynamic', cascade='all, delete-orphan')
