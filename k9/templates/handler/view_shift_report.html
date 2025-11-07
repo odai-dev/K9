@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}عرض تقرير الوردية - {{ shift_report.date.strftime('%Y-%m-%d') }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.section-card {
+    border-right: 4px solid #0d6efd;
+    margin-bottom: 1.5rem;
+}
+.form-section-header {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #0d6efd;
+    padding: 1rem;
+    font-weight: bold;
+}
+.info-row {
+    border-bottom: 1px solid #eee;
+    padding: 0.75rem 0;
+}
+.info-row:last-child {
+    border-bottom: none;
+}
+.health-check-row {
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem 0;
+}
+.health-check-row:last-child {
+    border-bottom: none;
+}
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+.status-normal {
+    background-color: #d1f5d3;
+    color: #0f5132;
+}
+.status-abnormal {
+    background-color: #f8d7da;
+    color: #842029;
+}
+.status-needs {
+    background-color: #fff3cd;
+    color: #856404;
+}
+.print-hide {
+    display: block;
+}
+@media print {
+    .print-hide {
+        display: none !important;
+    }
+    .navbar, nav {
+        display: none !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row print-hide">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-business-time me-2"></i>
+                عرض تقرير الوردية
+            </h1>
+            <div class="btn-group">
+                <button onclick="window.print()" class="btn btn-outline-primary">
+                    <i class="fas fa-print me-2"></i>
+                    طباعة
+                </button>
+                <a href="{{ url_for('handler.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Status Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="info-row">
+                            <strong>التاريخ:</strong>
+                            <span class="ms-2">{{ shift_report.date.strftime('%Y-%m-%d') }}</span>
+                        </div>
+                        <div class="info-row">
+                            <strong>السائس:</strong>
+                            <span class="ms-2">{{ shift_report.handler.full_name if shift_report.handler else current_user.full_name }}</span>
+                        </div>
+                        <div class="info-row">
+                            <strong>الكلب:</strong>
+                            <span class="ms-2">{{ shift_report.dog.name if shift_report.dog else 'غير محدد' }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-row">
+                            <strong>حالة التقرير:</strong>
+                            {% if shift_report.status.value == 'DRAFT' %}
+                                <span class="badge bg-secondary ms-2">مسودة</span>
+                            {% elif shift_report.status.value == 'SUBMITTED' %}
+                                <span class="badge bg-info ms-2">مرسل</span>
+                            {% elif shift_report.status.value == 'APPROVED_BY_PM' %}
+                                <span class="badge bg-success ms-2">معتمد</span>
+                            {% elif shift_report.status.value == 'REJECTED_BY_PM' %}
+                                <span class="badge bg-danger ms-2">مرفوض</span>
+                            {% endif %}
+                        </div>
+                        {% if shift_report.schedule_item and shift_report.schedule_item.shift %}
+                        <div class="info-row">
+                            <strong>الوردية:</strong>
+                            <span class="ms-2">{{ shift_report.schedule_item.shift.name }}</span>
+                        </div>
+                        {% endif %}
+                        {% if shift_report.location %}
+                        <div class="info-row">
+                            <strong>الموقع:</strong>
+                            <span class="ms-2">{{ shift_report.location }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Health Check Section -->
+{% if shift_report.health %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card section-card border-0 shadow-sm">
+            <div class="form-section-header">
+                <i class="fas fa-heartbeat me-2"></i>
+                الفحص الصحي
+            </div>
+            <div class="card-body">
+                {% set health_fields = [
+                    ('eyes', 'العيون'),
+                    ('nose', 'الأنف'),
+                    ('ears', 'الأذنان'),
+                    ('mouth', 'الفم'),
+                    ('teeth', 'الأسنان'),
+                    ('gums', 'اللثة'),
+                    ('front_limbs', 'الأطراف الأمامية'),
+                    ('back_limbs', 'الأطراف الخلفية'),
+                    ('hair', 'الشعر'),
+                    ('tail', 'الذيل'),
+                    ('rear', 'الخلفية')
+                ] %}
+                
+                {% for field_name, field_label in health_fields %}
+                    {% set status = shift_report.health[field_name + '_status'] %}
+                    {% set notes = shift_report.health[field_name + '_notes'] %}
+                    {% if status or notes %}
+                    <div class="health-check-row">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <strong>{{ field_label }}:</strong>
+                            </div>
+                            <div class="col-md-3">
+                                {% if status %}
+                                    {% if status.value == 'سليم' %}
+                                        <span class="status-badge status-normal">{{ status.value }}</span>
+                                    {% elif status.value == 'غير طبيعي' %}
+                                        <span class="status-badge status-abnormal">{{ status.value }}</span>
+                                    {% elif status.value == 'يحتاج متابعة' %}
+                                        <span class="status-badge status-needs">{{ status.value }}</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {% if notes %}
+                                    <span class="text-muted">{{ notes }}</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Behavior Section -->
+{% if shift_report.behavior %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card section-card border-0 shadow-sm">
+            <div class="form-section-header">
+                <i class="fas fa-paw me-2"></i>
+                السلوك
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if shift_report.behavior.good_behavior_notes %}
+                    <div class="col-md-6 mb-3">
+                        <h6><i class="fas fa-thumbs-up text-success me-2"></i>السلوك الجيد</h6>
+                        <p class="text-muted">{{ shift_report.behavior.good_behavior_notes }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if shift_report.behavior.bad_behavior_notes %}
+                    <div class="col-md-6 mb-3">
+                        <h6><i class="fas fa-thumbs-down text-danger me-2"></i>السلوك السيئ</h6>
+                        <p class="text-muted">{{ shift_report.behavior.bad_behavior_notes }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if not shift_report.behavior.good_behavior_notes and not shift_report.behavior.bad_behavior_notes %}
+                    <div class="col-12">
+                        <p class="text-muted text-center">لا توجد ملاحظات سلوكية</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Incidents Section -->
+{% if shift_report.incidents %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card section-card border-0 shadow-sm">
+            <div class="form-section-header">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                الحوادث والكشوفات
+            </div>
+            <div class="card-body">
+                {% for incident in shift_report.incidents %}
+                <div class="incident-card mb-3 p-3 border rounded">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>النوع:</strong>
+                            {% if incident.incident_type.value == 'اشتباه' %}
+                                <span class="badge bg-warning text-dark">{{ incident.incident_type.value }}</span>
+                            {% elif incident.incident_type.value == 'كشف' %}
+                                <span class="badge bg-danger">{{ incident.incident_type.value }}</span>
+                            {% endif %}
+                        </div>
+                        {% if incident.location %}
+                        <div class="col-md-6">
+                            <strong>الموقع:</strong> {{ incident.location }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if incident.incident_datetime %}
+                    <div class="mt-2">
+                        <strong>التاريخ والوقت:</strong> {{ incident.incident_datetime.strftime('%Y-%m-%d %H:%M') }}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-2">
+                        <strong>الوصف:</strong>
+                        <p class="mt-1">{{ incident.description }}</p>
+                    </div>
+                    
+                    {% if incident.attachments %}
+                    <div class="mt-2">
+                        <strong>المرفقات:</strong>
+                        <div class="row mt-2">
+                            {% for attachment in incident.attachments %}
+                            <div class="col-md-3 mb-2">
+                                {% if attachment.file_type.startswith('image') %}
+                                <a href="/{{ attachment.file_path }}" target="_blank">
+                                    <img src="/{{ attachment.file_path }}" alt="{{ attachment.original_filename }}" class="img-thumbnail" style="max-height: 150px;">
+                                </a>
+                                {% else %}
+                                <a href="/{{ attachment.file_path }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-file me-1"></i>
+                                    {{ attachment.original_filename }}
+                                </a>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                
+                {% if not shift_report.incidents %}
+                <p class="text-muted text-center">لا توجد حوادث أو كشوفات</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
