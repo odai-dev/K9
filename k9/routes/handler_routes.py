@@ -195,7 +195,7 @@ def parse_shift_incidents_data(form_data, shift_report, request_obj):
 def dashboard():
     """لوحة تحكم السائس"""
     from k9.models.models import Project
-    from k9.models.models_handler_daily import ReportStatus
+    from k9.models.models_handler_daily import ReportStatus, ShiftReport
     from dateutil.relativedelta import relativedelta
     
     today = date.today()
@@ -212,6 +212,11 @@ def dashboard():
     today_schedule = DailyScheduleService.get_handler_schedule_for_date(
         str(current_user.id), today
     )
+    
+    # Add shift report status to each schedule item
+    for item in today_schedule:
+        shift_report = ShiftReport.query.filter_by(schedule_item_id=item.id).first()
+        item.shift_report = shift_report
     
     # Get dogs worked with today and their report status
     dogs_worked_today = HandlerReportService.get_dogs_worked_today(str(current_user.id), today)
