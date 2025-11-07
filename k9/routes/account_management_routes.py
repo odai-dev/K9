@@ -119,11 +119,10 @@ def create():
             user.phone = employee.phone
             user.active = True
             user.mfa_enabled = False
+            user.employee_id = employee.id
             
             db.session.add(user)
             db.session.flush()
-            
-            user.employee_id = employee.id
             
             # Auto-assign employee to project if creator is a PM and employee has no active assignments
             if is_pm(current_user):
