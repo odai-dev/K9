@@ -573,6 +573,25 @@ def view_report(report_id):
                          report=report)
 
 
+@handler_bp.route('/shift-report/<report_id>')
+@login_required
+@handler_required
+def view_shift_report(report_id):
+    """عرض تقرير الوردية"""
+    from k9.models.models_handler_daily import ShiftReport
+    
+    shift_report = ShiftReport.query.get_or_404(report_id)
+    
+    # Verify ownership
+    if str(shift_report.handler_user_id) != str(current_user.id):
+        flash('غير مصرح لك بعرض هذا التقرير', 'danger')
+        return redirect(url_for('handler.dashboard'))
+    
+    return render_template('handler/view_shift_report.html',
+                         page_title='عرض تقرير الوردية',
+                         shift_report=shift_report)
+
+
 @handler_bp.route('/notifications')
 @login_required
 @handler_required
