@@ -841,7 +841,8 @@ def profile():
     """صفحة البروفايل للسائس ومسؤول المشروع"""
     from werkzeug.security import check_password_hash, generate_password_hash
     from k9.utils.security_utils import PasswordValidator, SecurityHelper
-    from k9.models.models import Employee, AuditAction, log_audit
+    from k9.models.models import Employee, AuditAction
+    from k9.utils.utils import log_audit
     from werkzeug.utils import secure_filename
     import os
     
