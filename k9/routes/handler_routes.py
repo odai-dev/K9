@@ -835,6 +835,137 @@ def submit_shift_report(shift_report_id):
     return redirect(url_for('handler.dashboard'))
 
 
+@handler_bp.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    """صفحة البروفايل للسائس ومسؤول المشروع"""
+    from werkzeug.security import check_password_hash, generate_password_hash
+    from k9.utils.validators import PasswordValidator
+    from k9.utils.security_utils import SecurityHelper
+    from k9.models.models import Employee, AuditAction, log_audit
+    from werkzeug.utils import secure_filename
+    import os
+    
+    # التحقق من أن المستخدم سائس أو مسؤول مشروع
+    if current_user.role not in [UserRole.HANDLER, UserRole.PROJECT_MANAGER]:
+        flash('هذه الصفحة غير متاحة لك', 'error')
+        return redirect(url_for('main.index'))
+    
+    # الحصول على بيانات الموظف المرتبط
+    employee = current_user.employee if current_user.employee else None
+    
+    if not employee:
+        flash('لا يوجد موظف مرتبط بهذا الحساب', 'error')
+        return redirect(url_for('main.index'))
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        # تغيير كلمة المرور
+        if action == 'change_password':
+            current_password = request.form.get('current_password', '')
+            new_password = request.form.get('new_password', '')
+            confirm_password = request.form.get('confirm_password', '')
+            
+            if not current_password:
+                flash('يرجى إدخال كلمة المرور الحالية', 'error')
+            elif not check_password_hash(current_user.password_hash, current_password):
+                flash('كلمة المرور الحالية غير صحيحة', 'error')
+            elif not new_password or not confirm_password:
+                flash('يرجى إدخال كلمة المرور الجديدة وتأكيدها', 'error')
+            elif new_password != confirm_password:
+                flash('كلمة المرور الجديدة وتأكيدها غير متطابقتين', 'error')
+            else:
+                is_valid, error_message = PasswordValidator.validate_password(new_password)
+                if not is_valid:
+                    flash(f'كلمة المرور غير صالحة: {error_message}', 'error')
+                elif check_password_hash(current_user.password_hash, new_password):
+                    flash('كلمة المرور الجديدة يجب أن تكون مختلفة عن الحالية', 'error')
+                else:
+                    try:
+                        current_user.password_hash = generate_password_hash(new_password)
+                        current_user.password_changed_at = datetime.utcnow()
+                        current_user.failed_login_attempts = 0
+                        current_user.account_locked_until = None
+                        db.session.commit()
+                        
+                        log_audit(current_user.id, AuditAction.UPDATE, 'User', current_user.id, 
+                                 f'المستخدم {current_user.username} غيّر كلمة المرور')
+                        flash('تم تغيير كلمة المرور بنجاح', 'success')
+                        return redirect(url_for('handler.profile'))
+                    except Exception as e:
+                        db.session.rollback()
+                        flash(f'حدث خطأ أثناء تغيير كلمة المرور: {str(e)}', 'error')
+        
+        # تحديث البيانات الشخصية
+        elif action == 'update_info':
+            try:
+                phone = request.form.get('phone', '').strip()
+                current_residence = request.form.get('current_residence', '').strip()
+                
+                # تحديث رقم الجوال في Employee
+                if phone:
+                    employee.phone = phone
+                
+                # تحديث عنوان السكن
+                if current_residence:
+                    employee.current_residence = current_residence
+                
+                db.session.commit()
+                log_audit(current_user.id, AuditAction.UPDATE, 'Employee', employee.id, 
+                         f'تحديث البيانات الشخصية للموظف {employee.name}')
+                flash('تم تحديث البيانات بنجاح', 'success')
+                return redirect(url_for('handler.profile'))
+                
+            except Exception as e:
+                db.session.rollback()
+                flash(f'حدث خطأ أثناء تحديث البيانات: {str(e)}', 'error')
+        
+        # تحديث الصورة
+        elif action == 'update_photo':
+            if 'photo' in request.files:
+                photo_file = request.files['photo']
+                if photo_file and photo_file.filename:
+                    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
+                    filename = photo_file.filename
+                    if '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions:
+                        try:
+                            # إنشاء مجلد للصور إذا لم يكن موجوداً
+                            upload_folder = os.path.join('uploads', 'employee_photos')
+                            os.makedirs(upload_folder, exist_ok=True)
+                            
+                            # حفظ الملف باسم آمن
+                            filename = secure_filename(f"{employee.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{filename.rsplit('.', 1)[1].lower()}")
+                            file_path = os.path.join(upload_folder, filename)
+                            photo_file.save(file_path)
+                            
+                            # حذف الصورة القديمة إذا كانت موجودة
+                            if employee.employee_photo and os.path.exists(employee.employee_photo):
+                                try:
+                                    os.remove(employee.employee_photo)
+                                except:
+                                    pass
+                            
+                            # تحديث مسار الصورة في قاعدة البيانات
+                            employee.employee_photo = file_path
+                            db.session.commit()
+                            
+                            log_audit(current_user.id, AuditAction.UPDATE, 'Employee', employee.id, 
+                                     f'تحديث صورة الموظف {employee.name}')
+                            flash('تم تحديث الصورة بنجاح', 'success')
+                            return redirect(url_for('handler.profile'))
+                            
+                        except Exception as e:
+                            db.session.rollback()
+                            flash(f'حدث خطأ أثناء رفع الصورة: {str(e)}', 'error')
+                    else:
+                        flash('نوع الملف غير مسموح. يُسمح فقط بـ PNG, JPG, JPEG, GIF', 'error')
+                else:
+                    flash('يرجى اختيار صورة', 'error')
+    
+    return render_template('handler/profile.html', employee=employee)
+
+
 # Context processor for notification links
 @handler_bp.app_context_processor
 def utility_processor():
