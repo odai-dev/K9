@@ -68,11 +68,14 @@ def require_pm_project(f):
 
 def get_project_dog_ids(project_id):
     """Helper to get dog IDs for a project"""
-    project_dogs = ProjectDog.query.filter_by(
+    # Use ProjectAssignment model instead of deprecated ProjectDog
+    project_assignments = ProjectAssignment.query.filter_by(
         project_id=project_id,
         is_active=True
+    ).filter(
+        ProjectAssignment.dog_id.isnot(None)
     ).all()
-    return [pd.dog_id for pd in project_dogs]
+    return [pa.dog_id for pa in project_assignments]
 
 def get_project_employees(project_id):
     """Helper to get employees assigned to a project - uses ProjectAssignment model"""
