@@ -371,6 +371,9 @@
                             <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}"><i class="fas fa-user-shield me-2"></i>لوحة التحكم</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('admin.admin_profile') }}"><i class="fas fa-user-cog me-2"></i>ملف الحساب الشخصي</a></li>
                             <li><hr class="dropdown-divider"></li>
+                            {% elif current_user.role.value == 'HANDLER' or current_user.role.value == 'PROJECT_MANAGER' %}
+                            <li><a class="dropdown-item" href="{{ url_for('handler.profile') }}"><i class="fas fa-user-circle me-2"></i>الملف الشخصي</a></li>
+                            <li><hr class="dropdown-divider"></li>
                             {% endif %}
                             <li><a class="dropdown-item" href="{{ url_for('mfa.change_password') }}"><i class="fas fa-key me-2"></i>تغيير كلمة المرور</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('mfa.setup') }}"><i class="fas fa-shield-alt me-2"></i>المصادقة الثنائية (2FA)</a></li>
@@ -414,6 +417,9 @@
                                 <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}"><i class="fas fa-user-shield me-2"></i>لوحة التحكم</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('admin.admin_profile') }}"><i class="fas fa-user-cog me-2"></i>ملف الحساب الشخصي</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            {% elif current_user.role.value == 'HANDLER' or current_user.role.value == 'PROJECT_MANAGER' %}
+                            <li><a class="dropdown-item" href="{{ url_for('handler.profile') }}"><i class="fas fa-user-circle me-2"></i>الملف الشخصي</a></li>
                             <li><hr class="dropdown-divider"></li>
                             {% endif %}
                             <li><a class="dropdown-item" href="{{ url_for('mfa.change_password') }}"><i class="fas fa-key me-2"></i>تغيير كلمة المرور</a></li>
