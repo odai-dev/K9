@@ -140,21 +140,41 @@
                     <!-- Submit Buttons -->
                     <div class="row">
                         <div class="col-12">
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save me-2"></i>
-                                    حفظ التغييرات
+                            <div class="d-flex gap-2 justify-content-between">
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>
+                                        حفظ التغييرات
+                                    </button>
+                                    <a href="{{ url_for('main.employees_list') }}" class="btn btn-secondary">
+                                        <i class="fas fa-times me-2"></i>
+                                        إلغاء
+                                    </a>
+                                </div>
+                                <button type="button" class="btn btn-danger" onclick="confirmDelete()">
+                                    <i class="fas fa-trash me-2"></i>
+                                    حذف الموظف
                                 </button>
-                                <a href="{{ url_for('main.employees_list') }}" class="btn btn-secondary">
-                                    <i class="fas fa-times me-2"></i>
-                                    إلغاء
-                                </a>
                             </div>
                         </div>
                     </div>
+                </form>
+                
+                <!-- Delete Form (hidden) -->
+                <form id="deleteForm" method="POST" action="{{ url_for('main.employees_delete', employee_id=employee.id) }}" style="display: none;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+function confirmDelete() {
+    if (confirm('هل أنت متأكد من حذف الموظف "{{ employee.name }}"؟\n\nهذا الإجراء لا يمكن التراجع عنه!')) {
+        document.getElementById('deleteForm').submit();
+    }
+}
+</script>
+
 {% endblock %}
