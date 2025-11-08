@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+
+{% block title %}الملف الشخصي{% endblock %}
+
+{% block extra_css %}
+<style>
+.profile-container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.profile-header {
+    background: linear-gradient(135deg, #1a365d 0%, #2d5a8d 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 15px 15px 0 0;
+    text-align: center;
+    position: relative;
+}
+
+.profile-photo-container {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 15px;
+}
+
+.profile-photo {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 5px solid white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.photo-upload-overlay {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: #28a745;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 3px solid white;
+}
+
+.photo-upload-overlay:hover {
+    background: #218838;
+    transform: scale(1.1);
+}
+
+.section-card {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.section-header {
+    color: #1a365d;
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.info-row {
+    display: flex;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #495057;
+    width: 200px;
+    flex-shrink: 0;
+}
+
+.info-value {
+    color: #6c757d;
+    flex-grow: 1;
+}
+
+.badge-role {
+    font-size: 0.9em;
+    padding: 6px 15px;
+    border-radius: 20px;
+}
+
+.password-requirements {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 15px;
+    margin-top: 15px;
+    font-size: 0.875rem;
+}
+
+.password-requirements ul {
+    margin: 10px 0 0 0;
+    padding-right: 20px;
+}
+
+.password-requirements li {
+    margin-bottom: 5px;
+}
+
+.btn-save {
+    background: #28a745;
+    border-color: #28a745;
+    padding: 10px 30px;
+}
+
+.btn-save:hover {
+    background: #218838;
+    border-color: #1e7e34;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="profile-container">
+        <!-- Header with Photo -->
+        <div class="profile-header">
+            <div class="profile-photo-container">
+                {% if employee.employee_photo %}
+                <img src="/{{ employee.employee_photo }}" alt="{{ employee.name }}" class="profile-photo">
+                {% else %}
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="{{ employee.name }}" class="profile-photo">
+                {% endif %}
+                <label for="photoInput" class="photo-upload-overlay">
+                    <i class="fas fa-camera text-white"></i>
+                </label>
+            </div>
+            <h2 class="mb-2">{{ employee.name }}</h2>
+            <p class="mb-1">
+                <span class="badge badge-role bg-light text-dark">
+                    {% if current_user.role.value == 'HANDLER' %}
+                    <i class="fas fa-dog me-1"></i>سائس
+                    {% elif current_user.role.value == 'PROJECT_MANAGER' %}
+                    <i class="fas fa-users-cog me-1"></i>مسؤول مشروع
+                    {% else %}
+                    {{ current_user.role.value }}
+                    {% endif %}
+                </span>
+            </p>
+            <p class="mb-0 opacity-75">{{ current_user.username }} @ نظام إدارة عمليات الكلاب البوليسية</p>
+        </div>
+
+        <!-- Photo Upload Form (Hidden) -->
+        <form method="POST" enctype="multipart/form-data" id="photoForm" style="display: none;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="action" value="update_photo">
+            <input type="file" id="photoInput" name="photo" accept="image/png,image/jpeg,image/jpg,image/gif" onchange="document.getElementById('photoForm').submit();">
+        </form>
+
+        <!-- Personal Information Card -->
+        <div class="section-card">
+            <h5 class="section-header">
+                <i class="fas fa-user me-2"></i>
+                المعلومات الشخصية
+            </h5>
+            
+            <div class="info-row">
+                <div class="info-label">الاسم الكامل:</div>
+                <div class="info-value">{{ employee.name }}</div>
+            </div>
+            
+            <div class="info-row">
+                <div class="info-label">رقم الموظف:</div>
+                <div class="info-value">{{ employee.employee_id }}</div>
+            </div>
+            
+            <div class="info-row">
+                <div class="info-label">الدور الوظيفي:</div>
+                <div class="info-value">
+                    {% if employee.role.name == 'HANDLER' %}
+                    سائس
+                    {% elif employee.role.name == 'TRAINER' %}
+                    مدرب
+                    {% elif employee.role.name == 'BREEDER' %}
+                    مربي
+                    {% elif employee.role.name == 'VET' %}
+                    طبيب بيطري
+                    {% elif employee.role.name == 'PROJECT_MANAGER' %}
+                    مسؤول مشروع
+                    {% else %}
+                    {{ employee.role.value }}
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="info-row">
+                <div class="info-label">تاريخ التوظيف:</div>
+                <div class="info-value">{{ employee.hire_date.strftime('%Y-%m-%d') if employee.hire_date else 'غير محدد' }}</div>
+            </div>
+            
+            <div class="info-row">
+                <div class="info-label">البريد الإلكتروني:</div>
+                <div class="info-value">{{ employee.email or 'غير محدد' }}</div>
+            </div>
+        </div>
+
+        <!-- Contact Information Update Card -->
+        <div class="section-card">
+            <h5 class="section-header">
+                <i class="fas fa-address-card me-2"></i>
+                تحديث معلومات الاتصال والسكن
+            </h5>
+            
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="action" value="update_info">
+                
+                <div class="form-group">
+                    <label for="phone" class="form-label">
+                        <i class="fas fa-phone me-1"></i>رقم الجوال
+                    </label>
+                    <input type="tel" class="form-control" id="phone" name="phone" value="{{ employee.phone or '' }}" placeholder="أدخل رقم الجوال">
+                </div>
+                
+                <div class="form-group">
+                    <label for="current_residence" class="form-label">
+                        <i class="fas fa-home me-1"></i>عنوان السكن
+                    </label>
+                    <textarea class="form-control" id="current_residence" name="current_residence" rows="3" placeholder="أدخل عنوان السكن الحالي">{{ employee.current_residence or '' }}</textarea>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-save text-white">
+                        <i class="fas fa-save me-2"></i>
+                        حفظ التحديثات
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Change Password Card -->
+        <div class="section-card">
+            <h5 class="section-header">
+                <i class="fas fa-lock me-2"></i>
+                تغيير كلمة المرور
+            </h5>
+            <p class="text-muted">لأمان أفضل، يُنصح بتغيير كلمة المرور بانتظام.</p>
+            
+            <form method="POST" id="passwordForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="action" value="change_password">
+                
+                <div class="form-group">
+                    <label for="current_password" class="form-label">كلمة المرور الحالية *</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="current_password" name="current_password" required>
+                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('current_password')">
+                            <i class="fas fa-eye" id="current_password_icon"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="new_password" class="form-label">كلمة المرور الجديدة *</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="new_password" name="new_password" required>
+                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('new_password')">
+                            <i class="fas fa-eye" id="new_password_icon"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm_password" class="form-label">تأكيد كلمة المرور الجديدة *</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirm_password')">
+                            <i class="fas fa-eye" id="confirm_password_icon"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="password-requirements">
+                    <h6><i class="fas fa-shield-alt me-1"></i>متطلبات كلمة المرور:</h6>
+                    <ul>
+                        <li>8 أحرف على الأقل</li>
+                        <li>حرف كبير واحد على الأقل</li>
+                        <li>حرف صغير واحد على الأقل</li>
+                        <li>رقم واحد على الأقل</li>
+                        <li>رمز خاص واحد على الأقل (!@#$%^&*)</li>
+                        <li>مختلفة عن كلمة المرور الحالية</li>
+                    </ul>
+                </div>
+                
+                <div class="d-grid gap-2 mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-key me-2"></i>
+                        تغيير كلمة المرور
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Security Info -->
+        <div class="section-card">
+            <h5 class="section-header">
+                <i class="fas fa-shield-alt me-2"></i>
+                معلومات الأمان
+            </h5>
+            
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>ملاحظة أمنية:</strong>
+                جميع التغييرات التي تقوم بها يتم تسجيلها في سجل التدقيق لأغراض الأمان.
+                يرجى التأكد من عدم مشاركة بيانات دخولك مع أي شخص آخر.
+            </div>
+            
+            <div class="info-row">
+                <div class="info-label">اسم المستخدم:</div>
+                <div class="info-value">{{ current_user.username }}</div>
+            </div>
+            
+            {% if current_user.password_changed_at %}
+            <div class="info-row">
+                <div class="info-label">آخر تغيير لكلمة المرور:</div>
+                <div class="info-value">{{ current_user.password_changed_at.strftime('%Y-%m-%d %H:%M') }}</div>
+            </div>
+            {% endif %}
+            
+            <div class="info-row">
+                <div class="info-label">المصادقة الثنائية:</div>
+                <div class="info-value">
+                    {% if current_user.mfa_enabled %}
+                    <span class="badge bg-success">مفعلة</span>
+                    <a href="{{ url_for('mfa.status') }}" class="btn btn-sm btn-outline-primary ms-2">إدارة</a>
+                    {% else %}
+                    <span class="badge bg-warning">غير مفعلة</span>
+                    <a href="{{ url_for('mfa.setup') }}" class="btn btn-sm btn-outline-success ms-2">تفعيل</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(inputId + '_icon');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+
+// Form validation for password change
+document.getElementById('passwordForm').addEventListener('submit', function(e) {
+    const newPassword = document.getElementById('new_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    
+    if (newPassword !== confirmPassword) {
+        e.preventDefault();
+        alert('كلمة المرور الجديدة وتأكيدها غير متطابقتين');
+        return false;
+    }
+    
+    if (newPassword.length < 8) {
+        e.preventDefault();
+        alert('كلمة المرور يجب أن تحتوي على 8 أحرف على الأقل');
+        return false;
+    }
+});
+
+// Show loading when uploading photo
+document.getElementById('photoInput').addEventListener('change', function() {
+    if (this.files && this.files[0]) {
+        // Show loading message
+        const overlay = document.querySelector('.photo-upload-overlay');
+        overlay.innerHTML = '<i class="fas fa-spinner fa-spin text-white"></i>';
+    }
+});
+</script>
+{% endblock %}
