@@ -117,6 +117,11 @@ def dogs_list():
 @login_required
 @admin_or_pm_required  
 def dogs_add():
+    # Only GENERAL_ADMIN can add dogs, not PROJECT_MANAGER
+    if current_user.role == UserRole.PROJECT_MANAGER:
+        flash('غير مسموح لك بإضافة كلاب. هذه الصلاحية للمسؤول العام فقط.', 'error')
+        return redirect(url_for('pm.my_dogs'))
+    
     # Get potential parents for dropdowns
     potential_parents = get_user_accessible_dogs(current_user)
     
@@ -196,9 +201,21 @@ def dogs_view(dog_id):
         return redirect(url_for('main.dogs_list'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN and dog.assigned_to_user_id != current_user.id:
+    if current_user.role == UserRole.PROJECT_MANAGER:
+        # For Project Managers, check if dog is assigned to their project
+        from k9.routes.pm_routes import get_pm_project, get_project_dog_ids
+        project = get_pm_project()
+        if project:
+            dog_ids = get_project_dog_ids(project.id)
+            if dog.id not in dog_ids:
+                flash('غير مسموح لك بعرض بيانات هذا الكلب', 'error')
+                return redirect(url_for('pm.my_dogs'))
+        else:
+            flash('غير مسموح لك بعرض بيانات هذا الكلب', 'error')
+            return redirect(url_for('main.index'))
+    elif current_user.role != UserRole.GENERAL_ADMIN:
         flash('غير مسموح لك بعرض بيانات هذا الكلب', 'error')
-        return redirect(url_for('main.dogs_list'))
+        return redirect(url_for('main.index'))
     
     # Get related data
     training_sessions = TrainingSession.query.filter_by(dog_id=dog.id).order_by(TrainingSession.created_at.desc()).all()
