@@ -506,6 +506,39 @@ def employees_edit(employee_id):
     
     return render_template('employees/edit.html', employee=employee, roles=EmployeeRole)
 
+@main_bp.route('/employees/<employee_id>/delete', methods=['POST'])
+@login_required
+@admin_or_pm_required
+def employees_delete(employee_id):
+    try:
+        employee = Employee.query.get_or_404(employee_id)
+    except ValueError:
+        flash('معرف الموظف غير صحيح', 'error')
+        return redirect(url_for('main.employees_list'))
+    
+    # Check permissions
+    if current_user.role != UserRole.GENERAL_ADMIN and employee.assigned_to_user_id != current_user.id:
+        flash('غير مسموح لك بحذف هذا الموظف', 'error')
+        return redirect(url_for('main.employees_list'))
+    
+    try:
+        employee_name = employee.name
+        
+        # Delete employee documents first (cascade should handle this, but just in case)
+        EmployeeDocument.query.filter_by(employee_id=employee.id).delete()
+        
+        db.session.delete(employee)
+        db.session.commit()
+        
+        log_audit(current_user.id, AuditAction.DELETE, 'Employee', employee.id, f'تم حذف الموظف: {employee_name}', None, {'name': employee_name})
+        flash('تم حذف الموظف بنجاح', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء حذف الموظف: {str(e)}', 'error')
+    
+    return redirect(url_for('main.employees_list'))
+
 # Training routes
 @main_bp.route('/training')
 @login_required
