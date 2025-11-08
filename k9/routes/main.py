@@ -481,7 +481,8 @@ def employees_edit(employee_id):
                 'PROJECT_MANAGER': EmployeeRole.PROJECT_MANAGER
             }
             employee.role = role_mapping[request.form['role']]
-            employee.contact_info = request.form.get('contact_info')
+            employee.phone = request.form.get('phone')
+            employee.email = request.form.get('email')
             employee.hire_date = datetime.strptime(request.form['hire_date'], '%Y-%m-%d').date() if request.form['hire_date'] else None
             employee.is_active = 'is_active' in request.form
             
@@ -491,6 +492,14 @@ def employees_edit(employee_id):
             flash('تم تحديث بيانات الموظف بنجاح', 'success')
             return redirect(url_for('main.employees_list'))
             
+        except IntegrityError as e:
+            db.session.rollback()
+            if 'phone' in str(e):
+                flash('رقم الهاتف مستخدم بالفعل', 'error')
+            elif 'employee_id' in str(e):
+                flash('رقم الموظف مستخدم بالفعل', 'error')
+            else:
+                flash('حدث خطأ: البيانات المدخلة مكررة', 'error')
         except Exception as e:
             db.session.rollback()
             flash(f'حدث خطأ أثناء تحديث بيانات الموظف: {str(e)}', 'error')
