@@ -53,7 +53,7 @@
     </div>
 </div>
 
-<form method="POST" id="reportForm">
+<form method="POST" enctype="multipart/form-data" id="reportForm">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     
     <!-- أولاً: المعلومات العامة -->
@@ -548,6 +548,46 @@
         </div>
     </div>
 
+    <!-- سابعاً: المرفقات (الصور والملفات) -->
+    <div class="card section-card border-0 shadow-sm">
+        <div class="form-section-header">
+            <h5 class="mb-0">
+                <i class="fas fa-paperclip me-2"></i>
+                سابعاً: المرفقات (الصور والملفات)
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        يمكنك إرفاق صور أو ملفات تتعلق بالتقرير (حد أقصى 5 ملفات، كل ملف بحد أقصى 10 ميجا)
+                    </div>
+                </div>
+                <div class="col-12" id="attachment-container">
+                    <label class="form-label fw-bold">إرفاق ملفات/صور</label>
+                    <div class="attachment-item mb-3">
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <input type="file" name="attachments" class="form-control" accept="image/*,.pdf,.doc,.docx" onchange="updateFileInfo(this)">
+                                <small class="text-muted">أنواع الملفات المسموحة: صور، PDF، Word</small>
+                            </div>
+                            <div class="col-md-6">
+                                <input type="text" name="attachment_descriptions" class="form-control" placeholder="وصف الملف (اختياري)">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-sm btn-success w-100" onclick="addAttachmentField()">
+                                    <i class="fas fa-plus"></i> إضافة
+                                </button>
+                            </div>
+                        </div>
+                        <div class="file-info mt-1 text-muted small"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Action Buttons -->
     <div class="row mb-4">
         <div class="col-12">
@@ -586,6 +626,73 @@ document.getElementById('reportForm').addEventListener('submit', function(e) {
             return false;
         }
     }
+    
+    // Validate file sizes
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    
+    for (let input of fileInputs) {
+        if (input.files.length > 0) {
+            for (let file of input.files) {
+                if (file.size > maxSize) {
+                    e.preventDefault();
+                    alert(`حجم الملف "${file.name}" أكبر من 10 ميجا`);
+                    return false;
+                }
+            }
+        }
+    }
 });
+
+// Add attachment field
+function addAttachmentField() {
+    const container = document.getElementById('attachment-container');
+    const items = container.querySelectorAll('.attachment-item');
+    
+    if (items.length >= 5) {
+        alert('الحد الأقصى 5 مرفقات');
+        return;
+    }
+    
+    const newItem = document.createElement('div');
+    newItem.className = 'attachment-item mb-3';
+    newItem.innerHTML = `
+        <div class="row g-2">
+            <div class="col-md-4">
+                <input type="file" name="attachments" class="form-control" accept="image/*,.pdf,.doc,.docx" onchange="updateFileInfo(this)">
+                <small class="text-muted">أنواع الملفات المسموحة: صور، PDF، Word</small>
+            </div>
+            <div class="col-md-6">
+                <input type="text" name="attachment_descriptions" class="form-control" placeholder="وصف الملف (اختياري)">
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-sm btn-danger w-100" onclick="removeAttachmentField(this)">
+                    <i class="fas fa-minus"></i> حذف
+                </button>
+            </div>
+        </div>
+        <div class="file-info mt-1 text-muted small"></div>
+    `;
+    container.appendChild(newItem);
+}
+
+// Remove attachment field
+function removeAttachmentField(button) {
+    const item = button.closest('.attachment-item');
+    item.remove();
+}
+
+// Update file info
+function updateFileInfo(input) {
+    const fileInfo = input.closest('.attachment-item').querySelector('.file-info');
+    if (input.files.length > 0) {
+        const file = input.files[0];
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        fileInfo.textContent = `الملف: ${file.name} (${sizeMB} ميجا)`;
+        fileInfo.classList.add('text-success');
+    } else {
+        fileInfo.textContent = '';
+    }
+}
 </script>
 {% endblock %}

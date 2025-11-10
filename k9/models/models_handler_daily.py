@@ -210,6 +210,7 @@ class HandlerReport(db.Model):
     care = db.relationship('HandlerReportCare', backref='report', uselist=False, cascade='all, delete-orphan')
     behavior = db.relationship('HandlerReportBehavior', backref='report', uselist=False, cascade='all, delete-orphan')
     incidents = db.relationship('HandlerReportIncident', backref='report', cascade='all, delete-orphan')
+    attachments = db.relationship('HandlerReportAttachment', foreign_keys='HandlerReportAttachment.report_id', backref='parent_report', cascade='all, delete-orphan')
     
     __table_args__ = (
         db.Index('idx_handler_report_date', 'date'),
@@ -348,16 +349,27 @@ class HandlerReportAttachment(db.Model):
     __tablename__ = 'handler_report_attachment'
     
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
-    incident_id = db.Column(get_uuid_column(), db.ForeignKey('handler_report_incident.id', ondelete='CASCADE'), nullable=False)
+    
+    # Support both report-level and incident-level attachments
+    report_id = db.Column(get_uuid_column(), db.ForeignKey('handler_report.id', ondelete='CASCADE'), nullable=True)
+    incident_id = db.Column(get_uuid_column(), db.ForeignKey('handler_report_incident.id', ondelete='CASCADE'), nullable=True)
     
     filename = db.Column(db.String(255), nullable=False)      # اسم الملف الآمن
     original_filename = db.Column(db.String(255), nullable=False)  # الاسم الأصلي
     file_path = db.Column(db.String(500), nullable=False)     # المسار
-    file_type = db.Column(db.String(50), nullable=False)      # نوع الملف (image, pdf)
+    file_type = db.Column(db.String(50), nullable=False)      # نوع الملف (image, pdf, document)
     file_size = db.Column(db.Integer, nullable=False)         # حجم الملف بالبايت
     sha256_hash = db.Column(db.String(64), nullable=False)    # SHA256 للتحقق من السلامة
+    description = db.Column(Text, nullable=True)              # وصف المرفق (اختياري)
     
     uploaded_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
+    __table_args__ = (
+        db.CheckConstraint('(report_id IS NOT NULL) OR (incident_id IS NOT NULL)', 
+                          name='attachment_must_have_parent'),
+        db.Index('idx_attachment_report', 'report_id'),
+        db.Index('idx_attachment_incident', 'incident_id'),
+    )
     
     def __repr__(self):
         return f'<HandlerReportAttachment {self.filename}>'

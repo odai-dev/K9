@@ -646,20 +646,148 @@ class NotificationService:
 class AttachmentService:
     """خدمة إدارة المرفقات"""
     
+    # Configuration
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx'}
+    ALLOWED_MIMES = {
+        'image/png', 'image/jpeg', 'image/gif',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    }
+    
     @staticmethod
-    def save_attachment(file, incident_id: str, upload_folder: str) -> tuple:
-        """حفظ مرفق مع SHA256"""
+    def validate_file(file) -> tuple:
+        """التحقق من صحة الملف"""
+        from werkzeug.utils import secure_filename
+        
+        if not file or not file.filename:
+            return False, "لم يتم اختيار ملف"
+        
+        # Secure filename
+        filename = secure_filename(file.filename)
+        if not filename:
+            return False, "اسم الملف غير صالح"
+        
+        # Check extension
+        file_ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+        if file_ext not in AttachmentService.ALLOWED_EXTENSIONS:
+            return False, f"نوع الملف .{file_ext} غير مسموح. الأنواع المسموحة: {', '.join(AttachmentService.ALLOWED_EXTENSIONS)}"
+        
+        # Check file size
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)  # Reset to beginning
+        
+        if file_size > AttachmentService.MAX_FILE_SIZE:
+            size_mb = AttachmentService.MAX_FILE_SIZE / (1024 * 1024)
+            return False, f"حجم الملف أكبر من {size_mb:.0f} ميجا"
+        
+        if file_size == 0:
+            return False, "الملف فارغ"
+        
+        # MIME type validation (optional but recommended)
+        try:
+            import magic
+            file_content = file.read(2048)  # Read first 2KB for MIME detection
+            file.seek(0)  # Reset
+            mime = magic.from_buffer(file_content, mime=True)
+            if mime not in AttachmentService.ALLOWED_MIMES:
+                return False, f"نوع المحتوى غير مسموح: {mime}"
+        except (ImportError, Exception):
+            # If python-magic is not available or errors, skip MIME check
+            pass
+        
+        return True, None
+    
+    @staticmethod
+    def save_report_attachment(file, report_id: str, description: Optional[str] = None) -> tuple:
+        """حفظ مرفق تقرير مع SHA256 وجميع التحققات الأمنية"""
         import hashlib
         from werkzeug.utils import secure_filename
         import uuid
         
+        # Validate file
+        valid, error = AttachmentService.validate_file(file)
+        if not valid:
+            return None, error
+        
+        try:
+            # Secure filename
+            filename = secure_filename(file.filename)
+            file_ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+            
+            # Generate unique filename with UUID
+            unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
+            
+            # Create directory structure: uploads/handler_reports/YYYY/MM/
+            now = datetime.now()
+            relative_path = os.path.join('handler_reports', str(now.year), f"{now.month:02d}")
+            upload_folder = 'uploads'
+            full_dir = os.path.join(upload_folder, relative_path)
+            os.makedirs(full_dir, exist_ok=True)
+            
+            file_path = os.path.join(full_dir, unique_filename)
+            
+            # Read file content and calculate SHA256
+            file_content = file.read()
+            sha256_hash = hashlib.sha256(file_content).hexdigest()
+            
+            # Check for duplicate hash (optional - prevent duplicate uploads)
+            existing = HandlerReportAttachment.query.filter_by(sha256_hash=sha256_hash).first()
+            if existing:
+                # File already exists with same hash - could reuse or reject
+                pass  # For now, allow duplicates
+            
+            # Save file atomically
+            with open(file_path, 'wb') as f:
+                f.write(file_content)
+            
+            # Determine file type
+            if file_ext in {'png', 'jpg', 'jpeg', 'gif'}:
+                file_type = 'image'
+            elif file_ext == 'pdf':
+                file_type = 'pdf'
+            else:
+                file_type = 'document'
+            
+            # Create attachment record
+            attachment = HandlerReportAttachment(  # type: ignore
+                report_id=report_id,
+                filename=unique_filename,
+                original_filename=filename,
+                file_path=os.path.join(relative_path, unique_filename),
+                file_type=file_type,
+                file_size=len(file_content),
+                sha256_hash=sha256_hash,
+                description=description
+            )
+            
+            db.session.add(attachment)
+            # Don't commit here - let the caller commit transactionally
+            
+            return attachment, None
+            
+        except Exception as e:
+            # Log the exception
+            print(f"Error saving attachment: {str(e)}")
+            return None, f"خطأ في حفظ الملف: {str(e)}"
+    
+    @staticmethod
+    def save_attachment(file, incident_id: str, upload_folder: str) -> tuple:
+        """حفظ مرفق مع SHA256 - legacy method for incidents"""
+        import hashlib
+        from werkzeug.utils import secure_filename
+        import uuid
+        
+        # Validate file
+        valid, error = AttachmentService.validate_file(file)
+        if not valid:
+            return None, error
+        
         # Validate file type
-        allowed_extensions = {'png', 'jpg', 'jpeg', 'pdf', 'gif'}
         filename = secure_filename(file.filename)
         file_ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
-        
-        if file_ext not in allowed_extensions:
-            return None, "نوع الملف غير مسموح"
         
         # Generate unique filename
         unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
