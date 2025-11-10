@@ -197,7 +197,8 @@
             </div>
             <div class="card-body">
                 {% if today_schedule %}
-                    <div class="table-responsive">
+                    <!-- Desktop Table View -->
+                    <div class="table-responsive d-none d-md-block">
                         <table class="table table-hover mb-0">
                             <thead>
                                 <tr>
@@ -269,6 +270,81 @@
                                 {% endfor %}
                             </tbody>
                         </table>
+                    </div>
+                    
+                    <!-- Mobile Card View -->
+                    <div class="d-md-none">
+                        {% for item in today_schedule %}
+                        <div class="card mb-3 border-start border-primary border-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            <i class="fas fa-clock me-1 text-primary"></i>
+                                            {% if item.shift %}
+                                                {{ item.shift.name }}
+                                            {% else %}
+                                                <span class="text-muted">غير محدد</span>
+                                            {% endif %}
+                                        </h6>
+                                        {% if item.shift %}
+                                        <small class="text-muted">
+                                            {{ item.shift.start_time.strftime('%H:%M') }} - {{ item.shift.end_time.strftime('%H:%M') }}
+                                        </small>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        {% if item.status.value == 'PLANNED' %}
+                                            <span class="badge bg-secondary">مخطط</span>
+                                        {% elif item.status.value == 'PRESENT' %}
+                                            <span class="badge bg-success">حاضر</span>
+                                        {% elif item.status.value == 'ABSENT' %}
+                                            <span class="badge bg-danger">غائب</span>
+                                        {% elif item.status.value == 'REPLACED' %}
+                                            <span class="badge bg-warning">تم الاستبدال</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <i class="fas fa-dog me-1 text-success"></i>
+                                    <strong>الكلب:</strong>
+                                    {% if item.dog %}
+                                        {{ item.dog.name }} <small class="text-muted">({{ item.dog.code }})</small>
+                                    {% else %}
+                                        <span class="text-muted">غير محدد</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="d-grid">
+                                    {% if not item.shift_report %}
+                                        <a href="{{ url_for('handler.new_shift_report', schedule_item_id=item.id) }}" 
+                                           class="btn btn-primary">
+                                            <i class="fas fa-plus me-1"></i>
+                                            إنشاء تقرير الفترة
+                                        </a>
+                                    {% else %}
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                {% if item.shift_report.status.value == 'DRAFT' %}
+                                                    <span class="badge bg-secondary">مسودة</span>
+                                                {% elif item.shift_report.status.value == 'SUBMITTED' %}
+                                                    <span class="badge bg-info">مرسل</span>
+                                                {% elif item.shift_report.status.value == 'APPROVED_BY_PM' %}
+                                                    <span class="badge bg-success">معتمد</span>
+                                                {% endif %}
+                                            </div>
+                                            <a href="{{ url_for('handler.view_shift_report', report_id=item.shift_report.id) }}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye me-1"></i>
+                                                عرض التقرير
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                 {% else %}
                     <div class="text-center py-5">
@@ -342,6 +418,36 @@
             </div>
         </div>
         {% endif %}
+    </div>
+</div>
+
+<!-- Performance Chart -->
+<div class="row mb-4">
+    <div class="col-lg-6 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>
+                    إحصائيات التقارير الشهرية
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="reportsMonthlyChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    حالة التقارير
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="reportsStatusChart" height="200"></canvas>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -440,22 +546,94 @@
 
 {% block extra_js %}
 <script>
-// Auto-refresh notifications count every 30 seconds
-setInterval(function() {
-    fetch('{{ url_for("handler.get_unread_count") }}')
-        .then(response => response.json())
-        .then(data => {
-            const badge = document.querySelector('.badge.bg-danger');
-            if (data.count > 0) {
-                if (badge) {
-                    badge.textContent = data.count < 100 ? data.count : '99+';
-                }
-            } else {
-                if (badge) {
-                    badge.remove();
+// Reports Status Chart
+const statusCtx = document.getElementById('reportsStatusChart');
+if (statusCtx) {
+    const approvedReports = {{ stats.approved_reports|tojson }};
+    const pendingReports = {{ stats.pending_reports|tojson }};
+    const draftReports = {{ (stats.total_reports - stats.approved_reports - stats.pending_reports)|tojson }};
+    
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['معتمدة', 'قيد المراجعة', 'مسودة'],
+            datasets: [{
+                data: [approvedReports, pendingReports, draftReports],
+                backgroundColor: [
+                    'rgba(40, 167, 69, 0.8)',
+                    'rgba(255, 193, 7, 0.8)',
+                    'rgba(108, 117, 125, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(40, 167, 69, 1)',
+                    'rgba(255, 193, 7, 1)',
+                    'rgba(108, 117, 125, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    rtl: true,
+                    labels: {
+                        font: {
+                            family: 'Noto Sans Arabic',
+                            size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    rtl: true,
+                    textDirection: 'rtl'
                 }
             }
-        });
-}, 30000);
+        }
+    });
+}
+
+// Monthly Reports Chart
+const monthlyCtx = document.getElementById('reportsMonthlyChart');
+if (monthlyCtx) {
+    const monthlyReports = {{ stats.this_month_reports|tojson }};
+    
+    new Chart(monthlyCtx, {
+        type: 'bar',
+        data: {
+            labels: ['هذا الشهر'],
+            datasets: [{
+                label: 'عدد التقارير',
+                data: [monthlyReports],
+                backgroundColor: 'rgba(26, 54, 93, 0.8)',
+                borderColor: 'rgba(26, 54, 93, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    rtl: true,
+                    textDirection: 'rtl'
+                }
+            }
+        }
+    });
+}
 </script>
 {% endblock %}

@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeComponents();
     setupEventListeners();
     initializeModals();
+    initializeNotificationPolling();
 });
 
 // Theme Management
@@ -42,6 +43,59 @@ function updateThemeIcon(theme) {
             themeIcon.className = 'fas fa-sun';
         } else {
             themeIcon.className = 'fas fa-moon';
+        }
+    }
+}
+
+// Notification Polling (Improved)
+function initializeNotificationPolling() {
+    const currentPath = window.location.pathname;
+    let apiEndpoint = null;
+    
+    if (currentPath.startsWith('/handler')) {
+        apiEndpoint = '/handler/api/unread-count';
+    } else if (currentPath.startsWith('/admin')) {
+        apiEndpoint = '/admin/api/unread-count';
+    }
+    
+    if (apiEndpoint) {
+        updateNotificationCount(apiEndpoint);
+        
+        setInterval(() => {
+            updateNotificationCount(apiEndpoint);
+        }, 15000);
+    }
+}
+
+function updateNotificationCount(endpoint) {
+    fetch(endpoint)
+        .then(response => response.json())
+        .then(data => {
+            updateNotificationBadges(data.count);
+        })
+        .catch(error => {
+            console.error('Error fetching notification count:', error);
+        });
+}
+
+function updateNotificationBadges(count) {
+    const badges = document.querySelectorAll('.badge.bg-danger, .badge.rounded-pill.bg-danger');
+    badges.forEach(badge => {
+        if (count > 0) {
+            badge.textContent = count < 100 ? count : '99+';
+            badge.style.display = '';
+        } else {
+            badge.style.display = 'none';
+        }
+    });
+    
+    const headerBadge = document.querySelector('.position-absolute.badge.bg-danger');
+    if (headerBadge) {
+        if (count > 0) {
+            headerBadge.textContent = count < 100 ? count : '99+';
+            headerBadge.style.display = '';
+        } else {
+            headerBadge.style.display = 'none';
         }
     }
 }
