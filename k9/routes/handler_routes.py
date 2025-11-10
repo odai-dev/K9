@@ -355,6 +355,27 @@ def new_report():
         # Incidents section using helper function
         parse_incidents_data(request.form, report)
         
+        # Handle file attachments
+        files = request.files.getlist('attachments')
+        descriptions = request.form.getlist('attachment_descriptions')
+        
+        attachment_errors = []
+        for i, file in enumerate(files):
+            if file and file.filename:
+                description = descriptions[i] if i < len(descriptions) else None
+                attachment, error = AttachmentService.save_report_attachment(
+                    file=file,
+                    report_id=str(report.id),
+                    description=description
+                )
+                if error:
+                    attachment_errors.append(f"{file.filename}: {error}")
+        
+        # Show attachment errors as warnings (not fatal)
+        if attachment_errors:
+            for err in attachment_errors:
+                flash(f'خطأ في المرفق - {err}', 'warning')
+        
         db.session.commit()
         
         # Submit if requested
@@ -529,6 +550,27 @@ def edit_report(report_id):
         for incident in report.incidents:
             db.session.delete(incident)
         parse_incidents_data(request.form, report)
+        
+        # Handle new file attachments
+        files = request.files.getlist('attachments')
+        descriptions = request.form.getlist('attachment_descriptions')
+        
+        attachment_errors = []
+        for i, file in enumerate(files):
+            if file and file.filename:
+                description = descriptions[i] if i < len(descriptions) else None
+                attachment, error = AttachmentService.save_report_attachment(
+                    file=file,
+                    report_id=str(report.id),
+                    description=description
+                )
+                if error:
+                    attachment_errors.append(f"{file.filename}: {error}")
+        
+        # Show attachment errors as warnings
+        if attachment_errors:
+            for err in attachment_errors:
+                flash(f'خطأ في المرفق - {err}', 'warning')
         
         db.session.commit()
         flash('تم حفظ التقرير', 'success')
