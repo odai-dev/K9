@@ -1166,3 +1166,15 @@ def mark_all_notifications_read():
     from k9.services.handler_service import NotificationService
     count = NotificationService.mark_all_as_read(str(current_user.id))
     return jsonify({'success': True, 'count': count})
+
+
+@admin_bp.route('/api/unread-count')
+@login_required
+@admin_required
+def get_unread_count():
+    """API: الحصول على عدد الإشعارات غير المقروءة"""
+    from k9.services.handler_service import NotificationService
+    count = len(NotificationService.get_user_notifications(
+        str(current_user.id), unread_only=True
+    ))
+    return jsonify({'count': count})

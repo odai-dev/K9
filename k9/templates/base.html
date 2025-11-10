@@ -449,9 +449,56 @@
     </div>
     
     <!-- Main Content -->
-    <main class="container-fluid py-3 py-md-4" style="margin-top: 70px; min-height: calc(100vh - 70px);">
+    <main class="container-fluid py-3 py-md-4" style="margin-top: 70px; margin-bottom: 70px; min-height: calc(100vh - 140px);">
         {% block content %}{% endblock %}
     </main>
+    
+    <!-- Mobile Bottom Navigation -->
+    {% if current_user.is_authenticated %}
+    <nav class="mobile-bottom-nav d-md-none">
+        {% if current_user.role.value == 'HANDLER' %}
+        <a href="{{ url_for('handler.dashboard') }}" class="nav-item {{ 'active' if request.endpoint == 'handler.dashboard' }}">
+            <i class="fas fa-home"></i>
+            <span>الرئيسية</span>
+        </a>
+        <a href="{{ url_for('handler.new_report') }}" class="nav-item {{ 'active' if 'new_report' in request.endpoint }}">
+            <i class="fas fa-plus-circle"></i>
+            <span>تقرير جديد</span>
+        </a>
+        <a href="{{ url_for('handler.my_reports') }}" class="nav-item {{ 'active' if 'my_reports' in request.endpoint }}">
+            <i class="fas fa-list"></i>
+            <span>تقاريري</span>
+        </a>
+        <a href="{{ url_for('handler.notifications') }}" class="nav-item {{ 'active' if 'notifications' in request.endpoint }}">
+            <i class="fas fa-bell"></i>
+            <span>الإشعارات</span>
+            {% if handler_unread_count > 0 %}
+            <span class="notification-dot"></span>
+            {% endif %}
+        </a>
+        {% elif current_user.role.value in ['GENERAL_ADMIN', 'PROJECT_MANAGER'] %}
+        <a href="{{ url_for('admin.dashboard') }}" class="nav-item {{ 'active' if request.endpoint == 'admin.dashboard' }}">
+            <i class="fas fa-home"></i>
+            <span>الرئيسية</span>
+        </a>
+        <a href="{{ url_for('supervisor.reports_index') }}" class="nav-item {{ 'active' if 'reports_index' in request.endpoint }}">
+            <i class="fas fa-file-alt"></i>
+            <span>التقارير</span>
+        </a>
+        <a href="{{ url_for('supervisor.schedules_index') }}" class="nav-item {{ 'active' if 'schedules' in request.endpoint }}">
+            <i class="fas fa-calendar-alt"></i>
+            <span>الجداول</span>
+        </a>
+        <a href="{{ url_for('admin.notifications') }}" class="nav-item {{ 'active' if 'notifications' in request.endpoint }}">
+            <i class="fas fa-bell"></i>
+            <span>الإشعارات</span>
+            {% if admin_unread_count > 0 %}
+            <span class="notification-dot"></span>
+            {% endif %}
+        </a>
+        {% endif %}
+    </nav>
+    {% endif %}
     
     <!-- Universal Search Modal (Mobile-First) -->
     <div class="modal fade" id="searchModal" tabindex="-1">

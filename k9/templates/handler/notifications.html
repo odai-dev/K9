@@ -242,14 +242,5 @@ function updateUnreadCount() {
             });
         });
 }
-
-// Auto-refresh every 30 seconds
-setInterval(function() {
-    // Only reload if on "all" or "unread" filter
-    const filter = new URLSearchParams(window.location.search).get('filter') || 'all';
-    if (filter === 'all' || filter === 'unread') {
-        updateUnreadCount();
-    }
-}, 30000);
 </script>
 {% endblock %}
