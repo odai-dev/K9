@@ -284,6 +284,100 @@
                 </div>
             </div>
             {% endif %}
+
+            <!-- Analytics Charts Section -->
+            <div class="row mb-4">
+                <div class="col-12 mb-3">
+                    <h4 class="mb-0">
+                        <i class="fas fa-chart-line me-2 text-primary"></i>
+                        التحليلات والإحصائيات
+                    </h4>
+                </div>
+                
+                <!-- Report Status Distribution -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-chart-pie me-2"></i>
+                                حالة التقارير
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="reportStatusChart" style="position: relative; height: 300px;">
+                                <div class="d-flex justify-content-center align-items-center h-100">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">جاري التحميل...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Handler Activity -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-chart-bar me-2"></i>
+                                نشاط السائسين (الكلاب المعينة)
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="handlerActivityChart" style="position: relative; height: 300px;">
+                                <div class="d-flex justify-content-center align-items-center h-100">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">جاري التحميل...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attendance Trends -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-chart-line me-2"></i>
+                                اتجاهات الحضور (آخر 30 يوم)
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="attendanceTrendsChart" style="position: relative; height: 300px;">
+                                <div class="d-flex justify-content-center align-items-center h-100">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">جاري التحميل...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Report Trends -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-chart-area me-2"></i>
+                                اتجاهات تقديم التقارير الشهرية
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="monthlyTrendsChart" style="position: relative; height: 300px;">
+                                <div class="d-flex justify-content-center align-items-center h-100">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">جاري التحميل...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Resources Tab -->
@@ -727,6 +821,143 @@ function switchTab(tabId) {
     if (tab) {
         const tabTrigger = new bootstrap.Tab(tab);
         tabTrigger.show();
+    }
+}
+
+// Load PM Dashboard Charts
+document.addEventListener('DOMContentLoaded', function() {
+    loadPMCharts();
+});
+
+async function loadPMCharts() {
+    // Load Report Status Chart
+    await loadReportStatusChart();
+    
+    // Load Handler Activity Chart
+    await loadHandlerActivityChart();
+    
+    // Load Attendance Trends Chart
+    await loadAttendanceTrendsChart();
+    
+    // Load Monthly Trends Chart
+    await loadMonthlyTrendsChart();
+}
+
+async function loadReportStatusChart() {
+    const container = document.getElementById('reportStatusChart');
+    if (!container) return;
+    
+    try {
+        const result = await ChartUtils.loadChartData('/api/dashboard/pm/report-status');
+        
+        if (!result.success || !result.data || !result.data.data || result.data.data.every(v => v === 0)) {
+            ChartUtils.showChartEmpty('reportStatusChart', 'لا توجد تقارير بعد');
+            return;
+        }
+        
+        const chartData = result.data;
+        container.innerHTML = '<canvas id="reportStatusCanvas"></canvas>';
+        
+        const colors = [
+            '#94a3b8',  // draft - gray
+            '#fbbf24',  // submitted - amber
+            '#10b981',  // approved - green
+            '#ef4444',  // rejected - red
+            '#f97316'   // needs_revision - orange
+        ];
+        
+        ChartUtils.createPieChart(
+            'reportStatusCanvas',
+            chartData.labels,
+            chartData.data,
+            colors,
+            'doughnut'
+        );
+    } catch (error) {
+        console.error('Error loading report status chart:', error);
+        ChartUtils.showChartError('reportStatusChart');
+    }
+}
+
+async function loadHandlerActivityChart() {
+    const container = document.getElementById('handlerActivityChart');
+    if (!container) return;
+    
+    try {
+        const result = await ChartUtils.loadChartData('/api/dashboard/pm/handler-activity');
+        
+        if (!result.success || !result.data || !result.data.data || result.data.data.length === 0) {
+            ChartUtils.showChartEmpty('handlerActivityChart', 'لا توجد بيانات نشاط السائسين');
+            return;
+        }
+        
+        const chartData = result.data;
+        container.innerHTML = '<canvas id="handlerActivityCanvas"></canvas>';
+        
+        ChartUtils.createBarChart(
+            'handlerActivityCanvas',
+            chartData.labels,
+            chartData.data,
+            'عدد الكلاب',
+            '#667eea'
+        );
+    } catch (error) {
+        console.error('Error loading handler activity chart:', error);
+        ChartUtils.showChartError('handlerActivityChart');
+    }
+}
+
+async function loadAttendanceTrendsChart() {
+    const container = document.getElementById('attendanceTrendsChart');
+    if (!container) return;
+    
+    try {
+        const result = await ChartUtils.loadChartData('/api/dashboard/pm/attendance-trends');
+        
+        if (!result.success || !result.data || !result.data.datasets) {
+            ChartUtils.showChartEmpty('attendanceTrendsChart', 'لا توجد بيانات حضور');
+            return;
+        }
+        
+        const chartData = result.data;
+        container.innerHTML = '<canvas id="attendanceTrendsCanvas"></canvas>';
+        
+        ChartUtils.createLineChart(
+            'attendanceTrendsCanvas',
+            chartData.labels,
+            chartData.datasets
+        );
+    } catch (error) {
+        console.error('Error loading attendance trends chart:', error);
+        ChartUtils.showChartError('attendanceTrendsChart');
+    }
+}
+
+async function loadMonthlyTrendsChart() {
+    const container = document.getElementById('monthlyTrendsChart');
+    if (!container) return;
+    
+    try {
+        const result = await ChartUtils.loadChartData('/api/dashboard/pm/monthly-trends');
+        
+        if (!result.success || !result.data || !result.data.data || result.data.data.length === 0) {
+            ChartUtils.showChartEmpty('monthlyTrendsChart', 'لا توجد بيانات تقارير شهرية');
+            return;
+        }
+        
+        const chartData = result.data;
+        container.innerHTML = '<canvas id="monthlyTrendsCanvas"></canvas>';
+        
+        ChartUtils.createTrendChart(
+            'monthlyTrendsCanvas',
+            chartData.labels,
+            chartData.data,
+            'عدد التقارير',
+            '#667eea'
+        );
+    } catch (error) {
+        console.error('Error loading monthly trends chart:', error);
+        ChartUtils.showChartError('monthlyTrendsChart');
     }
 }
 </script>

@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.section-card {
+    border-right: 4px solid #0d6efd;
+    margin-bottom: 1.5rem;
+}
+.form-section-header {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #0d6efd;
+    padding: 1rem;
+    font-weight: bold;
+}
+.schedule-item {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background-color: #f8f9fa;
+}
+.status-badge {
+    font-size: 0.85rem;
+    padding: 0.35rem 0.75rem;
+}
+.info-row {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+.info-row:last-child {
+    border-bottom: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-eye me-2"></i>
+                {{ page_title }}
+            </h1>
+            <div class="d-flex gap-2">
+                <button onclick="window.print()" class="btn btn-outline-primary">
+                    <i class="fas fa-print me-2"></i>
+                    طباعة
+                </button>
+                <a href="{{ url_for('schedule.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-triangle' if category == 'warning' else 'info-circle' }} me-2"></i>
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<!-- Schedule Header Info -->
+<div class="card section-card border-0 shadow-sm">
+    <div class="form-section-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-info-circle me-2"></i>
+                معلومات الجدول
+            </h5>
+            <span class="status-badge badge 
+                {% if schedule.status.value == 'OPEN' %}bg-success
+                {% else %}bg-secondary{% endif %}">
+                {% if schedule.status.value == 'OPEN' %}
+                    <i class="fas fa-lock-open me-1"></i>مفتوح
+                {% else %}
+                    <i class="fas fa-lock me-1"></i>مقفل
+                {% endif %}
+            </span>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="info-row">
+                    <strong><i class="fas fa-calendar-day me-2 text-primary"></i>التاريخ:</strong>
+                    <span class="float-end">{{ schedule.date.strftime('%Y-%m-%d') }}</span>
+                </div>
+                <div class="info-row">
+                    <strong><i class="fas fa-project-diagram me-2 text-primary"></i>المشروع:</strong>
+                    <span class="float-end">{{ schedule.project.name if schedule.project else 'غير محدد' }}</span>
+                </div>
+                <div class="info-row">
+                    <strong><i class="fas fa-users me-2 text-primary"></i>عدد العناصر:</strong>
+                    <span class="float-end badge bg-primary">{{ schedule.items.count() }}</span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-row">
+                    <strong><i class="fas fa-user me-2 text-primary"></i>أنشئ بواسطة:</strong>
+                    <span class="float-end">{{ schedule.created_by.full_name if schedule.created_by else 'غير محدد' }}</span>
+                </div>
+                <div class="info-row">
+                    <strong><i class="fas fa-clock me-2 text-primary"></i>تاريخ الإنشاء:</strong>
+                    <span class="float-end">{{ schedule.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                </div>
+                <div class="info-row">
+                    <strong><i class="fas fa-sync me-2 text-primary"></i>آخر تحديث:</strong>
+                    <span class="float-end">{{ schedule.updated_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                </div>
+            </div>
+        </div>
+        {% if schedule.notes %}
+        <div class="mt-3 pt-3 border-top">
+            <strong><i class="fas fa-sticky-note me-2 text-primary"></i>ملاحظات:</strong>
+            <p class="mb-0 mt-2">{{ schedule.notes }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Statistics Summary -->
+<div class="row mb-4">
+    {% set total_items = schedule.items.count() %}
+    {% set present_items = schedule.items.filter_by(status='PRESENT').count() %}
+    {% set absent_items = schedule.items.filter_by(status='ABSENT').count() %}
+    {% set replaced_items = schedule.items.filter_by(status='REPLACED').count() %}
+    {% set planned_items = schedule.items.filter_by(status='PLANNED').count() %}
+    
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                <h3 class="mb-0">{{ total_items }}</h3>
+                <p class="text-muted small mb-0">إجمالي العناصر</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                <h3 class="mb-0">{{ present_items }}</h3>
+                <p class="text-muted small mb-0">حاضر</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-times-circle fa-2x text-danger mb-2"></i>
+                <h3 class="mb-0">{{ absent_items }}</h3>
+                <p class="text-muted small mb-0">غائب</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-exchange-alt fa-2x text-warning mb-2"></i>
+                <h3 class="mb-0">{{ replaced_items }}</h3>
+                <p class="text-muted small mb-0">مستبدل</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Items -->
+<div class="card section-card border-0 shadow-sm">
+    <div class="form-section-header">
+        <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>
+            عناصر الجدول ({{ schedule.items.count() }})
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if schedule.items.count() > 0 %}
+            {% for item in schedule.items %}
+            <div class="schedule-item">
+                <div class="row">
+                    <div class="col-md-9">
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <strong><i class="fas fa-user me-2 text-primary"></i>السائس:</strong>
+                                <div class="mt-1">{{ item.handler.full_name if item.handler else 'غير محدد' }}</div>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <strong><i class="fas fa-dog me-2 text-primary"></i>الكلب:</strong>
+                                <div class="mt-1">
+                                    {% if item.dog %}
+                                        {{ item.dog.name }} - {{ item.dog.code }}
+                                    {% else %}
+                                        غير محدد
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <strong><i class="fas fa-clock me-2 text-primary"></i>الفترة:</strong>
+                                <div class="mt-1">{{ item.shift.name if item.shift else 'غير محدد' }}</div>
+                            </div>
+                        </div>
+                        
+                        {% if item.status.value == 'ABSENT' and item.absence_reason %}
+                        <div class="mt-3 pt-2 border-top">
+                            <div class="alert alert-danger mb-0 py-2">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                <strong>سبب الغياب:</strong> {{ item.absence_reason }}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if item.status.value == 'REPLACED' %}
+                        <div class="mt-3 pt-2 border-top">
+                            <div class="alert alert-warning mb-0 py-2">
+                                <i class="fas fa-exchange-alt me-2"></i>
+                                <strong>السائس البديل:</strong> {{ item.replacement_handler.full_name if item.replacement_handler else 'غير محدد' }}
+                                {% if item.replacement_notes %}
+                                <br><strong>ملاحظات الاستبدال:</strong> {{ item.replacement_notes }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-3 text-center">
+                        <strong class="d-block mb-2">الحالة</strong>
+                        <span class="status-badge badge 
+                            {% if item.status.value == 'PLANNED' %}bg-secondary
+                            {% elif item.status.value == 'PRESENT' %}bg-success
+                            {% elif item.status.value == 'ABSENT' %}bg-danger
+                            {% elif item.status.value == 'REPLACED' %}bg-warning text-dark
+                            {% endif %}">
+                            {% if item.status.value == 'PLANNED' %}
+                                <i class="fas fa-clock me-1"></i>مخطط
+                            {% elif item.status.value == 'PRESENT' %}
+                                <i class="fas fa-check-circle me-1"></i>حاضر
+                            {% elif item.status.value == 'ABSENT' %}
+                                <i class="fas fa-times-circle me-1"></i>غائب
+                            {% elif item.status.value == 'REPLACED' %}
+                                <i class="fas fa-exchange-alt me-1"></i>مستبدل
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="text-center text-muted py-5">
+            <i class="fas fa-inbox fa-3x mb-3"></i>
+            <h5>لا توجد عناصر في الجدول</h5>
+            <p>لم يتم إضافة أي عناصر لهذا الجدول</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Action Buttons (Print Hidden) -->
+<div class="card border-0 shadow-sm d-print-none">
+    <div class="card-body">
+        <div class="d-flex gap-2 justify-content-end">
+            {% if schedule.status.value == 'OPEN' %}
+            <a href="{{ url_for('schedule.edit', schedule_id=schedule.id) }}" class="btn btn-primary">
+                <i class="fas fa-edit me-2"></i>
+                تعديل الجدول
+            </a>
+            {% endif %}
+            <button onclick="window.print()" class="btn btn-outline-primary">
+                <i class="fas fa-print me-2"></i>
+                طباعة
+            </button>
+            <a href="{{ url_for('schedule.index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-right me-2"></i>
+                العودة للقائمة
+            </a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<style>
+@media print {
+    .d-print-none {
+        display: none !important;
+    }
+    .schedule-item {
+        page-break-inside: avoid;
+    }
+    body {
+        font-size: 12pt;
+    }
+}
+</style>
+{% endblock %}

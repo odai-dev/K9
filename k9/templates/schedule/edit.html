@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.section-card {
+    border-right: 4px solid #0d6efd;
+    margin-bottom: 1.5rem;
+}
+.form-section-header {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #0d6efd;
+    padding: 1rem;
+    font-weight: bold;
+}
+.schedule-item {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: box-shadow 0.2s;
+}
+.schedule-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.status-badge {
+    font-size: 0.85rem;
+    padding: 0.35rem 0.75rem;
+}
+.item-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-edit me-2"></i>
+                {{ page_title }}
+            </h1>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('schedule.view', schedule_id=schedule.id) }}" class="btn btn-outline-info">
+                    <i class="fas fa-eye me-2"></i>
+                    معاينة
+                </a>
+                <a href="{{ url_for('schedule.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-triangle' if category == 'warning' else 'info-circle' }} me-2"></i>
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<!-- Schedule Info -->
+<div class="card section-card border-0 shadow-sm">
+    <div class="form-section-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-info-circle me-2"></i>
+                معلومات الجدول
+            </h5>
+            <span class="status-badge badge bg-success">
+                <i class="fas fa-lock-open me-1"></i>
+                مفتوح
+            </span>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <p class="mb-2">
+                    <strong><i class="fas fa-calendar-day me-2"></i>التاريخ:</strong>
+                    <span class="text-primary">{{ schedule.date.strftime('%Y-%m-%d') }}</span>
+                </p>
+            </div>
+            <div class="col-md-4">
+                <p class="mb-2">
+                    <strong><i class="fas fa-project-diagram me-2"></i>المشروع:</strong>
+                    {{ schedule.project.name if schedule.project else 'غير محدد' }}
+                </p>
+            </div>
+            <div class="col-md-4">
+                <p class="mb-2">
+                    <strong><i class="fas fa-users me-2"></i>عدد العناصر:</strong>
+                    {{ schedule.items.count() }}
+                </p>
+            </div>
+            {% if schedule.notes %}
+            <div class="col-12">
+                <p class="mb-0">
+                    <strong><i class="fas fa-sticky-note me-2"></i>ملاحظات:</strong>
+                    {{ schedule.notes }}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add New Item -->
+<div class="card section-card border-0 shadow-sm">
+    <div class="form-section-header">
+        <h5 class="mb-0">
+            <i class="fas fa-plus-circle me-2"></i>
+            إضافة عنصر جديد
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="add_item">
+            
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold required">
+                        <i class="fas fa-user me-1"></i>
+                        السائس
+                    </label>
+                    <select name="handler_user_id" class="form-select" required>
+                        <option value="">اختر السائس</option>
+                        {% for handler in handlers %}
+                        <option value="{{ handler.id }}">{{ handler.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-dog me-1"></i>
+                        الكلب
+                    </label>
+                    <select name="dog_id" class="form-select">
+                        <option value="">اختر الكلب (اختياري)</option>
+                        {% for dog in dogs %}
+                        <option value="{{ dog.id }}">{{ dog.name }} - {{ dog.code }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-clock me-1"></i>
+                        الفترة
+                    </label>
+                    <select name="shift_id" class="form-select">
+                        <option value="">اختر الفترة (اختياري)</option>
+                        {% for shift in shifts %}
+                        <option value="{{ shift.id }}">{{ shift.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>
+                        إضافة عنصر
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Schedule Items -->
+<div class="card section-card border-0 shadow-sm">
+    <div class="form-section-header">
+        <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>
+            عناصر الجدول ({{ schedule.items.count() }})
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if schedule.items.count() > 0 %}
+            {% for item in schedule.items %}
+            <div class="schedule-item">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <div class="mb-2">
+                            <strong><i class="fas fa-user me-1"></i>السائس:</strong><br>
+                            <span class="text-primary">{{ item.handler.full_name if item.handler else 'غير محدد' }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="mb-2">
+                            <strong><i class="fas fa-dog me-1"></i>الكلب:</strong><br>
+                            {{ item.dog.name if item.dog else 'غير محدد' }}
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="mb-2">
+                            <strong><i class="fas fa-clock me-1"></i>الفترة:</strong><br>
+                            {{ item.shift.name if item.shift else 'غير محدد' }}
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="mb-2">
+                            <strong>الحالة:</strong><br>
+                            <span class="status-badge badge 
+                                {% if item.status.value == 'PLANNED' %}bg-secondary
+                                {% elif item.status.value == 'PRESENT' %}bg-success
+                                {% elif item.status.value == 'ABSENT' %}bg-danger
+                                {% elif item.status.value == 'REPLACED' %}bg-warning text-dark
+                                {% endif %}">
+                                {% if item.status.value == 'PLANNED' %}
+                                    <i class="fas fa-clock me-1"></i>مخطط
+                                {% elif item.status.value == 'PRESENT' %}
+                                    <i class="fas fa-check-circle me-1"></i>حاضر
+                                {% elif item.status.value == 'ABSENT' %}
+                                    <i class="fas fa-times-circle me-1"></i>غائب
+                                {% elif item.status.value == 'REPLACED' %}
+                                    <i class="fas fa-exchange-alt me-1"></i>مستبدل
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="item-actions">
+                            {% if item.status.value == 'PLANNED' %}
+                            <!-- Mark Present -->
+                            <form method="POST" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="action" value="update_status">
+                                <input type="hidden" name="item_id" value="{{ item.id }}">
+                                <input type="hidden" name="status" value="PRESENT">
+                                <button type="submit" class="btn btn-sm btn-success" title="تسجيل الحضور">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </form>
+                            
+                            <!-- Mark Absent -->
+                            <button type="button" class="btn btn-sm btn-danger" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#absentModal{{ item.id }}"
+                                    title="تسجيل الغياب">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            
+                            <!-- Replace -->
+                            <button type="button" class="btn btn-sm btn-warning" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#replaceModal{{ item.id }}"
+                                    title="استبدال">
+                                <i class="fas fa-exchange-alt"></i>
+                            </button>
+                            {% endif %}
+                            
+                            <!-- Delete -->
+                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                    onclick="deleteItem('{{ item.id }}')"
+                                    title="حذف">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if item.status.value == 'ABSENT' and item.absence_reason %}
+                <div class="mt-2 pt-2 border-top">
+                    <small class="text-danger">
+                        <i class="fas fa-exclamation-circle me-1"></i>
+                        <strong>سبب الغياب:</strong> {{ item.absence_reason }}
+                    </small>
+                </div>
+                {% endif %}
+                
+                {% if item.status.value == 'REPLACED' %}
+                <div class="mt-2 pt-2 border-top">
+                    <small class="text-warning">
+                        <i class="fas fa-exchange-alt me-1"></i>
+                        <strong>البديل:</strong> {{ item.replacement_handler.full_name if item.replacement_handler else 'غير محدد' }}
+                        {% if item.replacement_notes %}
+                        <br><strong>ملاحظات:</strong> {{ item.replacement_notes }}
+                        {% endif %}
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Absent Modal -->
+            <div class="modal fade" id="absentModal{{ item.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">تسجيل الغياب</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="update_status">
+                            <input type="hidden" name="item_id" value="{{ item.id }}">
+                            <input type="hidden" name="status" value="ABSENT">
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">سبب الغياب</label>
+                                    <textarea name="absence_reason" class="form-control" rows="3" required></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                <button type="submit" class="btn btn-danger">تسجيل الغياب</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Replace Modal -->
+            <div class="modal fade" id="replaceModal{{ item.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">استبدال السائس</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="replace">
+                            <input type="hidden" name="item_id" value="{{ item.id }}">
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">السائس البديل</label>
+                                    <select name="replacement_handler_id" class="form-select" required>
+                                        <option value="">اختر البديل</option>
+                                        {% for handler in handlers %}
+                                        <option value="{{ handler.id }}">{{ handler.full_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">سبب الاستبدال</label>
+                                    <input type="text" name="replacement_reason" class="form-control" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">ملاحظات إضافية</label>
+                                    <textarea name="replacement_notes" class="form-control" rows="2"></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                <button type="submit" class="btn btn-warning">تسجيل الاستبدال</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="text-center text-muted py-4">
+            <i class="fas fa-inbox fa-2x mb-3"></i>
+            <p>لا توجد عناصر في الجدول</p>
+            <p class="small">استخدم النموذج أعلاه لإضافة عناصر جديدة</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Lock Schedule -->
+{% if schedule.items.count() > 0 %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="mb-1">
+                    <i class="fas fa-lock me-2"></i>
+                    إقفال الجدول
+                </h6>
+                <p class="text-muted small mb-0">
+                    بعد إقفال الجدول لن تتمكن من تعديله. تأكد من إكمال جميع العناصر قبل الإقفال.
+                </p>
+            </div>
+            <form method="POST" onsubmit="return confirm('هل أنت متأكد من إقفال الجدول؟ لن تتمكن من التعديل بعد الإقفال.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="lock">
+                <button type="submit" class="btn btn-warning">
+                    <i class="fas fa-lock me-2"></i>
+                    إقفال الجدول
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteItem(itemId) {
+    if (!confirm('هل أنت متأكد من حذف هذا العنصر؟')) {
+        return;
+    }
+    
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    fetch(`/schedule/{{ schedule.id }}/item/${itemId}/delete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('خطأ: ' + (data.error || 'فشل حذف العنصر'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('حدث خطأ أثناء حذف العنصر');
+    });
+}
+</script>
+{% endblock %}
