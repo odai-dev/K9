@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.schedule-card {
+    border-right: 4px solid #0d6efd;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.schedule-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+}
+.status-badge {
+    font-size: 0.85rem;
+    padding: 0.35rem 0.75rem;
+}
+.filter-section {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-calendar-alt me-2"></i>
+                {{ page_title }}
+            </h1>
+            <a href="{{ url_for('schedule.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>
+                إنشاء جدول جديد
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-triangle' if category == 'warning' else 'info-circle' }} me-2"></i>
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<!-- Filters Section -->
+<div class="filter-section">
+    <form method="GET" action="{{ url_for('schedule.index') }}" class="row g-3">
+        <div class="col-md-3">
+            <label class="form-label fw-bold">
+                <i class="fas fa-calendar-day me-1"></i>
+                من تاريخ
+            </label>
+            <input type="date" name="start_date" class="form-control" value="{{ request.args.get('start_date', '') }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-bold">
+                <i class="fas fa-calendar-day me-1"></i>
+                إلى تاريخ
+            </label>
+            <input type="date" name="end_date" class="form-control" value="{{ request.args.get('end_date', '') }}">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-bold">
+                <i class="fas fa-project-diagram me-1"></i>
+                المشروع
+            </label>
+            <select name="project_id" class="form-select">
+                <option value="">جميع المشاريع</option>
+                {% for project in projects %}
+                <option value="{{ project.id }}" {% if request.args.get('project_id') == project.id|string %}selected{% endif %}>
+                    {{ project.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="fas fa-search me-2"></i>
+                بحث
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Schedules List -->
+{% if schedules %}
+<div class="row">
+    {% for schedule in schedules %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card schedule-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="card-title mb-1">
+                            <i class="fas fa-calendar-day me-2 text-primary"></i>
+                            {{ schedule.date.strftime('%Y-%m-%d') }}
+                        </h5>
+                        <p class="text-muted small mb-0">
+                            <i class="fas fa-project-diagram me-1"></i>
+                            {{ schedule.project.name if schedule.project else 'غير محدد' }}
+                        </p>
+                    </div>
+                    <span class="status-badge badge {% if schedule.status.value == 'OPEN' %}bg-success{% else %}bg-secondary{% endif %}">
+                        {% if schedule.status.value == 'OPEN' %}
+                        <i class="fas fa-lock-open me-1"></i>
+                        مفتوح
+                        {% else %}
+                        <i class="fas fa-lock me-1"></i>
+                        مقفل
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between text-muted small mb-2">
+                        <span>
+                            <i class="fas fa-users me-1"></i>
+                            عدد العناصر
+                        </span>
+                        <span class="fw-bold">{{ schedule.items.count() }}</span>
+                    </div>
+                    {% if schedule.notes %}
+                    <div class="text-muted small">
+                        <i class="fas fa-sticky-note me-1"></i>
+                        {{ schedule.notes[:50] }}{% if schedule.notes|length > 50 %}...{% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex gap-2">
+                    {% if schedule.status.value == 'OPEN' %}
+                    <a href="{{ url_for('schedule.edit', schedule_id=schedule.id) }}" class="btn btn-sm btn-primary flex-fill">
+                        <i class="fas fa-edit me-1"></i>
+                        تعديل
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('schedule.view', schedule_id=schedule.id) }}" class="btn btn-sm btn-info flex-fill">
+                        <i class="fas fa-eye me-1"></i>
+                        عرض
+                    </a>
+                    {% endif %}
+                </div>
+
+                <div class="text-muted small mt-2 pt-2 border-top">
+                    <i class="fas fa-user me-1"></i>
+                    أنشئ بواسطة: {{ schedule.created_by.full_name if schedule.created_by else 'غير محدد' }}
+                    <br>
+                    <i class="fas fa-clock me-1"></i>
+                    {{ schedule.created_at.strftime('%Y-%m-%d %H:%M') }}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+        <h4 class="text-muted">لا توجد جداول</h4>
+        <p class="text-muted">لم يتم العثور على أي جداول يومية</p>
+        <a href="{{ url_for('schedule.create') }}" class="btn btn-primary mt-3">
+            <i class="fas fa-plus me-2"></i>
+            إنشاء جدول جديد
+        </a>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

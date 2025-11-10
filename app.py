@@ -463,6 +463,15 @@ with app.app_context():
     except Exception as e:
         print(f"⚠ Warning: Could not register PM routes: {e}")
     
+    # Register Dashboard API Routes
+    try:
+        from k9.routes.dashboard_api_routes import dashboard_api_bp
+        app.register_blueprint(dashboard_api_bp)
+        print("✓ Dashboard API routes registered successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Could not register Dashboard API routes: {e}")
+    
     # Initialize Security Middleware
     try:
         from k9.utils.security_middleware import SecurityMiddleware

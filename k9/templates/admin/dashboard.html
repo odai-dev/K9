@@ -529,6 +529,142 @@
         </div>
     </div>
 
+    <!-- Analytics Charts Section -->
+    <div class="row mb-4">
+        <div class="col-12 mb-3">
+            <h3 class="h4">
+                <i class="fas fa-chart-line me-2 text-primary"></i>
+                تحليلات النظام
+            </h3>
+        </div>
+        
+        <!-- Dogs by Project -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        الكلاب النشطة حسب المشروع
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="dogsByProjectChart" style="position: relative; height: 300px;">
+                        <div class="d-flex justify-content-center align-items-center h-100">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">جاري التحميل...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dogs by Status -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        الكلاب حسب الحالة
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="dogsByStatusChart" style="position: relative; height: 300px;">
+                        <div class="d-flex justify-content-center align-items-center h-100">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">جاري التحميل...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employee by Role -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        الموظفون حسب الدور الوظيفي
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="employeeByRoleChart" style="position: relative; height: 300px;">
+                        <div class="d-flex justify-content-center align-items-center h-100">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">جاري التحميل...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Project Status -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-project-diagram me-2"></i>
+                        المشاريع حسب الحالة
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="projectStatusChart" style="position: relative; height: 300px;">
+                        <div class="d-flex justify-content-center align-items-center h-100">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">جاري التحميل...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Reports Status -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>
+                        حالة التقارير على مستوى النظام
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="systemReportsChart" style="position: relative; height: 300px;">
+                        <div class="d-flex justify-content-center align-items-center h-100">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">جاري التحميل...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Attendance Trends -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        اتجاهات الحضور (آخر 30 يوم)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="systemAttendanceChart" style="position: relative; height: 300px;">
+                        <div class="d-flex justify-content-center align-items-center h-100">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">جاري التحميل...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Quick Actions -->
     <div class="row">
         <div class="col-12">
@@ -588,11 +724,204 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Load admin dashboard charts
+    loadAdminCharts();
+    
     // Auto-refresh stats every 30 seconds
     setInterval(function() {
         // You can add AJAX calls here to update stats dynamically
         console.log('Stats auto-refresh would happen here');
     }, 30000);
 });
+
+async function loadAdminCharts() {
+    // Load all charts in parallel
+    await Promise.all([
+        loadDogsByProjectChart(),
+        loadDogsByStatusChart(),
+        loadEmployeeByRoleChart(),
+        loadProjectStatusChart(),
+        loadSystemReportsChart(),
+        loadSystemAttendanceChart()
+    ]);
+}
+
+async function loadDogsByProjectChart() {
+    const container = document.getElementById('dogsByProjectChart');
+    if (!container) return;
+    
+    try {
+        const result = await ChartUtils.loadChartData('/api/dashboard/admin/dogs-by-project');
+        
+        if (!result.success || !result.data || !result.data.data || result.data.data.length === 0) {
+            ChartUtils.showChartEmpty('dogsByProjectChart', 'لا توجد كلاب معينة للمشاريع');
+            return;
+        }
+        
+        const chartData = result.data;
+        container.innerHTML = '<canvas id="dogsByProjectCanvas"></canvas>';
+        
+        const colors = ChartUtils.getColorPalette('default');
+        ChartUtils.createBarChart(
+            'dogsByProjectCanvas',
+            chartData.labels,
+            chartData.data,
+            'عدد الكلاب',
+            colors[0]
+        );
+    } catch (error) {
+        console.error('Error loading dogs by project chart:', error);
+        ChartUtils.showChartError('dogsByProjectChart');
+    }
+}
+
+async function loadDogsByStatusChart() {
+    const container = document.getElementById('dogsByStatusChart');
+    if (!container) return;
+    
+    try {
+        const result = await ChartUtils.loadChartData('/api/dashboard/admin/dogs-by-status');
+        
+        if (!result.success || !result.data || !result.data.data || result.data.data.length === 0) {
+            ChartUtils.showChartEmpty('dogsByStatusChart', 'لا توجد بيانات كلاب');
+            return;
+        }
+        
+        const chartData = result.data;
+        container.innerHTML = '<canvas id="dogsByStatusCanvas"></canvas>';
+        
+        const colors = ChartUtils.getColorPalette('dogStatus');
+        ChartUtils.createPieChart(
+            'dogsByStatusCanvas',
+            chartData.labels,
+            chartData.data,
+            colors,
+            'doughnut'
+        );
+    } catch (error) {
+        console.error('Error loading dogs by status chart:', error);
+        ChartUtils.showChartError('dogsByStatusChart');
+    }
+}
+
+async function loadEmployeeByRoleChart() {
+    const container = document.getElementById('employeeByRoleChart');
+    if (!container) return;
+    
+    try {
+        const result = await ChartUtils.loadChartData('/api/dashboard/admin/employee-by-role');
+        
+        if (!result.success || !result.data || !result.data.data || result.data.data.length === 0) {
+            ChartUtils.showChartEmpty('employeeByRoleChart', 'لا توجد بيانات موظفين');
+            return;
+        }
+        
+        const chartData = result.data;
+        container.innerHTML = '<canvas id="employeeByRoleCanvas"></canvas>';
+        
+        const colors = ChartUtils.getColorPalette('roles');
+        ChartUtils.createPieChart(
+            'employeeByRoleCanvas',
+            chartData.labels,
+            chartData.data,
+            colors,
+            'doughnut'
+        );
+    } catch (error) {
+        console.error('Error loading employee by role chart:', error);
+        ChartUtils.showChartError('employeeByRoleChart');
+    }
+}
+
+async function loadProjectStatusChart() {
+    const container = document.getElementById('projectStatusChart');
+    if (!container) return;
+    
+    try {
+        const result = await ChartUtils.loadChartData('/api/dashboard/admin/project-status');
+        
+        if (!result.success || !result.data || !result.data.data || result.data.data.length === 0) {
+            ChartUtils.showChartEmpty('projectStatusChart', 'لا توجد مشاريع');
+            return;
+        }
+        
+        const chartData = result.data;
+        container.innerHTML = '<canvas id="projectStatusCanvas"></canvas>';
+        
+        const colors = ['#3b82f6', '#10b981', '#94a3b8', '#ef4444', '#f59e0b'];
+        ChartUtils.createPieChart(
+            'projectStatusCanvas',
+            chartData.labels,
+            chartData.data,
+            colors,
+            'doughnut'
+        );
+    } catch (error) {
+        console.error('Error loading project status chart:', error);
+        ChartUtils.showChartError('projectStatusChart');
+    }
+}
+
+async function loadSystemReportsChart() {
+    const container = document.getElementById('systemReportsChart');
+    if (!container) return;
+    
+    try {
+        const result = await ChartUtils.loadChartData('/api/dashboard/admin/report-status');
+        
+        if (!result.success || !result.data || !result.data.data || result.data.data.every(v => v === 0)) {
+            ChartUtils.showChartEmpty('systemReportsChart', 'لا توجد تقارير في النظام');
+            return;
+        }
+        
+        const chartData = result.data;
+        container.innerHTML = '<canvas id="systemReportsCanvas"></canvas>';
+        
+        const colors = [
+            '#94a3b8',  // draft - gray
+            '#fbbf24',  // submitted - amber
+            '#10b981',  // approved - green
+            '#ef4444',  // rejected - red
+            '#f97316'   // needs_revision - orange
+        ];
+        
+        ChartUtils.createPieChart(
+            'systemReportsCanvas',
+            chartData.labels,
+            chartData.data,
+            colors,
+            'doughnut'
+        );
+    } catch (error) {
+        console.error('Error loading system reports chart:', error);
+        ChartUtils.showChartError('systemReportsChart');
+    }
+}
+
+async function loadSystemAttendanceChart() {
+    const container = document.getElementById('systemAttendanceChart');
+    if (!container) return;
+    
+    try {
+        const result = await ChartUtils.loadChartData('/api/dashboard/admin/attendance-trends');
+        
+        if (!result.success || !result.data || !result.data.datasets) {
+            ChartUtils.showChartEmpty('systemAttendanceChart', 'لا توجد بيانات حضور');
+            return;
+        }
+        
+        const chartData = result.data;
+        container.innerHTML = '<canvas id="systemAttendanceCanvas"></canvas>';
+        
+        ChartUtils.createLineChart(
+            'systemAttendanceCanvas',
+            chartData.labels,
+            chartData.datasets
+        );
+    } catch (error) {
+        console.error('Error loading system attendance chart:', error);
+        ChartUtils.showChartError('systemAttendanceChart');
+    }
+}
 </script>
 {% endblock %}
