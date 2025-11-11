@@ -295,7 +295,6 @@
                             <li><a class="dropdown-item {% if request.endpoint == 'main.reports_hub' %}active{% endif %} fw-bold" href="{{ url_for('main.reports_hub') }}"><i class="fas fa-chart-line me-2 text-primary"></i>مركز التقارير</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header">تقارير الحضور</h6></li>
-                            <li><a class="dropdown-item {% if request.endpoint == 'reports_attendance_ui.daily_sheet' %}active{% endif %}" href="{{ url_for('reports_attendance_ui.daily_sheet') }}"><i class="fas fa-calendar-check me-2"></i>كشف التحضير اليومي</a></li>
                             <li><a class="dropdown-item {% if request.endpoint == 'reports_attendance_pm_daily_ui.pm_daily' %}active{% endif %}" href="{{ url_for('reports_attendance_pm_daily_ui.pm_daily') }}"><i class="fas fa-file-alt me-2"></i>التقرير اليومي لمسؤول المشروع</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header">تقارير التدريب</h6></li>
