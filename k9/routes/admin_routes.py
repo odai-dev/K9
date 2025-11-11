@@ -14,6 +14,7 @@ from k9.utils.permission_utils import (
 )
 from k9.utils.security_utils import PasswordValidator, SecurityHelper
 from k9.models.models import User, Project, SubPermission, PermissionAuditLog, PermissionType, UserRole
+from k9.models.models_handler_daily import HandlerReport, ShiftReport
 from app import db
 from k9.utils.utils import log_audit
 from reportlab.lib.pagesizes import A4
@@ -1263,3 +1264,99 @@ def get_pending_reports_count():
         'vet': len(reports.get('VET', [])),
         'caretaker': len(reports.get('CARETAKER', []))
     })
+
+
+@admin_bp.route('/reports/handler/<report_id>/export/pdf')
+@login_required
+@admin_required
+def export_handler_report_pdf(report_id):
+    """تصدير تقرير السائس اليومي إلى PDF - الإدارة العامة"""
+    from k9.services.report_export_service import ReportExportService
+    from flask import send_file
+    
+    report = HandlerReport.query.get_or_404(report_id)
+    
+    pdf_buffer = ReportExportService.export_handler_report_to_pdf(report_id)
+    if not pdf_buffer:
+        flash('فشل في تصدير التقرير', 'error')
+        return redirect(url_for('admin.dashboard'))
+    
+    filename = f"handler_report_{report.date.strftime('%Y%m%d')}_{report.dog.code if report.dog else 'unknown'}.pdf"
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=filename
+    )
+
+
+@admin_bp.route('/reports/handler/<report_id>/export/excel')
+@login_required
+@admin_required
+def export_handler_report_excel(report_id):
+    """تصدير تقرير السائس اليومي إلى Excel - الإدارة العامة"""
+    from k9.services.report_export_service import ReportExportService
+    from flask import send_file
+    
+    report = HandlerReport.query.get_or_404(report_id)
+    
+    excel_buffer = ReportExportService.export_handler_report_to_excel(report_id)
+    if not excel_buffer:
+        flash('فشل في تصدير التقرير', 'error')
+        return redirect(url_for('admin.dashboard'))
+    
+    filename = f"handler_report_{report.date.strftime('%Y%m%d')}_{report.dog.code if report.dog else 'unknown'}.xlsx"
+    return send_file(
+        excel_buffer,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=filename
+    )
+
+
+@admin_bp.route('/reports/shift/<report_id>/export/pdf')
+@login_required
+@admin_required
+def export_shift_report_pdf(report_id):
+    """تصدير تقرير الوردية إلى PDF - الإدارة العامة"""
+    from k9.services.report_export_service import ReportExportService
+    from flask import send_file
+    
+    report = ShiftReport.query.get_or_404(report_id)
+    
+    pdf_buffer = ReportExportService.export_shift_report_to_pdf(report_id)
+    if not pdf_buffer:
+        flash('فشل في تصدير التقرير', 'error')
+        return redirect(url_for('admin.dashboard'))
+    
+    filename = f"shift_report_{report.date.strftime('%Y%m%d')}_{report.dog.code if report.dog else 'unknown'}.pdf"
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=filename
+    )
+
+
+@admin_bp.route('/reports/shift/<report_id>/export/excel')
+@login_required
+@admin_required
+def export_shift_report_excel(report_id):
+    """تصدير تقرير الوردية إلى Excel - الإدارة العامة"""
+    from k9.services.report_export_service import ReportExportService
+    from flask import send_file
+    
+    report = ShiftReport.query.get_or_404(report_id)
+    
+    excel_buffer = ReportExportService.export_shift_report_to_excel(report_id)
+    if not excel_buffer:
+        flash('فشل في تصدير التقرير', 'error')
+        return redirect(url_for('admin.dashboard'))
+    
+    filename = f"shift_report_{report.date.strftime('%Y%m%d')}_{report.dog.code if report.dog else 'unknown'}.xlsx"
+    return send_file(
+        excel_buffer,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=filename
+    )
