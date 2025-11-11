@@ -112,8 +112,24 @@ class DailyScheduleService:
             return False, "الجدول مقفل بالفعل"
         
         schedule.status = ScheduleStatus.LOCKED
+        schedule.locked_at = datetime.utcnow()
         db.session.commit()
         return True, "تم إقفال الجدول بنجاح"
+    
+    @staticmethod
+    def unlock_schedule(schedule_id: str) -> tuple:
+        """إلغاء قفل الجدول اليومي"""
+        schedule = DailySchedule.query.get(schedule_id)
+        if not schedule:
+            return False, "الجدول غير موجود"
+        
+        if schedule.status != ScheduleStatus.LOCKED:
+            return False, "الجدول غير مقفل"
+        
+        schedule.status = ScheduleStatus.OPEN
+        schedule.locked_at = None
+        db.session.commit()
+        return True, "تم إلغاء قفل الجدول بنجاح"
     
     @staticmethod
     def get_handler_schedule_for_date(handler_user_id: str, target_date: date):

@@ -49,7 +49,7 @@
                         <label class="form-label">الحالة</label>
                         <select name="status" class="form-select">
                             <option value="">الكل</option>
-                            <option value="active" {% if request.args.get('status') == 'active' %}selected{% endif %}>نشط</option>
+                            <option value="open" {% if request.args.get('status') == 'open' %}selected{% endif %}>نشط</option>
                             <option value="locked" {% if request.args.get('status') == 'locked' %}selected{% endif %}>مقفل</option>
                         </select>
                     </div>
@@ -106,7 +106,7 @@
                                         <span class="badge bg-info">{{ schedule.items.count() }} سائس</span>
                                     </td>
                                     <td>
-                                        {% if schedule.is_locked %}
+                                        {% if schedule.status.value == 'LOCKED' %}
                                             <span class="badge bg-danger">
                                                 <i class="fas fa-lock me-1"></i>
                                                 مقفل
@@ -132,7 +132,7 @@
                                                title="عرض التفاصيل">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            {% if not schedule.is_locked %}
+                                            {% if schedule.status.value == 'OPEN' %}
                                             <button class="btn btn-outline-warning" 
                                                     onclick="lockSchedule('{{ schedule.id }}')"
                                                     title="قفل الجدول">

@@ -7,7 +7,7 @@ from flask_login import login_required, current_user
 from datetime import date, datetime, timedelta
 from sqlalchemy.orm import joinedload
 from k9.services.handler_service import DailyScheduleService
-from k9.models.models_handler_daily import DailySchedule, DailyScheduleItem
+from k9.models.models_handler_daily import DailySchedule, DailyScheduleItem, ScheduleStatus
 from k9.models.models import UserRole, User, Dog, Project, Shift
 from k9.utils.permission_decorators import admin_or_pm_required
 from k9.utils.utils import validate_required_project_id, get_project_id_for_user
@@ -45,7 +45,10 @@ def schedules_index():
     if date_to:
         query = query.filter(DailySchedule.date <= datetime.strptime(date_to, '%Y-%m-%d').date())
     if status_filter:
-        query = query.filter_by(is_locked=(status_filter == 'locked'))
+        if status_filter == 'locked':
+            query = query.filter_by(status=ScheduleStatus.LOCKED)
+        elif status_filter == 'open':
+            query = query.filter_by(status=ScheduleStatus.OPEN)
     
     # Pagination
     pagination = query.order_by(DailySchedule.date.desc()).paginate(
@@ -197,7 +200,7 @@ def schedule_lock(schedule_id):
         if str(schedule.project_id) != str(current_user.project_id):
             return jsonify({'success': False, 'error': 'غير مصرح لك'})
     
-    if schedule.is_locked:
+    if schedule.status == ScheduleStatus.LOCKED:
         return jsonify({'success': False, 'error': 'الجدول مقفل بالفعل'})
     
     success, message = DailyScheduleService.lock_schedule(schedule_id)
@@ -216,14 +219,11 @@ def schedule_unlock(schedule_id):
         if str(schedule.project_id) != str(current_user.project_id):
             return jsonify({'success': False, 'error': 'غير مصرح لك'})
     
-    if not schedule.is_locked:
+    if schedule.status != ScheduleStatus.LOCKED:
         return jsonify({'success': False, 'error': 'الجدول غير مقفل'})
     
-    schedule.is_locked = False
-    schedule.locked_at = None
-    db.session.commit()
-    
-    return jsonify({'success': True, 'message': 'تم إلغاء قفل الجدول بنجاح'})
+    success, message = DailyScheduleService.unlock_schedule(schedule_id)
+    return jsonify({'success': success, 'message': message})
 
 
 @supervisor_bp.route('/schedules/<schedule_id>/delete', methods=['POST'])
@@ -238,7 +238,7 @@ def schedule_delete(schedule_id):
         if str(schedule.project_id) != str(current_user.project_id):
             return jsonify({'success': False, 'error': 'غير مصرح لك'})
     
-    if schedule.is_locked:
+    if schedule.status == ScheduleStatus.LOCKED:
         return jsonify({'success': False, 'error': 'لا يمكن حذف جدول مقفل'})
     
     # Check if any reports exist

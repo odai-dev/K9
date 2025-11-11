@@ -105,6 +105,7 @@ class DailySchedule(db.Model):
     project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
     status = db.Column(db.Enum(ScheduleStatus), nullable=False, default=ScheduleStatus.OPEN)
     notes = db.Column(Text, nullable=True)
+    locked_at = db.Column(db.DateTime, nullable=True)
     
     # Audit fields
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
