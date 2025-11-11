@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app import db
 from k9.models.models import (Dog, Employee, TrainingSession, VeterinaryVisit, ProductionCycle, 
-                   Project, AuditLog, UserRole, DogStatus, 
+                   Project, ProjectLocation, AuditLog, UserRole, DogStatus, 
                    EmployeeRole, TrainingCategory, VisitType, ProductionCycleType, 
                    ProductionResult, ProjectStatus, AuditAction, DogGender, User,
                    MaturityStatus, HeatStatus, PregnancyStatus, ProjectDog, ProjectAssignment,
@@ -5417,4 +5417,187 @@ def search():
             'employees': [],
             'projects': []
         }), 500
+
+
+# ============================================================================
+# Project Locations Management Routes
+# ============================================================================
+
+@main_bp.route('/projects/<project_id>/locations')
+@login_required
+@admin_or_pm_required
+def project_locations(project_id):
+    """View all locations for a project"""
+    try:
+        project = Project.query.get_or_404(project_id)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects'))
+    
+    # Check permissions
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = current_user.employee
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects'))
+    
+    # Get all locations for this project
+    locations = ProjectLocation.query.filter_by(project_id=project.id).order_by(ProjectLocation.created_at.desc()).all()
+    
+    return render_template('projects/locations.html',
+                         project=project,
+                         locations=locations)
+
+
+@main_bp.route('/projects/<project_id>/locations/add', methods=['GET', 'POST'])
+@login_required
+@admin_or_pm_required
+def project_location_add(project_id):
+    """Add a new location to a project"""
+    try:
+        project = Project.query.get_or_404(project_id)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects'))
+    
+    # Check permissions
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = current_user.employee
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
+        flash('غير مسموح لك بإضافة مواقع لهذا المشروع', 'error')
+        return redirect(url_for('main.projects'))
+    
+    if request.method == 'POST':
+        try:
+            name = request.form.get('name')
+            description = request.form.get('description')
+            
+            if not name:
+                flash('اسم الموقع مطلوب', 'error')
+                return render_template('projects/location_add.html', project=project)
+            
+            location = ProjectLocation()
+            location.project_id = project.id
+            location.name = name
+            location.description = description
+            
+            db.session.add(location)
+            db.session.commit()
+            
+            log_audit(current_user.id, 'CREATE', 'ProjectLocation', str(location.id), 
+                     {'project_id': str(project.id), 'name': name})
+            
+            flash('تم إضافة الموقع بنجاح', 'success')
+            return redirect(url_for('main.project_locations', project_id=project.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء إضافة الموقع: {str(e)}', 'error')
+    
+    return render_template('projects/location_add.html', project=project)
+
+
+@main_bp.route('/projects/<project_id>/locations/<location_id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_or_pm_required
+def project_location_edit(project_id, location_id):
+    """Edit a project location"""
+    try:
+        project = Project.query.get_or_404(project_id)
+        location = ProjectLocation.query.get_or_404(location_id)
+    except ValueError:
+        flash('معرف غير صحيح', 'error')
+        return redirect(url_for('main.projects'))
+    
+    # Verify location belongs to project
+    if location.project_id != project.id:
+        flash('الموقع غير تابع لهذا المشروع', 'error')
+        return redirect(url_for('main.project_locations', project_id=project.id))
+    
+    # Check permissions
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = current_user.employee
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
+        flash('غير مسموح لك بتعديل مواقع هذا المشروع', 'error')
+        return redirect(url_for('main.projects'))
+    
+    if request.method == 'POST':
+        try:
+            old_name = location.name
+            name = request.form.get('name')
+            description = request.form.get('description')
+            
+            if not name:
+                flash('اسم الموقع مطلوب', 'error')
+                return render_template('projects/location_edit.html', project=project, location=location)
+            
+            location.name = name
+            location.description = description
+            
+            db.session.commit()
+            
+            log_audit(current_user.id, 'UPDATE', 'ProjectLocation', str(location.id), 
+                     {'old_name': old_name, 'new_name': name})
+            
+            flash('تم تحديث الموقع بنجاح', 'success')
+            return redirect(url_for('main.project_locations', project_id=project.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء تحديث الموقع: {str(e)}', 'error')
+    
+    return render_template('projects/location_edit.html', project=project, location=location)
+
+
+@main_bp.route('/projects/<project_id>/locations/<location_id>/delete', methods=['POST'])
+@login_required
+@admin_or_pm_required
+def project_location_delete(project_id, location_id):
+    """Delete a project location"""
+    try:
+        project = Project.query.get_or_404(project_id)
+        location = ProjectLocation.query.get_or_404(location_id)
+    except ValueError:
+        flash('معرف غير صحيح', 'error')
+        return redirect(url_for('main.projects'))
+    
+    # Verify location belongs to project
+    if location.project_id != project.id:
+        flash('الموقع غير تابع لهذا المشروع', 'error')
+        return redirect(url_for('main.project_locations', project_id=project.id))
+    
+    # Check permissions
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = current_user.employee
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
+        flash('غير مسموح لك بحذف مواقع هذا المشروع', 'error')
+        return redirect(url_for('main.projects'))
+    
+    try:
+        location_name = location.name
+        db.session.delete(location)
+        db.session.commit()
+        
+        log_audit(current_user.id, 'DELETE', 'ProjectLocation', str(location_id), 
+                 {'name': location_name, 'project_id': str(project.id)})
+        
+        flash('تم حذف الموقع بنجاح', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ أثناء حذف الموقع: {str(e)}', 'error')
+    
+    return redirect(url_for('main.project_locations', project_id=project.id))
 
