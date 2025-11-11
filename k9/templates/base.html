@@ -206,7 +206,7 @@
                     </li>
                     {% endif %}
                     
-                    {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                    {% if is_admin() %}
                     {% set is_management_active = request.endpoint and (request.endpoint.startswith('account_management.') or request.endpoint.startswith('tasks.admin_') or request.endpoint.startswith('supervisor.') or request.endpoint.startswith('admin.')) %}
                     <li class="nav-item dropdown {% if is_management_active %}active{% endif %}">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_management_active %}active{% endif %}" href="#" id="managementDropdown" role="button" data-bs-toggle="dropdown">
@@ -216,7 +216,7 @@
                             {% endif %}
                         </a>
                         <ul class="dropdown-menu shadow">
-                            {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                            {% if is_admin() %}
                             <li>
                                 <a class="dropdown-item {% if request.endpoint == 'account_management.index' %}active{% endif %}" href="{{ url_for('account_management.index') }}">
                                     <i class="fas fa-user-shield me-2"></i>إدارة الحسابات
@@ -252,7 +252,7 @@
                                     {% endif %}
                                 </a>
                             </li>
-                            {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                            {% if is_admin() %}
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <a class="dropdown-item {% if request.endpoint == 'admin.backup_management' %}active{% endif %}" href="{{ url_for('admin.backup_management') }}">
@@ -264,7 +264,7 @@
                     </li>
                     {% endif %}
                     
-                    {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                    {% if is_admin() %}
                     {% set is_attendance_active = request.endpoint and (request.endpoint.startswith('main.unified_attendance') or request.endpoint.startswith('main.attendance_')) %}
                     <li class="nav-item dropdown {% if is_attendance_active %}active{% endif %}">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_attendance_active %}active{% endif %}" href="#" id="attendanceDropdown" role="button" data-bs-toggle="dropdown">

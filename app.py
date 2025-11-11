@@ -144,6 +144,7 @@ with app.app_context():
     
     # Register template functions
     from k9.utils.utils import get_user_permissions
+    from k9.utils.pm_scoping import is_admin
     from datetime import date, datetime
     
     def get_notification_link(notification):
@@ -243,6 +244,7 @@ with app.app_context():
         get_notification_link=get_notification_link,
         get_pending_reports_count=get_pending_reports_count,
         get_pm_pending_count=get_pm_pending_count,
+        is_admin=is_admin,
         date=date,
         datetime=datetime
     )
