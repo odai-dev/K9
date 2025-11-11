@@ -634,6 +634,24 @@ class Project(db.Model):
         return f'<Project {self.name} ({self.code})>'
 
 
+class ProjectLocation(db.Model):
+    """Locations associated with a project"""
+    __tablename__ = 'project_location'
+    
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+    project_id = db.Column(get_uuid_column(), db.ForeignKey('project.id'), nullable=False)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(Text)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    project = db.relationship('Project', backref='locations')
+    
+    def __repr__(self):
+        return f'<ProjectLocation {self.name} ({self.project.name})>'
+
 
 class ProjectDog(db.Model):
     """Dog assignments to projects"""

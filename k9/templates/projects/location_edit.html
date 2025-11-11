@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل الموقع - {{ location.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>
+                        تعديل الموقع: {{ location.name }}
+                    </h4>
+                    <small>المشروع: {{ project.name }} ({{ project.code }})</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Location Form -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('main.project_location_edit', project_id=project.id, location_id=location.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">اسم الموقع <span class="text-danger">*</span></label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="name" 
+                                   name="name" 
+                                   value="{{ location.name }}"
+                                   required
+                                   placeholder="أدخل اسم الموقع">
+                            <div class="form-text">اسم واضح ومحدد للموقع</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="description" class="form-label">وصف الموقع</label>
+                            <textarea class="form-control" 
+                                      id="description" 
+                                      name="description" 
+                                      rows="4"
+                                      placeholder="أدخل وصف تفصيلي للموقع (اختياري)">{{ location.description or '' }}</textarea>
+                            <div class="form-text">يمكنك إضافة معلومات إضافية مثل العنوان، الإحداثيات، أو أي تفاصيل مهمة</div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>معلومات الموقع:</strong><br>
+                            <small>تاريخ الإنشاء: {{ location.created_at.strftime('%Y-%m-%d %H:%M') if location.created_at else '-' }}</small><br>
+                            <small>آخر تحديث: {{ location.updated_at.strftime('%Y-%m-%d %H:%M') if location.updated_at else '-' }}</small>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('main.project_locations', project_id=project.id) }}" 
+                               class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>إلغاء
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>حفظ التعديلات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
