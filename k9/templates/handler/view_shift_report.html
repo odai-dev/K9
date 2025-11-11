@@ -70,6 +70,43 @@
                 عرض تقرير الوردية
             </h1>
             <div class="btn-group">
+                {% if current_user.role.value in ['PROJECT_MANAGER', 'GENERAL_ADMIN'] %}
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-download me-2"></i>
+                        تصدير
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                            <a class="dropdown-item" href="{{ url_for('admin.export_shift_report_pdf', report_id=shift_report.id) }}">
+                                <i class="fas fa-file-pdf me-2 text-danger"></i>
+                                تصدير PDF
+                            </a>
+                            {% else %}
+                            <a class="dropdown-item" href="{{ url_for('pm.export_shift_report_pdf', report_id=shift_report.id) }}">
+                                <i class="fas fa-file-pdf me-2 text-danger"></i>
+                                تصدير PDF
+                            </a>
+                            {% endif %}
+                        </li>
+                        <li>
+                            {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                            <a class="dropdown-item" href="{{ url_for('admin.export_shift_report_excel', report_id=shift_report.id) }}">
+                                <i class="fas fa-file-excel me-2 text-success"></i>
+                                تصدير Excel
+                            </a>
+                            {% else %}
+                            <a class="dropdown-item" href="{{ url_for('pm.export_shift_report_excel', report_id=shift_report.id) }}">
+                                <i class="fas fa-file-excel me-2 text-success"></i>
+                                تصدير Excel
+                            </a>
+                            {% endif %}
+                        </li>
+                    </ul>
+                </div>
+                {% endif %}
+                
                 <button onclick="window.print()" class="btn btn-outline-primary">
                     <i class="fas fa-print me-2"></i>
                     طباعة
