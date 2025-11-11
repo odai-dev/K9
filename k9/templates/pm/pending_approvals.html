@@ -41,16 +41,40 @@
                                 <td>{{ report.handler.full_name if report.handler else 'غير محدد' }}</td>
                                 <td>{{ report.summary[:100] }}...</td>
                                 <td>
-                                    <form method="POST" action="{{ url_for('pm.approve_report', report_id=report.id) }}" class="d-inline">
-                                        <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('هل أنت متأكد من الموافقة؟')">
-                                            <i class="fas fa-check me-1"></i>
-                                            موافقة
-                                        </button>
-                                    </form>
+                                    <button type="button" class="btn btn-sm btn-success me-1" onclick="approveReport('HANDLER', '{{ report.id }}')">
+                                        <i class="fas fa-check me-1"></i>
+                                        موافقة
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-warning me-1" data-bs-toggle="modal" data-bs-target="#editModal{{ report.id }}">
+                                        <i class="fas fa-edit me-1"></i>
+                                        طلب تعديل
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal{{ report.id }}">
                                         <i class="fas fa-times me-1"></i>
                                         رفض
                                     </button>
+                                    
+                                    <!-- Edit Request Modal -->
+                                    <div class="modal fade" id="editModal{{ report.id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">طلب تعديل التقرير</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label for="editNotes{{ report.id }}" class="form-label">ملاحظات التعديل المطلوبة</label>
+                                                        <textarea class="form-control" id="editNotes{{ report.id }}" rows="3" required></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                                    <button type="button" class="btn btn-warning" onclick="requestEdits('HANDLER', '{{ report.id }}')">إرسال طلب التعديل</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                     
                                     <!-- Reject Modal -->
                                     <div class="modal fade" id="rejectModal{{ report.id }}" tabindex="-1">
@@ -60,18 +84,16 @@
                                                     <h5 class="modal-title">رفض التقرير</h5>
                                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                 </div>
-                                                <form method="POST" action="{{ url_for('pm.reject_report', report_id=report.id) }}">
-                                                    <div class="modal-body">
-                                                        <div class="mb-3">
-                                                            <label for="feedback{{ report.id }}" class="form-label">ملاحظات الرفض</label>
-                                                            <textarea class="form-control" id="feedback{{ report.id }}" name="feedback" rows="3" required></textarea>
-                                                        </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label for="rejectReason{{ report.id }}" class="form-label">سبب الرفض</label>
+                                                        <textarea class="form-control" id="rejectReason{{ report.id }}" rows="3" required></textarea>
                                                     </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                                                        <button type="submit" class="btn btn-danger">رفض التقرير</button>
-                                                    </div>
-                                                </form>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                                    <button type="button" class="btn btn-danger" onclick="rejectReport('HANDLER', '{{ report.id }}')">رفض التقرير</button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -122,16 +144,40 @@
                                         <i class="fas fa-eye me-1"></i>
                                         عرض
                                     </a>
-                                    <form method="POST" action="{{ url_for('pm.approve_vet_visit', visit_id=visit.id) }}" class="d-inline">
-                                        <button type="submit" class="btn btn-sm btn-success me-1" onclick="return confirm('هل أنت متأكد من الموافقة؟')">
-                                            <i class="fas fa-check me-1"></i>
-                                            موافقة
-                                        </button>
-                                    </form>
+                                    <button type="button" class="btn btn-sm btn-success me-1" onclick="approveReport('VET', '{{ visit.id }}')">
+                                        <i class="fas fa-check me-1"></i>
+                                        موافقة
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-warning me-1" data-bs-toggle="modal" data-bs-target="#editVetModal{{ visit.id }}">
+                                        <i class="fas fa-edit me-1"></i>
+                                        طلب تعديل
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectVetModal{{ visit.id }}">
                                         <i class="fas fa-times me-1"></i>
                                         رفض
                                     </button>
+                                    
+                                    <!-- Edit Request Modal -->
+                                    <div class="modal fade" id="editVetModal{{ visit.id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">طلب تعديل الزيارة البيطرية</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label for="editNotesVet{{ visit.id }}" class="form-label">ملاحظات التعديل المطلوبة</label>
+                                                        <textarea class="form-control" id="editNotesVet{{ visit.id }}" rows="3" required></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                                    <button type="button" class="btn btn-warning" onclick="requestEditsVet('{{ visit.id }}')">إرسال طلب التعديل</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                     
                                     <!-- Reject Modal -->
                                     <div class="modal fade" id="rejectVetModal{{ visit.id }}" tabindex="-1">
@@ -141,18 +187,16 @@
                                                     <h5 class="modal-title">رفض الزيارة البيطرية</h5>
                                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                 </div>
-                                                <form method="POST" action="{{ url_for('pm.reject_vet_visit', visit_id=visit.id) }}">
-                                                    <div class="modal-body">
-                                                        <div class="mb-3">
-                                                            <label for="feedback{{ visit.id }}" class="form-label">ملاحظات الرفض</label>
-                                                            <textarea class="form-control" id="feedback{{ visit.id }}" name="feedback" rows="3" required></textarea>
-                                                        </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label for="rejectReasonVet{{ visit.id }}" class="form-label">سبب الرفض</label>
+                                                        <textarea class="form-control" id="rejectReasonVet{{ visit.id }}" rows="3" required></textarea>
                                                     </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                                                        <button type="submit" class="btn btn-danger">رفض الزيارة</button>
-                                                    </div>
-                                                </form>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                                    <button type="button" class="btn btn-danger" onclick="rejectReportVet('{{ visit.id }}')">رفض الزيارة</button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -199,37 +243,59 @@
                                 <td>{{ activity.training_type.value if activity.training_type else 'غير محدد' }}</td>
                                 <td>{{ activity.trainer.name if activity.trainer else 'غير محدد' }}</td>
                                 <td>
-                                    <form method="POST" action="{{ url_for('pm.approve_breeding', activity_id=activity.id) }}" class="d-inline">
-                                        <button type="submit" class="btn btn-sm btn-success me-1" onclick="return confirm('هل أنت متأكد من الموافقة؟')">
-                                            <i class="fas fa-check me-1"></i>
-                                            موافقة
-                                        </button>
-                                    </form>
+                                    <button type="button" class="btn btn-sm btn-success me-1" onclick="approveReport('TRAINER', '{{ activity.id }}')">
+                                        <i class="fas fa-check me-1"></i>
+                                        موافقة
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-warning me-1" data-bs-toggle="modal" data-bs-target="#editBreedingModal{{ activity.id }}">
+                                        <i class="fas fa-edit me-1"></i>
+                                        طلب تعديل
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectBreedingModal{{ activity.id }}">
                                         <i class="fas fa-times me-1"></i>
                                         رفض
                                     </button>
+                                    
+                                    <!-- Edit Request Modal -->
+                                    <div class="modal fade" id="editBreedingModal{{ activity.id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">طلب تعديل نشاط التدريب</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label for="editNotesBreeding{{ activity.id }}" class="form-label">ملاحظات التعديل المطلوبة</label>
+                                                        <textarea class="form-control" id="editNotesBreeding{{ activity.id }}" rows="3" required></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                                    <button type="button" class="btn btn-warning" onclick="requestEditsBreeding('{{ activity.id }}')">إرسال طلب التعديل</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                     
                                     <!-- Reject Modal -->
                                     <div class="modal fade" id="rejectBreedingModal{{ activity.id }}" tabindex="-1">
                                         <div class="modal-dialog">
                                             <div class="modal-content">
                                                 <div class="modal-header">
-                                                    <h5 class="modal-title">رفض نشاط التكاثر</h5>
+                                                    <h5 class="modal-title">رفض نشاط التدريب</h5>
                                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                 </div>
-                                                <form method="POST" action="{{ url_for('pm.reject_breeding', activity_id=activity.id) }}">
-                                                    <div class="modal-body">
-                                                        <div class="mb-3">
-                                                            <label for="feedbackBreeding{{ activity.id }}" class="form-label">ملاحظات الرفض</label>
-                                                            <textarea class="form-control" id="feedbackBreeding{{ activity.id }}" name="feedback" rows="3" required></textarea>
-                                                        </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label for="rejectReasonBreeding{{ activity.id }}" class="form-label">سبب الرفض</label>
+                                                        <textarea class="form-control" id="rejectReasonBreeding{{ activity.id }}" rows="3" required></textarea>
                                                     </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                                                        <button type="submit" class="btn btn-danger">رفض النشاط</button>
-                                                    </div>
-                                                </form>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                                    <button type="button" class="btn btn-danger" onclick="rejectReportBreeding('{{ activity.id }}')">رفض النشاط</button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -274,16 +340,40 @@
                                 <td>{{ log.dog.name }}</td>
                                 <td>{{ log.caretaker.name if log.caretaker else 'غير محدد' }}</td>
                                 <td>
-                                    <form method="POST" action="{{ url_for('pm.approve_caretaker', log_id=log.id) }}" class="d-inline">
-                                        <button type="submit" class="btn btn-sm btn-success me-1" onclick="return confirm('هل أنت متأكد من الموافقة؟')">
-                                            <i class="fas fa-check me-1"></i>
-                                            موافقة
-                                        </button>
-                                    </form>
+                                    <button type="button" class="btn btn-sm btn-success me-1" onclick="approveReport('CARETAKER', '{{ log.id }}')">
+                                        <i class="fas fa-check me-1"></i>
+                                        موافقة
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-warning me-1" data-bs-toggle="modal" data-bs-target="#editCaretakerModal{{ log.id }}">
+                                        <i class="fas fa-edit me-1"></i>
+                                        طلب تعديل
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectCaretakerModal{{ log.id }}">
                                         <i class="fas fa-times me-1"></i>
                                         رفض
                                     </button>
+                                    
+                                    <!-- Edit Request Modal -->
+                                    <div class="modal fade" id="editCaretakerModal{{ log.id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">طلب تعديل سجل الرعاية</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label for="editNotesCaretaker{{ log.id }}" class="form-label">ملاحظات التعديل المطلوبة</label>
+                                                        <textarea class="form-control" id="editNotesCaretaker{{ log.id }}" rows="3" required></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                                    <button type="button" class="btn btn-warning" onclick="requestEditsCaretaker('{{ log.id }}')">إرسال طلب التعديل</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                     
                                     <!-- Reject Modal -->
                                     <div class="modal fade" id="rejectCaretakerModal{{ log.id }}" tabindex="-1">
@@ -293,18 +383,16 @@
                                                     <h5 class="modal-title">رفض سجل الرعاية</h5>
                                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                 </div>
-                                                <form method="POST" action="{{ url_for('pm.reject_caretaker', log_id=log.id) }}">
-                                                    <div class="modal-body">
-                                                        <div class="mb-3">
-                                                            <label for="feedbackCaretaker{{ log.id }}" class="form-label">ملاحظات الرفض</label>
-                                                            <textarea class="form-control" id="feedbackCaretaker{{ log.id }}" name="feedback" rows="3" required></textarea>
-                                                        </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label for="rejectReasonCaretaker{{ log.id }}" class="form-label">سبب الرفض</label>
+                                                        <textarea class="form-control" id="rejectReasonCaretaker{{ log.id }}" rows="3" required></textarea>
                                                     </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                                                        <button type="submit" class="btn btn-danger">رفض السجل</button>
-                                                    </div>
-                                                </form>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                                    <button type="button" class="btn btn-danger" onclick="rejectReportCaretaker('{{ log.id }}')">رفض السجل</button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -331,5 +419,268 @@
     </div>
 </div>
 {% endif %}
+
+<script>
+function approveReport(reportType, reportId) {
+    if (!confirm('هل أنت متأكد من الموافقة على هذا التقرير وإرساله للإدارة العامة؟')) {
+        return;
+    }
+    
+    fetch(`/api/pm/reports/${reportType}/${reportId}/approve`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({notes: ''})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('خطأ: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('حدث خطأ في الاتصال: ' + error);
+    });
+}
+
+function requestEdits(reportType, reportId) {
+    const notes = document.getElementById(`editNotes${reportId}`).value.trim();
+    
+    if (!notes) {
+        alert('يجب إدخال ملاحظات التعديل');
+        return;
+    }
+    
+    fetch(`/api/pm/reports/${reportType}/${reportId}/request-edits`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({notes: notes})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('خطأ: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('حدث خطأ في الاتصال: ' + error);
+    });
+}
+
+function rejectReport(reportType, reportId) {
+    const reason = document.getElementById(`rejectReason${reportId}`).value.trim();
+    
+    if (!reason) {
+        alert('يجب إدخال سبب الرفض');
+        return;
+    }
+    
+    fetch(`/api/pm/reports/${reportType}/${reportId}/reject`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({reason: reason})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('خطأ: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('حدث خطأ في الاتصال: ' + error);
+    });
+}
+
+// VET specific functions
+function requestEditsVet(visitId) {
+    const notes = document.getElementById(`editNotesVet${visitId}`).value.trim();
+    
+    if (!notes) {
+        alert('يجب إدخال ملاحظات التعديل');
+        return;
+    }
+    
+    fetch(`/api/pm/reports/VET/${visitId}/request-edits`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({notes: notes})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('خطأ: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('حدث خطأ في الاتصال: ' + error);
+    });
+}
+
+function rejectReportVet(visitId) {
+    const reason = document.getElementById(`rejectReasonVet${visitId}`).value.trim();
+    
+    if (!reason) {
+        alert('يجب إدخال سبب الرفض');
+        return;
+    }
+    
+    fetch(`/api/pm/reports/VET/${visitId}/reject`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({reason: reason})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('خطأ: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('حدث خطأ في الاتصال: ' + error);
+    });
+}
+
+// TRAINER (Breeding) specific functions
+function requestEditsBreeding(activityId) {
+    const notes = document.getElementById(`editNotesBreeding${activityId}`).value.trim();
+    
+    if (!notes) {
+        alert('يجب إدخال ملاحظات التعديل');
+        return;
+    }
+    
+    fetch(`/api/pm/reports/TRAINER/${activityId}/request-edits`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({notes: notes})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('خطأ: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('حدث خطأ في الاتصال: ' + error);
+    });
+}
+
+function rejectReportBreeding(activityId) {
+    const reason = document.getElementById(`rejectReasonBreeding${activityId}`).value.trim();
+    
+    if (!reason) {
+        alert('يجب إدخال سبب الرفض');
+        return;
+    }
+    
+    fetch(`/api/pm/reports/TRAINER/${activityId}/reject`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({reason: reason})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('خطأ: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('حدث خطأ في الاتصال: ' + error);
+    });
+}
+
+// CARETAKER specific functions
+function requestEditsCaretaker(logId) {
+    const notes = document.getElementById(`editNotesCaretaker${logId}`).value.trim();
+    
+    if (!notes) {
+        alert('يجب إدخال ملاحظات التعديل');
+        return;
+    }
+    
+    fetch(`/api/pm/reports/CARETAKER/${logId}/request-edits`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({notes: notes})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('خطأ: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('حدث خطأ في الاتصال: ' + error);
+    });
+}
+
+function rejectReportCaretaker(logId) {
+    const reason = document.getElementById(`rejectReasonCaretaker${logId}`).value.trim();
+    
+    if (!reason) {
+        alert('يجب إدخال سبب الرفض');
+        return;
+    }
+    
+    fetch(`/api/pm/reports/CARETAKER/${logId}/reject`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({reason: reason})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('خطأ: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('حدث خطأ في الاتصال: ' + error);
+    });
+}
+</script>
 
 {% endblock %}
