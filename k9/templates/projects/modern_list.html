@@ -130,6 +130,17 @@
                                     </a>
                                 </li>
                                 <li>
+                                    <a class="dropdown-item" href="{{ url_for('main.project_edit', project_id=project.id) }}">
+                                        <i class="fas fa-edit me-2"></i>تعديل المشروع
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('main.project_locations', project_id=project.id) }}">
+                                        <i class="fas fa-map-marker-alt me-2"></i>إدارة المواقع
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
                                     <a class="dropdown-item" href="{{ url_for('main.project_attendance', project_id=project.id) }}">
                                         <i class="fas fa-calendar-check me-2"></i>الحضور
                                     </a>

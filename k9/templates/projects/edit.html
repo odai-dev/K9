@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}تعديل المشروع - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-edit me-2"></i>
+                تعديل المشروع
+            </h1>
+            <div>
+                <a href="{{ url_for('main.project_dashboard', project_id=project.id) }}" class="btn btn-info me-2">
+                    <i class="fas fa-tachometer-alt me-2"></i>
+                    لوحة التحكم
+                </a>
+                <a href="{{ url_for('main.projects') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>
+                    العودة إلى القائمة
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Project Edit Form -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-project-diagram me-2"></i>
+                    معلومات المشروع
+                </h5>
+                <small class="text-muted">كود المشروع: {{ project.code }}</small>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <!-- Basic Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">المعلومات الأساسية</h6>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="name" class="form-label">اسم المشروع <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ project.name }}" required>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="main_task" class="form-label">المهمة الأساسية</label>
+                            <input type="text" class="form-control" id="main_task" name="main_task" value="{{ project.main_task or '' }}">
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="description" class="form-label">وصف المشروع</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ project.description or '' }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Mission Details -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">تفاصيل المهمة</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="location" class="form-label">الموقع</label>
+                            <input type="text" class="form-control" id="location" name="location" value="{{ project.location or '' }}">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="sector" class="form-label">القطاع</label>
+                            <input type="text" class="form-control" id="sector" name="sector" value="{{ project.sector or '' }}">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="mission_type" class="form-label">نوع المهمة</label>
+                            <select class="form-select" id="mission_type" name="mission_type">
+                                <option value="">اختر نوع المهمة</option>
+                                <option value="كشف المتفجرات" {% if project.mission_type == 'كشف المتفجرات' %}selected{% endif %}>كشف المتفجرات</option>
+                                <option value="كشف المخدرات" {% if project.mission_type == 'كشف المخدرات' %}selected{% endif %}>كشف المخدرات</option>
+                                <option value="الحراسة الأمنية" {% if project.mission_type == 'الحراسة الأمنية' %}selected{% endif %}>الحراسة الأمنية</option>
+                                <option value="التتبع والبحث" {% if project.mission_type == 'التتبع والبحث' %}selected{% endif %}>التتبع والبحث</option>
+                                <option value="الإنقاذ" {% if project.mission_type == 'الإنقاذ' %}selected{% endif %}>الإنقاذ</option>
+                                <option value="التدريب" {% if project.mission_type == 'التدريب' %}selected{% endif %}>التدريب</option>
+                                <option value="العمليات الخاصة" {% if project.mission_type == 'العمليات الخاصة' %}selected{% endif %}>العمليات الخاصة</option>
+                                <option value="الدوريات" {% if project.mission_type == 'الدوريات' %}selected{% endif %}>الدوريات</option>
+                                <option value="أخرى" {% if project.mission_type == 'أخرى' %}selected{% endif %}>أخرى</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="priority" class="form-label">الأولوية</label>
+                            <select class="form-select" id="priority" name="priority">
+                                <option value="LOW" {% if project.priority == 'LOW' %}selected{% endif %}>منخفضة</option>
+                                <option value="MEDIUM" {% if project.priority == 'MEDIUM' %}selected{% endif %}>متوسطة</option>
+                                <option value="HIGH" {% if project.priority == 'HIGH' %}selected{% endif %}>عالية</option>
+                                <option value="CRITICAL" {% if project.priority == 'CRITICAL' %}selected{% endif %}>حرجة</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Project Manager Assignment -->
+                    {% if managers %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">مدير المشروع</h6>
+                        </div>
+                        
+                        <div class="col-md-8 mb-3">
+                            <label for="manager_id" class="form-label">مدير المشروع المسؤول</label>
+                            <select class="form-select" id="manager_id" name="manager_id">
+                                <option value="">بدون مدير مشروع</option>
+                                {% for manager in managers %}
+                                    <option value="{{ manager.id }}" {% if project.project_manager_id == manager.id %}selected{% endif %}>
+                                        {{ manager.name }} ({{ manager.employee_id }})
+                                        {% if manager.email %} - {{ manager.email }}{% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <input type="hidden" id="remove_manager" name="remove_manager" value="no">
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Timeline -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">الجدولة الزمنية</h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="start_date" class="form-label">تاريخ البداية <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" value="{{ project.start_date.strftime('%Y-%m-%d') if project.start_date else '' }}" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="expected_completion_date" class="form-label">تاريخ الانتهاء المتوقع</label>
+                            <input type="date" class="form-control" id="expected_completion_date" name="expected_completion_date" value="{{ project.expected_completion_date.strftime('%Y-%m-%d') if project.expected_completion_date else '' }}">
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>
+                                    حفظ التغييرات
+                                </button>
+                                <a href="{{ url_for('main.project_dashboard', project_id=project.id) }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>
+                                    إلغاء
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Project Locations Management -->
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-map-marker-alt me-2"></i>
+                    مواقع المشروع
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if locations %}
+                    <div class="list-group mb-3">
+                        {% for location in locations %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">
+                                        <i class="fas fa-map-marker-alt text-primary me-1"></i>
+                                        {{ location.name }}
+                                    </h6>
+                                    {% if location.description %}
+                                        <p class="mb-0 text-muted small">{{ location.description }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ url_for('main.project_location_edit', project_id=project.id, location_id=location.id) }}" 
+                                       class="btn btn-outline-primary btn-sm" 
+                                       title="تعديل">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" 
+                                            class="btn btn-outline-danger btn-sm" 
+                                            onclick="confirmDelete('{{ location.id }}', '{{ location.name }}')"
+                                            title="حذف">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-map-marker-alt fa-2x mb-2"></i>
+                        <p class="mb-0">لا توجد مواقع مسجلة</p>
+                    </div>
+                {% endif %}
+                
+                <div class="d-grid">
+                    <a href="{{ url_for('main.project_location_add', project_id=project.id) }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>إضافة موقع جديد
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    عدد المواقع: {{ locations|length }}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Form (Hidden) -->
+<form id="deleteForm" method="POST" style="display: none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+</form>
+
+<script>
+function confirmDelete(locationId, locationName) {
+    if (confirm('هل أنت متأكد من حذف الموقع "' + locationName + '"؟')) {
+        var form = document.getElementById('deleteForm');
+        form.action = "{{ url_for('main.project_location_delete', project_id=project.id, location_id='LOCATION_ID') }}".replace('LOCATION_ID', locationId);
+        form.submit();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const startDateInput = document.getElementById('start_date');
+    const expectedCompletionInput = document.getElementById('expected_completion_date');
+    const managerSelect = document.getElementById('manager_id');
+    const removeManagerInput = document.getElementById('remove_manager');
+    
+    // Ensure completion date is after start date
+    startDateInput.addEventListener('change', function() {
+        if (this.value) {
+            expectedCompletionInput.min = this.value;
+            if (expectedCompletionInput.value && expectedCompletionInput.value < this.value) {
+                expectedCompletionInput.value = '';
+            }
+        }
+    });
+    
+    expectedCompletionInput.addEventListener('change', function() {
+        if (this.value && startDateInput.value) {
+            if (new Date(this.value) < new Date(startDateInput.value)) {
+                alert('تاريخ الانتهاء يجب أن يكون بعد تاريخ البداية');
+                this.value = '';
+            }
+        }
+    });
+    
+    // Handle project manager removal
+    if (managerSelect && removeManagerInput) {
+        managerSelect.addEventListener('change', function() {
+            if (this.value === '') {
+                removeManagerInput.value = 'yes';
+            } else {
+                removeManagerInput.value = 'no';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
