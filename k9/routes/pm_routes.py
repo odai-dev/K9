@@ -490,73 +490,22 @@ def pending_approvals():
 @login_required
 @require_pm_project
 def approve_report(report_id):
-    """Approve a handler report"""
-    project = get_pm_project()
-    if not project:
-        flash('لم يتم العثور على المشروع', 'error')
-        return redirect(url_for('main.index'))
-        
-    try:
-        report = HandlerReport.query.get_or_404(report_id)
-        
-        # Security check: Ensure report belongs to PM's project
-        if report.project_id != project.id:
-            flash('ليس لديك صلاحية لمراجعة هذا التقرير', 'error')
-            return redirect(url_for('pm.pending_approvals'))
-        
-        if report.status != ReportStatus.SUBMITTED:
-            flash('هذا التقرير تمت مراجعته بالفعل', 'info')
-            return redirect(url_for('pm.pending_approvals'))
-        
-        report.status = ReportStatus.APPROVED
-        report.reviewed_at = datetime.utcnow()
-        report.reviewed_by_user_id = current_user.id
-        
-        db.session.commit()
-        
-        flash('تمت الموافقة على التقرير بنجاح', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'حدث خطأ أثناء الموافقة على التقرير: {str(e)}', 'error')
-        
+    """
+    DEPRECATED: Use ReportReviewService.approve_and_forward instead
+    This route redirects to the unified review system
+    """
+    flash('يُرجى استخدام نظام المراجعة الموحد في لوحة التقارير', 'warning')
     return redirect(url_for('pm.pending_approvals'))
 
 @pm_bp.route('/reject-report/<report_id>', methods=['POST'])
 @login_required
 @require_pm_project
 def reject_report(report_id):
-    """Reject a handler report"""
-    project = get_pm_project()
-    if not project:
-        flash('لم يتم العثور على المشروع', 'error')
-        return redirect(url_for('main.index'))
-        
-    try:
-        report = HandlerReport.query.get_or_404(report_id)
-        
-        # Security check: Ensure report belongs to PM's project
-        if report.project_id != project.id:
-            flash('ليس لديك صلاحية لمراجعة هذا التقرير', 'error')
-            return redirect(url_for('pm.pending_approvals'))
-        
-        if report.status != ReportStatus.SUBMITTED:
-            flash('هذا التقرير تمت مراجعته بالفعل', 'info')
-            return redirect(url_for('pm.pending_approvals'))
-        
-        feedback = request.form.get('feedback', '')
-        
-        report.status = ReportStatus.REJECTED
-        report.reviewed_at = datetime.utcnow()
-        report.reviewed_by_user_id = current_user.id
-        report.supervisor_feedback = feedback
-        
-        db.session.commit()
-        
-        flash('تم رفض التقرير', 'info')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'حدث خطأ أثناء رفض التقرير: {str(e)}', 'error')
-        
+    """
+    DEPRECATED: Use ReportReviewService.reject_completely instead
+    This route redirects to the unified review system
+    """
+    flash('يُرجى استخدام نظام المراجعة الموحد في لوحة التقارير', 'warning')
     return redirect(url_for('pm.pending_approvals'))
 
 @pm_bp.route('/approve-vet-visit/<visit_id>', methods=['POST'])

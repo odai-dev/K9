@@ -1,0 +1,451 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}التقارير بانتظار المراجعة{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">الرئيسية</a></li>
+<li class="breadcrumb-item active" aria-current="page">التقارير بانتظار المراجعة</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.report-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    background: white;
+    overflow: hidden;
+}
+
+.report-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.report-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 20px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.report-body {
+    padding: 20px;
+}
+
+.report-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.info-item {
+    padding: 10px;
+    background: #f7fafc;
+    border-radius: 8px;
+}
+
+.info-label {
+    font-size: 0.85rem;
+    color: #718096;
+    margin-bottom: 5px;
+}
+
+.info-value {
+    font-size: 1rem;
+    color: #2d3748;
+    font-weight: 600;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-approve {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-approve:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+}
+
+.btn-reject {
+    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-reject:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4);
+}
+
+.section-header {
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    margin-top: 30px;
+}
+
+.section-header h3 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.badge-count {
+    background: rgba(255,255,255,0.3);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #718096;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.3;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+                <div class="card-body text-center py-4">
+                    <h2 class="mb-2">📋 التقارير بانتظار المراجعة النهائية</h2>
+                    <p class="text-muted mb-0">إجمالي التقارير: <strong>{{ total_count }}</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if total_count == 0 %}
+    <div class="empty-state">
+        <i class="fas fa-inbox"></i>
+        <h4>لا توجد تقارير بانتظار المراجعة</h4>
+        <p>جميع التقارير تمت مراجعتها</p>
+    </div>
+    {% else %}
+
+    {% if reports.HANDLER %}
+    <div class="section-header">
+        <h3>
+            تقارير السائس اليومية
+            <span class="badge-count">{{ reports.HANDLER|length }}</span>
+        </h3>
+    </div>
+    {% for report in reports.HANDLER %}
+    <div class="report-card" data-report-id="{{ report.id }}" data-report-type="HANDLER">
+        <div class="report-header">
+            <span>تقرير سائس - {{ report.date }}</span>
+            <span><i class="fas fa-calendar-alt"></i> {{ report.submitted_at.strftime('%Y-%m-%d %H:%M') if report.submitted_at else 'غير محدد' }}</span>
+        </div>
+        <div class="report-body">
+            <div class="report-info">
+                <div class="info-item">
+                    <div class="info-label">السائس</div>
+                    <div class="info-value">{{ report.handler.full_name if report.handler else 'غير محدد' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">الكلب</div>
+                    <div class="info-value">{{ report.dog.name if report.dog else 'غير محدد' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">المشروع</div>
+                    <div class="info-value">{{ report.project.name if report.project else 'غير محدد' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">اعتماد مدير المشروع</div>
+                    <div class="info-value">{{ report.reviewed_at.strftime('%Y-%m-%d') if report.reviewed_at else 'غير محدد' }}</div>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-approve" onclick="approveReport('HANDLER', '{{ report.id }}')">
+                    <i class="fas fa-check"></i> اعتماد
+                </button>
+                <button class="btn btn-reject" onclick="rejectReport('HANDLER', '{{ report.id }}')">
+                    <i class="fas fa-times"></i> رفض
+                </button>
+                <a href="{{ url_for('handler_daily.view_report', report_id=report.id) }}" class="btn btn-outline-primary" target="_blank">
+                    <i class="fas fa-eye"></i> عرض التفاصيل
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if reports.TRAINER %}
+    <div class="section-header">
+        <h3>
+            تقارير التدريب
+            <span class="badge-count">{{ reports.TRAINER|length }}</span>
+        </h3>
+    </div>
+    {% for report in reports.TRAINER %}
+    <div class="report-card" data-report-id="{{ report.id }}" data-report-type="TRAINER">
+        <div class="report-header">
+            <span>تقرير تدريب - {{ report.training_date }}</span>
+            <span><i class="fas fa-calendar-alt"></i> {{ report.submitted_at.strftime('%Y-%m-%d %H:%M') if report.submitted_at else 'غير محدد' }}</span>
+        </div>
+        <div class="report-body">
+            <div class="report-info">
+                <div class="info-item">
+                    <div class="info-label">المدرب</div>
+                    <div class="info-value">{{ report.created_by.full_name if report.created_by else 'غير محدد' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">المشروع</div>
+                    <div class="info-value">{{ report.project.name if report.project else 'غير محدد' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">نوع التدريب</div>
+                    <div class="info-value">{{ report.training_type if report.training_type else 'غير محدد' }}</div>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-approve" onclick="approveReport('TRAINER', '{{ report.id }}')">
+                    <i class="fas fa-check"></i> اعتماد
+                </button>
+                <button class="btn btn-reject" onclick="rejectReport('TRAINER', '{{ report.id }}')">
+                    <i class="fas fa-times"></i> رفض
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if reports.VET %}
+    <div class="section-header">
+        <h3>
+            تقارير الطبيب البيطري
+            <span class="badge-count">{{ reports.VET|length }}</span>
+        </h3>
+    </div>
+    {% for report in reports.VET %}
+    <div class="report-card" data-report-id="{{ report.id }}" data-report-type="VET">
+        <div class="report-header">
+            <span>تقرير بيطري - {{ report.visit_date }}</span>
+            <span><i class="fas fa-calendar-alt"></i> {{ report.submitted_at.strftime('%Y-%m-%d %H:%M') if report.submitted_at else 'غير محدد' }}</span>
+        </div>
+        <div class="report-body">
+            <div class="report-info">
+                <div class="info-item">
+                    <div class="info-label">الطبيب البيطري</div>
+                    <div class="info-value">{{ report.created_by.full_name if report.created_by else 'غير محدد' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">المشروع</div>
+                    <div class="info-value">{{ report.project.name if report.project else 'غير محدد' }}</div>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-approve" onclick="approveReport('VET', '{{ report.id }}')">
+                    <i class="fas fa-check"></i> اعتماد
+                </button>
+                <button class="btn btn-reject" onclick="rejectReport('VET', '{{ report.id }}')">
+                    <i class="fas fa-times"></i> رفض
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if reports.CARETAKER %}
+    <div class="section-header">
+        <h3>
+            تقارير المربي اليومية
+            <span class="badge-count">{{ reports.CARETAKER|length }}</span>
+        </h3>
+    </div>
+    {% for report in reports.CARETAKER %}
+    <div class="report-card" data-report-id="{{ report.id }}" data-report-type="CARETAKER">
+        <div class="report-header">
+            <span>تقرير مربي - {{ report.log_date }}</span>
+            <span><i class="fas fa-calendar-alt"></i> {{ report.submitted_at.strftime('%Y-%m-%d %H:%M') if report.submitted_at else 'غير محدد' }}</span>
+        </div>
+        <div class="report-body">
+            <div class="report-info">
+                <div class="info-item">
+                    <div class="info-label">المربي</div>
+                    <div class="info-value">{{ report.created_by.full_name if report.created_by else 'غير محدد' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">المشروع</div>
+                    <div class="info-value">{{ report.project.name if report.project else 'غير محدد' }}</div>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-approve" onclick="approveReport('CARETAKER', '{{ report.id }}')">
+                    <i class="fas fa-check"></i> اعتماد
+                </button>
+                <button class="btn btn-reject" onclick="rejectReport('CARETAKER', '{{ report.id }}')">
+                    <i class="fas fa-times"></i> رفض
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% endif %}
+</div>
+
+<div class="modal fade" id="notesModal" tabindex="-1" aria-labelledby="notesModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="notesModalLabel">إضافة ملاحظات</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <textarea id="approvalNotes" class="form-control" rows="4" placeholder="أدخل ملاحظات الاعتماد (اختياري)..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-approve" onclick="submitApproval()">
+                    <i class="fas fa-check"></i> اعتماد
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="rejectModalLabel">رفض التقرير</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> يجب إدخال سبب الرفض
+                </div>
+                <textarea id="rejectionReason" class="form-control" rows="4" placeholder="أدخل سبب رفض التقرير..." required></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-reject" onclick="submitRejection()">
+                    <i class="fas fa-times"></i> رفض
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentReportType = '';
+let currentReportId = '';
+
+function approveReport(reportType, reportId) {
+    currentReportType = reportType;
+    currentReportId = reportId;
+    
+    const notesModal = new bootstrap.Modal(document.getElementById('notesModal'));
+    document.getElementById('approvalNotes').value = '';
+    notesModal.show();
+}
+
+function rejectReport(reportType, reportId) {
+    currentReportType = reportType;
+    currentReportId = reportId;
+    
+    const rejectModal = new bootstrap.Modal(document.getElementById('rejectModal'));
+    document.getElementById('rejectionReason').value = '';
+    rejectModal.show();
+}
+
+async function submitApproval() {
+    const notes = document.getElementById('approvalNotes').value.trim();
+    
+    try {
+        const response = await fetch(`/admin/reports/${currentReportType}/${currentReportId}/approve`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ notes: notes })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✓ ' + data.message);
+            const modal = bootstrap.Modal.getInstance(document.getElementById('notesModal'));
+            modal.hide();
+            location.reload();
+        } else {
+            alert('✗ ' + data.error);
+        }
+    } catch (error) {
+        alert('حدث خطأ أثناء اعتماد التقرير');
+        console.error(error);
+    }
+}
+
+async function submitRejection() {
+    const reason = document.getElementById('rejectionReason').value.trim();
+    
+    if (!reason) {
+        alert('يجب إدخال سبب الرفض');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/admin/reports/${currentReportType}/${currentReportId}/reject`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ reason: reason })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✓ ' + data.message);
+            const modal = bootstrap.Modal.getInstance(document.getElementById('rejectModal'));
+            modal.hide();
+            location.reload();
+        } else {
+            alert('✗ ' + data.error);
+        }
+    } catch (error) {
+        alert('حدث خطأ أثناء رفض التقرير');
+        console.error(error);
+    }
+}
+</script>
+{% endblock %}
