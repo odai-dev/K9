@@ -213,7 +213,7 @@ def dogs_view(dog_id):
         else:
             flash('غير مسموح لك بعرض بيانات هذا الكلب', 'error')
             return redirect(url_for('main.index'))
-    elif current_user.role != UserRole.GENERAL_ADMIN:
+    elif not is_admin(current_user):
         flash('غير مسموح لك بعرض بيانات هذا الكلب', 'error')
         return redirect(url_for('main.index'))
     
@@ -1213,7 +1213,7 @@ def maturity_view(id):
     maturity = DogMaturity.query.get_or_404(id)
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         assigned_dogs = get_user_accessible_dogs(current_user)
         assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
         if maturity.dog_id not in assigned_dog_ids:
@@ -1228,7 +1228,7 @@ def heat_cycles_view(id):
     heat_cycle = HeatCycle.query.get_or_404(id)
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         assigned_dogs = get_user_accessible_dogs(current_user)
         assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
         if heat_cycle.dog_id not in assigned_dog_ids:
@@ -1243,7 +1243,7 @@ def mating_view(id):
     mating = MatingRecord.query.get_or_404(id)
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         assigned_dogs = get_user_accessible_dogs(current_user)
         assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
         if mating.female_id not in assigned_dog_ids and mating.male_id not in assigned_dog_ids:
@@ -1258,7 +1258,7 @@ def pregnancy_view(id):
     pregnancy = PregnancyRecord.query.get_or_404(id)
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         assigned_dogs = get_user_accessible_dogs(current_user)
         assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
         if pregnancy.dog_id not in assigned_dog_ids:
@@ -1273,7 +1273,7 @@ def delivery_view(id):
     delivery = DeliveryRecord.query.get_or_404(id)
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         assigned_dogs = get_user_accessible_dogs(current_user)
         assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
         if delivery.pregnancy_record.dog_id not in assigned_dog_ids:
@@ -1288,7 +1288,7 @@ def puppies_view(id):
     puppy = PuppyRecord.query.get_or_404(id)
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         assigned_dogs = get_user_accessible_dogs(current_user)
         assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
         if puppy.delivery_record.pregnancy_record.dog_id not in assigned_dog_ids:
@@ -1320,7 +1320,7 @@ def puppy_training_view(id):
     session = PuppyTraining.query.get_or_404(id)
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         assigned_dogs = get_user_accessible_dogs(current_user)
         assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
         if session.puppy.delivery_record.pregnancy_record.dog_id not in assigned_dog_ids:
@@ -1786,7 +1786,7 @@ def project_delete(project_id):
         return redirect(url_for('main.projects'))
     
     # Check permissions - Only GENERAL_ADMIN can delete projects
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         flash('غير مسموح لك بحذف المشاريع', 'error')
         return redirect(url_for('main.projects'))
     
@@ -1884,7 +1884,7 @@ def project_manager_update(project_id):
         return redirect(url_for('main.projects'))
     
     # Check permissions
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         flash('غير مسموح لك بتعديل مدير المشروع', 'error')
         return redirect(url_for('main.project_dashboard', project_id=project_id))
     
@@ -3585,7 +3585,7 @@ def admin_panel():
 @login_required
 def get_user_permissions_api(user_id):
     """API endpoint to get user permissions for AJAX requests"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         return jsonify({'error': 'Unauthorized'}), 403
     
     try:
@@ -3611,7 +3611,7 @@ def get_user_permissions_api(user_id):
 @login_required  
 def update_user_permissions_api():
     """API endpoint to update user permissions via AJAX"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         return jsonify({'error': 'Unauthorized'}), 403
     
     try:
@@ -3665,7 +3665,7 @@ def update_user_permissions_api():
 @login_required
 def sync_project_managers():
     """Automatically create user accounts for all PROJECT_MANAGER employees"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         flash('ليس لديك صلاحية لهذا الإجراء', 'error')
         return redirect(url_for('main.dashboard'))
     
@@ -3695,7 +3695,7 @@ def sync_project_managers():
 @login_required
 def update_user_credentials():
     """Update user credentials (username, email, password)"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         flash('ليس لديك صلاحية لتعديل بيانات المستخدمين', 'error')
         return redirect(url_for('main.dashboard'))
     
@@ -3768,7 +3768,7 @@ def update_permissions():
     from k9.models.models import ProjectManagerPermission
     
     # Check admin access
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         flash('ليس لديك صلاحية لتعديل الصلاحيات', 'error')
         return redirect(url_for('main.dashboard'))
     
@@ -3823,7 +3823,7 @@ def update_permissions():
 @login_required
 def toggle_user_status(user_id):
     """Toggle user active status"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         flash('ليس لديك صلاحية لتعديل حالة المستخدمين', 'error')
         return redirect(url_for('main.dashboard'))
     
@@ -3849,7 +3849,7 @@ def toggle_user_status(user_id):
 @login_required
 def employee_user_links():
     """Manage links between employees and user accounts"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         flash('ليس لديك صلاحية للوصول إلى إدارة الربط', 'error')
         return redirect(url_for('main.dashboard'))
     
@@ -3880,7 +3880,7 @@ def employee_user_links():
 @login_required
 def link_employee_to_user():
     """Link an employee to a user account"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         return jsonify({'success': False, 'error': 'ليس لديك صلاحية لربط الحسابات'}), 403
     
     try:
@@ -3925,7 +3925,7 @@ def link_employee_to_user():
 @login_required
 def unlink_employee_from_user():
     """Unlink an employee from a user account"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         return jsonify({'success': False, 'error': 'ليس لديك صلاحية لفك الربط'}), 403
     
     try:
@@ -3970,7 +3970,7 @@ def unlink_employee_from_user():
 def unified_attendance():
     """Main attendance dashboard - standalone attendance system"""
     # Only GENERAL_ADMIN can access unified attendance
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         flash('ليس لديك صلاحية للوصول إلى نظام الحضور الموحد', 'error')
         return redirect(url_for('main.dashboard'))
     
@@ -4109,7 +4109,7 @@ def attendance_shifts_edit(shift_id):
 @login_required
 def attendance_assignments():
     """Manage shift assignments"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         flash('ليس لديك صلاحية للوصول إلى تعيينات الورديات', 'error')
         return redirect(url_for('main.dashboard'))
     
@@ -4133,7 +4133,7 @@ def attendance_assignments():
 @login_required
 def attendance_assignments_add():
     """Add shift assignment"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         return jsonify({'success': False, 'error': 'ليس لديك صلاحية لإضافة تعيينات'}), 403
     
     try:
@@ -4182,7 +4182,7 @@ def attendance_assignments_add():
 @login_required
 def attendance_record():
     """Daily attendance recording"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         flash('ليس لديك صلاحية لتسجيل الحضور', 'error')
         return redirect(url_for('main.dashboard'))
     
@@ -4236,7 +4236,7 @@ def attendance_record():
 @login_required
 def attendance_record_save():
     """Save individual attendance record"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         return jsonify({'success': False, 'error': 'ليس لديك صلاحية لتسجيل الحضور'}), 403
     
     try:
@@ -4320,7 +4320,7 @@ def attendance_record_save():
 @login_required
 def attendance_bulk():
     """Bulk attendance operations"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         return jsonify({'success': False, 'error': 'ليس لديك صلاحية للعمليات المجمعة'}), 403
     
     try:
@@ -4388,7 +4388,7 @@ def attendance_bulk():
 @login_required
 def attendance_reports():
     """Generate attendance reports"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         flash('ليس لديك صلاحية لإنشاء التقارير', 'error')
         return redirect(url_for('main.dashboard'))
     
@@ -4400,7 +4400,7 @@ def attendance_reports():
 @login_required
 def attendance_report_generate():
     """Generate and download attendance report"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         return redirect(url_for('main.dashboard'))
     
     try:
@@ -4462,7 +4462,7 @@ def attendance_report_generate():
 @login_required
 def attendance_assignments_remove(assignment_id):
     """Remove shift assignment"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
+    if not is_admin(current_user):
         return jsonify({'success': False, 'error': 'ليس لديك صلاحية لإزالة التعيينات'}), 403
     
     try:
