@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from app import app, db
 from k9.models.models import *
 from k9.models.models_handler_daily import *
-from k9.models.models_attendance_reporting import *
+# models_attendance_reporting removed - now using DailySchedule system
 
 class WorkflowTester:
     def __init__(self):
@@ -167,11 +167,8 @@ def run_all_tests():
                    lambda: len(list(TaskPriority)) > 0)
         
         # ===== ATTENDANCE REPORTING TESTS =====
-        print("\n--- Attendance Reporting Workflows ---")
-        tester.test("Attendance: ProjectAttendanceReporting model exists",
-                   lambda: ProjectAttendanceReporting.query.count() >= 0)
-        tester.test("Attendance: AttendanceStatus enum exists",
-                   lambda: hasattr(AttendanceStatus, 'PRESENT'))
+        # Legacy attendance reporting removed - now using DailySchedule system
+        print("\n--- Attendance Reporting (Legacy system removed) ---")
         
         # ===== VETERINARY WORKFLOW TESTS =====
         print("\n--- Veterinary Workflows ---")
