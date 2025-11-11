@@ -75,9 +75,12 @@ def is_pm(user=None):
 
 
 def is_admin(user=None):
-    """Check if user should be treated as a General Admin with full access
+    """Check if user should be treated as having full administrative access
     
-    Returns True only for GENERAL_ADMIN users NOT in PM mode.
+    Returns True for:
+    - PROJECT_MANAGER users (now have full admin access)
+    - GENERAL_ADMIN users NOT in PM mode
+    
     When GENERAL_ADMIN is in PM mode, they should be treated as PROJECT_MANAGER.
     """
     if user is None:
@@ -86,6 +89,11 @@ def is_admin(user=None):
     if not hasattr(user, 'is_authenticated') or not user.is_authenticated:
         return False
     
+    # PROJECT_MANAGER has full admin access
+    if user.role == UserRole.PROJECT_MANAGER:
+        return True
+    
+    # GENERAL_ADMIN has full access when not in PM mode
     if user.role != UserRole.GENERAL_ADMIN:
         return False
     
