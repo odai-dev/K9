@@ -429,3 +429,217 @@ class ReportReviewService:
                 related_type=f'{report_type}_REPORT'
             )
             db.session.add(notification)
+    
+    @staticmethod
+    def get_admin_report(report_type: str, report_id: str, admin_user_id: str) -> Optional[object]:
+        """Fetch specific report for admin review (no project scope check)"""
+        # Verify user is General Admin
+        admin_user = User.query.get(admin_user_id)
+        if not admin_user or admin_user.role != UserRole.GENERAL_ADMIN:
+            return None
+        
+        if report_type not in ReportReviewService.REPORT_TYPE_MODELS:
+            return None
+        
+        Model = ReportReviewService.REPORT_TYPE_MODELS[report_type]
+        report = Model.query.get(report_id)
+        
+        return report
+    
+    @staticmethod
+    def get_forwarded_reports(admin_user_id: str) -> Dict[str, List]:
+        """Get all reports forwarded to admin (status='FORWARDED_TO_ADMIN')"""
+        # Verify user is General Admin
+        admin_user = User.query.get(admin_user_id)
+        if not admin_user or admin_user.role != UserRole.GENERAL_ADMIN:
+            return {
+                'HANDLER': [],
+                'TRAINER': [],
+                'VET': [],
+                'CARETAKER': []
+            }
+        
+        result = {}
+        
+        # Get HANDLER reports
+        handler_reports = HandlerReport.query.filter_by(
+            status='FORWARDED_TO_ADMIN'
+        ).order_by(desc(HandlerReport.reviewed_at)).all()
+        result['HANDLER'] = [report for report in handler_reports]
+        
+        # Get TRAINER reports
+        trainer_reports = BreedingTrainingActivity.query.filter_by(
+            status='FORWARDED_TO_ADMIN'
+        ).order_by(desc(BreedingTrainingActivity.reviewed_at)).all()
+        result['TRAINER'] = [report for report in trainer_reports]
+        
+        # Get VET reports
+        vet_reports = VeterinaryVisit.query.filter_by(
+            status='FORWARDED_TO_ADMIN'
+        ).order_by(desc(VeterinaryVisit.reviewed_at)).all()
+        result['VET'] = [report for report in vet_reports]
+        
+        # Get CARETAKER reports
+        caretaker_reports = CaretakerDailyLog.query.filter_by(
+            status='FORWARDED_TO_ADMIN'
+        ).order_by(desc(CaretakerDailyLog.reviewed_at)).all()
+        result['CARETAKER'] = [report for report in caretaker_reports]
+        
+        return result
+    
+    @staticmethod
+    def admin_approve(
+        report_type: str,
+        report_id: str,
+        admin_user_id: str,
+        notes: Optional[str] = None
+    ) -> Tuple[bool, str]:
+        """
+        Admin final approval: FORWARDED_TO_ADMIN → APPROVED_BY_ADMIN
+        Notifies both submitter and PM
+        """
+        report = ReportReviewService.get_admin_report(report_type, report_id, admin_user_id)
+        
+        if not report:
+            return False, "تعذر العثور على التقرير أو ليس لديك صلاحية الوصول"
+        
+        if report.status != 'FORWARDED_TO_ADMIN':
+            return False, f"التقرير في حالة {report.status} ولا يمكن اعتماده من الإدارة العامة"
+        
+        try:
+            # Update report status
+            previous_status = report.status
+            report.status = 'APPROVED_BY_ADMIN'
+            
+            # Create audit log
+            audit = ReportReview(
+                report_type=report_type,
+                report_id=str(report_id),
+                action='ADMIN_APPROVE',
+                previous_status=previous_status,
+                new_status='APPROVED_BY_ADMIN',
+                reviewed_by_user_id=admin_user_id,
+                review_notes=notes,
+                project_id=report.project_id
+            )
+            db.session.add(audit)
+            
+            # Notify submitter
+            submitter_id = ReportReviewService._get_submitter_id(report, report_type)
+            if submitter_id:
+                report_name = ReportReviewService.REPORT_TYPE_NAMES.get(report_type, 'التقرير')
+                admin_user = User.query.get(admin_user_id)
+                admin_name = admin_user.username if admin_user else "الإدارة العامة"
+                
+                notification = Notification(
+                    user_id=submitter_id,
+                    type=NotificationType.REPORT_APPROVED,
+                    title=f"تم اعتماد التقرير - {report_name}",
+                    message=f"تم اعتماد {report_name} نهائياً من قبل {admin_name}",
+                    related_id=str(report_id),
+                    related_type=f'{report_type}_REPORT'
+                )
+                db.session.add(notification)
+            
+            # Notify PM
+            if report.reviewed_by_user_id:
+                report_name = ReportReviewService.REPORT_TYPE_NAMES.get(report_type, 'التقرير')
+                admin_user = User.query.get(admin_user_id)
+                admin_name = admin_user.username if admin_user else "الإدارة العامة"
+                
+                notification = Notification(
+                    user_id=str(report.reviewed_by_user_id),
+                    type=NotificationType.REPORT_APPROVED,
+                    title=f"تم اعتماد التقرير - {report_name}",
+                    message=f"تم اعتماد {report_name} نهائياً من قبل {admin_name}",
+                    related_id=str(report_id),
+                    related_type=f'{report_type}_REPORT'
+                )
+                db.session.add(notification)
+            
+            db.session.commit()
+            return True, "تم اعتماد التقرير بنجاح"
+            
+        except Exception as e:
+            db.session.rollback()
+            return False, f"خطأ في اعتماد التقرير: {str(e)}"
+    
+    @staticmethod
+    def admin_reject(
+        report_type: str,
+        report_id: str,
+        admin_user_id: str,
+        reason: str
+    ) -> Tuple[bool, str]:
+        """
+        Admin final rejection: FORWARDED_TO_ADMIN → REJECTED_BY_ADMIN
+        Notifies both submitter and PM with reason
+        """
+        if not reason or not reason.strip():
+            return False, "يجب إدخال سبب الرفض"
+        
+        report = ReportReviewService.get_admin_report(report_type, report_id, admin_user_id)
+        
+        if not report:
+            return False, "تعذر العثور على التقرير أو ليس لديك صلاحية الوصول"
+        
+        if report.status != 'FORWARDED_TO_ADMIN':
+            return False, f"التقرير في حالة {report.status} ولا يمكن رفضه من الإدارة العامة"
+        
+        try:
+            # Update report status
+            previous_status = report.status
+            report.status = 'REJECTED_BY_ADMIN'
+            
+            # Create audit log
+            audit = ReportReview(
+                report_type=report_type,
+                report_id=str(report_id),
+                action='ADMIN_REJECT',
+                previous_status=previous_status,
+                new_status='REJECTED_BY_ADMIN',
+                reviewed_by_user_id=admin_user_id,
+                review_notes=reason,
+                project_id=report.project_id
+            )
+            db.session.add(audit)
+            
+            # Notify submitter
+            submitter_id = ReportReviewService._get_submitter_id(report, report_type)
+            if submitter_id:
+                report_name = ReportReviewService.REPORT_TYPE_NAMES.get(report_type, 'التقرير')
+                admin_user = User.query.get(admin_user_id)
+                admin_name = admin_user.username if admin_user else "الإدارة العامة"
+                
+                notification = Notification(
+                    user_id=submitter_id,
+                    type=NotificationType.REPORT_REJECTED,
+                    title=f"تم رفض التقرير - {report_name}",
+                    message=f"تم رفض {report_name} من قبل {admin_name}: {reason}",
+                    related_id=str(report_id),
+                    related_type=f'{report_type}_REPORT'
+                )
+                db.session.add(notification)
+            
+            # Notify PM
+            if report.reviewed_by_user_id:
+                report_name = ReportReviewService.REPORT_TYPE_NAMES.get(report_type, 'التقرير')
+                admin_user = User.query.get(admin_user_id)
+                admin_name = admin_user.username if admin_user else "الإدارة العامة"
+                
+                notification = Notification(
+                    user_id=str(report.reviewed_by_user_id),
+                    type=NotificationType.REPORT_REJECTED,
+                    title=f"تم رفض التقرير - {report_name}",
+                    message=f"تم رفض {report_name} من قبل {admin_name}: {reason}",
+                    related_id=str(report_id),
+                    related_type=f'{report_type}_REPORT'
+                )
+                db.session.add(notification)
+            
+            db.session.commit()
+            return True, "تم رفض التقرير بنجاح"
+            
+        except Exception as e:
+            db.session.rollback()
+            return False, f"خطأ في رفض التقرير: {str(e)}"

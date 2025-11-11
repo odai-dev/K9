@@ -34,6 +34,8 @@ class ReportStatus(Enum):
     APPROVED_BY_PM = "APPROVED_BY_PM"      # معتمد من قبل مدير المشروع
     FORWARDED_TO_ADMIN = "FORWARDED_TO_ADMIN"  # تم إرساله للمسؤول العام
     REJECTED_BY_PM = "REJECTED_BY_PM"      # مرفوض من قبل مدير المشروع
+    APPROVED_BY_ADMIN = "APPROVED_BY_ADMIN"  # معتمد من الإدارة العامة
+    REJECTED_BY_ADMIN = "REJECTED_BY_ADMIN"  # مرفوض من الإدارة العامة
 
 class HealthCheckStatus(Enum):
     """حالة الفحص الصحي"""

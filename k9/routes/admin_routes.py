@@ -1178,3 +1178,88 @@ def get_unread_count():
         str(current_user.id), unread_only=True
     ))
     return jsonify({'count': count})
+
+
+@admin_bp.route('/reports/pending')
+@login_required
+@admin_required
+def admin_pending_reports():
+    """صفحة التقارير بانتظار مراجعة الإدارة العامة"""
+    from k9.services.report_review_service import ReportReviewService
+    
+    reports = ReportReviewService.get_forwarded_reports(str(current_user.id))
+    
+    total_count = sum(len(reports_list) for reports_list in reports.values())
+    
+    return render_template('admin/pending_reports.html',
+                         page_title='التقارير بانتظار المراجعة',
+                         reports=reports,
+                         total_count=total_count)
+
+
+@admin_bp.route('/reports/<report_type>/<report_id>/approve', methods=['POST'])
+@login_required
+@admin_required
+def admin_approve_report(report_type, report_id):
+    """اعتماد تقرير من الإدارة العامة"""
+    from k9.services.report_review_service import ReportReviewService
+    
+    data = request.get_json() or {}
+    notes = data.get('notes', '').strip()
+    
+    success, message = ReportReviewService.admin_approve(
+        report_type=report_type.upper(),
+        report_id=report_id,
+        admin_user_id=str(current_user.id),
+        notes=notes if notes else None
+    )
+    
+    if success:
+        return jsonify({'success': True, 'message': message})
+    else:
+        return jsonify({'success': False, 'error': message}), 400
+
+
+@admin_bp.route('/reports/<report_type>/<report_id>/reject', methods=['POST'])
+@login_required
+@admin_required
+def admin_reject_report(report_type, report_id):
+    """رفض تقرير من الإدارة العامة"""
+    from k9.services.report_review_service import ReportReviewService
+    
+    data = request.get_json() or {}
+    reason = data.get('reason', '').strip()
+    
+    if not reason:
+        return jsonify({'success': False, 'error': 'يجب إدخال سبب الرفض'}), 400
+    
+    success, message = ReportReviewService.admin_reject(
+        report_type=report_type.upper(),
+        report_id=report_id,
+        admin_user_id=str(current_user.id),
+        reason=reason
+    )
+    
+    if success:
+        return jsonify({'success': True, 'message': message})
+    else:
+        return jsonify({'success': False, 'error': message}), 400
+
+
+@admin_bp.route('/api/reports/pending/count')
+@login_required
+@admin_required
+def get_pending_reports_count():
+    """API: الحصول على عدد التقارير بانتظار المراجعة"""
+    from k9.services.report_review_service import ReportReviewService
+    
+    reports = ReportReviewService.get_forwarded_reports(str(current_user.id))
+    total_count = sum(len(reports_list) for reports_list in reports.values())
+    
+    return jsonify({
+        'total': total_count,
+        'handler': len(reports.get('HANDLER', [])),
+        'trainer': len(reports.get('TRAINER', [])),
+        'vet': len(reports.get('VET', [])),
+        'caretaker': len(reports.get('CARETAKER', []))
+    })
