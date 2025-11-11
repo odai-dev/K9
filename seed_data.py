@@ -33,10 +33,7 @@ from k9.models.models_handler_daily import (
     HealthCheckStatus, TrainingType, BehaviorType, IncidentType,
     StoolColor, StoolShape, NotificationType, TaskStatus, TaskPriority
 )
-from k9.models.models_attendance_reporting import (
-    ProjectAttendanceReporting, AttendanceDayLeave, PMDailyEvaluation,
-    AttendanceStatus as AttReportStatus, LeaveType
-)
+# Attendance reporting models removed - now using DailySchedule system
 from werkzeug.security import generate_password_hash
 
 
@@ -109,9 +106,7 @@ class DataSeeder:
             db.session.query(HandlerReport).delete()
             db.session.query(DailyScheduleItem).delete()
             db.session.query(DailySchedule).delete()
-            db.session.query(PMDailyEvaluation).delete()
-            db.session.query(AttendanceDayLeave).delete()
-            db.session.query(ProjectAttendanceReporting).delete()
+            # Legacy attendance reporting tables removed
             db.session.query(CaretakerDailyLog).delete()
             db.session.query(BreedingTrainingActivity).delete()
             db.session.query(CleaningLog).delete()

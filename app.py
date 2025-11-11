@@ -116,7 +116,6 @@ login_manager.login_message_category = 'info'
 with app.app_context():
     # Make sure to import the models here or their tables won't be created
     import k9.models.models  # noqa: F401
-    import k9.models.models_attendance_reporting  # noqa: F401
     import k9.models.models_handler_daily  # noqa: F401
 
     # Bootstrap database on fresh import - creates all tables
@@ -285,11 +284,7 @@ with app.app_context():
     app.register_blueprint(api_bp)
     app.register_blueprint(admin_bp)
     
-    # Register attendance reporting blueprints
-    from k9.routes.attendance_reporting_routes import bp as reports_attendance_ui_bp
-    from k9.api.attendance_reporting_api import bp as reports_attendance_api_bp
-    app.register_blueprint(reports_attendance_ui_bp, url_prefix='/reports/attendance')
-    app.register_blueprint(reports_attendance_api_bp, url_prefix='/api/reports/attendance')
+    # Attendance reporting blueprints removed - now using DailySchedule system only
     
     # Register PM Daily Report blueprints
     from k9.routes.pm_daily_routes import bp as pm_daily_ui_bp

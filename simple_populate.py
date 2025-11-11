@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app import app, db
 from k9.models.models import *
-from k9.models.models_attendance_reporting import *
+# models_attendance_reporting removed - now using DailySchedule system
 
 def create_test_data():
     """Create test data in smaller, safer batches"""
@@ -210,21 +210,8 @@ def create_test_data():
                 
                 db.session.commit()
                 
-                # Create attendance records
-                for i in range(20):
-                    attendance = ProjectAttendanceReporting()
-                    attendance.date = date.today() - timedelta(days=random.randint(1, 10))
-                    attendance.project_id = random.choice(projects).id
-                    attendance.employee_id = random.choice(employees).id
-                    attendance.group_no = 1
-                    attendance.seq_no = i % 8 + 1
-                    attendance.check_in_time = time(8, random.randint(0, 30))
-                    attendance.check_out_time = time(16, random.randint(0, 30))
-                    attendance.status = AttendanceStatus.PRESENT
-                    db.session.add(attendance)
-                
-                db.session.commit()
-                print("✓ Created attendance data")
+                # Legacy attendance reporting removed - now using DailySchedule system
+                print("✓ Created shifts (legacy attendance reporting removed)")
             
             print("\n" + "="*60)
             print("✅ Test data population completed successfully!")
