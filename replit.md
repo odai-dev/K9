@@ -25,7 +25,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Feature Specifications
 - **Core Management**: Tracks K9 lifecycle, employee information, training records, veterinary care, and breeding production.
-- **Project Operations**: Manages project lifecycle, resource allocation, incident logging, and performance evaluations.
+- **Project Operations**: Manages project lifecycle, resource allocation, incident logging, and performance evaluations. Includes full project editing capabilities with integrated location management system allowing multiple locations per project with add/edit/delete operations.
 - **Attendance System**: Comprehensive tracking with shift management, scheduling, project-specific recording, and Arabic RTL PDF export. Includes an advanced Unified Matrix Attendance System.
 - **Ultra-Granular Permission System**: Provides `GENERAL_ADMIN` users with control over `PROJECT_MANAGER` access at a subsection level, featuring 79 distinct permission combinations, audit logging, and an intuitive admin dashboard.
 - **Excel Export System**: Comprehensive XLSX export functionality for reports with Arabic RTL support.
