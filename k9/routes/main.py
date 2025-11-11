@@ -1536,6 +1536,93 @@ def project_add():
     
     return render_template('projects/add.html', managers=managers)
 
+@main_bp.route('/projects/<project_id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_or_pm_required
+def project_edit(project_id):
+    """Edit project details"""
+    try:
+        project = Project.query.get_or_404(project_id)
+    except ValueError:
+        flash('معرف المشروع غير صحيح', 'error')
+        return redirect(url_for('main.projects'))
+    
+    # Check permissions
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = current_user.employee
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
+        flash('غير مسموح لك بتعديل هذا المشروع', 'error')
+        return redirect(url_for('main.projects'))
+    
+    if request.method == 'POST':
+        try:
+            # Update project details
+            project.name = request.form['name']
+            project.description = request.form.get('description')
+            project.main_task = request.form.get('main_task')
+            project.start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d').date()
+            project.expected_completion_date = datetime.strptime(request.form['expected_completion_date'], '%Y-%m-%d').date() if request.form.get('expected_completion_date') else None
+            project.location = request.form.get('location')
+            project.mission_type = request.form.get('mission_type')
+            project.priority = request.form.get('priority', 'MEDIUM')
+            project.sector = request.form.get('sector')
+            
+            # Update project manager if admin is editing
+            if current_user.role == UserRole.GENERAL_ADMIN:
+                manager_id = request.form.get('manager_id')
+                if manager_id:
+                    employee = Employee.query.get(manager_id)
+                    if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
+                        # Validate one-project-per-manager constraint
+                        can_assign, error_msg = validate_project_manager_assignment(employee.id, project)
+                        if not can_assign:
+                            flash(error_msg, 'error')
+                            raise Exception("Project manager assignment validation failed")
+                        project.project_manager_id = employee.id
+                    else:
+                        flash('الموظف المحدد ليس مدير مشروع صالح', 'error')
+                        raise Exception("Invalid project manager")
+                elif request.form.get('remove_manager') == 'yes':
+                    project.project_manager_id = None
+            
+            db.session.commit()
+            log_audit(current_user.id, AuditAction.UPDATE, 'Project', project.id, f'تحديث المشروع: {project.name}', None, {'name': project.name})
+            flash('تم تحديث المشروع بنجاح', 'success')
+            return redirect(url_for('main.project_edit', project_id=project.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء تحديث المشروع: {str(e)}', 'error')
+    
+    # Get project locations
+    locations = ProjectLocation.query.filter_by(project_id=project.id).all()
+    
+    # Get available managers for admin
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        # Get only project managers who are NOT assigned to any active/planned projects
+        # OR the current project manager
+        subquery = db.session.query(Project.project_manager_id).filter(
+            Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED]),
+            Project.id != project.id  # Exclude current project
+        ).subquery()
+        
+        managers = Employee.query.filter(
+            Employee.role == EmployeeRole.PROJECT_MANAGER,
+            Employee.is_active == True,
+            ~Employee.id.in_(db.session.query(subquery.c.project_manager_id))
+        ).all()
+        
+        # Add current project manager if exists
+        if project.project_manager and project.project_manager not in managers:
+            managers.insert(0, project.project_manager)
+    else:
+        managers = []
+    
+    return render_template('projects/edit.html', project=project, locations=locations, managers=managers)
+
 # Project Dashboard Route (without attendance statistics)
 @main_bp.route('/projects/<project_id>/dashboard')
 @login_required
