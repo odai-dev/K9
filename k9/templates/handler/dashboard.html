@@ -204,6 +204,7 @@
                                 <tr>
                                     <th>الوردية</th>
                                     <th>الكلب</th>
+                                    <th>الموقع</th>
                                     <th>الحالة</th>
                                     <th>تقرير الفترة</th>
                                 </tr>
@@ -227,6 +228,14 @@
                                             <i class="fas fa-dog me-1"></i>
                                             {{ item.dog.name }}
                                             <small class="text-muted d-block">{{ item.dog.code }}</small>
+                                        {% else %}
+                                            <span class="text-muted">غير محدد</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.location %}
+                                            <i class="fas fa-map-marker-alt me-1"></i>
+                                            {{ item.location.name }}
                                         {% else %}
                                             <span class="text-muted">غير محدد</span>
                                         {% endif %}
@@ -306,11 +315,21 @@
                                     </div>
                                 </div>
                                 
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <i class="fas fa-dog me-1 text-success"></i>
                                     <strong>الكلب:</strong>
                                     {% if item.dog %}
                                         {{ item.dog.name }} <small class="text-muted">({{ item.dog.code }})</small>
+                                    {% else %}
+                                        <span class="text-muted">غير محدد</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <i class="fas fa-map-marker-alt me-1 text-warning"></i>
+                                    <strong>الموقع:</strong>
+                                    {% if item.location %}
+                                        {{ item.location.name }}
                                     {% else %}
                                         <span class="text-muted">غير محدد</span>
                                     {% endif %}
