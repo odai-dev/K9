@@ -190,11 +190,11 @@
                 <div class="row">
                     <div class="col-md-9">
                         <div class="row">
-                            <div class="col-md-4 mb-2">
+                            <div class="col-md-3 mb-2">
                                 <strong><i class="fas fa-user me-2 text-primary"></i>السائس:</strong>
                                 <div class="mt-1">{{ item.handler.full_name if item.handler else 'غير محدد' }}</div>
                             </div>
-                            <div class="col-md-4 mb-2">
+                            <div class="col-md-3 mb-2">
                                 <strong><i class="fas fa-dog me-2 text-primary"></i>الكلب:</strong>
                                 <div class="mt-1">
                                     {% if item.dog %}
@@ -204,9 +204,13 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            <div class="col-md-4 mb-2">
+                            <div class="col-md-3 mb-2">
                                 <strong><i class="fas fa-clock me-2 text-primary"></i>الفترة:</strong>
                                 <div class="mt-1">{{ item.shift.name if item.shift else 'غير محدد' }}</div>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <strong><i class="fas fa-map-marker-alt me-2 text-primary"></i>الموقع:</strong>
+                                <div class="mt-1">{{ item.location.name if item.location else 'غير محدد' }}</div>
                             </div>
                         </div>
                         

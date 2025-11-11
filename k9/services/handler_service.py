@@ -43,13 +43,14 @@ class DailyScheduleService:
     
     @staticmethod
     def add_schedule_item(schedule_id: str, handler_user_id: str, dog_id: Optional[str], 
-                         shift_id: Optional[str]) -> tuple:
+                         shift_id: Optional[str], location_id: Optional[str] = None) -> tuple:
         """إضافة عنصر للجدول"""
         item = DailyScheduleItem(  # type: ignore
             daily_schedule_id=schedule_id,
             handler_user_id=handler_user_id,
             dog_id=dog_id,
             shift_id=shift_id,
+            location_id=location_id,
             status=ScheduleItemStatus.PLANNED
         )
         db.session.add(item)

@@ -155,7 +155,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label fw-bold">
                         <i class="fas fa-clock me-1"></i>
                         الفترة
@@ -164,6 +164,18 @@
                         <option value="">اختر الفترة (اختياري)</option>
                         {% for shift in shifts %}
                         <option value="{{ shift.id }}">{{ shift.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-map-marker-alt me-1"></i>
+                        الموقع
+                    </label>
+                    <select name="location_id" class="form-select">
+                        <option value="">اختر الموقع (اختياري)</option>
+                        {% for location in locations %}
+                        <option value="{{ location.id }}">{{ location.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -207,6 +219,12 @@
                         <div class="mb-2">
                             <strong><i class="fas fa-clock me-1"></i>الفترة:</strong><br>
                             {{ item.shift.name if item.shift else 'غير محدد' }}
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="mb-2">
+                            <strong><i class="fas fa-map-marker-alt me-1"></i>الموقع:</strong><br>
+                            {{ item.location.name if item.location else 'غير محدد' }}
                         </div>
                     </div>
                     <div class="col-md-2">

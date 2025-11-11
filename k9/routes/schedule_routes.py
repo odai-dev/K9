@@ -106,12 +106,14 @@ def edit(schedule_id):
             handler_user_id = request.form.get('handler_user_id')
             dog_id = request.form.get('dog_id') or None
             shift_id = request.form.get('shift_id') or None
+            location_id = request.form.get('location_id') or None
             
             item, error = DailyScheduleService.add_schedule_item(
                 schedule_id=schedule_id,
                 handler_user_id=handler_user_id,
                 dog_id=dog_id,
-                shift_id=shift_id
+                shift_id=shift_id,
+                location_id=location_id
             )
             
             if error:
@@ -148,7 +150,7 @@ def edit(schedule_id):
         return redirect(url_for('schedule.edit', schedule_id=schedule_id))
     
     # GET request
-    from k9.models.models import UserRole
+    from k9.models.models import UserRole, ProjectLocation
     # Get handler users for the project
     handlers = User.query.filter_by(
         role=UserRole.HANDLER,
@@ -158,13 +160,15 @@ def edit(schedule_id):
     
     dogs = Dog.query.filter_by(current_status='ACTIVE').all()
     shifts = Shift.query.filter_by(is_active=True).all()
+    locations = ProjectLocation.query.filter_by(project_id=schedule.project_id).all()
     
     return render_template('schedule/edit.html',
                          page_title='تعديل الجدول اليومي',
                          schedule=schedule,
                          handlers=handlers,
                          dogs=dogs,
-                         shifts=shifts)
+                         shifts=shifts,
+                         locations=locations)
 
 
 @schedule_bp.route('/<schedule_id>')

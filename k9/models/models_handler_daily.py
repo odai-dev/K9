@@ -137,6 +137,7 @@ class DailyScheduleItem(db.Model):
     handler_user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'), nullable=False)
     dog_id = db.Column(get_uuid_column(), db.ForeignKey('dog.id'), nullable=True)
     shift_id = db.Column(get_uuid_column(), db.ForeignKey('shift.id'), nullable=True)
+    location_id = db.Column(get_uuid_column(), db.ForeignKey('project_location.id'), nullable=True)
     
     # Status
     status = db.Column(db.Enum(ScheduleItemStatus), nullable=False, default=ScheduleItemStatus.PLANNED)
@@ -155,6 +156,7 @@ class DailyScheduleItem(db.Model):
     replacement_handler = db.relationship('User', foreign_keys=[replacement_handler_id], backref='replacement_schedule_items')
     dog = db.relationship('Dog', backref='schedule_items')
     shift = db.relationship('Shift', backref='schedule_items')
+    location = db.relationship('ProjectLocation', backref='schedule_items')
     
     __table_args__ = (
         db.Index('idx_schedule_item_handler', 'handler_user_id'),

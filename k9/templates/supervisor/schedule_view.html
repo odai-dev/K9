@@ -139,6 +139,7 @@
                                 <th>السائس</th>
                                 <th>الكلب</th>
                                 <th>الوردية</th>
+                                <th>الموقع</th>
                                 <th>حالة التقرير</th>
                                 <th>الإجراءات</th>
                             </tr>
@@ -172,6 +173,14 @@
                                             {{ item.shift.start_time.strftime('%H:%M') }} - 
                                             {{ item.shift.end_time.strftime('%H:%M') }}
                                         </small>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.location %}
+                                        <i class="fas fa-map-marker-alt me-2"></i>
+                                        {{ item.location.name }}
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}

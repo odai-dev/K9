@@ -107,14 +107,17 @@ def schedule_create():
         handler_ids = request.form.getlist('handler_ids[]')
         dog_ids = request.form.getlist('dog_ids[]')
         shift_ids = request.form.getlist('shift_ids[]')
+        location_ids = request.form.getlist('location_ids[]')
         
         for i in range(len(handler_ids)):
             if handler_ids[i] and dog_ids[i] and shift_ids[i]:
+                location_id = location_ids[i] if i < len(location_ids) and location_ids[i] else None
                 item = DailyScheduleItem(
                     daily_schedule_id=schedule.id,
                     handler_user_id=handler_ids[i],
                     dog_id=dog_ids[i],
-                    shift_id=shift_ids[i]
+                    shift_id=shift_ids[i],
+                    location_id=location_id
                 )
                 db.session.add(item)
         
@@ -351,6 +354,28 @@ def get_dogs_by_project(project_id):
                 'code': d.code
             }
             for d in all_dogs
+        ]
+    })
+
+
+@supervisor_bp.route('/api/locations-by-project/<project_id>')
+@login_required
+@admin_or_pm_required
+def get_locations_by_project(project_id):
+    """API: الحصول على المواقع حسب المشروع"""
+    from k9.models.models import ProjectLocation
+    
+    # Get all locations for this project
+    locations = ProjectLocation.query.filter_by(project_id=project_id).all()
+    
+    return jsonify({
+        'locations': [
+            {
+                'id': str(loc.id),
+                'name': loc.name,
+                'description': loc.description
+            }
+            for loc in locations
         ]
     })
 

@@ -113,6 +113,7 @@
 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 let handlers = [];
 let dogs = [];
+let locations = [];
 let shifts = {{ shifts|tojson|safe }};
 let rowCounter = 0;
 
@@ -144,8 +145,19 @@ document.getElementById('projectSelect')?.addEventListener('change', function() 
             dogs = [];
         });
     
-    // Wait for both to complete, then create rows
-    Promise.all([handlersPromise, dogsPromise]).then(() => {
+    const locationsPromise = fetch(`/supervisor/api/locations-by-project/${projectId}`)
+        .then(response => response.json())
+        .then(data => {
+            locations = data.locations;
+            console.log('Loaded locations:', locations.length);
+        })
+        .catch(error => {
+            console.error('Error loading locations:', error);
+            locations = [];
+        });
+    
+    // Wait for all to complete, then create rows
+    Promise.all([handlersPromise, dogsPromise, locationsPromise]).then(() => {
         // Clear container and add first row
         document.getElementById('scheduleItemsContainer').innerHTML = '';
         addScheduleRow();
@@ -161,19 +173,19 @@ function addScheduleRow() {
     row.id = rowId;
     row.innerHTML = `
         <div class="row align-items-end">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label">السائس</label>
                 <select name="handler_ids[]" class="form-select handler-select" required>
                     <option value="">اختر السائس</option>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label">الكلب</label>
                 <select name="dog_ids[]" class="form-select dog-select" required>
                     <option value="">اختر الكلب</option>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label">الوردية</label>
                 <select name="shift_ids[]" class="form-select" required>
                     <option value="">اختر الوردية</option>
@@ -182,6 +194,12 @@ function addScheduleRow() {
                             ${shift.name} (${shift.start_time} - ${shift.end_time})
                         </option>
                     `).join('')}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">الموقع</label>
+                <select name="location_ids[]" class="form-select location-select">
+                    <option value="">اختر الموقع (اختياري)</option>
                 </select>
             </div>
             <div class="col-md-2">
@@ -194,9 +212,10 @@ function addScheduleRow() {
     
     container.appendChild(row);
     
-    // Populate handler and dog selects
+    // Populate handler, dog, and location selects
     const handlerSelect = row.querySelector('.handler-select');
     const dogSelect = row.querySelector('.dog-select');
+    const locationSelect = row.querySelector('.location-select');
     
     handlers.forEach(handler => {
         const option = document.createElement('option');
@@ -213,6 +232,13 @@ function addScheduleRow() {
         option.value = dog.id;
         option.textContent = `${dog.name} (${dog.code})`;
         dogSelect.appendChild(option);
+    });
+    
+    locations.forEach(location => {
+        const option = document.createElement('option');
+        option.value = location.id;
+        option.textContent = location.name;
+        locationSelect.appendChild(option);
     });
     
     // Auto-select dog when handler is selected
