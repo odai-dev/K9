@@ -4038,12 +4038,9 @@ def unified_attendance():
 
 @main_bp.route('/attendance/shifts')
 @login_required
+@admin_or_pm_required
 def attendance_shifts():
     """Manage standalone shifts"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
-        flash('ليس لديك صلاحية للوصول إلى إدارة الورديات', 'error')
-        return redirect(url_for('main.dashboard'))
-    
     shifts = Shift.query.order_by(Shift.start_time).all()
     response = make_response(render_template('attendance/shifts.html', shifts=shifts))
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
@@ -4053,12 +4050,9 @@ def attendance_shifts():
 
 @main_bp.route('/attendance/shifts/add', methods=['GET', 'POST'])
 @login_required
+@admin_or_pm_required
 def attendance_shifts_add():
     """Add new shift"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
-        flash('ليس لديك صلاحية لإضافة ورديات', 'error')
-        return redirect(url_for('main.dashboard'))
-    
     if request.method == 'POST':
         try:
             shift = Shift(
@@ -4085,12 +4079,9 @@ def attendance_shifts_add():
 
 @main_bp.route('/attendance/shifts/<shift_id>/edit', methods=['GET', 'POST'])
 @login_required
+@admin_or_pm_required
 def attendance_shifts_edit(shift_id):
     """Edit shift"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
-        flash('ليس لديك صلاحية لتعديل الورديات', 'error')
-        return redirect(url_for('main.dashboard'))
-    
     shift = Shift.query.get_or_404(shift_id)
     
     if request.method == 'POST':
