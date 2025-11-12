@@ -10,7 +10,8 @@ from k9.utils.permission_decorators import admin_required
 from k9.utils.permission_utils import (
     PERMISSION_STRUCTURE, get_user_permissions_matrix, update_permission, 
     bulk_update_permissions, get_project_managers, get_all_projects,
-    initialize_default_permissions, export_permissions_matrix
+    initialize_default_permissions, export_permissions_matrix,
+    get_users_by_project, get_user_permissions_by_project
 )
 from k9.utils.security_utils import PasswordValidator, SecurityHelper
 from k9.models.models import User, Project, SubPermission, PermissionAuditLog, PermissionType, UserRole
@@ -137,12 +138,11 @@ def update_user_permission():
     old_value = existing_perm.is_granted if existing_perm else False
     new_value = data['is_granted']
     
-    # Create permission key for the simple function signature
-    permission_key = f"{data['section']}.{data['subsection']}.{permission_type.value}"
-    
     success = update_permission(
         user_id=user.id,
-        permission_key=permission_key,
+        section=data['section'],
+        subsection=data['subsection'],
+        permission_type=permission_type,
         granted=new_value,
         updated_by=current_user.id,
         project_id=project_id
@@ -257,6 +257,101 @@ def initialize_user_permissions(user_id):
     )
     
     return jsonify({'success': True, 'message': 'تم تهيئة الصلاحيات الافتراضية بنجاح'})
+
+@admin_bp.route('/permissions/projects')
+@login_required
+@admin_required
+def get_projects_list():
+    """Get list of all projects for permissions management"""
+    projects = Project.query.all()
+    
+    projects_data = [{
+        'id': str(project.id),
+        'name': project.name,
+        'code': project.code,
+        'status': project.status.value if hasattr(project.status, 'value') else str(project.status),
+        'employees_count': len(project.assigned_employees) if project.assigned_employees else 0
+    } for project in projects]
+    
+    return jsonify({'projects': projects_data})
+
+@admin_bp.route('/permissions/users/<project_id>')
+@login_required
+@admin_required  
+def get_project_users(project_id):
+    """Get list of users assigned to a specific project"""
+    try:
+        users = get_users_by_project(project_id)
+        
+        users_data = [{
+            'id': str(user.id),
+            'username': user.username,
+            'full_name': user.full_name,
+            'email': user.email,
+            'role': user.role.value if hasattr(user.role, 'value') else str(user.role),
+            'employee_name': user.employee.name if user.employee else '',
+            'employee_id': user.employee.employee_id if user.employee else ''
+        } for user in users]
+        
+        return jsonify({'users': users_data})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@admin_bp.route('/permissions/matrix/<user_id>/<project_id>')
+@login_required
+@admin_required
+def get_permissions_matrix(user_id, project_id):
+    """Get complete permissions matrix for a user in a project"""
+    try:
+        from k9.utils.permission_registry import PERMISSION_REGISTRY, get_all_permissions_flat
+        
+        user = User.query.get_or_404(user_id)
+        project = Project.query.get_or_404(project_id)
+        
+        all_permissions = get_all_permissions_flat()
+        
+        existing_permissions = SubPermission.query.filter_by(
+            user_id=user_id,
+            project_id=project_id
+        ).all()
+        
+        perm_dict = {}
+        for perm in existing_permissions:
+            key = f"{perm.section}.{perm.subsection}.{perm.permission_type.value}"
+            perm_dict[key] = perm.is_granted
+        
+        permissions_data = []
+        for perm in all_permissions:
+            subsection_key = perm['subsection'] if perm['subsection'] else ''
+            perm_type_value = perm['permission_type'].value if hasattr(perm['permission_type'], 'value') else str(perm['permission_type'])
+            key = f"{perm['section']}.{subsection_key}.{perm_type_value}"
+            
+            permissions_data.append({
+                'section': perm['section'],
+                'subsection': subsection_key,
+                'permission_key': perm['permission_key'],
+                'permission_type': perm_type_value,
+                'name_ar': perm['name_ar'],
+                'name_en': perm['name_en'],
+                'is_granted': perm_dict.get(key, False)
+            })
+        
+        return jsonify({
+            'user': {
+                'id': str(user.id),
+                'username': user.username,
+                'full_name': user.full_name
+            },
+            'project': {
+                'id': str(project.id),
+                'name': project.name,
+                'code': project.code
+            },
+            'permissions': permissions_data
+        })
+    except Exception as e:
+        logger.error(f"Error getting permissions matrix: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @admin_bp.route('/permissions/audit')
 @login_required
