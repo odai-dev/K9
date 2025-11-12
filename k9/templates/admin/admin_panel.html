@@ -237,8 +237,6 @@
                                         <th>المدير</th>
                                         <th>المشروع</th>
                                         <th>التعيينات</th>
-                                        <th>الورديات</th>
-                                        <th>الحضور</th>
                                         <th>التدريب</th>
                                         <th>الحوادث</th>
                                         <th>الأداء</th>
@@ -285,12 +283,6 @@
                                                     <i class="fas fa-{{ 'check text-success' if (not permission or permission.can_manage_assignments) else 'times text-danger' }}"></i>
                                                 </td>
                                                 <td class="text-center">
-                                                    <i class="fas fa-{{ 'check text-success' if (not permission or permission.can_manage_shifts) else 'times text-danger' }}"></i>
-                                                </td>
-                                                <td class="text-center">
-                                                    <i class="fas fa-{{ 'check text-success' if (not permission or permission.can_manage_attendance) else 'times text-danger' }}"></i>
-                                                </td>
-                                                <td class="text-center">
                                                     <i class="fas fa-{{ 'check text-success' if (not permission or permission.can_manage_training) else 'times text-danger' }}"></i>
                                                 </td>
                                                 <td class="text-center">
@@ -316,8 +308,6 @@
                                                             data-project-name="{{ project_data.name }}"
                                                             {% if permission %}
                                                             data-assignments="{{ permission.can_manage_assignments|lower }}"
-                                                            data-shifts="{{ permission.can_manage_shifts|lower }}"
-                                                            data-attendance="{{ permission.can_manage_attendance|lower }}"
                                                             data-training="{{ permission.can_manage_training|lower }}"
                                                             data-incidents="{{ permission.can_manage_incidents|lower }}"
                                                             data-performance="{{ permission.can_manage_performance|lower }}"
@@ -325,8 +315,6 @@
                                                             data-production="{{ permission.can_view_production|lower }}"
                                                             {% else %}
                                                             data-assignments="true"
-                                                            data-shifts="true"
-                                                            data-attendance="true"
                                                             data-training="true"
                                                             data-incidents="true"
                                                             data-performance="true"
@@ -689,24 +677,6 @@
                             </div>
                             
                             <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" name="can_manage_shifts" id="can_manage_shifts">
-                                <label class="form-check-label" for="can_manage_shifts">
-                                    <i class="fas fa-clock"></i>
-                                    إدارة الورديات
-                                </label>
-                                <small class="form-text text-muted d-block">إنشاء وتعديل ورديات العمل</small>
-                            </div>
-                            
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" name="can_manage_attendance" id="can_manage_attendance">
-                                <label class="form-check-label" for="can_manage_attendance">
-                                    <i class="fas fa-check-square"></i>
-                                    إدارة الحضور
-                                </label>
-                                <small class="form-text text-muted d-block">تسجيل حضور الموظفين والكلاب</small>
-                            </div>
-                            
-                            <div class="form-check mb-3">
                                 <input class="form-check-input" type="checkbox" name="can_manage_training" id="can_manage_training">
                                 <label class="form-check-label" for="can_manage_training">
                                     <i class="fas fa-dumbbell"></i>
@@ -799,8 +769,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Set checkbox states
         document.getElementById('can_manage_assignments').checked = button.getAttribute('data-assignments') === 'true';
-        document.getElementById('can_manage_shifts').checked = button.getAttribute('data-shifts') === 'true';
-        document.getElementById('can_manage_attendance').checked = button.getAttribute('data-attendance') === 'true';
         document.getElementById('can_manage_training').checked = button.getAttribute('data-training') === 'true';
         document.getElementById('can_manage_incidents').checked = button.getAttribute('data-incidents') === 'true';
         document.getElementById('can_manage_performance').checked = button.getAttribute('data-performance') === 'true';

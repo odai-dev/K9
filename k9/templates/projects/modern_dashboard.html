@@ -143,11 +143,6 @@
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="attendance-tab" data-bs-toggle="pill" data-bs-target="#attendance" type="button" role="tab">
-                        <i class="fas fa-calendar-check me-2"></i>الحضور
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
                     <button class="nav-link" id="operations-tab" data-bs-toggle="pill" data-bs-target="#operations" type="button" role="tab">
                         <i class="fas fa-cogs me-2"></i>العمليات
                     </button>
@@ -416,44 +411,6 @@
             </div>
         </div>
 
-        <!-- Attendance Tab -->
-        <div class="tab-pane fade" id="attendance" role="tabpanel">
-            <div class="row">
-                <div class="col-12">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">
-                                <i class="fas fa-calendar-check me-2"></i>إدارة الحضور
-                            </h5>
-                            <div class="btn-group">
-                                <a href="{{ url_for('main.project_attendance', project_id=project.id) }}" class="btn btn-outline-primary">
-                                    <i class="fas fa-calendar-alt me-1"></i>عرض الحضور
-                                </a>
-                                <a href="{{ url_for('main.project_shifts', project_id=project.id) }}" class="btn btn-outline-info">
-                                    <i class="fas fa-clock me-1"></i>إدارة الورديات
-                                </a>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="text-center">
-                                <i class="fas fa-calendar-check fa-3x text-muted mb-3"></i>
-                                <h5>نظام إدارة الحضور</h5>
-                                <p class="text-muted">قم بإدارة حضور الموظفين والكلاب للمشروع من خلال النظام المتطور</p>
-                                <div class="d-flex gap-2 justify-content-center">
-                                    <a href="{{ url_for('main.project_attendance', project_id=project.id) }}" class="btn btn-primary">
-                                        <i class="fas fa-plus me-2"></i>تسجيل حضور
-                                    </a>
-                                    <a href="{{ url_for('main.project_attendance', project_id=project.id) }}" class="btn btn-outline-primary">
-                                        <i class="fas fa-list me-2"></i>سجل الحضور
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Operations Tab -->
         <div class="tab-pane fade" id="operations" role="tabpanel">
             <div class="row">
@@ -620,13 +577,6 @@
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <div class="d-grid">
-                                        <button class="btn btn-outline-primary" onclick="generateReport('attendance')">
-                                            <i class="fas fa-calendar-check me-2"></i>تقرير الحضور
-                                        </button>
-                                    </div>
-                                </div>
                                 <div class="col-md-4 mb-3">
                                     <div class="d-grid">
                                         <button class="btn btn-outline-warning" onclick="generateReport('incidents')">

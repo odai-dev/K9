@@ -13,10 +13,9 @@ from uuid import uuid4
 from app import app, db
 from k9.models.models import (
     User, Dog, Employee, TrainingSession, VeterinaryVisit, ProductionCycle,
-    Project, Incident, PerformanceEvaluation, AttendanceRecord,
+    Project, Incident, PerformanceEvaluation,
     DogMaturity, HeatCycle, MatingRecord, PregnancyRecord, DeliveryRecord, PuppyRecord,
-    ProjectShift, ProjectShiftAssignment, ProjectAttendance,
-    AttendanceDay, Shift, ShiftAssignment, Attendance,
+    Shift,
     FeedingLog, DailyCheckupLog, ExcretionLog, GroomingLog, DewormingLog, CleaningLog,
     BreedingTrainingActivity, CaretakerDailyLog, BackupSettings,
     UserRole, EmployeeRole, DogStatus, DogGender, TrainingCategory,
@@ -115,20 +114,13 @@ class DataSeeder:
             db.session.query(ExcretionLog).delete()
             db.session.query(DailyCheckupLog).delete()
             db.session.query(FeedingLog).delete()
-            db.session.query(Attendance).delete()
-            db.session.query(ShiftAssignment).delete()
             db.session.query(Shift).delete()
-            db.session.query(AttendanceDay).delete()
-            db.session.query(ProjectAttendance).delete()
-            db.session.query(ProjectShiftAssignment).delete()
-            db.session.query(ProjectShift).delete()
             db.session.query(PuppyRecord).delete()
             db.session.query(DeliveryRecord).delete()
             db.session.query(PregnancyRecord).delete()
             db.session.query(MatingRecord).delete()
             db.session.query(HeatCycle).delete()
             db.session.query(DogMaturity).delete()
-            db.session.query(AttendanceRecord).delete()
             db.session.query(PerformanceEvaluation).delete()
             db.session.query(Incident).delete()
             db.session.query(TrainingSession).delete()

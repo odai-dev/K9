@@ -125,11 +125,6 @@
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="attendance-tab" data-bs-toggle="pill" data-bs-target="#attendance" type="button" role="tab">
-                        <i class="fas fa-calendar-check me-2"></i>الحضور
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
                     <button class="nav-link" id="operations-tab" data-bs-toggle="pill" data-bs-target="#operations" type="button" role="tab">
                         <i class="fas fa-cogs me-2"></i>العمليات
                     </button>
@@ -336,27 +331,6 @@
                     </div>
                 </div>
 
-                <!-- Attendance Trends -->
-                <div class="col-lg-6 mb-4">
-                    <div class="card border-0 shadow-sm h-100">
-                        <div class="card-header bg-white">
-                            <h6 class="mb-0">
-                                <i class="fas fa-chart-line me-2"></i>
-                                اتجاهات الحضور (آخر 30 يوم)
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div id="attendanceTrendsChart" style="position: relative; height: 300px;">
-                                <div class="d-flex justify-content-center align-items-center h-100">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">جاري التحميل...</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Monthly Report Trends -->
                 <div class="col-lg-6 mb-4">
                     <div class="card border-0 shadow-sm h-100">
@@ -445,65 +419,6 @@
                             {% else %}
                                 <p class="text-muted text-center">لا يوجد موظفون معينون</p>
                             {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Attendance Tab -->
-        <div class="tab-pane fade" id="attendance" role="tabpanel">
-            <div class="row">
-                <div class="col-12 mb-4">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-info bg-opacity-10">
-                            <h5 class="mb-0">
-                                <i class="fas fa-calendar-check me-2 text-info"></i>إدارة الحضور والغياب
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <div class="card border-0 bg-light h-100">
-                                        <div class="card-body text-center">
-                                            <i class="fas fa-calendar-day fa-3x text-primary mb-3"></i>
-                                            <h6>الحضور اليومي</h6>
-                                            <p class="text-muted small">تسجيل وعرض الحضور اليومي للموظفين</p>
-                                            <a href="{{ url_for('reports_attendance_pm_daily_ui.pm_daily') }}" class="btn btn-primary btn-sm">
-                                                <i class="fas fa-eye me-1"></i>عرض الحضور
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <div class="card border-0 bg-light h-100">
-                                        <div class="card-body text-center">
-                                            <i class="fas fa-calendar-week fa-3x text-success mb-3"></i>
-                                            <h6>التقارير الأسبوعية</h6>
-                                            <p class="text-muted small">عرض تقارير الحضور الأسبوعية</p>
-                                            <a href="{{ url_for('reports_attendance_pm_daily_ui.pm_daily') }}" class="btn btn-success btn-sm">
-                                                <i class="fas fa-chart-bar me-1"></i>التقارير
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <div class="card border-0 bg-light h-100">
-                                        <div class="card-body text-center">
-                                            <i class="fas fa-calendar-alt fa-3x text-warning mb-3"></i>
-                                            <h6>التقارير الشهرية</h6>
-                                            <p class="text-muted small">إحصائيات الحضور الشهرية</p>
-                                            <a href="{{ url_for('reports_attendance_pm_daily_ui.pm_daily') }}" class="btn btn-warning btn-sm">
-                                                <i class="fas fa-chart-line me-1"></i>الإحصائيات
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="alert alert-info mt-3 mb-0">
-                                <i class="fas fa-info-circle me-2"></i>
-                                يمكنك تتبع حضور وغياب الموظفين في مشروعك من خلال نظام الحضور المتكامل
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -836,9 +751,6 @@ async function loadPMCharts() {
     // Load Handler Activity Chart
     await loadHandlerActivityChart();
     
-    // Load Attendance Trends Chart
-    await loadAttendanceTrendsChart();
-    
     // Load Monthly Trends Chart
     await loadMonthlyTrendsChart();
 }
@@ -904,32 +816,6 @@ async function loadHandlerActivityChart() {
     } catch (error) {
         console.error('Error loading handler activity chart:', error);
         ChartUtils.showChartError('handlerActivityChart');
-    }
-}
-
-async function loadAttendanceTrendsChart() {
-    const container = document.getElementById('attendanceTrendsChart');
-    if (!container) return;
-    
-    try {
-        const result = await ChartUtils.loadChartData('/api/dashboard/pm/attendance-trends');
-        
-        if (!result.success || !result.data || !result.data.datasets) {
-            ChartUtils.showChartEmpty('attendanceTrendsChart', 'لا توجد بيانات حضور');
-            return;
-        }
-        
-        const chartData = result.data;
-        container.innerHTML = '<canvas id="attendanceTrendsCanvas"></canvas>';
-        
-        ChartUtils.createLineChart(
-            'attendanceTrendsCanvas',
-            chartData.labels,
-            chartData.datasets
-        );
-    } catch (error) {
-        console.error('Error loading attendance trends chart:', error);
-        ChartUtils.showChartError('attendanceTrendsChart');
     }
 }
 
