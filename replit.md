@@ -6,7 +6,20 @@ This project is a comprehensive, web-based, and mobile-first K9 operations manag
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
-## Recent Security Fixes (November 12, 2025)
+## Recent Updates (November 12, 2025)
+
+### Legacy System Cleanup
+- **Project Attendance Removal**: Removed legacy project_attendance link from projects list page (`k9/templates/projects/modern_list.html`)
+  - System now exclusively uses the modern DailySchedule workflow for handler and dog scheduling
+  - Legacy project attendance routes remain in codebase but are no longer accessible via UI
+  
+### Permission System Updates
+- **Attendance Permission Descriptions**: Updated permission descriptions in `k9/utils/permission_utils.py` to reflect DailySchedule terminology
+  - Permission keys remain as "attendance.*" for backward compatibility
+  - Descriptions now reference "daily schedules" instead of legacy attendance tracking
+  - Changes: "View daily schedules and attendance", "Create and record daily schedules", "Edit daily schedules", "Access daily schedule reports"
+
+### Security Fixes
 - **Critical Security Fix**: Removed incorrect admin access grant for PROJECT_MANAGER role
   - Fixed `_is_admin_mode()` in `k9/utils/permission_utils.py` 
   - Fixed `is_admin()` in `k9/utils/pm_scoping.py`
