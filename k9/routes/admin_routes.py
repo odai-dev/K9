@@ -26,6 +26,9 @@ from datetime import datetime
 import json
 import io
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
