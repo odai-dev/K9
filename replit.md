@@ -6,6 +6,14 @@ This project is a comprehensive, web-based, and mobile-first K9 operations manag
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Security Fixes (November 12, 2025)
+- **Critical Security Fix**: Removed incorrect admin access grant for PROJECT_MANAGER role
+  - Fixed `_is_admin_mode()` in `k9/utils/permission_utils.py` 
+  - Fixed `is_admin()` in `k9/utils/pm_scoping.py`
+  - PROJECT_MANAGER users now properly restricted to granular permissions only
+  - ONLY GENERAL_ADMIN in general admin mode has full administrative access
+- **Known Issue**: The `admin_or_pm_required` decorator (~105 usages) still allows PROJECT_MANAGER unrestricted access to certain routes. This requires a comprehensive audit and migration to project-scoped decorators in a future update.
+
 ## System Architecture
 
 ### UI/UX Decisions
