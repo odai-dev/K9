@@ -494,28 +494,54 @@ let originalPermissions = {};
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
+    goToStep(1);
     loadProjects();
 });
 
 // Load all projects
 function loadProjects() {
+    const container = document.getElementById('projects-list');
+    container.className = 'loading-spinner show';
+    container.innerHTML = `
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">جاري التحميل...</span>
+        </div>
+        <p class="mt-3">جاري تحميل المشاريع...</p>
+    `;
+    
     fetch('/admin/permissions/projects')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('فشل في تحميل المشاريع');
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Projects loaded:', data.projects.length);
             displayProjects(data.projects);
         })
         .catch(error => {
             console.error('Error loading projects:', error);
-            showError('فشل في تحميل المشاريع');
+            container.className = '';
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-triangle text-warning"></i>
+                    <h5>فشل في تحميل المشاريع</h5>
+                    <p>${error.message || 'حدث خطأ أثناء تحميل المشاريع'}</p>
+                    <button class="btn btn-primary-custom mt-3" onclick="loadProjects()">
+                        <i class="fas fa-redo me-2"></i>إعادة المحاولة
+                    </button>
+                </div>
+            `;
         });
 }
 
 // Display projects list
 function displayProjects(projects) {
     const container = document.getElementById('projects-list');
-    container.classList.remove('show');
+    container.className = '';
     
-    if (projects.length === 0) {
+    if (!projects || projects.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <i class="fas fa-folder-open"></i>
@@ -526,7 +552,11 @@ function displayProjects(projects) {
         return;
     }
     
-    let html = '';
+    let html = `<div class="mb-3 alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        تم العثور على <strong>${projects.length}</strong> مشروع. اختر مشروعاً لإدارة صلاحياته.
+    </div>`;
+    
     projects.forEach(project => {
         html += `
             <div class="selection-card" onclick="selectProject('${project.id}', '${project.name}', '${project.code}')">
@@ -534,7 +564,8 @@ function displayProjects(projects) {
                     <i class="fas fa-project-diagram me-2"></i>${project.name}
                 </div>
                 <div class="selection-card-subtitle">
-                    كود المشروع: ${project.code} | الموظفون: ${project.employees_count}
+                    <i class="fas fa-code me-2"></i>كود المشروع: ${project.code} | 
+                    <i class="fas fa-users me-2"></i>الموظفون: ${project.employees_count}
                 </div>
             </div>
         `;
@@ -571,7 +602,7 @@ function loadUsers(projectId) {
 // Display users list
 function displayUsers(users) {
     const container = document.getElementById('users-list');
-    container.classList.remove('show');
+    container.className = '';
     
     if (users.length === 0) {
         container.innerHTML = `
@@ -636,7 +667,7 @@ function loadPermissions(userId, projectId) {
 // Display permissions
 function displayPermissions(permissions) {
     const container = document.getElementById('permissions-list');
-    container.classList.remove('show');
+    container.className = '';
     
     // Group permissions by section
     const sections = {};
