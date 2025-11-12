@@ -12,16 +12,14 @@ from datetime import datetime
 
 
 def _is_admin_mode(user):
-    """Helper to check if user is GENERAL_ADMIN in general admin mode (not PM mode) OR PROJECT_MANAGER
+    """Helper to check if user is GENERAL_ADMIN in general admin mode (not PM mode)
     
-    PROJECT_MANAGER now has full administrative access to all features.
+    Only GENERAL_ADMIN users in general admin mode have full administrative access.
+    PROJECT_MANAGER users should NOT have full admin access and must use granular permissions.
     """
     if not user or not hasattr(user, 'role'):
         return False
-    # PROJECT_MANAGER has full admin access
-    if user.role == UserRole.PROJECT_MANAGER or user.role.value == "PROJECT_MANAGER":
-        return True
-    # GENERAL_ADMIN in general admin mode
+    # Only GENERAL_ADMIN in general admin mode has full access
     if user.role != UserRole.GENERAL_ADMIN and user.role.value != "GENERAL_ADMIN":
         return False
     admin_mode = session.get('admin_mode', 'general_admin')
