@@ -13,7 +13,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from app import app, db
 from k9.models.models import *
 from k9.models.models_handler_daily import *
-from k9.models.models_attendance_reporting import *
 
 class IntegrationTester:
     def __init__(self):

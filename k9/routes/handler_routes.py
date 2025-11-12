@@ -208,18 +208,21 @@ def dashboard():
     if current_user.dog_id:
         assigned_dog = Dog.query.get(current_user.dog_id)
     
-    # Get today's schedule
-    today_schedule = DailyScheduleService.get_handler_schedule_for_date(
-        str(current_user.id), today
+    # Get active schedule (today or tomorrow) with actual date
+    today_schedule, schedule_date = DailyScheduleService.get_active_handler_schedule(
+        str(current_user.id)
     )
+    
+    # Use schedule_date if available, otherwise use today
+    effective_date = schedule_date if schedule_date else today
     
     # Add shift report status to each schedule item
     for item in today_schedule:
         shift_report = ShiftReport.query.filter_by(schedule_item_id=item.id).first()
         item.shift_report = shift_report
     
-    # Get dogs worked with today and their report status
-    dogs_worked_today = HandlerReportService.get_dogs_worked_today(str(current_user.id), today)
+    # Get dogs worked with on the effective date and their report status
+    dogs_worked_today = HandlerReportService.get_dogs_worked_today(str(current_user.id), effective_date)
     
     # Get notifications - optimized to avoid duplicate query
     all_unread_notifications = NotificationService.get_user_notifications(
