@@ -8,7 +8,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates (November 12, 2025)
 
-### Admin Dashboard Enhancement (Latest)
+### Comprehensive Permissions UI Fix (Latest)
+- **Bug Fix**: Fixed critical display issue in comprehensive permissions interface
+  - Projects now appear immediately upon page load without requiring search
+  - Fixed CSS class removal bug: changed `classList.remove('show')` to `className = ''` to fully clear loading spinner
+  - Added step activation on page load via `goToStep(1)` for clear visual feedback
+  - Enhanced error handling with Arabic messages and retry functionality
+  - Added informational alert showing project count for better user awareness
+  - All three workflow steps (Select Project → Select User → Manage Permissions) now function correctly
+
+### Admin Dashboard Enhancement
 - **Dashboard Update**: Updated admin dashboard to highlight comprehensive permissions interface
   - Changed navigation link from legacy `permissions_dashboard` to modern `comprehensive_permissions`
   - Updated UI text to clarify that permissions management supports "all user roles" (not just PROJECT_MANAGER)
