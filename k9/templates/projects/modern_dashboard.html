@@ -481,6 +481,28 @@
                 </div>
             </div>
             
+            <!-- Second Row: Additional Operations -->
+            <div class="row mt-3">
+                <div class="col-lg-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-clock me-2"></i>إدارة الورديات
+                            </h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <i class="fas fa-clock fa-3x text-primary mb-3"></i>
+                            <p class="mb-3">إنشاء وإدارة الورديات وتعيين الموظفين</p>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('main.project_shifts', project_id=project.id) }}" class="btn btn-primary">
+                                    <i class="fas fa-cog me-2"></i>إدارة الورديات
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Linked Activities Section -->
             <div class="row">
                 <div class="col-lg-6 mb-4">
