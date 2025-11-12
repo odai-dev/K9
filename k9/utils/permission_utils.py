@@ -277,20 +277,98 @@ def get_user_permissions_matrix(user_id, project_id=None):
             
     return matrix
 
-def update_permission(user_id, permission_key, granted, updated_by, project_id=None):
-    """Update a specific permission for a user"""
-    # This is a placeholder - in a real system, you'd store permissions in the database
-    # The project_id parameter allows for project-scoped permissions
-    return True
+def update_permission(user_id, section, subsection, permission_type, granted, updated_by, project_id=None):
+    """
+    Update a specific permission for a user
+    
+    Args:
+        user_id: ID of the user to update permissions for
+        section: Permission section (e.g., "dogs", "employees")
+        subsection: Permission subsection (can be empty string for main section)
+        permission_type: PermissionType enum value
+        granted: Boolean indicating if permission is granted
+        updated_by: ID of the user making the change
+        project_id: Optional project ID for project-scoped permissions
+        
+    Returns:
+        Boolean indicating success
+    """
+    try:
+        from flask import request
+        
+        existing = SubPermission.query.filter_by(
+            user_id=user_id,
+            section=section,
+            subsection=subsection if subsection else "",
+            permission_type=permission_type,
+            project_id=project_id
+        ).first()
+        
+        old_value = existing.is_granted if existing else False
+        
+        if existing:
+            existing.is_granted = granted
+            existing.updated_at = datetime.utcnow()
+        else:
+            new_perm = SubPermission(
+                user_id=user_id,
+                section=section,
+                subsection=subsection if subsection else "",
+                permission_type=permission_type,
+                project_id=project_id,
+                is_granted=granted
+            )
+            db.session.add(new_perm)
+        
+        audit_log = PermissionAuditLog(
+            changed_by_user_id=updated_by,
+            target_user_id=user_id,
+            section=section,
+            subsection=subsection if subsection else "",
+            permission_type=permission_type,
+            project_id=project_id,
+            old_value=old_value,
+            new_value=granted,
+            ip_address=request.remote_addr if request else None,
+            user_agent=request.headers.get('User-Agent') if request else None
+        )
+        db.session.add(audit_log)
+        
+        db.session.commit()
+        return True
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error updating permission: {e}")
+        return False
 
-def bulk_update_permissions(user_id, permissions_dict, updated_by, project_id=None):
-    """Bulk update permissions for a user"""
-    # This is a placeholder - in a real system, you'd bulk update permissions
-    # Extract project_id from permissions_dict if not provided directly
-    if project_id is None and 'project_id' in permissions_dict:
-        project_id = permissions_dict['project_id']
-    # The project_id parameter allows for project-scoped permissions
-    return True
+def bulk_update_permissions(user_id, permissions_list, updated_by, project_id=None):
+    """
+    Bulk update permissions for a user
+    
+    Args:
+        user_id: ID of the user to update permissions for
+        permissions_list: List of dicts with keys: section, subsection, permission_type, granted
+        updated_by: ID of the user making the changes
+        project_id: Optional project ID for project-scoped permissions
+        
+    Returns:
+        Boolean indicating success
+    """
+    try:
+        for perm_data in permissions_list:
+            update_permission(
+                user_id=user_id,
+                section=perm_data['section'],
+                subsection=perm_data.get('subsection', ''),
+                permission_type=perm_data['permission_type'],
+                granted=perm_data['granted'],
+                updated_by=updated_by,
+                project_id=project_id
+            )
+        return True
+    except Exception as e:
+        print(f"Error in bulk update: {e}")
+        return False
 
 def get_project_managers():
     """Get all project manager users"""
@@ -299,6 +377,86 @@ def get_project_managers():
 def get_all_projects():
     """Get all projects"""
     return Project.query.all()
+
+def get_users_by_project(project_id):
+    """
+    Get all users (with their employee info) assigned to a specific project
+    
+    Args:
+        project_id: ID of the project
+        
+    Returns:
+        List of User objects with employee relationship loaded
+    """
+    from k9.models.models import Employee, project_employee_assignment
+    
+    project = Project.query.get(project_id)
+    if not project:
+        return []
+    
+    assigned_employee_ids = db.session.query(project_employee_assignment.c.employee_id).filter(
+        project_employee_assignment.c.project_id == project_id
+    ).all()
+    
+    employee_ids = [emp_id[0] for emp_id in assigned_employee_ids]
+    
+    users = User.query.filter(User.employee_id.in_(employee_ids)).all()
+    
+    if project.manager:
+        if project.manager not in users:
+            users.append(project.manager)
+    
+    return users
+
+def get_user_permissions_by_project(user_id, project_id):
+    """
+    Get all permissions for a user within a specific project
+    
+    Args:
+        user_id: ID of the user
+        project_id: ID of the project
+        
+    Returns:
+        Dict of permissions with structure: {section: {subsection: {permission_type: is_granted}}}
+    """
+    user = User.query.get(user_id)
+    if not user:
+        return {}
+    
+    if _is_admin_mode(user):
+        from k9.utils.permission_registry import PERMISSION_REGISTRY
+        permissions = {}
+        for section_key, section_data in PERMISSION_REGISTRY.items():
+            permissions[section_key] = {}
+            def extract_perms(data, path=""):
+                result = {}
+                if "permissions" in data:
+                    for perm_key, perm_data in data["permissions"].items():
+                        result[perm_key] = {
+                            "granted": True,
+                            "permission_type": perm_data["permission_type"].value if hasattr(perm_data["permission_type"], 'value') else str(perm_data["permission_type"])
+                        }
+                return result
+            permissions[section_key] = extract_perms(section_data)
+        return permissions
+    
+    db_permissions = SubPermission.query.filter_by(
+        user_id=user_id,
+        project_id=project_id
+    ).all()
+    
+    permissions = {}
+    for perm in db_permissions:
+        if perm.section not in permissions:
+            permissions[perm.section] = {}
+        
+        key = f"{perm.subsection}.{perm.permission_type.value}" if perm.subsection else perm.permission_type.value
+        permissions[perm.section][key] = {
+            "granted": perm.is_granted,
+            "permission_type": perm.permission_type.value
+        }
+    
+    return permissions
 
 def initialize_default_permissions(user):
     """Initialize default permissions for a user"""
