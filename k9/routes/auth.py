@@ -298,15 +298,18 @@ def select_mode():
 @login_required
 def switch_mode():
     """Allow GENERAL_ADMIN to switch between modes without re-logging"""
-    from k9.models.models import Employee
+    from k9.models.models import Employee, AccessOutcome
+    from k9.services.access_audit_service import log_mode_switch
     
     if current_user.role != UserRole.GENERAL_ADMIN:
+        log_mode_switch('N/A', 'N/A', outcome=AccessOutcome.BLOCKED)
         flash('ليس لديك صلاحية لتبديل الأوضاع', 'error')
         return redirect(url_for('main.dashboard'))
     
     # Verify employee record exists
     employee = current_user.employee
     if not employee:
+        log_mode_switch('general_admin', 'project_manager', outcome=AccessOutcome.FAILURE)
         flash('لا يمكن التبديل: لا يوجد سجل موظف مرتبط', 'error')
         return redirect(url_for('main.dashboard'))
     
@@ -315,11 +318,8 @@ def switch_mode():
     new_mode = 'project_manager' if current_mode == 'general_admin' else 'general_admin'
     session['admin_mode'] = new_mode
     
-    log_audit(current_user.id, 'MODE_SWITCH', 'User', str(current_user.id), {
-        'from_mode': current_mode,
-        'to_mode': new_mode,
-        'username': current_user.username
-    })
+    # Log the mode switch using new access audit service
+    log_mode_switch(current_mode, new_mode, outcome=AccessOutcome.SUCCESS)
     
     flash(f'تم التبديل إلى وضع: {"المدير العام" if new_mode == "general_admin" else "مدير المشروع"}', 'success')
     

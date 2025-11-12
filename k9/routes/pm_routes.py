@@ -2,7 +2,7 @@
 Project Manager Routes
 Workflow-oriented interface for PMs managing their assigned project
 """
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, session
 from flask_login import login_required, current_user
 from functools import wraps
 from datetime import datetime, date, timedelta
@@ -13,16 +13,15 @@ from k9.models.models import (
     TrainingSession, VeterinaryVisit, ProductionCycle,
     ProjectAssignment, ProjectDog, DogStatus, EmployeeRole,
     WorkflowStatus, BreedingTrainingActivity, CaretakerDailyLog,
-    Incident, Suspicion, PerformanceEvaluation
+    Incident, Suspicion, PerformanceEvaluation, AccessOutcome
 )
 from k9.models.models_handler_daily import HandlerReport, ShiftReport, ReportStatus, DailySchedule
+from k9.services.access_audit_service import log_page_access, log_project_access
 
 pm_bp = Blueprint('pm', __name__, url_prefix='/pm')
 
 def get_pm_project():
     """Get the PM's assigned project or None if not assigned"""
-    from flask import session
-    
     # Allow PROJECT_MANAGER role OR GENERAL_ADMIN in PM mode
     is_pm_mode = (current_user.role == UserRole.PROJECT_MANAGER or 
                   (current_user.role == UserRole.GENERAL_ADMIN and 
@@ -43,11 +42,58 @@ def get_pm_project():
     
     return project
 
+def get_active_project():
+    """
+    Get the active project for PM routes
+    
+    For GENERAL_ADMIN in general_admin mode: get from query param or session
+    For PROJECT_MANAGER or GENERAL_ADMIN in PM mode: get assigned project
+    
+    Returns tuple: (project, needs_selection)
+    - project: Project object or None
+    - needs_selection: True if GENERAL_ADMIN needs to select a project
+    """
+    # GENERAL_ADMIN in general_admin mode can view any project
+    if current_user.role == UserRole.GENERAL_ADMIN and session.get('admin_mode') == 'general_admin':
+        # Check query parameter first
+        project_id = request.args.get('project_id')
+        if project_id:
+            project = Project.query.get(project_id)
+            if project:
+                # Store in session for persistence across requests
+                session['selected_project_id'] = project_id
+                return project, False
+        
+        # Check session
+        selected_project_id = session.get('selected_project_id')
+        if selected_project_id:
+            project = Project.query.get(selected_project_id)
+            if project:
+                return project, False
+        
+        # No project selected
+        return None, True
+    
+    # Regular PM or GENERAL_ADMIN in PM mode
+    project = get_pm_project()
+    return project, False
+
 def require_pm_project(f):
-    """Decorator to ensure PM has an assigned project"""
+    """Decorator to ensure PM has an assigned project
+    
+    GENERAL_ADMIN in general_admin mode can access all PM routes without project requirement.
+    GENERAL_ADMIN in project_manager mode and PROJECT_MANAGER role need an assigned project.
+    """
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        from flask import session
+        # GENERAL_ADMIN in general_admin mode has unrestricted access
+        if current_user.role == UserRole.GENERAL_ADMIN and session.get('admin_mode') == 'general_admin':
+            # Log access for general admin
+            log_page_access(
+                page_name=f.__name__,
+                outcome=AccessOutcome.SUCCESS
+            )
+            return f(*args, **kwargs)
         
         # Allow PROJECT_MANAGER role OR GENERAL_ADMIN in PM mode
         is_pm_mode = (current_user.role == UserRole.PROJECT_MANAGER or 
@@ -55,13 +101,29 @@ def require_pm_project(f):
                        session.get('admin_mode') == 'project_manager'))
         
         if not is_pm_mode:
+            log_page_access(
+                page_name=f.__name__,
+                outcome=AccessOutcome.BLOCKED
+            )
             flash('الوصول مرفوض', 'error')
             return redirect(url_for('main.index'))
         
         project = get_pm_project()
         if not project:
+            log_page_access(
+                page_name=f.__name__,
+                outcome=AccessOutcome.FAILURE
+            )
             flash('لم يتم تعيين مشروع لك بعد. يرجى الاتصال بالمسؤول.', 'warning')
             return render_template('pm/no_project.html')
+        
+        # Log successful access with project context
+        log_page_access(
+            page_name=f.__name__,
+            project_id=project.id,
+            project_name=project.name,
+            outcome=AccessOutcome.SUCCESS
+        )
         
         return f(*args, **kwargs)
     return decorated_function
@@ -140,10 +202,25 @@ def get_pending_count(project):
 @login_required
 @require_pm_project
 def dashboard():
-    """PM Dashboard - Enhanced overview similar to projects dashboard"""
-    project = get_pm_project()
+    """PM Dashboard - Enhanced overview similar to projects dashboard
+    
+    GENERAL_ADMIN in general_admin mode can view any project by passing project_id parameter
+    """
+    # Get active project using helper function
+    project, needs_selection = get_active_project()
+    
+    # If GENERAL_ADMIN needs to select a project, show selector
+    if needs_selection:
+        projects = Project.query.filter_by(is_active=True).order_by(Project.name).all()
+        return render_template('pm/project_selector.html', projects=projects)
+    
+    # If no project (PM without assignment), redirect
     if not project:
         return redirect(url_for('main.index'))
+    
+    # Log project access for auditing
+    if current_user.role == UserRole.GENERAL_ADMIN and session.get('admin_mode') == 'general_admin':
+        log_project_access(project.id, project.name, action='view', outcome=AccessOutcome.SUCCESS)
     
     # Get dashboard statistics with ProjectAssignment system
     dog_assignments = ProjectAssignment.query.filter_by(
@@ -318,7 +395,10 @@ def dashboard():
 @require_pm_project
 def project_view():
     """View PM's project details"""
-    project = get_pm_project()
+    project, needs_selection = get_active_project()
+    if needs_selection:
+        projects = Project.query.filter_by(is_active=True).order_by(Project.name).all()
+        return render_template('pm/project_selector.html', projects=projects)
     if not project:
         return redirect(url_for('main.index'))
     
@@ -340,7 +420,10 @@ def project_view():
 @require_pm_project
 def my_team():
     """View team members assigned to PM's project"""
-    project = get_pm_project()
+    project, needs_selection = get_active_project()
+    if needs_selection:
+        projects = Project.query.filter_by(is_active=True).order_by(Project.name).all()
+        return render_template('pm/project_selector.html', projects=projects)
     if not project:
         return redirect(url_for('main.index'))
     
@@ -370,7 +453,10 @@ def my_team():
 @require_pm_project
 def my_dogs():
     """View dogs assigned to PM's project"""
-    project = get_pm_project()
+    project, needs_selection = get_active_project()
+    if needs_selection:
+        projects = Project.query.filter_by(is_active=True).order_by(Project.name).all()
+        return render_template('pm/project_selector.html', projects=projects)
     if not project:
         return redirect(url_for('main.index'))
     
@@ -441,7 +527,10 @@ def my_dogs():
 @require_pm_project
 def pending_approvals():
     """View all items pending PM approval"""
-    project = get_pm_project()
+    project, needs_selection = get_active_project()
+    if needs_selection:
+        projects = Project.query.filter_by(is_active=True).order_by(Project.name).all()
+        return render_template('pm/project_selector.html', projects=projects)
     if not project:
         return redirect(url_for('main.index'))
     
@@ -740,6 +829,7 @@ def reject_caretaker(log_id):
 def export_handler_report_pdf(report_id):
     """تصدير تقرير السائس اليومي إلى PDF"""
     from k9.services.report_export_service import ReportExportService
+    from k9.services.access_audit_service import log_file_download
     from flask import send_file
     
     project = get_pm_project()
@@ -752,10 +842,13 @@ def export_handler_report_pdf(report_id):
     
     pdf_buffer = ReportExportService.export_handler_report_to_pdf(report_id)
     if not pdf_buffer:
+        log_file_download('pdf_report', f'handler_report_{report_id}', report_id, outcome=AccessOutcome.FAILURE)
         flash('فشل في تصدير التقرير', 'error')
         return redirect(url_for('pm.pending_approvals'))
     
     filename = f"handler_report_{report.date.strftime('%Y%m%d')}_{report.dog.code if report.dog else 'unknown'}.pdf"
+    log_file_download('pdf_report', filename, report_id, outcome=AccessOutcome.SUCCESS)
+    
     return send_file(
         pdf_buffer,
         mimetype='application/pdf',
@@ -770,6 +863,7 @@ def export_handler_report_pdf(report_id):
 def export_handler_report_excel(report_id):
     """تصدير تقرير السائس اليومي إلى Excel"""
     from k9.services.report_export_service import ReportExportService
+    from k9.services.access_audit_service import log_file_download
     from flask import send_file
     
     project = get_pm_project()
@@ -782,10 +876,13 @@ def export_handler_report_excel(report_id):
     
     excel_buffer = ReportExportService.export_handler_report_to_excel(report_id)
     if not excel_buffer:
+        log_file_download('excel_report', f'handler_report_{report_id}', report_id, outcome=AccessOutcome.FAILURE)
         flash('فشل في تصدير التقرير', 'error')
         return redirect(url_for('pm.pending_approvals'))
     
     filename = f"handler_report_{report.date.strftime('%Y%m%d')}_{report.dog.code if report.dog else 'unknown'}.xlsx"
+    log_file_download('excel_report', filename, report_id, outcome=AccessOutcome.SUCCESS)
+    
     return send_file(
         excel_buffer,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
