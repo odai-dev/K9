@@ -90,9 +90,6 @@ def get_user_permissions(user_id):
     user = User.query.get_or_404(user_id)
     project_id = request.args.get('project_id')
     
-    if user.role != UserRole.PROJECT_MANAGER:
-        return jsonify({'error': 'يمكن إدارة صلاحيات مديري المشاريع فقط'}), 400
-    
     matrix = get_user_permissions_matrix(user.id, project_id=project_id)
     
     return jsonify({
@@ -117,7 +114,7 @@ def update_user_permission():
         return jsonify({'error': 'بيانات ناقصة'}), 400
     
     user = User.query.get(data['user_id'])
-    if not user or user.role != UserRole.PROJECT_MANAGER:
+    if not user:
         return jsonify({'error': 'مستخدم غير صحيح'}), 400
     
     try:
@@ -188,13 +185,13 @@ def bulk_update_user_permissions():
         return jsonify({'error': 'بيانات ناقصة'}), 400
     
     user = User.query.get(data['user_id'])
-    if not user or user.role != UserRole.PROJECT_MANAGER:
+    if not user:
         return jsonify({'error': 'مستخدم غير صحيح'}), 400
     
     project_id = data.get('project_id')
     
-    # Build permissions dict for bulk update
-    permissions_dict = {
+    # Build permissions data for bulk update
+    permissions_data = {
         'section': data['section'],
         'is_granted': data['is_granted'],
         'project_id': project_id
@@ -202,7 +199,7 @@ def bulk_update_user_permissions():
     
     count = bulk_update_permissions(
         user_id=user.id,
-        permissions_dict=permissions_dict,
+        permissions_data=permissions_data,
         updated_by=current_user.id,
         project_id=project_id
     )

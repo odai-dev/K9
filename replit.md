@@ -8,6 +8,20 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates (November 12, 2025)
 
+### Comprehensive Permissions Management System
+- **New Feature**: Added comprehensive permissions management interface for GENERAL_ADMIN users
+  - Three-step workflow: Select Project → Select User → Manage Permissions
+  - Complete metadata registry (`k9/utils/permission_registry.py`) mapping all system permissions to actual pages and functions
+  - New API endpoints in `k9/routes/admin_routes.py`:
+    - `/admin/permissions/comprehensive` - Main permissions management interface
+    - `/admin/permissions/projects` - Get all projects
+    - `/admin/permissions/users/<project_id>` - Get users by project
+    - `/admin/permissions/matrix/<user_id>/<project_id>` - Get complete permissions matrix
+  - Enhanced `update_permission()` and `bulk_update_permissions()` functions to work with SubPermission and PermissionAuditLog models
+  - Modern RTL Arabic interface with real-time permission toggling and immediate save functionality
+  - Full audit trail of all permission changes with IP address and user agent tracking
+  - Permission changes apply immediately across the system
+
 ### Legacy System Cleanup
 - **Project Attendance Removal**: Removed legacy project_attendance link from projects list page (`k9/templates/projects/modern_list.html`)
   - System now exclusively uses the modern DailySchedule workflow for handler and dog scheduling
