@@ -60,10 +60,10 @@ PERMISSION_STRUCTURE = {
         "delete": "Delete dogs"
     },
     "attendance": {
-        "view": "View attendance",
-        "record": "Record attendance",
-        "edit": "Edit attendance",
-        "reports": "Access attendance reports"
+        "view": "View daily schedules and attendance",
+        "record": "Create and record daily schedules",
+        "edit": "Edit daily schedules",
+        "reports": "Access daily schedule reports"
     },
     "training": {
         "view": "View training records",
@@ -216,6 +216,7 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
             "dogs.view",
             "attendance.view",
             "attendance.record",
+            "attendance.edit",
             "training.view",
             "training.create",
             "veterinary.view",
