@@ -66,10 +66,6 @@
                href="{{ url_for('main.project_assignments', project_id=project.id) }}">
                 <i class="fas fa-users me-2"></i>التعيينات
             </a>
-            <a class="nav-link {{ 'active' if active_section == 'attendance' else '' }}" 
-               href="{{ url_for('main.project_attendance', project_id=project.id) }}">
-                <i class="fas fa-calendar-check me-2"></i>الحضور
-            </a>
             <a class="nav-link {{ 'active' if active_section == 'operations' else '' }}" 
                href="{{ url_for('main.project_incidents', project_id=project.id) }}">
                 <i class="fas fa-cogs me-2"></i>العمليات

@@ -380,21 +380,6 @@
             </a>
         </div>
         
-        <!-- Attendance System -->
-        <div class="col-lg-4 col-md-6 mb-4">
-            <a href="{{ url_for('main.unified_attendance') }}" class="text-decoration-none">
-                <div class="admin-nav-card admin-card" style="border-color: #6366f1;">
-                    <div class="admin-nav-icon" style="color: #6366f1;">
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
-                    <div class="admin-nav-title">نظام الحضور</div>
-                    <div class="admin-nav-desc">
-                        إدارة الحضور والفترات والمصفوفة الموحدة
-                    </div>
-                </div>
-            </a>
-        </div>
-        
         <!-- Project Management -->
         <div class="col-lg-4 col-md-6 mb-4">
             <a href="{{ url_for('main.projects') }}" class="text-decoration-none">
@@ -419,7 +404,7 @@
                     </div>
                     <div class="admin-nav-title">مركز التقارير</div>
                     <div class="admin-nav-desc">
-                        تقارير الحضور والتدريب والتربية والبيطرية
+                        تقارير التدريب والتربية والبيطرية
                     </div>
                 </div>
             </a>
@@ -658,26 +643,6 @@
             </div>
         </div>
 
-        <!-- System Attendance Trends -->
-        <div class="col-lg-6 mb-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0">
-                        <i class="fas fa-chart-line me-2"></i>
-                        اتجاهات الحضور (آخر 30 يوم)
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div id="systemAttendanceChart" style="position: relative; height: 300px;">
-                        <div class="d-flex justify-content-center align-items-center h-100">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">جاري التحميل...</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Quick Actions -->
@@ -756,8 +721,7 @@ async function loadAdminCharts() {
         loadDogsByStatusChart(),
         loadEmployeeByRoleChart(),
         loadProjectStatusChart(),
-        loadSystemReportsChart(),
-        loadSystemAttendanceChart()
+        loadSystemReportsChart()
     ]);
 }
 
@@ -910,32 +874,6 @@ async function loadSystemReportsChart() {
     } catch (error) {
         console.error('Error loading system reports chart:', error);
         ChartUtils.showChartError('systemReportsChart');
-    }
-}
-
-async function loadSystemAttendanceChart() {
-    const container = document.getElementById('systemAttendanceChart');
-    if (!container) return;
-    
-    try {
-        const result = await ChartUtils.loadChartData('/api/dashboard/admin/attendance-trends');
-        
-        if (!result.success || !result.data || !result.data.datasets) {
-            ChartUtils.showChartEmpty('systemAttendanceChart', 'لا توجد بيانات حضور');
-            return;
-        }
-        
-        const chartData = result.data;
-        container.innerHTML = '<canvas id="systemAttendanceCanvas"></canvas>';
-        
-        ChartUtils.createLineChart(
-            'systemAttendanceCanvas',
-            chartData.labels,
-            chartData.datasets
-        );
-    } catch (error) {
-        console.error('Error loading system attendance chart:', error);
-        ChartUtils.showChartError('systemAttendanceChart');
     }
 }
 </script>

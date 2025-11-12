@@ -264,27 +264,6 @@
                     </li>
                     {% endif %}
                     
-                    {% if is_admin() %}
-                    {% set is_attendance_active = request.endpoint and (request.endpoint.startswith('main.unified_attendance') or request.endpoint.startswith('main.attendance_')) %}
-                    <li class="nav-item dropdown {% if is_attendance_active %}active{% endif %}">
-                        <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_attendance_active %}active{% endif %}" href="#" id="attendanceDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-calendar-check me-1"></i>الحضور
-                        </a>
-                        <ul class="dropdown-menu shadow">
-                            <li><h6 class="dropdown-header">إدارة الحضور</h6></li>
-                            <li><a class="dropdown-item {% if request.endpoint == 'main.unified_attendance' %}active{% endif %}" href="{{ url_for('main.unified_attendance') }}"><i class="fas fa-tachometer-alt me-2"></i>لوحة الحضور</a></li>
-                            <li><a class="dropdown-item {% if request.endpoint == 'main.attendance_record' %}active{% endif %}" href="{{ url_for('main.attendance_record') }}"><i class="fas fa-edit me-2"></i>تسجيل الحضور</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><h6 class="dropdown-header">إدارة الفترات</h6></li>
-                            <li><a class="dropdown-item {% if request.endpoint == 'main.attendance_shifts' %}active{% endif %}" href="{{ url_for('main.attendance_shifts') }}"><i class="fas fa-clock me-2"></i>إدارة الفترات</a></li>
-                            <li><a class="dropdown-item {% if request.endpoint == 'main.attendance_shifts_add' %}active{% endif %}" href="{{ url_for('main.attendance_shifts_add') }}"><i class="fas fa-plus-circle me-2"></i>إضافة فترة</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><h6 class="dropdown-header">التقارير</h6></li>
-                            <li><a class="dropdown-item {% if request.endpoint == 'main.attendance_reports' %}active{% endif %}" href="{{ url_for('main.attendance_reports') }}"><i class="fas fa-file-alt me-2"></i>تقارير الحضور</a></li>
-                        </ul>
-                    </li>
-                    {% endif %}
-                    
                     {% if permissions.reports %}
                     {% set is_reports_active = request.endpoint and (request.endpoint.startswith('main.reports_') or request.endpoint.startswith('reports_') or request.endpoint.startswith('unified_') or request.endpoint.startswith('veterinary_reports_') or request.endpoint.startswith('caretaker_daily_reports_')) %}
                     <li class="nav-item dropdown {% if is_reports_active %}active{% endif %}">
@@ -293,9 +272,6 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-long shadow">
                             <li><a class="dropdown-item {% if request.endpoint == 'main.reports_hub' %}active{% endif %} fw-bold" href="{{ url_for('main.reports_hub') }}"><i class="fas fa-chart-line me-2 text-primary"></i>مركز التقارير</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><h6 class="dropdown-header">تقارير الحضور</h6></li>
-                            <li><a class="dropdown-item {% if request.endpoint == 'reports_attendance_pm_daily_ui.pm_daily' %}active{% endif %}" href="{{ url_for('reports_attendance_pm_daily_ui.pm_daily') }}"><i class="fas fa-file-alt me-2"></i>التقرير اليومي لمسؤول المشروع</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header">تقارير التدريب</h6></li>
                             <li><a class="dropdown-item {% if request.path == '/reports/training/trainer-daily' %}active{% endif %}" href="/reports/training/trainer-daily"><i class="fas fa-dumbbell me-2"></i>التقرير اليومي للمدرب</a></li>

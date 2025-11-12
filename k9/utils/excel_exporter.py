@@ -158,12 +158,10 @@ def create_attendance_report_excel(
     # Prepare data rows
     data = []
     for record in records:
-        from k9.models.models import EntityType
-        
         row = [
             record.date.strftime('%Y-%m-%d'),
             record.shift.name,
-            'موظف' if record.entity_type == EntityType.EMPLOYEE else 'كلب',
+            'موظف' if record.entity_type == 'EMPLOYEE' else 'كلب',
             record.get_entity_code(),
             record.get_entity_name(),
             record.get_status_display(),
