@@ -575,9 +575,9 @@
 // Reports Status Chart
 const statusCtx = document.getElementById('reportsStatusChart');
 if (statusCtx) {
-    const approvedReports = {{ stats.approved_reports|tojson }};
-    const pendingReports = {{ stats.pending_reports|tojson }};
-    const draftReports = {{ (stats.total_reports - stats.approved_reports - stats.pending_reports)|tojson }};
+    const approvedReports = {{ stats.approved_reports }};
+    const pendingReports = {{ stats.pending_reports }};
+    const draftReports = {{ stats.total_reports - stats.approved_reports - stats.pending_reports }};
     
     new Chart(statusCtx, {
         type: 'doughnut',
@@ -624,7 +624,7 @@ if (statusCtx) {
 // Monthly Reports Chart
 const monthlyCtx = document.getElementById('reportsMonthlyChart');
 if (monthlyCtx) {
-    const monthlyReports = {{ stats.this_month_reports|tojson }};
+    const monthlyReports = {{ stats.this_month_reports }};
     
     new Chart(monthlyCtx, {
         type: 'bar',

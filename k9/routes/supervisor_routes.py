@@ -75,7 +75,11 @@ def schedules_index():
 def schedule_create():
     """إنشاء جدول يومي جديد"""
     if request.method == 'POST':
-        schedule_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
+        date_str = request.form.get('date')
+        if not date_str:
+            flash('يجب تحديد التاريخ', 'danger')
+            return redirect(url_for('supervisor.schedule_create'))
+        schedule_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         notes = request.form.get('notes')
         
         # Get project_id - either from form or automatically based on user role
