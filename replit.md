@@ -8,6 +8,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Updates (November 12, 2025)
 
+### Admin Dashboard Enhancement (Latest)
+- **Dashboard Update**: Updated admin dashboard to highlight comprehensive permissions interface
+  - Changed navigation link from legacy `permissions_dashboard` to modern `comprehensive_permissions`
+  - Updated UI text to clarify that permissions management supports "all user roles" (not just PROJECT_MANAGER)
+  - Comprehensive interface supports: GENERAL_ADMIN, PROJECT_MANAGER, HANDLER, TRAINER, BREEDER, VET
+  - Arabic role name translation handled via JavaScript `getRoleName()` function
+
 ### Comprehensive Permissions Management System
 - **New Feature**: Added comprehensive permissions management interface for GENERAL_ADMIN users
   - Three-step workflow: Select Project → Select User → Manage Permissions
