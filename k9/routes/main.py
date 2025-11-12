@@ -19,7 +19,9 @@ from k9.models.models import (Dog, Employee, TrainingSession, VeterinaryVisit, P
                    # Grooming models
                    GroomingLog, GroomingCleanlinessScore, GroomingYesNo,
                    # Cleaning models
-                   CleaningLog)
+                   CleaningLog,
+                   # Shift models
+                   Shift)
 from k9.utils.utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
 from k9.utils.permission_decorators import require_sub_permission, admin_or_pm_required
 from k9.utils.validators import validate_yemen_phone
@@ -4589,4 +4591,151 @@ def project_location_delete(project_id, location_id):
         flash(f'حدث خطأ أثناء حذف الموقع: {str(e)}', 'error')
     
     return redirect(url_for('main.project_locations', project_id=project.id))
+
+
+@main_bp.route('/projects/<project_id>/shifts', methods=['GET', 'POST'])
+@login_required
+@admin_or_pm_required
+def project_shifts(project_id):
+    """View and manage system-wide shifts (shifts are shared across all projects)"""
+    try:
+        project = Project.query.get_or_404(project_id)
+    except ValueError:
+        flash('معرف غير صحيح', 'error')
+        return redirect(url_for('main.projects'))
+    
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = current_user.employee
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects'))
+    
+    if request.method == 'POST':
+        if current_user.role != UserRole.GENERAL_ADMIN:
+            flash('فقط المسؤول العام يمكنه إضافة ورديات جديدة', 'error')
+            return redirect(url_for('main.project_shifts', project_id=project.id))
+        
+        try:
+            name = request.form.get('name')
+            start_time = request.form.get('start_time')
+            end_time = request.form.get('end_time')
+            
+            if not all([name, start_time, end_time]):
+                flash('جميع الحقول مطلوبة', 'error')
+                return redirect(url_for('main.project_shifts', project_id=project.id))
+            
+            start_time_obj = datetime.strptime(start_time, '%H:%M').time()
+            end_time_obj = datetime.strptime(end_time, '%H:%M').time()
+            
+            if start_time_obj >= end_time_obj:
+                flash('وقت البداية يجب أن يكون قبل وقت النهاية', 'error')
+                return redirect(url_for('main.project_shifts', project_id=project.id))
+            
+            shift = Shift(
+                name=name,
+                start_time=start_time_obj,
+                end_time=end_time_obj,
+                is_active=True
+            )
+            
+            db.session.add(shift)
+            db.session.commit()
+            
+            log_audit(current_user.id, 'CREATE', 'Shift', str(shift.id), 
+                     {'name': name, 'start_time': start_time, 'end_time': end_time})
+            
+            flash('تم إضافة الوردية بنجاح', 'success')
+            return redirect(url_for('main.project_shifts', project_id=project.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء إضافة الوردية: {str(e)}', 'error')
+    
+    if current_user.role == UserRole.GENERAL_ADMIN:
+        shifts = Shift.query.order_by(Shift.start_time).all()
+    else:
+        shifts = Shift.query.filter_by(is_active=True).order_by(Shift.start_time).all()
+    
+    return render_template('projects/shifts.html', project=project, shifts=shifts)
+
+
+@main_bp.route('/projects/<project_id>/shifts/<shift_id>', methods=['GET'])
+@login_required
+@admin_or_pm_required
+def shift_assignments(project_id, shift_id):
+    """View shift details and redirect to daily scheduling"""
+    try:
+        project = Project.query.get_or_404(project_id)
+        shift = Shift.query.get_or_404(shift_id)
+    except ValueError:
+        flash('معرف غير صحيح', 'error')
+        return redirect(url_for('main.projects'))
+    
+    has_access = current_user.role == UserRole.GENERAL_ADMIN
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
+        employee = current_user.employee
+        has_access = employee and project.project_manager_id == employee.id
+    
+    if not has_access:
+        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
+        return redirect(url_for('main.projects'))
+    
+    from k9.models.models_handler_daily import DailyScheduleItem, DailySchedule
+    
+    recent_assignments = db.session.query(DailyScheduleItem).join(
+        DailySchedule
+    ).filter(
+        DailySchedule.project_id == project.id,
+        DailyScheduleItem.shift_id == shift.id
+    ).order_by(DailySchedule.date.desc()).limit(20).all()
+    
+    project_users = User.query.join(Employee).join(project_employee_assignment).filter(
+        project_employee_assignment.c.project_id == project.id,
+        Employee.is_active == True,
+        User.role == UserRole.HANDLER
+    ).all()
+    
+    project_dogs = Dog.query.join(ProjectDog).filter(
+        ProjectDog.project_id == project.id,
+        ProjectDog.is_active == True
+    ).all()
+    
+    return render_template('projects/shift_assignments.html', 
+                         project=project, 
+                         shift=shift,
+                         employees=project_users,
+                         dogs=project_dogs,
+                         assignments=recent_assignments)
+
+
+@main_bp.route('/projects/<project_id>/shifts/<shift_id>/toggle', methods=['POST'])
+@login_required
+@admin_or_pm_required
+def toggle_shift(project_id, shift_id):
+    """Toggle shift active status (admin only)"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('فقط المسؤول العام يمكنه تعطيل/تفعيل الورديات', 'error')
+        return redirect(url_for('main.project_shifts', project_id=project_id))
+    
+    try:
+        project = Project.query.get_or_404(project_id)
+        shift = Shift.query.get_or_404(shift_id)
+        
+        shift.is_active = not shift.is_active
+        db.session.commit()
+        
+        log_audit(current_user.id, 'UPDATE', 'Shift', str(shift.id), 
+                 {'action': 'toggle_active', 'new_status': shift.is_active})
+        
+        status = 'تم تفعيل' if shift.is_active else 'تم تعطيل'
+        flash(f'{status} الوردية بنجاح', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'حدث خطأ: {str(e)}', 'error')
+    
+    return redirect(url_for('main.project_shifts', project_id=project_id))
 
