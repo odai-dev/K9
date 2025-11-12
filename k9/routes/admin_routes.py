@@ -258,6 +258,13 @@ def initialize_user_permissions(user_id):
     
     return jsonify({'success': True, 'message': 'تم تهيئة الصلاحيات الافتراضية بنجاح'})
 
+@admin_bp.route('/permissions/comprehensive')
+@login_required
+@admin_required
+def comprehensive_permissions():
+    """Comprehensive permissions management interface"""
+    return render_template('admin/comprehensive_permissions.html')
+
 @admin_bp.route('/permissions/projects')
 @login_required
 @admin_required

@@ -1,0 +1,875 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}إدارة الصلاحيات الشاملة{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">الرئيسية</a></li>
+<li class="breadcrumb-item active" aria-current="page">إدارة الصلاحيات الشاملة</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.permissions-container {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    padding: 30px;
+    margin-bottom: 30px;
+}
+
+.step-indicator {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    position: relative;
+}
+
+.step-indicator::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    right: 25%;
+    left: 25%;
+    height: 2px;
+    background: #e2e8f0;
+    z-index: 0;
+}
+
+.step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #718096;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.step.active .step-circle {
+    background: #1a365d;
+    color: white;
+    transform: scale(1.1);
+}
+
+.step.completed .step-circle {
+    background: #10b981;
+    color: white;
+}
+
+.step-label {
+    font-size: 0.9rem;
+    color: #718096;
+    font-weight: 500;
+}
+
+.step.active .step-label {
+    color: #1a365d;
+    font-weight: 600;
+}
+
+.selection-card {
+    background: #f7fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 15px;
+}
+
+.selection-card:hover {
+    border-color: #1a365d;
+    background: white;
+    transform: translateX(-5px);
+}
+
+.selection-card.selected {
+    border-color: #1a365d;
+    background: #edf2f7;
+}
+
+.selection-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 5px;
+}
+
+.selection-card-subtitle {
+    font-size: 0.9rem;
+    color: #718096;
+}
+
+.permission-section {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.section-header {
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+    color: white;
+    padding: 15px 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.section-header:hover {
+    background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-body {
+    padding: 20px;
+    display: none;
+}
+
+.section-body.show {
+    display: block;
+}
+
+.permission-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #f7fafc;
+    transition: background 0.2s ease;
+}
+
+.permission-item:last-child {
+    border-bottom: none;
+}
+
+.permission-item:hover {
+    background: #f7fafc;
+}
+
+.permission-name {
+    font-size: 1rem;
+    color: #2d3748;
+    font-weight: 500;
+}
+
+.permission-type-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 10px;
+}
+
+.permission-type-VIEW {
+    background: #e6f7ff;
+    color: #0066cc;
+}
+
+.permission-type-CREATE {
+    background: #e6ffe6;
+    color: #00cc00;
+}
+
+.permission-type-EDIT {
+    background: #fff7e6;
+    color: #ff9900;
+}
+
+.permission-type-DELETE {
+    background: #ffe6e6;
+    color: #cc0000;
+}
+
+.permission-type-EXPORT {
+    background: #f3e6ff;
+    color: #9900cc;
+}
+
+.permission-type-ASSIGN {
+    background: #e6f2ff;
+    color: #0080ff;
+}
+
+.permission-type-APPROVE {
+    background: #e6fff2;
+    color: #00cc66;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e0;
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #10b981;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+.save-button {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 15px 40px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    display: none;
+}
+
+.save-button:hover {
+    transform: translateX(-50%) translateY(-3px);
+    box-shadow: 0 15px 35px rgba(16, 185, 129, 0.4);
+}
+
+.save-button.show {
+    display: block;
+}
+
+.user-info-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 30px;
+}
+
+.user-info-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.user-info-subtitle {
+    opacity: 0.9;
+    font-size: 1rem;
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 50px;
+    display: none;
+}
+
+.loading-spinner.show {
+    display: block;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #718096;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.3;
+}
+
+.search-box {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 1rem;
+    width: 100%;
+    margin-bottom: 20px;
+    transition: border-color 0.3s ease;
+}
+
+.search-box:focus {
+    outline: none;
+    border-color: #1a365d;
+}
+
+.btn-primary-custom {
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 25px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(26, 54, 93, 0.3);
+}
+
+.changes-indicator {
+    display: inline-block;
+    background: #fbbf24;
+    color: #78350f;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-right: 15px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-2">
+                <i class="fas fa-user-lock me-2"></i>
+                إدارة الصلاحيات الشاملة
+            </h2>
+            <p class="text-muted">تحكم كامل في صلاحيات جميع المستخدمين حسب المشروع</p>
+        </div>
+    </div>
+
+    <div class="permissions-container">
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step" id="step1" data-step="1">
+                <div class="step-circle">1</div>
+                <div class="step-label">اختيار المشروع</div>
+            </div>
+            <div class="step" id="step2" data-step="2">
+                <div class="step-circle">2</div>
+                <div class="step-label">اختيار المستخدم</div>
+            </div>
+            <div class="step" id="step3" data-step="3">
+                <div class="step-circle">3</div>
+                <div class="step-label">إدارة الصلاحيات</div>
+            </div>
+        </div>
+
+        <!-- Step 1: Project Selection -->
+        <div class="step-content" id="step1-content">
+            <h4 class="mb-4">اختر المشروع لإدارة صلاحياته</h4>
+            <input type="text" class="search-box" id="project-search" placeholder="🔍 ابحث عن مشروع...">
+            <div id="projects-list" class="loading-spinner show">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">جاري التحميل...</span>
+                </div>
+                <p class="mt-3">جاري تحميل المشاريع...</p>
+            </div>
+        </div>
+
+        <!-- Step 2: User Selection -->
+        <div class="step-content" id="step2-content" style="display: none;">
+            <button class="btn btn-sm btn-outline-secondary mb-3" onclick="goToStep(1)">
+                <i class="fas fa-arrow-right me-2"></i>العودة للمشاريع
+            </button>
+            <div class="user-info-card" style="background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);">
+                <div class="user-info-title" id="selected-project-name"></div>
+                <div class="user-info-subtitle" id="selected-project-code"></div>
+            </div>
+            <h4 class="mb-4">اختر المستخدم لإدارة صلاحياته</h4>
+            <input type="text" class="search-box" id="user-search" placeholder="🔍 ابحث عن مستخدم...">
+            <div id="users-list" class="loading-spinner show">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">جاري التحميل...</span>
+                </div>
+                <p class="mt-3">جاري تحميل المستخدمين...</p>
+            </div>
+        </div>
+
+        <!-- Step 3: Permissions Management -->
+        <div class="step-content" id="step3-content" style="display: none;">
+            <button class="btn btn-sm btn-outline-secondary mb-3" onclick="goToStep(2)">
+                <i class="fas fa-arrow-right me-2"></i>العودة للمستخدمين
+            </button>
+            <div class="user-info-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="user-info-title" id="selected-user-name"></div>
+                        <div class="user-info-subtitle" id="selected-user-role"></div>
+                    </div>
+                    <div>
+                        <span class="changes-indicator" id="changes-indicator" style="display: none;">
+                            <i class="fas fa-exclamation-circle me-1"></i>
+                            <span id="changes-count">0</span> تغيير
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0">إدارة الصلاحيات</h4>
+                <div>
+                    <button class="btn btn-sm btn-success me-2" onclick="toggleAllPermissions(true)">
+                        <i class="fas fa-check-circle me-2"></i>تفعيل الكل
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="toggleAllPermissions(false)">
+                        <i class="fas fa-times-circle me-2"></i>إلغاء الكل
+                    </button>
+                </div>
+            </div>
+            <div id="permissions-list" class="loading-spinner show">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">جاري التحميل...</span>
+                </div>
+                <p class="mt-3">جاري تحميل الصلاحيات...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Button -->
+    <button class="save-button" id="save-button" onclick="savePermissions()">
+        <i class="fas fa-save me-2"></i>
+        حفظ التغييرات
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentStep = 1;
+let selectedProject = null;
+let selectedUser = null;
+let allPermissions = [];
+let changedPermissions = {};
+let originalPermissions = {};
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadProjects();
+});
+
+// Load all projects
+function loadProjects() {
+    fetch('/admin/permissions/projects')
+        .then(response => response.json())
+        .then(data => {
+            displayProjects(data.projects);
+        })
+        .catch(error => {
+            console.error('Error loading projects:', error);
+            showError('فشل في تحميل المشاريع');
+        });
+}
+
+// Display projects list
+function displayProjects(projects) {
+    const container = document.getElementById('projects-list');
+    container.classList.remove('show');
+    
+    if (projects.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-folder-open"></i>
+                <h5>لا توجد مشاريع</h5>
+                <p>لم يتم العثور على أي مشاريع في النظام</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    projects.forEach(project => {
+        html += `
+            <div class="selection-card" onclick="selectProject('${project.id}', '${project.name}', '${project.code}')">
+                <div class="selection-card-title">
+                    <i class="fas fa-project-diagram me-2"></i>${project.name}
+                </div>
+                <div class="selection-card-subtitle">
+                    كود المشروع: ${project.code} | الموظفون: ${project.employees_count}
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Select a project
+function selectProject(projectId, projectName, projectCode) {
+    selectedProject = { id: projectId, name: projectName, code: projectCode };
+    document.getElementById('selected-project-name').textContent = projectName;
+    document.getElementById('selected-project-code').textContent = `كود المشروع: ${projectCode}`;
+    goToStep(2);
+    loadUsers(projectId);
+}
+
+// Load users for selected project
+function loadUsers(projectId) {
+    const container = document.getElementById('users-list');
+    container.className = 'loading-spinner show';
+    
+    fetch(`/admin/permissions/users/${projectId}`)
+        .then(response => response.json())
+        .then(data => {
+            displayUsers(data.users);
+        })
+        .catch(error => {
+            console.error('Error loading users:', error);
+            showError('فشل في تحميل المستخدمين');
+        });
+}
+
+// Display users list
+function displayUsers(users) {
+    const container = document.getElementById('users-list');
+    container.classList.remove('show');
+    
+    if (users.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <h5>لا يوجد مستخدمون</h5>
+                <p>لم يتم العثور على أي مستخدمين مرتبطين بهذا المشروع</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    users.forEach(user => {
+        const roleName = getRoleName(user.role);
+        html += `
+            <div class="selection-card" onclick="selectUser('${user.id}', '${user.full_name}', '${user.role}')">
+                <div class="selection-card-title">
+                    <i class="fas fa-user me-2"></i>${user.full_name}
+                </div>
+                <div class="selection-card-subtitle">
+                    ${user.username} | ${roleName} | ${user.employee_name} (${user.employee_id})
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Select a user
+function selectUser(userId, userName, userRole) {
+    selectedUser = { id: userId, name: userName, role: userRole };
+    document.getElementById('selected-user-name').textContent = userName;
+    document.getElementById('selected-user-role').textContent = getRoleName(userRole);
+    goToStep(3);
+    loadPermissions(userId, selectedProject.id);
+}
+
+// Load permissions matrix
+function loadPermissions(userId, projectId) {
+    const container = document.getElementById('permissions-list');
+    container.className = 'loading-spinner show';
+    
+    fetch(`/admin/permissions/matrix/${userId}/${projectId}`)
+        .then(response => response.json())
+        .then(data => {
+            allPermissions = data.permissions;
+            originalPermissions = {};
+            data.permissions.forEach(perm => {
+                const key = `${perm.section}.${perm.subsection}.${perm.permission_type}`;
+                originalPermissions[key] = perm.is_granted;
+            });
+            displayPermissions(data.permissions);
+        })
+        .catch(error => {
+            console.error('Error loading permissions:', error);
+            showError('فشل في تحميل الصلاحيات');
+        });
+}
+
+// Display permissions
+function displayPermissions(permissions) {
+    const container = document.getElementById('permissions-list');
+    container.classList.remove('show');
+    
+    // Group permissions by section
+    const sections = {};
+    permissions.forEach(perm => {
+        if (!sections[perm.section]) {
+            sections[perm.section] = [];
+        }
+        sections[perm.section].push(perm);
+    });
+    
+    let html = '';
+    Object.keys(sections).forEach(sectionKey => {
+        const sectionPerms = sections[sectionKey];
+        const sectionName = sectionPerms[0].name_ar;
+        
+        html += `
+            <div class="permission-section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div class="section-title">
+                        <i class="fas fa-chevron-left transition-icon"></i>
+                        ${sectionName}
+                    </div>
+                    <div>
+                        <span class="badge bg-light text-dark">${sectionPerms.length} صلاحية</span>
+                    </div>
+                </div>
+                <div class="section-body">
+        `;
+        
+        sectionPerms.forEach(perm => {
+            const permKey = `${perm.section}.${perm.subsection}.${perm.permission_type}`;
+            html += `
+                <div class="permission-item">
+                    <div>
+                        <span class="permission-type-badge permission-type-${perm.permission_type}">
+                            ${perm.permission_type}
+                        </span>
+                        <span class="permission-name">${perm.name_ar}</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" 
+                               ${perm.is_granted ? 'checked' : ''} 
+                               onchange="togglePermission('${perm.section}', '${perm.subsection}', '${perm.permission_type}', this.checked)"
+                               data-perm-key="${permKey}">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Toggle section visibility
+function toggleSection(header) {
+    const body = header.nextElementSibling;
+    const icon = header.querySelector('.transition-icon');
+    
+    if (body.classList.contains('show')) {
+        body.classList.remove('show');
+        icon.style.transform = 'rotate(0deg)';
+    } else {
+        body.classList.add('show');
+        icon.style.transform = 'rotate(-90deg)';
+    }
+}
+
+// Toggle single permission
+function togglePermission(section, subsection, permissionType, isGranted) {
+    const key = `${section}.${subsection}.${permissionType}`;
+    changedPermissions[key] = {
+        section: section,
+        subsection: subsection,
+        permission_type: permissionType,
+        is_granted: isGranted
+    };
+    
+    updateChangesIndicator();
+}
+
+// Toggle all permissions
+function toggleAllPermissions(grant) {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        if (checkbox.checked !== grant) {
+            checkbox.checked = grant;
+            const key = checkbox.getAttribute('data-perm-key');
+            const parts = key.split('.');
+            changedPermissions[key] = {
+                section: parts[0],
+                subsection: parts[1],
+                permission_type: parts[2],
+                is_granted: grant
+            };
+        }
+    });
+    
+    updateChangesIndicator();
+}
+
+// Update changes indicator
+function updateChangesIndicator() {
+    const changesCount = Object.keys(changedPermissions).length;
+    const indicator = document.getElementById('changes-indicator');
+    const saveButton = document.getElementById('save-button');
+    const countSpan = document.getElementById('changes-count');
+    
+    if (changesCount > 0) {
+        indicator.style.display = 'inline-block';
+        saveButton.classList.add('show');
+        countSpan.textContent = changesCount;
+    } else {
+        indicator.style.display = 'none';
+        saveButton.classList.remove('show');
+    }
+}
+
+// Save permissions
+function savePermissions() {
+    if (Object.keys(changedPermissions).length === 0) {
+        showSuccess('لا توجد تغييرات للحفظ');
+        return;
+    }
+    
+    const saveButton = document.getElementById('save-button');
+    saveButton.disabled = true;
+    saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري الحفظ...';
+    
+    const promises = Object.values(changedPermissions).map(perm => {
+        return fetch('/admin/permissions/update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: selectedUser.id,
+                section: perm.section,
+                subsection: perm.subsection,
+                permission_type: perm.permission_type,
+                is_granted: perm.is_granted,
+                project_id: selectedProject.id
+            })
+        });
+    });
+    
+    Promise.all(promises)
+        .then(responses => Promise.all(responses.map(r => r.json())))
+        .then(results => {
+            const failed = results.filter(r => !r.success);
+            if (failed.length === 0) {
+                showSuccess('تم حفظ جميع التغييرات بنجاح');
+                changedPermissions = {};
+                updateChangesIndicator();
+            } else {
+                showError(`فشل حفظ ${failed.length} من التغييرات`);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving permissions:', error);
+            showError('فشل في حفظ التغييرات');
+        })
+        .finally(() => {
+            saveButton.disabled = false;
+            saveButton.innerHTML = '<i class="fas fa-save me-2"></i>حفظ التغييرات';
+        });
+}
+
+// Navigate between steps
+function goToStep(step) {
+    // Hide all step contents
+    document.querySelectorAll('.step-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    
+    // Show selected step
+    document.getElementById(`step${step}-content`).style.display = 'block';
+    
+    // Update step indicator
+    document.querySelectorAll('.step').forEach(stepEl => {
+        stepEl.classList.remove('active', 'completed');
+        const stepNum = parseInt(stepEl.getAttribute('data-step'));
+        if (stepNum < step) {
+            stepEl.classList.add('completed');
+        } else if (stepNum === step) {
+            stepEl.classList.add('active');
+        }
+    });
+    
+    currentStep = step;
+}
+
+// Helper functions
+function getRoleName(role) {
+    const roles = {
+        'GENERAL_ADMIN': 'مدير عام',
+        'PROJECT_MANAGER': 'مسؤول مشروع',
+        'HANDLER': 'سائس',
+        'TRAINER': 'مدرب',
+        'BREEDER': 'مربي',
+        'VET': 'طبيب'
+    };
+    return roles[role] || role;
+}
+
+function showSuccess(message) {
+    alert('✓ ' + message);
+}
+
+function showError(message) {
+    alert('✗ ' + message);
+}
+
+// Search functionality
+document.getElementById('project-search')?.addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    document.querySelectorAll('#projects-list .selection-card').forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(searchTerm) ? 'block' : 'none';
+    });
+});
+
+document.getElementById('user-search')?.addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    document.querySelectorAll('#users-list .selection-card').forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(searchTerm) ? 'block' : 'none';
+    });
+});
+</script>
+{% endblock %}
