@@ -193,6 +193,13 @@
                 <h5 class="mb-0">
                     <i class="fas fa-calendar-day me-2"></i>
                     جدول اليوم
+                    {% if schedule_date %}
+                        {% if schedule_is_for_tomorrow %}
+                            <span class="badge bg-info me-2">جدول الغد - {{ schedule_date }}</span>
+                        {% else %}
+                            <span class="badge bg-success me-2">{{ schedule_date }}</span>
+                        {% endif %}
+                    {% endif %}
                 </h5>
             </div>
             <div class="card-body">
