@@ -341,34 +341,80 @@ def update_permission(user_id, section, subsection, permission_type, granted, up
         print(f"Error updating permission: {e}")
         return False
 
-def bulk_update_permissions(user_id, permissions_list, updated_by, project_id=None):
+def bulk_update_permissions(user_id, permissions_data, updated_by, project_id=None):
     """
     Bulk update permissions for a user
     
+    Can handle two modes:
+    1. List mode: permissions_data is a list of dicts with keys: section, subsection, permission_type, granted
+    2. Section mode: permissions_data is a dict with keys: section, is_granted (updates all permissions in that section)
+    
     Args:
         user_id: ID of the user to update permissions for
-        permissions_list: List of dicts with keys: section, subsection, permission_type, granted
+        permissions_data: Either a list of permission dicts OR a dict with section and is_granted
         updated_by: ID of the user making the changes
         project_id: Optional project ID for project-scoped permissions
         
     Returns:
-        Boolean indicating success
+        Integer count of permissions updated
     """
+    from k9.utils.permission_registry import PERMISSION_REGISTRY, get_section_permissions
+    
+    count = 0
+    
     try:
-        for perm_data in permissions_list:
-            update_permission(
-                user_id=user_id,
-                section=perm_data['section'],
-                subsection=perm_data.get('subsection', ''),
-                permission_type=perm_data['permission_type'],
-                granted=perm_data['granted'],
-                updated_by=updated_by,
-                project_id=project_id
-            )
-        return True
+        # Handle dict mode (section-wide update)
+        if isinstance(permissions_data, dict) and 'section' in permissions_data and 'is_granted' in permissions_data:
+            section = permissions_data['section']
+            is_granted = permissions_data['is_granted']
+            
+            # Get all permissions for this section from the registry
+            try:
+                section_perms = get_section_permissions(section)
+            except Exception as e:
+                # Fallback if permission registry is not available
+                print(f"Could not get section permissions: {e}")
+                section_perms = []
+            
+            # Update each permission in the section
+            for perm in section_perms:
+                success = update_permission(
+                    user_id=user_id,
+                    section=section,  # Use the section passed in, not from perm dict
+                    subsection=perm.get('subsection', ''),
+                    permission_type=perm['permission_type'],
+                    granted=is_granted,
+                    updated_by=updated_by,
+                    project_id=project_id
+                )
+                if success:
+                    count += 1
+        
+        # Handle list mode (individual permissions)
+        elif isinstance(permissions_data, list):
+            for perm_data in permissions_data:
+                success = update_permission(
+                    user_id=user_id,
+                    section=perm_data['section'],
+                    subsection=perm_data.get('subsection', ''),
+                    permission_type=perm_data['permission_type'],
+                    granted=perm_data['granted'],
+                    updated_by=updated_by,
+                    project_id=project_id
+                )
+                if success:
+                    count += 1
+        else:
+            print(f"Invalid permissions_data format: {type(permissions_data)}")
+            return 0
+        
+        return count
     except Exception as e:
+        db.session.rollback()
         print(f"Error in bulk update: {e}")
-        return False
+        import traceback
+        traceback.print_exc()
+        return 0
 
 def get_project_managers():
     """Get all project manager users"""
@@ -380,33 +426,67 @@ def get_all_projects():
 
 def get_users_by_project(project_id):
     """
-    Get all users (with their employee info) assigned to a specific project
+    Get all users assigned to a specific project regardless of role
+    
+    This includes:
+    - Users whose employees are assigned via project_employee_assignment
+    - Users whose employees are assigned via ProjectAssignment
+    - The project manager
+    - Users who have any permissions set for this project
     
     Args:
         project_id: ID of the project
         
     Returns:
-        List of User objects with employee relationship loaded
+        List of User objects (deduplicated)
     """
-    from k9.models.models import Employee, project_employee_assignment
+    from k9.models.models import Employee, project_employee_assignment, ProjectAssignment
     
     project = Project.query.get(project_id)
     if not project:
         return []
     
+    users_dict = {}  # Use dict to deduplicate by user.id
+    
+    # 1. Get users via project_employee_assignment table
     assigned_employee_ids = db.session.query(project_employee_assignment.c.employee_id).filter(
         project_employee_assignment.c.project_id == project_id
     ).all()
     
-    employee_ids = [emp_id[0] for emp_id in assigned_employee_ids]
+    if assigned_employee_ids:
+        employee_ids = [emp_id[0] for emp_id in assigned_employee_ids]
+        employee_users = User.query.filter(User.employee_id.in_(employee_ids)).all()
+        for user in employee_users:
+            users_dict[user.id] = user
     
-    users = User.query.filter(User.employee_id.in_(employee_ids)).all()
+    # 2. Get users via ProjectAssignment table (handlers, vets, etc.)
+    project_assignments = ProjectAssignment.query.filter_by(
+        project_id=project_id,
+        is_active=True
+    ).filter(ProjectAssignment.employee_id.isnot(None)).all()
     
+    for assignment in project_assignments:
+        if assignment.employee:
+            employee_users = User.query.filter_by(employee_id=assignment.employee.id).all()
+            for user in employee_users:
+                users_dict[user.id] = user
+    
+    # 3. Add project manager
     if project.manager:
-        if project.manager not in users:
-            users.append(project.manager)
+        users_dict[project.manager.id] = project.manager
     
-    return users
+    # 4. Get users who have permissions specifically set for this project
+    users_with_permissions = db.session.query(SubPermission.user_id).filter(
+        SubPermission.project_id == project_id
+    ).distinct().all()
+    
+    if users_with_permissions:
+        permission_user_ids = [user_id[0] for user_id in users_with_permissions]
+        permission_users = User.query.filter(User.id.in_(permission_user_ids)).all()
+        for user in permission_users:
+            users_dict[user.id] = user
+    
+    return list(users_dict.values())
 
 def get_user_permissions_by_project(user_id, project_id):
     """
