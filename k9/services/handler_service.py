@@ -32,6 +32,10 @@ class DailyScheduleService:
         الحصول على الجدول النشط للسائس مع التاريخ الفعلي
         يحاول اليوم أولاً، ثم الغد إذا لم يوجد جدول لليوم
         
+        هذه الدالة تُستخدم في لوحة تحكم السائس لعرض الجدول الحالي.
+        عندما ينشئ مسؤول المشروع جدولاً لليوم التالي (مثلاً في الساعة 23:00)،
+        سيظهر هذا الجدول للسائس في اليوم التالي عند فتح لوحة التحكم.
+        
         Returns:
             Tuple[List, Optional[date]]: (قائمة عناصر الجدول, التاريخ الفعلي للجدول)
         """
@@ -39,10 +43,11 @@ class DailyScheduleService:
         if not user:
             return [], None
         
-        # حل المنطقة الزمنية
+        # حل المنطقة الزمنية - استخدام UTC+3 (توقيت السعودية)
         tz = DailyScheduleService._get_project_timezone(user.project_id)
         
         # الحصول على التاريخ الحالي بالمنطقة الزمنية الصحيحة
+        # هذا يضمن أن التاريخ يتطابق مع التاريخ المحلي للمستخدم
         now_with_tz = datetime.now(tz)
         today = now_with_tz.date()
         tomorrow = today + timedelta(days=1)
@@ -53,6 +58,8 @@ class DailyScheduleService:
         
         if user.project_id:
             # البحث عن جدول اليوم
+            # ملاحظة: التاريخ المحفوظ في قاعدة البيانات هو date فقط (بدون وقت)
+            # لذلك المقارنة تكون دقيقة
             schedule = DailySchedule.query.filter_by(
                 date=today,
                 project_id=user.project_id
@@ -62,6 +69,7 @@ class DailyScheduleService:
                 schedule_date = today
             else:
                 # إذا لم يوجد جدول لليوم، البحث عن جدول الغد
+                # هذا مفيد عندما ينشئ المسؤول جدول الغد مسبقاً
                 schedule = DailySchedule.query.filter_by(
                     date=tomorrow,
                     project_id=user.project_id
@@ -75,6 +83,7 @@ class DailyScheduleService:
             return [], None
         
         # الحصول على عناصر الجدول للسائس
+        # يشمل هذا العناصر التي السائس مخصص لها أو كبديل
         items = DailyScheduleItem.query.filter(
             and_(
                 DailyScheduleItem.daily_schedule_id == schedule.id,

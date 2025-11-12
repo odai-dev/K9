@@ -216,6 +216,11 @@ def dashboard():
     # Use schedule_date if available, otherwise use today
     effective_date = schedule_date if schedule_date else today
     
+    # Determine if showing today's or tomorrow's schedule
+    schedule_is_for_tomorrow = False
+    if schedule_date and schedule_date > today:
+        schedule_is_for_tomorrow = True
+    
     # Add shift report status to each schedule item
     for item in today_schedule:
         shift_report = ShiftReport.query.filter_by(schedule_item_id=item.id).first()
@@ -259,6 +264,8 @@ def dashboard():
     return render_template('handler/dashboard.html',
                          page_title='لوحة تحكم السائس',
                          today_date=today.strftime('%Y-%m-%d'),
+                         schedule_date=schedule_date.strftime('%Y-%m-%d') if schedule_date else None,
+                         schedule_is_for_tomorrow=schedule_is_for_tomorrow,
                          project=project,
                          assigned_dog=assigned_dog,
                          today_schedule=today_schedule,
