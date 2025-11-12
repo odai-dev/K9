@@ -160,6 +160,21 @@ class AuditAction(Enum):
     MODE_SWITCH = "MODE_SWITCH"
     SETUP = "SETUP"
 
+class AccessActionType(Enum):
+    PAGE_ACCESS = "PAGE_ACCESS"
+    FILE_DOWNLOAD = "FILE_DOWNLOAD"
+    REPORT_APPROVAL = "REPORT_APPROVAL"
+    REPORT_REJECTION = "REPORT_REJECTION"
+    SCHEDULE_ACCESS = "SCHEDULE_ACCESS"
+    SHIFT_ACCESS = "SHIFT_ACCESS"
+    PROJECT_ACCESS = "PROJECT_ACCESS"
+    DATA_EXPORT = "DATA_EXPORT"
+
+class AccessOutcome(Enum):
+    SUCCESS = "SUCCESS"
+    FAILURE = "FAILURE"
+    BLOCKED = "BLOCKED"
+
 # Arabic enums for Daily Checkup (store Arabic strings)
 class PartStatus(Enum):
     NORMAL = "سليم"
@@ -1186,6 +1201,49 @@ class AuditLog(db.Model):
     
     def __repr__(self):
         return f'<AuditLog {self.user.username} - {self.action.value} - {self.target_type}>'
+
+class AccessAuditLog(db.Model):
+    """Access audit logging for PM interface access, downloads, and approvals"""
+    __tablename__ = 'access_audit_logs'
+    
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
+    user_id = db.Column(get_uuid_column(), db.ForeignKey('user.id'), nullable=False)
+    action_type = db.Column(db.Enum(AccessActionType), nullable=False)
+    
+    # Target information
+    target_type = db.Column(db.String(80))
+    target_id = db.Column(get_uuid_column(), nullable=True)
+    target_name = db.Column(db.String(200))
+    
+    # Request context
+    request_path = db.Column(db.String(300))
+    http_method = db.Column(db.String(10))
+    
+    # Session and admin context
+    ip_address = db.Column(db.String(45))
+    user_agent = db.Column(Text)
+    session_id = db.Column(db.String(255))
+    admin_mode = db.Column(db.String(40))
+    
+    # Outcome
+    outcome = db.Column(db.Enum(AccessOutcome), default=AccessOutcome.SUCCESS)
+    
+    # Additional metadata
+    extra_metadata = db.Column(JSON, default=dict)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    
+    # Relationships
+    user = db.relationship('User', backref='access_audit_logs')
+    
+    # Indexes for efficient querying
+    __table_args__ = (
+        db.Index('idx_access_audit_action_time', 'action_type', 'created_at'),
+        db.Index('idx_access_audit_user_time', 'user_id', 'created_at'),
+    )
+    
+    def __repr__(self):
+        return f'<AccessAuditLog {self.action_type.value} by User {self.user_id} on {self.target_type}>'
 
 class Shift(db.Model):
     """Shift model for schedule management"""
