@@ -3,7 +3,7 @@
 Handler Daily System Services
 """
 from app import db
-from datetime import datetime, date, time, timedelta
+from datetime import datetime, date, time, timedelta, timezone
 from k9.models.models_handler_daily import (
     DailySchedule, DailyScheduleItem, HandlerReport,
     HandlerReportHealth, HandlerReportTraining, HandlerReportCare,
@@ -14,12 +14,78 @@ from k9.models.models_handler_daily import (
 )
 from k9.models.models import User, Employee, Dog, Project, Shift
 from sqlalchemy import and_, or_
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 import os
 
 
 class DailyScheduleService:
     """خدمة إدارة الجداول اليومية"""
+    
+    @staticmethod
+    def _get_project_timezone(project_id: Optional[str]) -> timezone:
+        """حل المنطقة الزمنية من المشروع أو استخدام +3 كافتراضي"""
+        return timezone(timedelta(hours=3))
+    
+    @staticmethod
+    def get_active_handler_schedule(handler_user_id: str) -> Tuple[List, Optional[date]]:
+        """
+        الحصول على الجدول النشط للسائس مع التاريخ الفعلي
+        يحاول اليوم أولاً، ثم الغد إذا لم يوجد جدول لليوم
+        
+        Returns:
+            Tuple[List, Optional[date]]: (قائمة عناصر الجدول, التاريخ الفعلي للجدول)
+        """
+        user = User.query.get(handler_user_id)
+        if not user:
+            return [], None
+        
+        # حل المنطقة الزمنية
+        tz = DailyScheduleService._get_project_timezone(user.project_id)
+        
+        # الحصول على التاريخ الحالي بالمنطقة الزمنية الصحيحة
+        now_with_tz = datetime.now(tz)
+        today = now_with_tz.date()
+        tomorrow = today + timedelta(days=1)
+        
+        # محاولة الحصول على جدول اليوم أولاً
+        schedule = None
+        schedule_date = None
+        
+        if user.project_id:
+            # البحث عن جدول اليوم
+            schedule = DailySchedule.query.filter_by(
+                date=today,
+                project_id=user.project_id
+            ).first()
+            
+            if schedule:
+                schedule_date = today
+            else:
+                # إذا لم يوجد جدول لليوم، البحث عن جدول الغد
+                schedule = DailySchedule.query.filter_by(
+                    date=tomorrow,
+                    project_id=user.project_id
+                ).first()
+                
+                if schedule:
+                    schedule_date = tomorrow
+        
+        # إذا لم يتم العثور على جدول
+        if not schedule:
+            return [], None
+        
+        # الحصول على عناصر الجدول للسائس
+        items = DailyScheduleItem.query.filter(
+            and_(
+                DailyScheduleItem.daily_schedule_id == schedule.id,
+                or_(
+                    DailyScheduleItem.handler_user_id == handler_user_id,
+                    DailyScheduleItem.replacement_handler_id == handler_user_id
+                )
+            )
+        ).all()
+        
+        return items, schedule_date
     
     @staticmethod
     def create_schedule(date: date, project_id: Optional[str], created_by_user_id: str, notes: Optional[str] = None):
