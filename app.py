@@ -166,6 +166,7 @@ with app.app_context():
     # Register template functions
     from k9.utils.utils import get_user_permissions
     from k9.utils.pm_scoping import is_admin
+    from k9.utils.permission_utils import has_permission, has_any_permission, has_all_permissions, get_sections_for_user
     from datetime import date, datetime
     
     def get_notification_link(notification):
@@ -189,15 +190,16 @@ with app.app_context():
         return '#'
     
     def get_pending_reports_count():
-        """Get count of pending handler reports for PROJECT_MANAGER and GENERAL_ADMIN"""
+        """Get count of pending handler reports for users with any permissions"""
         from flask_login import current_user
-        from k9.models.models import UserRole
         from k9.models.models_handler_daily import HandlerReport, ReportStatus
         
         if not current_user.is_authenticated:
             return 0
         
-        if current_user.role not in [UserRole.GENERAL_ADMIN, UserRole.PROJECT_MANAGER]:
+        # Check if user has any operational permissions
+        user_sections = get_sections_for_user(current_user)
+        if not user_sections:
             return 0
         
         try:
@@ -208,15 +210,17 @@ with app.app_context():
             return 0
     
     def get_pm_pending_count():
-        """Get total count of all pending approvals for PROJECT_MANAGER"""
+        """Get total count of all pending approvals for users with operational permissions"""
         from flask_login import current_user
-        from k9.models.models import UserRole, Project, VeterinaryVisit, BreedingTrainingActivity, CaretakerDailyLog, WorkflowStatus, ProjectDog
+        from k9.models.models import Project, VeterinaryVisit, BreedingTrainingActivity, CaretakerDailyLog, WorkflowStatus, ProjectDog
         from k9.models.models_handler_daily import HandlerReport, ReportStatus
         
         if not current_user.is_authenticated:
             return 0
         
-        if current_user.role != UserRole.PROJECT_MANAGER:
+        # Check if user has any operational permissions
+        user_sections = get_sections_for_user(current_user)
+        if not user_sections:
             return 0
         
         try:
@@ -266,6 +270,10 @@ with app.app_context():
         get_pending_reports_count=get_pending_reports_count,
         get_pm_pending_count=get_pm_pending_count,
         is_admin=is_admin,
+        has_permission=has_permission,
+        has_any_permission=has_any_permission,
+        has_all_permissions=has_all_permissions,
+        get_sections_for_user=get_sections_for_user,
         date=date,
         datetime=datetime
     )
@@ -275,7 +283,6 @@ with app.app_context():
     def inject_notifications_data():
         """Inject notification data into all templates for all users"""
         from flask_login import current_user
-        from k9.models.models import UserRole
         
         data = {
             'handler_unread_count': 0,
@@ -287,10 +294,15 @@ with app.app_context():
                 from k9.services.handler_service import NotificationService
                 unread_count = NotificationService.get_unread_count(str(current_user.id))
                 
-                if current_user.role == UserRole.HANDLER:
-                    data['handler_unread_count'] = unread_count
-                elif current_user.role in [UserRole.GENERAL_ADMIN, UserRole.PROJECT_MANAGER]:
+                # Check if user has any operational permissions
+                user_sections = get_sections_for_user(current_user)
+                
+                if user_sections:
+                    # User has permissions - treat as admin
                     data['admin_unread_count'] = unread_count
+                else:
+                    # User has no permissions - treat as handler
+                    data['handler_unread_count'] = unread_count
             except Exception:
                 pass
         
