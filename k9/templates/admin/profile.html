@@ -208,12 +208,12 @@
                                 <td><strong>الدور:</strong></td>
                                 <td>
                                     <span class="badge bg-primary">
-                                        {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                                        {% if is_admin() %}
                                         مدير عام
-                                        {% elif current_user.role.value == 'PROJECT_MANAGER' %}
+                                        {% elif get_sections_for_user(current_user)|length > 0 %}
                                         مدير مشروع
                                         {% else %}
-                                        {{ current_user.role.value }}
+                                        سائس
                                         {% endif %}
                                     </span>
                                 </td>

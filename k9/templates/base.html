@@ -151,7 +151,7 @@
                     </li>
                     {% endif %}
                     
-                    {% if current_user.role.value == 'HANDLER' %}
+                    {% if get_sections_for_user(current_user)|length == 0 %}
                     {% set is_handler_active = request.endpoint and (request.endpoint.startswith('handler.') or request.endpoint.startswith('tasks.handler_')) %}
                     <li class="nav-item dropdown {% if is_handler_active %}active{% endif %}">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_handler_active %}active{% endif %}" href="#" id="handlerDropdown" role="button" data-bs-toggle="dropdown">
@@ -178,7 +178,7 @@
                     </li>
                     {% endif %}
                     
-                    {% if current_user.role.value == 'PROJECT_MANAGER' %}
+                    {% if get_sections_for_user(current_user)|length > 0 %}
                     {% set is_pm_active = request.endpoint and request.endpoint.startswith('pm.') %}
                     <li class="nav-item dropdown {% if is_pm_active %}active{% endif %}">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_pm_active %}active{% endif %}" href="#" id="pmDropdown" role="button" data-bs-toggle="dropdown">
@@ -319,7 +319,7 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow">
                             <li><h6 class="dropdown-header">الحساب الشخصي</h6></li>
-                            {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                            {% if is_admin() %}
                                 <!-- Mode Switcher for General Admin -->
                                 <li class="px-3 py-2">
                                     <div class="d-flex align-items-center justify-content-between bg-light rounded p-2">
@@ -346,7 +346,7 @@
                             <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}"><i class="fas fa-user-shield me-2"></i>لوحة التحكم</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('admin.admin_profile') }}"><i class="fas fa-user-cog me-2"></i>ملف الحساب الشخصي</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            {% elif current_user.role.value == 'HANDLER' or current_user.role.value == 'PROJECT_MANAGER' %}
+                            {% else %}
                             <li><a class="dropdown-item" href="{{ url_for('handler.profile') }}"><i class="fas fa-user-circle me-2"></i>الملف الشخصي</a></li>
                             <li><hr class="dropdown-divider"></li>
                             {% endif %}
@@ -366,7 +366,7 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end shadow">
                             <li><h6 class="dropdown-header">{{ current_user.full_name }}</h6></li>
-                            {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                            {% if is_admin() %}
                                 <!-- Mode Switcher for General Admin (Mobile) -->
                                 <li class="px-3 py-2">
                                     <div class="d-flex align-items-center justify-content-between bg-light rounded p-2">
@@ -393,7 +393,7 @@
                             <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}"><i class="fas fa-user-shield me-2"></i>لوحة التحكم</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('admin.admin_profile') }}"><i class="fas fa-user-cog me-2"></i>ملف الحساب الشخصي</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            {% elif current_user.role.value == 'HANDLER' or current_user.role.value == 'PROJECT_MANAGER' %}
+                            {% else %}
                             <li><a class="dropdown-item" href="{{ url_for('handler.profile') }}"><i class="fas fa-user-circle me-2"></i>الملف الشخصي</a></li>
                             <li><hr class="dropdown-divider"></li>
                             {% endif %}
@@ -431,7 +431,7 @@
     <!-- Mobile Bottom Navigation -->
     {% if current_user.is_authenticated %}
     <nav class="mobile-bottom-nav d-md-none">
-        {% if current_user.role.value == 'HANDLER' %}
+        {% if get_sections_for_user(current_user)|length == 0 %}
         <a href="{{ url_for('handler.dashboard') }}" class="nav-item {{ 'active' if request.endpoint == 'handler.dashboard' }}">
             <i class="fas fa-home"></i>
             <span>الرئيسية</span>
@@ -451,7 +451,7 @@
             <span class="notification-dot"></span>
             {% endif %}
         </a>
-        {% elif current_user.role.value in ['GENERAL_ADMIN', 'PROJECT_MANAGER'] %}
+        {% elif get_sections_for_user(current_user)|length > 0 %}
         <a href="{{ url_for('admin.dashboard') }}" class="nav-item {{ 'active' if request.endpoint == 'admin.dashboard' }}">
             <i class="fas fa-home"></i>
             <span>الرئيسية</span>
