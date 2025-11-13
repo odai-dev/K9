@@ -36,6 +36,7 @@
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
                 <form method="POST" action="{{ url_for('shift.edit', shift_id=shift.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <div class="mb-4">
                         <label for="name" class="form-label fw-bold">
                             <i class="fas fa-tag me-2"></i>
