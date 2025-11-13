@@ -236,26 +236,36 @@ class DailyScheduleService:
     
     @staticmethod
     def notify_handlers_of_new_schedule(schedule_id: str):
-        """إرسال إشعارات للسائسين بالجدول الجديد"""
-        schedule = DailySchedule.query.get(schedule_id)
-        if not schedule:
-            return
+        """
+        DISABLED: Do NOT send notifications to handlers about new schedules.
+        Daily schedules should appear ONLY in the handler's dashboard section.
+        They should NEVER be sent as notifications.
         
-        # Get all schedule items
-        items = DailyScheduleItem.query.filter_by(daily_schedule_id=schedule_id).all()
+        This function is kept for reference but should not be called.
+        """
+        # Function intentionally disabled - schedules appear in dashboard only
+        pass
         
-        # Notify each handler
-        for item in items:
-            if item.handler_user_id:
-                # Create notification
-                NotificationService.create_notification(
-                    user_id=str(item.handler_user_id),
-                    notification_type=NotificationType.SCHEDULE_CREATED,
-                    title="جدول يومي جديد",
-                    message=f"تم إنشاء جدول جديد لتاريخ {schedule.date.strftime('%Y-%m-%d')}",
-                    related_id=str(schedule_id),
-                    related_type="DailySchedule"
-                )
+        # OLD CODE (DISABLED):
+        # schedule = DailySchedule.query.get(schedule_id)
+        # if not schedule:
+        #     return
+        # 
+        # # Get all schedule items
+        # items = DailyScheduleItem.query.filter_by(daily_schedule_id=schedule_id).all()
+        # 
+        # # Notify each handler
+        # for item in items:
+        #     if item.handler_user_id:
+        #         # Create notification
+        #         NotificationService.create_notification(
+        #             user_id=str(item.handler_user_id),
+        #             notification_type=NotificationType.SCHEDULE_CREATED,
+        #             title="جدول يومي جديد",
+        #             message=f"تم إنشاء جدول جديد لتاريخ {schedule.date.strftime('%Y-%m-%d')}",
+        #             related_id=str(schedule_id),
+        #             related_type="DailySchedule"
+        #         )
 
 
 class HandlerReportService:

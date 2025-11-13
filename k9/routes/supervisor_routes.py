@@ -130,8 +130,9 @@ def schedule_create():
         
         db.session.commit()
         
-        # Send notifications
-        DailyScheduleService.notify_handlers_of_new_schedule(str(schedule.id))
+        # NOTE: Notifications for schedules are DISABLED - schedules appear only in handler dashboard
+        # Daily schedules should appear in the handler's dashboard section, NOT in notifications
+        # DailyScheduleService.notify_handlers_of_new_schedule(str(schedule.id))
         
         flash(f'تم إنشاء الجدول اليومي لتاريخ {schedule_date} بنجاح', 'success')
         return redirect(url_for('supervisor.schedule_view', schedule_id=str(schedule.id)))
