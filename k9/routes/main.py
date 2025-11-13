@@ -3193,10 +3193,10 @@ def update_user_credentials():
     
     return redirect(url_for('main.admin_panel'))
 
-@main_bp.route('/admin/permissions/update', methods=['POST'])
+@main_bp.route('/admin/permissions/update-legacy', methods=['POST'])
 @login_required
-def update_permissions():
-    """Update PROJECT_MANAGER permissions"""
+def update_permissions_legacy():
+    """Update PROJECT_MANAGER permissions (Legacy route - use comprehensive permissions instead)"""
     from k9.models.models import ProjectManagerPermission
     
     # Check admin access
