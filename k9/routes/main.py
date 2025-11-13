@@ -318,8 +318,10 @@ def employees_list():
 @login_required
 @admin_or_pm_required
 def employees_add():
+    import time
     print(f"Employee add route called with method: {request.method}")
     if request.method == 'POST':
+        start_time = time.time()
         print(f"Form data: {dict(request.form)}")
         try:
             # Validate phone number format
@@ -335,33 +337,8 @@ def employees_add():
                 flash('رقم الهاتف مستخدم بالفعل من قبل موظف آخر', 'error')
                 return render_template('employees/add.html', roles=EmployeeRole)
             
-            # Handle employee photo upload
-            employee_photo_filename = None
-            if 'employee_photo' in request.files and request.files['employee_photo'].filename:
-                photo = request.files['employee_photo']
-                if photo.filename and allowed_file(photo.filename):
-                    safe_filename = secure_filename(photo.filename or 'image')
-                    employee_photo_filename = f"{uuid.uuid4()}_{safe_filename}"
-                    photo_path = os.path.join(current_app.config['UPLOAD_FOLDER'], employee_photo_filename)
-                    photo.save(photo_path)
-            
-            # Handle ID card photo upload
-            id_card_photo_filename = None
-            if 'id_card_photo' in request.files and request.files['id_card_photo'].filename:
-                id_card = request.files['id_card_photo']
-                if id_card.filename and allowed_file(id_card.filename):
-                    safe_id_filename = secure_filename(id_card.filename or 'id_card')
-                    id_card_photo_filename = f"{uuid.uuid4()}_{safe_id_filename}"
-                    id_card_path = os.path.join(current_app.config['UPLOAD_FOLDER'], id_card_photo_filename)
-                    id_card.save(id_card_path)
-            
-            # Determine who the employee should be assigned to
+            # Prepare employee data first (before any I/O)
             assigned_to_user_id = current_user.id if current_user.role == UserRole.PROJECT_MANAGER else None
-            
-            employee = Employee()
-            employee.name = request.form['name']
-            employee.employee_id = request.form['employee_id']
-            # Map form values to enum values
             role_mapping = {
                 'HANDLER': EmployeeRole.HANDLER,
                 'TRAINER': EmployeeRole.TRAINER,
@@ -369,14 +346,16 @@ def employees_add():
                 'VET': EmployeeRole.VET,
                 'PROJECT_MANAGER': EmployeeRole.PROJECT_MANAGER
             }
+            
+            employee = Employee()
+            employee.name = request.form['name']
+            employee.employee_id = request.form['employee_id']
             employee.role = role_mapping[request.form['role']]
             employee.phone = phone
             employee.email = request.form.get('email')
             employee.hire_date = datetime.strptime(request.form['hire_date'], '%Y-%m-%d').date() if request.form['hire_date'] else None
             employee.is_active = True
             employee.assigned_to_user_id = assigned_to_user_id
-            
-            # Add new personal information fields
             employee.national_id = request.form.get('national_id')
             employee.full_name = request.form.get('full_name')
             employee.birth_place = request.form.get('birth_place')
@@ -399,31 +378,55 @@ def employees_add():
                 except (ValueError, TypeError):
                     employee.residence_longitude = None
             
-            employee.employee_photo = employee_photo_filename
-            employee.id_card_photo = id_card_photo_filename
-            
+            # Add employee to session but don't commit yet (flush to get ID)
             db.session.add(employee)
-            db.session.commit()
+            db.session.flush()
             
-            # Handle employee documents (multiple files)
+            file_start = time.time()
+            
+            # Create employee upload folder once
+            employee_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'employees', str(employee.id))
+            os.makedirs(employee_folder, exist_ok=True)
+            
+            # Handle employee photo upload
+            employee_photo_filename = None
+            if 'employee_photo' in request.files and request.files['employee_photo'].filename:
+                photo = request.files['employee_photo']
+                if photo.filename and allowed_file(photo.filename):
+                    safe_filename = secure_filename(photo.filename or 'image')
+                    employee_photo_filename = f"{uuid.uuid4()}_{safe_filename}"
+                    photo_path = os.path.join(employee_folder, employee_photo_filename)
+                    photo.save(photo_path)
+                    employee.employee_photo = os.path.join('employees', str(employee.id), employee_photo_filename)
+            
+            # Handle ID card photo upload
+            id_card_photo_filename = None
+            if 'id_card_photo' in request.files and request.files['id_card_photo'].filename:
+                id_card = request.files['id_card_photo']
+                if id_card.filename and allowed_file(id_card.filename):
+                    safe_id_filename = secure_filename(id_card.filename or 'id_card')
+                    id_card_photo_filename = f"{uuid.uuid4()}_{safe_id_filename}"
+                    id_card_path = os.path.join(employee_folder, id_card_photo_filename)
+                    id_card.save(id_card_path)
+                    employee.id_card_photo = os.path.join('employees', str(employee.id), id_card_photo_filename)
+            
+            # Handle employee documents (batch process)
             document_types = request.form.getlist('document_types[]')
             document_files = request.files.getlist('document_files[]')
             document_notes = request.form.getlist('document_notes[]')
             
             rejected_files = []
+            employee_documents = []
+            
             if document_types and document_files:
+                from k9.models.models import EmployeeDocument
+                
                 for i, (doc_type, doc_file) in enumerate(zip(document_types, document_files)):
                     if doc_file and doc_file.filename:
                         if allowed_file(doc_file.filename):
-                            from k9.models.models import EmployeeDocument
-                            
                             safe_doc_filename = secure_filename(doc_file.filename or 'document')
                             unique_doc_filename = f"employee_{employee.id}_{uuid.uuid4()}_{safe_doc_filename}"
-                            
-                            doc_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'employees', str(employee.id))
-                            os.makedirs(doc_folder, exist_ok=True)
-                            
-                            doc_path = os.path.join(doc_folder, unique_doc_filename)
+                            doc_path = os.path.join(employee_folder, unique_doc_filename)
                             doc_file.save(doc_path)
                             
                             employee_doc = EmployeeDocument()
@@ -435,14 +438,24 @@ def employees_add():
                             if i < len(document_notes):
                                 employee_doc.notes = document_notes[i] if document_notes[i].strip() else None
                             
-                            db.session.add(employee_doc)
+                            employee_documents.append(employee_doc)
                         else:
                             rejected_files.append(doc_file.filename)
-                
-                db.session.commit()
-                
-                if rejected_files:
-                    flash(f'تنبيه: تم رفض بعض الملفات بسبب صيغة غير مسموحة: {", ".join(rejected_files)}', 'warning')
+            
+            # Bulk add all documents
+            if employee_documents:
+                db.session.bulk_save_objects(employee_documents)
+            
+            print(f"File operations took: {time.time() - file_start:.3f}s")
+            
+            # Single commit for everything
+            db.session.commit()
+            
+            elapsed = time.time() - start_time
+            print(f"Total employee creation time: {elapsed:.3f}s")
+            
+            if rejected_files:
+                flash(f'تنبيه: تم رفض بعض الملفات بسبب صيغة غير مسموحة: {", ".join(rejected_files)}', 'warning')
             
             log_audit(current_user.id, AuditAction.CREATE, 'Employee', employee.id, f'أضيف موظف جديد: {employee.name}', None, {'name': employee.name, 'role': employee.role.value})
             flash('تم إضافة الموظف بنجاح', 'success')
