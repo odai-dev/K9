@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import abort, request, flash, redirect, url_for, session
+from flask import abort, request, flash, redirect, url_for, session, jsonify
 from flask_login import current_user
 from k9.utils.utils import get_project_manager_permissions, check_project_access
 from k9.models.models import UserRole, PermissionType
@@ -131,17 +131,26 @@ def admin_required(f):
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # Check if this is an AJAX/JSON request
+        is_ajax = request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
         if not current_user.is_authenticated:
+            if is_ajax:
+                return jsonify({'success': False, 'error': 'يرجى تسجيل الدخول للوصول إلى هذه الصفحة'}), 401
             flash('يرجى تسجيل الدخول للوصول إلى هذه الصفحة', 'warning')
             return redirect(url_for('auth.login'))
         
         if current_user.role != UserRole.GENERAL_ADMIN:
+            if is_ajax:
+                return jsonify({'success': False, 'error': 'هذه الصفحة مخصصة للمدير العام فقط'}), 403
             flash('هذه الصفحة مخصصة للمدير العام فقط', 'error')
             return redirect(url_for('main.dashboard'))
         
         # Check admin mode to prevent GENERAL_ADMIN in PM mode from accessing admin routes
         admin_mode = session.get('admin_mode', 'general_admin')
         if admin_mode != 'general_admin':
+            if is_ajax:
+                return jsonify({'success': False, 'error': 'هذه الصفحة متاحة في وضع المدير العام فقط'}), 403
             flash('هذه الصفحة متاحة في وضع المدير العام فقط', 'error')
             return redirect(url_for('main.dashboard'))
         
