@@ -6,57 +6,6 @@ This project is a comprehensive, web-based, and mobile-first K9 operations manag
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
-## Recent Updates (November 12, 2025)
-
-### Comprehensive Permissions UI Fix (Latest)
-- **Bug Fix**: Fixed critical display issue in comprehensive permissions interface
-  - Projects now appear immediately upon page load without requiring search
-  - Fixed CSS class removal bug: changed `classList.remove('show')` to `className = ''` to fully clear loading spinner
-  - Added step activation on page load via `goToStep(1)` for clear visual feedback
-  - Enhanced error handling with Arabic messages and retry functionality
-  - Added informational alert showing project count for better user awareness
-  - All three workflow steps (Select Project → Select User → Manage Permissions) now function correctly
-
-### Admin Dashboard Enhancement
-- **Dashboard Update**: Updated admin dashboard to highlight comprehensive permissions interface
-  - Changed navigation link from legacy `permissions_dashboard` to modern `comprehensive_permissions`
-  - Updated UI text to clarify that permissions management supports "all user roles" (not just PROJECT_MANAGER)
-  - Comprehensive interface supports: GENERAL_ADMIN, PROJECT_MANAGER, HANDLER, TRAINER, BREEDER, VET
-  - Arabic role name translation handled via JavaScript `getRoleName()` function
-
-### Comprehensive Permissions Management System
-- **New Feature**: Added comprehensive permissions management interface for GENERAL_ADMIN users
-  - Three-step workflow: Select Project → Select User → Manage Permissions
-  - Complete metadata registry (`k9/utils/permission_registry.py`) mapping all system permissions to actual pages and functions
-  - New API endpoints in `k9/routes/admin_routes.py`:
-    - `/admin/permissions/comprehensive` - Main permissions management interface
-    - `/admin/permissions/projects` - Get all projects
-    - `/admin/permissions/users/<project_id>` - Get users by project
-    - `/admin/permissions/matrix/<user_id>/<project_id>` - Get complete permissions matrix
-  - Enhanced `update_permission()` and `bulk_update_permissions()` functions to work with SubPermission and PermissionAuditLog models
-  - Modern RTL Arabic interface with real-time permission toggling and immediate save functionality
-  - Full audit trail of all permission changes with IP address and user agent tracking
-  - Permission changes apply immediately across the system
-
-### Legacy System Cleanup
-- **Project Attendance Removal**: Removed legacy project_attendance link from projects list page (`k9/templates/projects/modern_list.html`)
-  - System now exclusively uses the modern DailySchedule workflow for handler and dog scheduling
-  - Legacy project attendance routes remain in codebase but are no longer accessible via UI
-  
-### Permission System Updates
-- **Attendance Permission Descriptions**: Updated permission descriptions in `k9/utils/permission_utils.py` to reflect DailySchedule terminology
-  - Permission keys remain as "attendance.*" for backward compatibility
-  - Descriptions now reference "daily schedules" instead of legacy attendance tracking
-  - Changes: "View daily schedules and attendance", "Create and record daily schedules", "Edit daily schedules", "Access daily schedule reports"
-
-### Security Fixes
-- **Critical Security Fix**: Removed incorrect admin access grant for PROJECT_MANAGER role
-  - Fixed `_is_admin_mode()` in `k9/utils/permission_utils.py` 
-  - Fixed `is_admin()` in `k9/utils/pm_scoping.py`
-  - PROJECT_MANAGER users now properly restricted to granular permissions only
-  - ONLY GENERAL_ADMIN in general admin mode has full administrative access
-- **Known Issue**: The `admin_or_pm_required` decorator (~105 usages) still allows PROJECT_MANAGER unrestricted access to certain routes. This requires a comprehensive audit and migration to project-scoped decorators in a future update.
-
 ## System Architecture
 
 ### UI/UX Decisions
@@ -68,27 +17,27 @@ Preferred communication style: Simple, everyday language.
 ### Technical Implementations
 - **Backend Framework**: Flask (Python) utilizing a modular Blueprint structure.
 - **Database**: PostgreSQL, integrated via SQLAlchemy ORM.
-- **Authentication**: Flask-Login implements session-based authentication and strict role-based access control with `GENERAL_ADMIN`, `PROJECT_MANAGER`, `HANDLER`, `TRAINER`, `BREEDER`, and `VET` tiers. Includes a dual-mode `GENERAL_ADMIN` system for flexible access with enforced mode switching (GENERAL_ADMIN users in PM mode cannot access admin-only routes).
+- **Authentication**: Flask-Login implements session-based authentication and a permission-first access control system, replacing traditional role-based access. Includes a dual-mode `GENERAL_ADMIN` system for flexible access with enforced mode switching.
 - **Database Migrations**: Flask-Migrate, powered by Alembic, for schema versioning and management.
 - **File Handling**: Local file system storage for uploads.
-- **Security**: Incorporates CSRF protection, configurable session timeouts, input validation, audit logging, and strict Role-Based Access Control with consolidated permission decorators. All decorators enforce admin_mode checking to prevent privilege escalation.
+- **Security**: Incorporates CSRF protection, configurable session timeouts, input validation, audit logging, and a strict permission-based access control with consolidated decorators. All decorators enforce admin_mode checking to prevent privilege escalation.
 - **Database Backup & Restore**: Comprehensive backup/restore functionality using pg_dump/psql, automated scheduling via APScheduler, configurable retention, and an admin dashboard for management.
 
 ### Feature Specifications
 - **Core Management**: Tracks K9 lifecycle, employee information, training records, veterinary care, and breeding production.
-- **Project Operations**: Manages project lifecycle, resource allocation, incident logging, and performance evaluations. Includes full project editing capabilities with integrated location management system allowing multiple locations per project with add/edit/delete operations.
-- **Attendance System**: Comprehensive tracking with shift management, scheduling, project-specific recording, and Arabic RTL PDF export. Includes an advanced Unified Matrix Attendance System.
-- **Ultra-Granular Permission System**: Provides `GENERAL_ADMIN` users with control over `PROJECT_MANAGER` access at a subsection level, featuring 79 distinct permission combinations, audit logging, and an intuitive admin dashboard.
+- **Project Operations**: Manages project lifecycle, resource allocation, incident logging, performance evaluations, and project locations.
+- **Attendance System**: Comprehensive tracking with shift management, scheduling, project-specific recording, and Arabic RTL PDF export, using an advanced Unified Matrix Attendance System.
+- **Ultra-Granular Permission System**: Provides `GENERAL_ADMIN` users with fine-grained control over user access at a subsection level, featuring 79 distinct permission combinations, audit logging, and an intuitive admin dashboard. Migrated from role-based to permission-first access control with roles acting as permission templates.
+- **Comprehensive Permissions UI**: A three-step workflow (Select Project → Select User → Manage Permissions) for `GENERAL_ADMIN` users to manage permissions, with full metadata registry and real-time toggling.
 - **Excel Export System**: Comprehensive XLSX export functionality for reports with Arabic RTL support.
 - **Modern Reporting Hub**: Centralized dashboard with dynamic statistics, categorized report organization, and integrated chart visualization.
-- **Data Visualization Framework**: Chart.js integration with custom RTL-aware utilities.
-- **Handler Daily System**: Comprehensive daily operations management for K9 handlers including schedule creation, two-tier reporting (Shift and Daily Reports), duplicate prevention, smart pre-population, visual indicators, and a modern notification system. Schedule locking system uses unified `status` field (OPEN/LOCKED) with optional `locked_at` timestamp for audit purposes.
-- **Report Export System**: PDF and Excel export functionality for HandlerReport and ShiftReport with Arabic RTL support, role-based access control (PROJECT_MANAGER and GENERAL_ADMIN only), and automatic formatting using ReportLab and openpyxl libraries.
-- **PM Report Review Workflow**: A 2-tier review process for project-based reports (HandlerReport, VeterinaryVisit, BreedingTrainingActivity, CaretakerDailyLog) with statuses, audit trails, and notifications.
-- **Admin Final Approval System**: Two-tier approval workflow where Project Managers review and forward reports (SUBMITTED → FORWARDED_TO_ADMIN), followed by General Admin final approval/rejection (FORWARDED_TO_ADMIN → APPROVED_BY_ADMIN/REJECTED_BY_ADMIN). Dual notifications ensure both submitter and responsible PM receive admin decisions. Supports all report types (HANDLER, TRAINER, VET, CARETAKER) with unified interface and audit logging via ReportReview table.
+- **Handler Daily System**: Comprehensive daily operations management for K9 handlers including schedule creation, two-tier reporting (Shift and Daily Reports), and a modern notification system.
+- **Report Export System**: PDF and Excel export functionality for HandlerReport and ShiftReport with Arabic RTL support and role-based access control.
+- **PM Report Review Workflow**: A 2-tier review process for project-based reports with statuses, audit trails, and notifications.
+- **Admin Final Approval System**: Two-tier approval workflow (Project Manager review, General Admin final approval/rejection) for all report types, with dual notifications and audit logging.
 - **Account Management System**: Streamlined system access control for employees, linking employee records to user accounts, auto-role mapping, and secure password management.
-- **Project Manager Dashboard**: Workflow-focused interface for the `PROJECT_MANAGER` role, providing a project overview, pending approvals, team status, and project-scoped data views. Features a dedicated PM navigation bar with streamlined access to Dogs, Team, Approvals, Veterinary, Breeding, Production, and Administration modules (task assignment, handler reports, schedules, notifications).
-- **Employee Document Management System**: Comprehensive document attachment system for employee records with categorized document types, secure file storage, and user interface for management.
+- **Project Manager Dashboard**: Workflow-focused interface for the `PROJECT_MANAGER` role, providing a project overview, pending approvals, team status, and project-scoped data views.
+- **Employee Document Management System**: Comprehensive document attachment system for employee records with categorized document types and secure file storage.
 - **Employee Geolocation Feature**: Automatic browser-based geolocation capture for employee residence with database storage and Google Maps link generation.
 
 ### System Design Choices
@@ -97,11 +46,10 @@ Preferred communication style: Simple, everyday language.
 - **Secure Identification**: UUID fields for object identification.
 - **Flexible Data Storage**: JSON fields for metadata and audit logs.
 - **Performance**: Optimized with database connection pooling and file size limits.
-- **Scalability**: Modular architecture and role-based data isolation.
-- **Employee vs User/Handler Architecture**: Distinct `Employee` table for general workforce management and `User` table with `HANDLER` role for system access and daily operations, with **mandatory** linking. All system users must be linked to employee records for enhanced security and data integrity.
-- **User-Employee Enforcement**: Required `employee_id` foreign key in User model ensures all users have linked employee records. Includes validation at model level and login security checks.
-- **Unified Permission Decorators**: All role-based access decorators consolidated in `k9/utils/permission_decorators.py` with consistent admin_mode enforcement to prevent security bypasses.
-- **Navbar Access Control**: Template-level role checking ensures PROJECT_MANAGER users see only PM-specific navbar, GENERAL_ADMIN users see admin navbar only when in general_admin mode.
+- **Scalability**: Modular architecture and permission-based data isolation.
+- **Employee vs User/Handler Architecture**: Distinct `Employee` table for general workforce management and `User` table with `HANDLER` role for system access and daily operations, with mandatory linking.
+- **Unified Permission Decorators**: All access decorators consolidated in `k9/utils/permission_decorators.py` with consistent admin_mode enforcement.
+- **Navbar Access Control**: Template-level permission checking ensures users see only relevant navigation options.
 
 ## External Dependencies
 
