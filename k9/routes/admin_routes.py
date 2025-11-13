@@ -107,20 +107,30 @@ def get_user_permissions(user_id):
 @admin_required
 def update_user_permission():
     """Update a specific permission for a user"""
-    data = request.get_json()
-    
-    required_fields = ['user_id', 'section', 'subsection', 'permission_type', 'is_granted']
-    if not all(field in data for field in required_fields):
-        return jsonify({'error': 'بيانات ناقصة'}), 400
-    
-    user = User.query.get(data['user_id'])
-    if not user:
-        return jsonify({'error': 'مستخدم غير صحيح'}), 400
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'success': False, 'error': 'لا توجد بيانات'}), 400
+        
+        required_fields = ['user_id', 'section', 'subsection', 'permission_type', 'is_granted']
+        if not all(field in data for field in required_fields):
+            return jsonify({'success': False, 'error': 'بيانات ناقصة'}), 400
+    except Exception as e:
+        logger.error(f"Error parsing JSON: {e}")
+        return jsonify({'success': False, 'error': 'خطأ في تنسيق البيانات'}), 400
     
     try:
+        user = User.query.get(data['user_id'])
+        if not user:
+            return jsonify({'success': False, 'error': 'مستخدم غير موجود'}), 404
+        
         permission_type = PermissionType(data['permission_type'])
     except ValueError:
-        return jsonify({'error': 'نوع صلاحية غير صحيح'}), 400
+        return jsonify({'success': False, 'error': 'نوع صلاحية غير صحيح'}), 400
+    except Exception as e:
+        logger.error(f"Error fetching user: {e}")
+        return jsonify({'success': False, 'error': 'خطأ في جلب بيانات المستخدم'}), 500
     
     project_id = data.get('project_id')
     
@@ -171,7 +181,7 @@ def update_user_permission():
         
         return jsonify({'success': True, 'message': 'تم تحديث الصلاحية بنجاح'})
     else:
-        return jsonify({'error': 'فشل في تحديث الصلاحية'}), 500
+        return jsonify({'success': False, 'error': 'فشل في تحديث الصلاحية'}), 500
 
 @admin_bp.route('/permissions/bulk-update', methods=['POST'])
 @login_required

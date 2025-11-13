@@ -492,6 +492,25 @@ let allPermissions = [];
 let changedPermissions = {};
 let originalPermissions = {};
 
+// Get CSRF token from meta tag or cookie
+function getCSRFToken() {
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    if (csrfMeta) {
+        return csrfMeta.getAttribute('content');
+    }
+    
+    // Try to get from cookie
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'csrf_token') {
+            return value;
+        }
+    }
+    
+    return '';
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     goToStep(1);
@@ -802,11 +821,14 @@ function savePermissions() {
     saveButton.disabled = true;
     saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري الحفظ...';
     
+    const csrfToken = getCSRFToken();
+    
     const promises = Object.values(changedPermissions).map(perm => {
         return fetch('/admin/permissions/update', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
             },
             body: JSON.stringify({
                 user_id: selectedUser.id,
@@ -820,20 +842,33 @@ function savePermissions() {
     });
     
     Promise.all(promises)
-        .then(responses => Promise.all(responses.map(r => r.json())))
+        .then(responses => {
+            return Promise.all(responses.map(r => {
+                if (!r.ok) {
+                    return r.text().then(text => {
+                        console.error('Server returned non-OK response:', text);
+                        return { success: false, error: 'فشل في الحفظ' };
+                    });
+                }
+                return r.json();
+            }));
+        })
         .then(results => {
             const failed = results.filter(r => !r.success);
             if (failed.length === 0) {
                 showSuccess('تم حفظ جميع التغييرات بنجاح');
                 changedPermissions = {};
                 updateChangesIndicator();
+                // Reload permissions to reflect changes
+                loadPermissions(selectedUser.id, selectedProject.id);
             } else {
+                console.error('Failed results:', failed);
                 showError(`فشل حفظ ${failed.length} من التغييرات`);
             }
         })
         .catch(error => {
             console.error('Error saving permissions:', error);
-            showError('فشل في حفظ التغييرات');
+            showError('فشل في حفظ التغييرات: ' + error.message);
         })
         .finally(() => {
             saveButton.disabled = false;
