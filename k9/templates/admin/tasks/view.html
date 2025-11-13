@@ -151,7 +151,7 @@
         </div>
         
         <!-- Actions -->
-        {% if task.created_by_user_id == current_user.id or current_user.role.value == 'GENERAL_ADMIN' %}
+        {% if task.created_by_user_id == current_user.id or is_admin() %}
         <div class="d-flex justify-content-between">
             <button type="button" 
                     class="btn btn-lg btn-outline-danger" 

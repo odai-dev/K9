@@ -113,7 +113,7 @@
                             </div>
                             <div class="info-item">
                                 <strong>مستوى الصلاحيات:</strong>
-                                {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                                {% if is_admin() %}
                                     <span class="badge bg-primary">مدير عام</span>
                                 {% else %}
                                     <span class="badge bg-secondary">مدير مشروع</span>
