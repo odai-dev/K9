@@ -388,22 +388,41 @@ def employees_add():
             employee_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'employees', str(employee.id))
             os.makedirs(employee_folder, exist_ok=True)
             
-            # Handle employee photo upload
+            # Handle employee photo upload (with size limit: 2MB)
+            MAX_IMAGE_SIZE = 2 * 1024 * 1024  # 2MB
             employee_photo_filename = None
             if 'employee_photo' in request.files and request.files['employee_photo'].filename:
                 photo = request.files['employee_photo']
                 if photo.filename and allowed_file(photo.filename):
+                    # Check file size
+                    photo.seek(0, os.SEEK_END)
+                    file_size = photo.tell()
+                    photo.seek(0)
+                    
+                    if file_size > MAX_IMAGE_SIZE:
+                        flash(f'صورة الموظف كبيرة جداً ({file_size / 1024 / 1024:.1f} ميجابايت). الحد الأقصى 2 ميجابايت', 'error')
+                        return render_template('employees/add.html', roles=EmployeeRole)
+                    
                     safe_filename = secure_filename(photo.filename or 'image')
                     employee_photo_filename = f"{uuid.uuid4()}_{safe_filename}"
                     photo_path = os.path.join(employee_folder, employee_photo_filename)
                     photo.save(photo_path)
                     employee.employee_photo = os.path.join('employees', str(employee.id), employee_photo_filename)
             
-            # Handle ID card photo upload
+            # Handle ID card photo upload (with size limit: 2MB)
             id_card_photo_filename = None
             if 'id_card_photo' in request.files and request.files['id_card_photo'].filename:
                 id_card = request.files['id_card_photo']
                 if id_card.filename and allowed_file(id_card.filename):
+                    # Check file size
+                    id_card.seek(0, os.SEEK_END)
+                    file_size = id_card.tell()
+                    id_card.seek(0)
+                    
+                    if file_size > MAX_IMAGE_SIZE:
+                        flash(f'صورة البطاقة كبيرة جداً ({file_size / 1024 / 1024:.1f} ميجابايت). الحد الأقصى 2 ميجابايت', 'error')
+                        return render_template('employees/add.html', roles=EmployeeRole)
+                    
                     safe_id_filename = secure_filename(id_card.filename or 'id_card')
                     id_card_photo_filename = f"{uuid.uuid4()}_{safe_id_filename}"
                     id_card_path = os.path.join(employee_folder, id_card_photo_filename)
@@ -420,10 +439,20 @@ def employees_add():
             
             if document_types and document_files:
                 from k9.models.models import EmployeeDocument
+                MAX_DOCUMENT_SIZE = 5 * 1024 * 1024  # 5MB
                 
                 for i, (doc_type, doc_file) in enumerate(zip(document_types, document_files)):
                     if doc_file and doc_file.filename:
                         if allowed_file(doc_file.filename):
+                            # Check document file size
+                            doc_file.seek(0, os.SEEK_END)
+                            file_size = doc_file.tell()
+                            doc_file.seek(0)
+                            
+                            if file_size > MAX_DOCUMENT_SIZE:
+                                rejected_files.append(f"{doc_file.filename} (حجم كبير: {file_size / 1024 / 1024:.1f} ميجابايت)")
+                                continue
+                            
                             safe_doc_filename = secure_filename(doc_file.filename or 'document')
                             unique_doc_filename = f"employee_{employee.id}_{uuid.uuid4()}_{safe_doc_filename}"
                             doc_path = os.path.join(employee_folder, unique_doc_filename)

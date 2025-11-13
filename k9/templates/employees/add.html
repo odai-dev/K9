@@ -141,20 +141,22 @@
                         
                         <div class="col-md-6 mb-3">
                             <label for="employee_photo" class="form-label">صورة الموظف</label>
-                            <input type="file" class="form-control" id="employee_photo" name="employee_photo" accept="image/*">
+                            <input type="file" class="form-control" id="employee_photo" name="employee_photo" accept="image/jpeg,image/jpg,image/png">
                             <div class="form-text">
                                 <i class="fas fa-info-circle me-1"></i>
-                                يمكنك رفع صورة شخصية للموظف (JPG, PNG)
+                                يمكنك رفع صورة شخصية للموظف (الحد الأقصى: 2 ميجابايت)
                             </div>
+                            <div class="invalid-feedback" id="employee_photo_error"></div>
                         </div>
                         
                         <div class="col-md-6 mb-3">
                             <label for="id_card_photo" class="form-label">صورة البطاقة الشخصية</label>
-                            <input type="file" class="form-control" id="id_card_photo" name="id_card_photo" accept="image/*">
+                            <input type="file" class="form-control" id="id_card_photo" name="id_card_photo" accept="image/jpeg,image/jpg,image/png">
                             <div class="form-text">
                                 <i class="fas fa-info-circle me-1"></i>
-                                يمكنك رفع صورة البطاقة الشخصية (JPG, PNG)
+                                يمكنك رفع صورة البطاقة الشخصية (الحد الأقصى: 2 ميجابايت)
                             </div>
+                            <div class="invalid-feedback" id="id_card_photo_error"></div>
                         </div>
                     </div>
 
@@ -293,6 +295,48 @@ document.addEventListener('DOMContentLoaded', function() {
     const today = new Date().toISOString().split('T')[0];
     hireDateInput.max = today;
     
+    // File size limits (in bytes)
+    const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
+    const MAX_DOCUMENT_SIZE = 5 * 1024 * 1024; // 5MB
+    
+    // Validate file size and compress images
+    async function validateAndCompressImage(fileInput, maxSize) {
+        if (!fileInput.files || !fileInput.files[0]) {
+            return true;
+        }
+        
+        const file = fileInput.files[0];
+        const errorDiv = document.getElementById(fileInput.id + '_error');
+        
+        // Check file size
+        if (file.size > maxSize) {
+            fileInput.classList.add('is-invalid');
+            errorDiv.textContent = `حجم الملف كبير جداً (${(file.size / 1024 / 1024).toFixed(1)} ميجابايت). الحد الأقصى ${maxSize / 1024 / 1024} ميجابايت`;
+            errorDiv.style.display = 'block';
+            return false;
+        }
+        
+        fileInput.classList.remove('is-invalid');
+        errorDiv.style.display = 'none';
+        return true;
+    }
+    
+    // Add file validation on change
+    const employeePhoto = document.getElementById('employee_photo');
+    const idCardPhoto = document.getElementById('id_card_photo');
+    
+    if (employeePhoto) {
+        employeePhoto.addEventListener('change', function() {
+            validateAndCompressImage(this, MAX_IMAGE_SIZE);
+        });
+    }
+    
+    if (idCardPhoto) {
+        idCardPhoto.addEventListener('change', function() {
+            validateAndCompressImage(this, MAX_IMAGE_SIZE);
+        });
+    }
+    
     // Handle form submission with loading indicator
     const form = document.querySelector('form');
     const submitBtn = document.getElementById('submitBtn');
@@ -300,7 +344,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnSpinner = document.getElementById('btnSpinner');
     const cancelBtn = document.getElementById('cancelBtn');
     
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Validate all file inputs
+        let allValid = true;
+        
+        if (employeePhoto && employeePhoto.files.length > 0) {
+            const valid = await validateAndCompressImage(employeePhoto, MAX_IMAGE_SIZE);
+            if (!valid) allValid = false;
+        }
+        
+        if (idCardPhoto && idCardPhoto.files.length > 0) {
+            const valid = await validateAndCompressImage(idCardPhoto, MAX_IMAGE_SIZE);
+            if (!valid) allValid = false;
+        }
+        
+        if (!allValid) {
+            alert('يرجى التحقق من أحجام الملفات المرفوعة');
+            return false;
+        }
+        
         // Show loading state
         submitBtn.disabled = true;
         cancelBtn.classList.add('disabled');
@@ -318,9 +382,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        if (totalSize > 5 * 1024 * 1024) {
-            btnText.textContent = 'جاري رفع الملفات... قد يستغرق دقيقة';
+        if (totalSize > 1024 * 1024) {
+            const sizeMB = (totalSize / 1024 / 1024).toFixed(1);
+            btnText.textContent = `جاري رفع ${sizeMB} ميجابايت...`;
         }
+        
+        // Submit the form
+        form.submit();
     });
 });
 
@@ -384,7 +452,7 @@ function addDocumentField() {
                            name="document_files[]" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.txt" required>
                     <div class="form-text">
                         <i class="fas fa-info-circle me-1"></i>
-                        الصيغ المسموحة: PDF, DOC, DOCX, JPG, PNG, GIF, TXT
+                        الصيغ المسموحة: PDF, DOC, DOCX, JPG, PNG, GIF, TXT (الحد الأقصى: 5 ميجابايت)
                     </div>
                 </div>
                 <div class="col-md-2 mb-3">
