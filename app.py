@@ -37,6 +37,9 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1) # needed for url_for 
 # Enhanced security configuration
 app.config['WTF_CSRF_ENABLED'] = True
 app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
+app.config['WTF_CSRF_CHECK_DEFAULT'] = True
+app.config['WTF_CSRF_METHODS'] = ['POST', 'PUT', 'PATCH', 'DELETE']
+app.config['WTF_CSRF_HEADERS'] = ['X-CSRFToken', 'X-CSRF-Token']
 app.config['SESSION_COOKIE_SECURE'] = flask_env == 'production'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
@@ -108,6 +111,25 @@ db.init_app(app)
 login_manager.init_app(app)
 migrate.init_app(app, db)
 csrf.init_app(app)
+
+# CSRF error handler for JSON API endpoints
+from flask_wtf.csrf import CSRFError
+from flask import request, jsonify, abort
+
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    """Handle CSRF errors with JSON response for API calls"""
+    # Check if this is an API/JSON request
+    if request.path.startswith('/admin/permissions/') or request.is_json or request.accept_mimetypes.accept_json:
+        return jsonify({
+            'success': False,
+            'error': 'رمز الحماية (CSRF) غير صالح. يرجى إعادة تحميل الصفحة والمحاولة مرة أخرى.',
+            'csrf_error': str(e.description)
+        }), 400
+    
+    # For regular form submissions, use default behavior
+    abort(400, description=e.description)
+
 # Login manager configuration
 login_manager.login_view = 'auth.login'  # type: ignore
 login_manager.login_message = 'يرجى تسجيل الدخول للوصول إلى هذه الصفحة.'
