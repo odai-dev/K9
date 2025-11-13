@@ -213,6 +213,35 @@ PERMISSION_STRUCTURE = {
     }
 }
 
+PM_DEFAULT_PERMISSIONS = {
+    "projects": ["view", "create", "edit", "delete"],
+    "dogs": ["view", "create", "edit", "delete"],
+    "employees": ["view", "create", "edit"],
+    "attendance": ["view", "record", "edit", "reports"],
+    "training": ["view", "create", "edit", "reports"],
+    "veterinary": ["view", "create", "edit", "reports"],
+    "breeding": ["view", "create", "edit", "reports"],
+    "production": ["view", "create", "edit", "reports"],
+    "reports": {
+        "training": {
+            "trainer_daily": ["view", "export"]
+        },
+        "veterinary": {
+            "daily": ["view", "export"],
+            "view": True,
+            "export": True
+        },
+        "attendance": {
+            "daily": ["view", "export"]
+        },
+        "breeding": {
+            "feeding": ["view", "export"],
+            "checkup": ["view", "export"],
+            "caretaker_daily": ["view", "export"]
+        }
+    }
+}
+
 def has_permission(user, permission_key: str, sub_permission=None, action=None, project_id=None) -> bool:
     """
     Check if user has specific permission by querying SubPermission table.
@@ -425,6 +454,7 @@ def get_sections_for_user(user):
 def get_user_permissions_matrix(user_id, project_id=None):
     """
     Get comprehensive permissions matrix for a user by querying SubPermission table.
+    For PROJECT_MANAGER users, includes default permissions overlaid with database permissions.
     
     Args:
         user_id: ID of the user
@@ -451,8 +481,8 @@ def get_user_permissions_matrix(user_id, project_id=None):
                 matrix[section] = True
         return matrix
     
-    # Query actual SubPermission records from database
-    query = SubPermission.query.filter_by(user_id=user_id, is_granted=True)
+    # Query ALL SubPermission records from database (including revocations)
+    query = SubPermission.query.filter_by(user_id=user_id)
     
     if project_id is not None:
         query = query.filter_by(project_id=project_id)
@@ -462,49 +492,92 @@ def get_user_permissions_matrix(user_id, project_id=None):
     # Build matrix from database permissions
     matrix = {}
     
-    # Initialize matrix with False values
+    # Initialize matrix with False values - recursively handle nested structures
+    def init_matrix_recursive(structure):
+        """Recursively initialize matrix structure"""
+        result = {}
+        for key, value in structure.items():
+            if isinstance(value, dict):
+                has_permission_keys = any(k in ['view', 'create', 'edit', 'delete', 'export', 'record', 'reports', 'assign', 'approve'] for k in value.keys())
+                if has_permission_keys:
+                    sub_result = {}
+                    for sub_key, sub_value in value.items():
+                        if isinstance(sub_value, dict):
+                            sub_result[sub_key] = init_matrix_recursive(sub_value)
+                        else:
+                            sub_result[sub_key] = False
+                    result[key] = sub_result
+                else:
+                    result[key] = init_matrix_recursive(value)
+            else:
+                result[key] = False
+        return result
+    
     for section, subsections in PERMISSION_STRUCTURE.items():
         if isinstance(subsections, dict):
-            matrix[section] = {}
-            for subsection, perms in subsections.items():
-                if isinstance(perms, dict):
-                    matrix[section][subsection] = {perm: False for perm in perms.keys()}
-                else:
-                    matrix[section][subsection] = False
+            matrix[section] = init_matrix_recursive(subsections)
         else:
             matrix[section] = False
     
-    # Populate with actual granted permissions
+    # Overlay PM default permissions if user is PROJECT_MANAGER
+    if _is_pm_mode(user):
+        def apply_pm_defaults(matrix_section, defaults_section):
+            """Recursively apply PM default permissions to matrix"""
+            if isinstance(defaults_section, dict):
+                for key, value in defaults_section.items():
+                    if isinstance(value, list):
+                        for perm in value:
+                            if key in matrix_section and isinstance(matrix_section[key], dict):
+                                if perm in matrix_section[key]:
+                                    matrix_section[key][perm] = True
+                    elif isinstance(value, dict):
+                        if key in matrix_section and isinstance(matrix_section[key], dict):
+                            apply_pm_defaults(matrix_section[key], value)
+                    elif isinstance(value, bool):
+                        if key in matrix_section:
+                            matrix_section[key] = value
+        
+        for section, defaults in PM_DEFAULT_PERMISSIONS.items():
+            if section in matrix:
+                if isinstance(defaults, list):
+                    for perm in defaults:
+                        if isinstance(matrix[section], dict) and perm in matrix[section]:
+                            matrix[section][perm] = True
+                elif isinstance(defaults, dict):
+                    if isinstance(matrix[section], dict):
+                        apply_pm_defaults(matrix[section], defaults)
+    
+    # Populate with actual permissions from database (both grants and revocations)
+    # This overrides defaults - explicit grants set to True, explicit revocations set to False
     for perm in permissions:
         section = perm.section
         subsection = perm.subsection
         perm_type = perm.permission_type.value.lower()
+        granted = perm.is_granted
         
+        if section not in matrix:
+            continue
+            
         # Handle simple section permissions (e.g., dogs.view)
         if not subsection or subsection == "":
-            if section in matrix and isinstance(matrix[section], dict):
-                if perm_type in matrix[section]:
-                    matrix[section][perm_type] = True
+            if isinstance(matrix[section], dict) and perm_type in matrix[section]:
+                matrix[section][perm_type] = granted
         else:
             # Handle nested subsections (e.g., reports.breeding.feeding.view)
-            # subsection could be "breeding.feeding" or just "feeding"
-            if section in matrix and isinstance(matrix[section], dict):
-                # Try to find matching subsection in matrix
-                subsection_parts = subsection.split('.')
-                
-                # Navigate through nested structure
-                current = matrix[section]
-                for part in subsection_parts[:-1]:
-                    if part in current and isinstance(current[part], dict):
-                        current = current[part]
-                
-                # Set the permission at the deepest level
-                final_key = subsection_parts[-1] if len(subsection_parts) > 0 else subsection
-                if final_key in current and isinstance(current[final_key], dict):
-                    if perm_type in current[final_key]:
-                        current[final_key][perm_type] = True
-                elif perm_type in current:
-                    current[perm_type] = True
+            # Navigate through nested structure to find the correct location
+            current = matrix[section]
+            subsection_parts = subsection.split('.')
+            
+            # Navigate to the target location
+            for part in subsection_parts:
+                if isinstance(current, dict) and part in current:
+                    current = current[part]
+                else:
+                    break
+            
+            # Set the permission at the final location
+            if isinstance(current, dict) and perm_type in current:
+                current[perm_type] = granted
             
     return matrix
 
