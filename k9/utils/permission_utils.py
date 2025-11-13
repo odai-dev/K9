@@ -3,7 +3,7 @@ Permission management utilities for K9 Operations Management System
 """
 
 from functools import wraps
-from flask import abort, request, flash, redirect, url_for, session
+from flask import abort, request, flash, redirect, url_for, session, g
 from flask_login import current_user
 from k9.models.models import User, Project, SubPermission, PermissionAuditLog, PermissionType, UserRole
 from app import db
@@ -38,6 +38,92 @@ def _is_pm_mode(user):
         admin_mode = session.get('admin_mode', 'general_admin')
         return admin_mode == 'project_manager'
     return False
+
+
+def canonical_permission_key(permission_key, sub_permission=None, action=None):
+    """
+    Normalize permission checks to canonical format: "section.subsection.action"
+    Handles backward compatibility for legacy 4-argument format.
+    
+    Args:
+        permission_key: Either canonical key (e.g., "dogs.view") or legacy category
+        sub_permission: Legacy subsection name (optional)
+        action: Legacy action (optional, can be string or PermissionType enum)
+        
+    Returns:
+        Tuple of (section, subsection, permission_type) for database queries
+        
+    Examples:
+        canonical_permission_key("dogs.view") -> ("dogs", None, PermissionType.VIEW)
+        canonical_permission_key("reports.breeding.feeding.export") -> ("reports", "breeding.feeding", PermissionType.EXPORT)
+        canonical_permission_key("Reports", "Feeding Daily", "VIEW") -> ("reports", "breeding.feeding", PermissionType.VIEW)
+    """
+    # Handle new canonical format (e.g., "dogs.view", "reports.training.trainer_daily.view")
+    if sub_permission is None and action is None:
+        parts = permission_key.split('.')
+        
+        if len(parts) == 2:
+            # Simple format: "dogs.view"
+            section, action_str = parts
+            return (section.lower(), None, getattr(PermissionType, action_str.upper(), None))
+        
+        elif len(parts) >= 3:
+            # Complex format: "reports.training.trainer_daily.view"
+            section = parts[0].lower()
+            action_str = parts[-1]
+            subsection = '.'.join(parts[1:-1])
+            return (section, subsection, getattr(PermissionType, action_str.upper(), None))
+        
+        else:
+            # Invalid format
+            return (permission_key.lower(), None, None)
+    
+    # Handle legacy 4-argument format
+    category = permission_key.lower()
+    action_lower = action.value.lower() if hasattr(action, 'value') else str(action).lower()
+    action_enum = getattr(PermissionType, action_lower.upper(), None)
+    
+    # Map legacy categories
+    legacy_mappings = {
+        "breeding": ("breeding", None, action_enum),
+        "تربية": ("breeding", None, action_enum),
+        "training": ("training", None, action_enum),
+        "تدريب": ("training", None, action_enum),
+        "veterinary": ("veterinary", None, action_enum),
+        "طبي": ("veterinary", None, action_enum),
+    }
+    
+    if category in legacy_mappings and not sub_permission:
+        return legacy_mappings[category]
+    
+    # Handle legacy report format
+    if category == "reports":
+        subsection_lower = sub_permission.lower() if sub_permission else ""
+        
+        # Map common report subsections to canonical format
+        report_mappings = {
+            "attendance daily sheet": ("reports", "attendance.daily", action_enum),
+            "feeding daily": ("reports", "breeding.feeding", action_enum),
+            "feeding weekly": ("reports", "breeding.feeding", action_enum),
+            "feeding": ("reports", "breeding.feeding", action_enum),
+            "checkup daily": ("reports", "breeding.checkup", action_enum),
+            "checkup weekly": ("reports", "breeding.checkup", action_enum),
+            "checkup": ("reports", "breeding.checkup", action_enum),
+            "caretaker daily": ("reports", "breeding.caretaker_daily", action_enum),
+            "caretaker": ("reports", "breeding.caretaker_daily", action_enum),
+            "trainer daily": ("reports", "training.trainer_daily", action_enum),
+            "veterinary daily": ("reports", "veterinary.daily", action_enum),
+            "veterinary": ("reports", "veterinary", action_enum),
+            "veterinary unified": ("reports", "veterinary", action_enum),
+        }
+        
+        for key, mapping in report_mappings.items():
+            if key in subsection_lower:
+                return mapping
+    
+    # Default fallback - return None for empty subsection to match NULL in database
+    return (category, sub_permission or None, action_enum)
+
 
 # Permission structure - comprehensive permission system
 PERMISSION_STRUCTURE = {
@@ -127,15 +213,16 @@ PERMISSION_STRUCTURE = {
     }
 }
 
-def has_permission(user, permission_key: str, sub_permission=None, action=None) -> bool:
+def has_permission(user, permission_key: str, sub_permission=None, action=None, project_id=None) -> bool:
     """
-    Check if user has specific permission
+    Check if user has specific permission by querying SubPermission table.
     
     Args:
         user: User object
-        permission_key: Permission string key (or category for backward compatibility)
+        permission_key: Permission string key (e.g., "dogs.view") or legacy category
         sub_permission: Sub-permission (for backward compatibility)
         action: Action type (for backward compatibility)
+        project_id: Optional project ID for project-scoped permissions
         
     Returns:
         Boolean indicating if user has permission
@@ -143,110 +230,212 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None) 
     if not user or not user.role:
         return False
         
-    # GENERAL_ADMIN in general admin mode has all permissions
-    # GENERAL_ADMIN in PM mode will be treated like PROJECT_MANAGER
+    # GENERAL_ADMIN in general admin mode has ALL permissions (bypass database check)
     if _is_admin_mode(user):
         return True
-        
-    # Handle backward compatibility with old 4-argument format
-    if sub_permission is not None and action is not None:
-        # Old format: has_permission(user, "Breeding", "التغذية - السجل اليومي", "VIEW")
-        # New format: has_permission(user, "Reports", "Feeding Daily", "VIEW")
-        category = permission_key.lower()
-        if category in ["breeding", "تربية"]:
-            return _is_admin_mode(user)  # Only admin can access breeding for now
-        elif category in ["training", "تدريب"]:
-            return True  # Allow project managers to access training
-        elif category in ["veterinary", "طبي"]:
-            return True  # Allow project managers to access veterinary
-        elif category == "reports":
-            # Handle reports permissions - check against the new structure
-            if _is_pm_mode(user):
-                # Map subsection names to permission keys
-                subsection_lower = sub_permission.lower()
-                action_lower = action.value.lower() if hasattr(action, 'value') else str(action).lower()
-                
-                # Map common report subsections - support both legacy and unified
-                if "attendance daily sheet" in subsection_lower:
-                    perm_key = f"reports.attendance.daily.{action_lower}"
-                elif any(x in subsection_lower for x in ["feeding daily", "feeding weekly", "feeding"]):
-                    perm_key = f"reports.breeding.feeding.{action_lower}"
-                elif any(x in subsection_lower for x in ["checkup daily", "checkup weekly", "checkup"]):
-                    perm_key = f"reports.breeding.checkup.{action_lower}"
-                elif any(x in subsection_lower for x in ["caretaker daily", "caretaker"]):
-                    perm_key = f"reports.breeding.caretaker_daily.{action_lower}"
-                elif "trainer daily" in subsection_lower:
-                    perm_key = f"reports.training.trainer_daily.{action_lower}"
-                elif "veterinary daily" in subsection_lower:
-                    perm_key = f"reports.veterinary.daily.{action_lower}"
-                elif any(x in subsection_lower for x in ["veterinary", "veterinary unified"]):
-                    perm_key = f"reports.veterinary.{action_lower}"
-                else:
-                    return False  # Unknown report type
-                
-                # Check against allowed permissions
-                allowed_permissions = [
-                    "reports.training.trainer_daily.view",
-                    "reports.training.trainer_daily.export",
-                    "reports.veterinary.daily.view",
-                    "reports.veterinary.daily.export",
-                    "reports.veterinary.view",
-                    "reports.veterinary.export",
-                    "reports.attendance.daily.view",
-                    "reports.attendance.daily.export",
-                    "reports.breeding.feeding.view",
-                    "reports.breeding.feeding.export",
-                    "reports.breeding.checkup.view",
-                    "reports.breeding.checkup.export",
-                    "reports.breeding.caretaker_daily.view",
-                    "reports.breeding.caretaker_daily.export"
-                ]
-                return perm_key in allowed_permissions
-            else:
-                return _is_admin_mode(user)
-        else:
-            return _is_admin_mode(user)
     
-    # PROJECT_MANAGER permissions are more limited (includes GENERAL_ADMIN in PM mode)
-    if _is_pm_mode(user):
-        # Define allowed permissions for project managers
-        allowed_permissions = [
-            "projects.view",
-            "employees.view", 
-            "dogs.view",
-            "attendance.view",
-            "attendance.record",
-            "attendance.edit",
-            "training.view",
-            "training.create",
-            "veterinary.view",
-            "breeding.view",
-            "production.view",
-            "reports.training.trainer_daily.view",
-            "reports.training.trainer_daily.export",
-            "reports.veterinary.daily.view",
-            "reports.veterinary.daily.export",
-            "reports.veterinary.view",
-            "reports.veterinary.export",
-            "reports.attendance.daily.view",
-            "reports.attendance.daily.export",
-            "reports.breeding.feeding.view",
-            "reports.breeding.feeding.export",
-            "reports.breeding.checkup.view",
-            "reports.breeding.checkup.export",
-            "reports.breeding.caretaker_daily.view",
-            "reports.breeding.caretaker_daily.export"
-        ]
-        return permission_key in allowed_permissions
+    # Normalize permission to canonical format
+    section, subsection, permission_type = canonical_permission_key(permission_key, sub_permission, action)
+    
+    if not permission_type:
+        # Invalid permission format
+        return False
+    
+    # Initialize request-level cache if not exists
+    if not hasattr(g, 'permission_cache'):
+        g.permission_cache = {}
+    
+    # Create cache key
+    cache_key = f"{user.id}:{section}:{subsection}:{permission_type.value}:{project_id}"
+    
+    # Check cache first
+    if cache_key in g.permission_cache:
+        return g.permission_cache[cache_key]
+    
+    # Query SubPermission table for this specific permission
+    # Handle NULL vs empty string subsection compatibility
+    permission_query = SubPermission.query.filter_by(
+        user_id=user.id,
+        section=section,
+        permission_type=permission_type,
+        is_granted=True
+    )
+    
+    # Handle subsection matching - match both NULL and empty string for compatibility
+    if subsection is None or subsection == "":
+        permission_query = permission_query.filter(
+            (SubPermission.subsection.is_(None)) | (SubPermission.subsection == "")
+        )
+    else:
+        permission_query = permission_query.filter_by(subsection=subsection)
+    
+    # Add project_id filter if specified
+    if project_id is not None:
+        permission_query = permission_query.filter_by(project_id=project_id)
+    else:
+        # For global permissions, check both project_id=None and any project-specific permissions
+        permission_query = permission_query.filter(
+            (SubPermission.project_id.is_(None)) | (SubPermission.project_id.isnot(None))
+        )
+    
+    # Check if permission exists and is granted
+    has_perm = permission_query.first() is not None
+    
+    # Cache the result
+    g.permission_cache[cache_key] = has_perm
+    
+    return has_perm
+
+
+def get_user_permissions(user_id, project_id=None):
+    """
+    Get all granted permissions for a user from SubPermission table.
+    
+    Args:
+        user_id: ID of the user
+        project_id: Optional project ID to filter permissions
         
+    Returns:
+        List of dicts with permission details:
+        [{"section": "dogs", "subsection": "", "permission_type": "VIEW", "project_id": None}, ...]
+    """
+    user = User.query.get(user_id)
+    if not user:
+        return []
+    
+    # GENERAL_ADMIN in admin mode has all permissions
+    if _is_admin_mode(user):
+        # Return all possible permissions from PERMISSION_STRUCTURE
+        all_perms = []
+        for section, subsections in PERMISSION_STRUCTURE.items():
+            if isinstance(subsections, dict):
+                for subsection, permissions in subsections.items():
+                    if isinstance(permissions, dict):
+                        for perm_key in permissions.keys():
+                            try:
+                                perm_type = getattr(PermissionType, perm_key.upper())
+                                all_perms.append({
+                                    "section": section,
+                                    "subsection": "",
+                                    "permission_type": perm_type.value,
+                                    "project_id": project_id
+                                })
+                            except AttributeError:
+                                pass
+        return all_perms
+    
+    # Query SubPermission table
+    query = SubPermission.query.filter_by(user_id=user_id, is_granted=True)
+    
+    if project_id is not None:
+        query = query.filter_by(project_id=project_id)
+    
+    permissions = query.all()
+    
+    return [
+        {
+            "section": p.section,
+            "subsection": p.subsection,
+            "permission_type": p.permission_type.value,
+            "project_id": p.project_id
+        }
+        for p in permissions
+    ]
+
+
+def has_any_permission(user, permission_keys):
+    """
+    Check if user has ANY of the listed permissions.
+    
+    Args:
+        user: User object
+        permission_keys: List of permission keys (e.g., ["dogs.view", "dogs.edit"])
+        
+    Returns:
+        Boolean indicating if user has at least one of the permissions
+    """
+    if not user or not permission_keys:
+        return False
+    
+    # GENERAL_ADMIN in admin mode has all permissions
+    if _is_admin_mode(user):
+        return True
+    
+    # Check each permission
+    for perm_key in permission_keys:
+        if has_permission(user, perm_key):
+            return True
+    
     return False
 
+
+def has_all_permissions(user, permission_keys):
+    """
+    Check if user has ALL listed permissions.
+    
+    Args:
+        user: User object
+        permission_keys: List of permission keys (e.g., ["dogs.view", "dogs.edit"])
+        
+    Returns:
+        Boolean indicating if user has all of the permissions
+    """
+    if not user or not permission_keys:
+        return False
+    
+    # GENERAL_ADMIN in admin mode has all permissions
+    if _is_admin_mode(user):
+        return True
+    
+    # Check each permission
+    for perm_key in permission_keys:
+        if not has_permission(user, perm_key):
+            return False
+    
+    return True
+
+
+def get_sections_for_user(user):
+    """
+    Get list of sections user has access to.
+    
+    Args:
+        user: User object
+        
+    Returns:
+        List of section names the user has any permission in
+        (e.g., ["dogs", "employees", "reports"])
+    """
+    if not user:
+        return []
+    
+    # GENERAL_ADMIN in admin mode has access to all sections
+    if _is_admin_mode(user):
+        return list(PERMISSION_STRUCTURE.keys())
+    
+    # Query unique sections from SubPermission table
+    sections = db.session.query(SubPermission.section).filter_by(
+        user_id=user.id,
+        is_granted=True
+    ).distinct().all()
+    
+    return [section[0] for section in sections]
+
+
 def get_user_permissions_matrix(user_id, project_id=None):
-    """Get comprehensive permissions matrix for a user"""
+    """
+    Get comprehensive permissions matrix for a user by querying SubPermission table.
+    
+    Args:
+        user_id: ID of the user
+        project_id: Optional project ID to filter permissions
+        
+    Returns:
+        Nested dict structure showing all permissions and their granted status
+    """
     user = User.query.get_or_404(user_id)
     
     # GENERAL_ADMIN in general admin mode has all permissions
-    # GENERAL_ADMIN in PM mode will be treated like PROJECT_MANAGER
     if _is_admin_mode(user):
         # General admin has all permissions
         matrix = {}
@@ -262,18 +451,60 @@ def get_user_permissions_matrix(user_id, project_id=None):
                 matrix[section] = True
         return matrix
     
-    # For project managers, return limited permissions based on project_id
+    # Query actual SubPermission records from database
+    query = SubPermission.query.filter_by(user_id=user_id, is_granted=True)
+    
+    if project_id is not None:
+        query = query.filter_by(project_id=project_id)
+    
+    permissions = query.all()
+    
+    # Build matrix from database permissions
     matrix = {}
+    
+    # Initialize matrix with False values
     for section, subsections in PERMISSION_STRUCTURE.items():
         if isinstance(subsections, dict):
             matrix[section] = {}
-            for subsection, permissions in subsections.items():
-                if isinstance(permissions, dict):
-                    matrix[section][subsection] = {perm: False for perm in permissions.keys()}
+            for subsection, perms in subsections.items():
+                if isinstance(perms, dict):
+                    matrix[section][subsection] = {perm: False for perm in perms.keys()}
                 else:
                     matrix[section][subsection] = False
         else:
             matrix[section] = False
+    
+    # Populate with actual granted permissions
+    for perm in permissions:
+        section = perm.section
+        subsection = perm.subsection
+        perm_type = perm.permission_type.value.lower()
+        
+        # Handle simple section permissions (e.g., dogs.view)
+        if not subsection or subsection == "":
+            if section in matrix and isinstance(matrix[section], dict):
+                if perm_type in matrix[section]:
+                    matrix[section][perm_type] = True
+        else:
+            # Handle nested subsections (e.g., reports.breeding.feeding.view)
+            # subsection could be "breeding.feeding" or just "feeding"
+            if section in matrix and isinstance(matrix[section], dict):
+                # Try to find matching subsection in matrix
+                subsection_parts = subsection.split('.')
+                
+                # Navigate through nested structure
+                current = matrix[section]
+                for part in subsection_parts[:-1]:
+                    if part in current and isinstance(current[part], dict):
+                        current = current[part]
+                
+                # Set the permission at the deepest level
+                final_key = subsection_parts[-1] if len(subsection_parts) > 0 else subsection
+                if final_key in current and isinstance(current[final_key], dict):
+                    if perm_type in current[final_key]:
+                        current[final_key][perm_type] = True
+                elif perm_type in current:
+                    current[perm_type] = True
             
     return matrix
 
