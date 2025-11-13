@@ -34,15 +34,14 @@ if not app.secret_key:
     print("Set SESSION_SECRET environment variable for production!")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1) # needed for url_for to generate with https
 
+# CSRF configuration - configured later after environment check
 # Enhanced security configuration
 app.config['WTF_CSRF_ENABLED'] = True
 app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
 app.config['WTF_CSRF_CHECK_DEFAULT'] = True
 app.config['WTF_CSRF_METHODS'] = ['POST', 'PUT', 'PATCH', 'DELETE']
 app.config['WTF_CSRF_HEADERS'] = ['X-CSRFToken', 'X-CSRF-Token']
-app.config['SESSION_COOKIE_SECURE'] = flask_env == 'production'
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['WTF_CSRF_SSL_STRICT'] = False  # Required for Replit iframe/proxy environment
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
 
 # Configure database - enforce PostgreSQL in production
