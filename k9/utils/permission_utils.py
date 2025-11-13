@@ -127,6 +127,12 @@ def canonical_permission_key(permission_key, sub_permission=None, action=None):
 
 # Permission structure - comprehensive permission system
 PERMISSION_STRUCTURE = {
+    "admin": {
+        "permissions": "Manage user permissions",
+        "settings": "Access system settings",
+        "backups": "Manage backups",
+        "audit": "View audit logs"
+    },
     "projects": {
         "view": "View projects",
         "create": "Create projects", 
