@@ -153,6 +153,50 @@ def admin_required(f):
     return decorated_function
 
 
+def require_admin_permission(permission_key='admin.permissions'):
+    """
+    Decorator that allows access to GENERAL_ADMIN in admin mode OR users with specific admin permission.
+    This enables delegating admin features to PROJECT_MANAGER users via granular permissions.
+    
+    Args:
+        permission_key: Admin permission key (e.g., "admin.permissions", "admin.settings")
+    
+    Example:
+        @require_admin_permission('admin.permissions')
+        def permissions_dashboard():
+            ...
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # Check if this is an AJAX/JSON request
+            is_ajax = request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+            
+            if not current_user.is_authenticated:
+                if is_ajax:
+                    return jsonify({'success': False, 'error': 'يرجى تسجيل الدخول للوصول إلى هذه الصفحة'}), 401
+                flash('يرجى تسجيل الدخول للوصول إلى هذه الصفحة', 'warning')
+                return redirect(url_for('auth.login'))
+            
+            # GENERAL_ADMIN in general admin mode always has access
+            if _is_admin_mode(current_user):
+                return f(*args, **kwargs)
+            
+            # Check if user has the specific admin permission
+            if has_permission(current_user, permission_key):
+                return f(*args, **kwargs)
+            
+            # Access denied
+            error_msg = 'ليس لديك صلاحية للوصول إلى هذه الصفحة'
+            if is_ajax:
+                return jsonify({'success': False, 'error': error_msg}), 403
+            flash(error_msg, 'error')
+            return redirect(url_for('main.dashboard'))
+            
+        return decorated_function
+    return decorator
+
+
 def require_role_or_permission(role, permission=None):
     """
     Decorator that allows access if user has specified role OR specified permission.
