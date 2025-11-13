@@ -293,9 +293,20 @@ def get_projects_list():
 @login_required
 @admin_required  
 def get_project_users(project_id):
-    """Get list of users assigned to a specific project"""
+    """Get list of ALL users (for comprehensive permissions management)"""
     try:
-        users = get_users_by_project(project_id)
+        # Get ALL active users with employee accounts
+        # This allows assigning permissions to anyone, not just currently assigned users
+        users = User.query.filter(
+            User.active == True,
+            User.employee_id.isnot(None)
+        ).order_by(User.full_name).all()
+        
+        # Prioritize users already assigned to this project
+        project_user_ids = set()
+        assigned_users = get_users_by_project(project_id)
+        for user in assigned_users:
+            project_user_ids.add(user.id)
         
         users_data = [{
             'id': str(user.id),
@@ -304,11 +315,16 @@ def get_project_users(project_id):
             'email': user.email,
             'role': user.role.value if hasattr(user.role, 'value') else str(user.role),
             'employee_name': user.employee.name if user.employee else '',
-            'employee_id': user.employee.employee_id if user.employee else ''
+            'employee_id': user.employee.employee_id if user.employee else '',
+            'is_assigned': user.id in project_user_ids  # Flag for UI to show assigned users first
         } for user in users]
+        
+        # Sort: assigned users first, then alphabetically
+        users_data.sort(key=lambda x: (not x['is_assigned'], x['full_name']))
         
         return jsonify({'users': users_data})
     except Exception as e:
+        logger.error(f"Error getting users for project {project_id}: {e}")
         return jsonify({'error': str(e)}), 500
 
 @admin_bp.route('/permissions/matrix/<user_id>/<project_id>')
