@@ -211,7 +211,10 @@ def dashboard():
     
     # If GENERAL_ADMIN needs to select a project, show selector
     if needs_selection:
-        projects = Project.query.filter_by(is_active=True).order_by(Project.name).all()
+        from k9.models.models import ProjectStatus
+        projects = Project.query.filter(
+            Project.status.in_([ProjectStatus.PLANNED, ProjectStatus.ACTIVE])
+        ).order_by(Project.name).all()
         return render_template('pm/project_selector.html', projects=projects)
     
     # If no project (PM without assignment), redirect
