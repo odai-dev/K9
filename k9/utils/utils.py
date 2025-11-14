@@ -760,8 +760,28 @@ def generate_excel_report(report_type, start_date, end_date, user, filters=None)
     return filename
 
 def get_user_permissions(user):
-    """Get user permissions based on role and SubPermission grants"""
-    if user.role.value == 'GENERAL_ADMIN':
+    """
+    Get user permissions based ONLY on SubPermission grants from database.
+    This ensures permissions are controlled by database entries, not hardcoded role logic.
+    """
+    from k9.models.models import SubPermission, UserRole
+    from k9.utils.permission_utils import _is_admin_mode
+    
+    # Initialize all sections as False
+    permissions = {
+        'dogs': False,
+        'employees': False,
+        'training': False,
+        'veterinary': False,
+        'production': False,
+        'projects': False,
+        'attendance': False,
+        'reports': False,
+        'admin': False
+    }
+    
+    # GENERAL_ADMIN in general admin mode has full access
+    if _is_admin_mode(user):
         return {
             'dogs': True,
             'employees': True,
@@ -773,59 +793,46 @@ def get_user_permissions(user):
             'reports': True,
             'admin': True
         }
-    elif user.role.value == 'HANDLER':
-        # HANDLER users have NO navigation permissions
-        # They only access their own handler dashboard and reports
-        return {
-            'dogs': False,
-            'employees': False,
-            'training': False,
-            'veterinary': False,
-            'production': False,
-            'projects': False,
-            'attendance': False,
-            'reports': False,
-            'admin': False
-        }
-    else:  # PROJECT_MANAGER
-        # PROJECT_MANAGER gets default access to all essential sections
-        # They have full access to projects, dogs, employees, training, veterinary, attendance, and reports
-        from k9.models.models import SubPermission, Project
-        permissions = {
-            'dogs': True,           # Can view and manage dogs
-            'employees': True,      # Can view and manage employees
-            'training': True,       # Can view and manage training
-            'veterinary': True,     # Can view veterinary records
-            'production': True,     # Can view production records
-            'projects': True,       # Can view and manage projects
-            'attendance': True,     # Can schedule attendance and manage warnings for their location
-            'reports': True,        # Can view and export all reports
-            'admin': False          # No admin access
-        }
-        
-        # Check if user has any additional or restricted permissions in SubPermission table
-        user_permissions = SubPermission.query.filter_by(user_id=user.id, is_granted=True).all()
-        
-        # Map SubPermission sections to the main sections
-        section_mapping = {
-            'Dogs': 'dogs',
-            'Employees': 'employees', 
-            'Training': 'training',
-            'Veterinary': 'veterinary',
-            'Production': 'production',
-            'Projects': 'projects',
-            'Attendance': 'attendance',
-            'Reports': 'reports',
-            'Analytics': 'reports'
-        }
-        
-        # If user has any granted permissions, enable those sections (override defaults if needed)
-        for perm in user_permissions:
-            mapped_section = section_mapping.get(perm.section)
-            if mapped_section and mapped_section in permissions:
-                permissions[mapped_section] = True
-        
-        return permissions
+    
+    # HANDLER users have NO navigation permissions
+    # They only access their own handler dashboard and reports
+    if user.role == UserRole.HANDLER or user.role.value == 'HANDLER':
+        return permissions  # All False
+    
+    # For PROJECT_MANAGER and GENERAL_ADMIN in PM mode:
+    # Read permissions ONLY from SubPermission table
+    user_permissions = SubPermission.query.filter_by(
+        user_id=user.id, 
+        is_granted=True
+    ).all()
+    
+    # Map SubPermission sections to the main navigation sections
+    section_mapping = {
+        'dogs': 'dogs',
+        'employees': 'employees',
+        'training': 'training',
+        'veterinary': 'veterinary',
+        'production': 'production',
+        'projects': 'projects',
+        'attendance': 'attendance',
+        'reports': 'reports',
+        'analytics': 'reports',
+        'admin': 'admin'
+    }
+    
+    # Enable sections based on granted permissions in database
+    granted_sections = set()
+    for perm in user_permissions:
+        section_key = perm.section.lower()
+        mapped_section = section_mapping.get(section_key, section_key)
+        if mapped_section in permissions:
+            granted_sections.add(mapped_section)
+    
+    # Set permissions to True for granted sections
+    for section in granted_sections:
+        permissions[section] = True
+    
+    return permissions
 
 def get_project_manager_permissions(user, project_id):
     """Get granular permissions for a PROJECT_MANAGER user on a specific project"""
