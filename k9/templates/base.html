@@ -224,6 +224,14 @@
                             </li>
                             <li><hr class="dropdown-divider"></li>
                             {% endif %}
+                            {% if is_admin() or has_permission(current_user, 'admin.permissions') %}
+                            <li>
+                                <a class="dropdown-item {% if request.endpoint == 'admin.permissions_dashboard' %}active{% endif %}" href="{{ url_for('admin.permissions_dashboard') }}">
+                                    <i class="fas fa-key me-2"></i>إدارة الصلاحيات
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            {% endif %}
                             <li>
                                 <a class="dropdown-item {% if request.endpoint == 'tasks.admin_index' %}active{% endif %}" href="{{ url_for('tasks.admin_index') }}">
                                     <i class="fas fa-tasks me-2"></i>إرسال المهام
