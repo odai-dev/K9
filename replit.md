@@ -73,3 +73,16 @@ Preferred communication style: Simple, everyday language.
 - **UUID Compatibility**: Native UUID support for PostgreSQL, automatic string fallback for SQLite.
 - **Connection Pooling**: Configured for production PostgreSQL.
 - **Migration Support**: Flask-Migrate with Alembic.
+
+## Recent Changes
+
+### 2025-11-14: Permission System Refactoring
+**Critical fix** - Switched from role-based to permission-based UI/navigation control:
+- **Modified**: `k9/utils/utils.py::get_user_permissions()` now reads exclusively from `SubPermission` table instead of hardcoding role-based defaults
+- **Impact**: Navigation menu and UI elements now reflect actual granted permissions from database
+- **Behavior**: 
+  - `GENERAL_ADMIN` in admin mode: Full access (unchanged)
+  - `HANDLER`: No navigation permissions (unchanged)
+  - `PROJECT_MANAGER` and `GENERAL_ADMIN` in PM mode: Permissions controlled by `SubPermission` table entries only
+- **Important**: Users without `SubPermission` records will see empty navigation. Ensure proper permission grants exist for all active users.
+- **Security**: No regressions - all route-level decorators (`@require_permission`) remain unchanged and continue enforcing granular access control.
