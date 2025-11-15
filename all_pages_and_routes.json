@@ -1,0 +1,5368 @@
+{
+  "total_routes": 327,
+  "sections": [
+    "Main",
+    "Admin",
+    "API",
+    "Dogs Management",
+    "Employees Management",
+    "Handler",
+    "MFA",
+    "Password Reset",
+    "Project Manager",
+    "Projects Management",
+    "Reports",
+    "Supervisor",
+    "File Uploads"
+  ],
+  "routes_by_section": {
+    "Main": [
+      {
+        "path": "/",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "caretaker_daily_reports_ui",
+        "file": "k9/routes/caretaker_daily_report_routes.py"
+      },
+      {
+        "path": "/",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "unified_checkup_reports_ui",
+        "file": "k9/routes/unified_checkup_reports_routes.py"
+      },
+      {
+        "path": "/",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "unified_feeding_reports_ui",
+        "file": "k9/routes/unified_feeding_reports_routes.py"
+      },
+      {
+        "path": "/",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "veterinary_reports_ui",
+        "file": "k9/routes/veterinary_reports_routes.py"
+      },
+      {
+        "path": "/",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "veterinary_reports_api",
+        "file": "k9/api/veterinary_reports_api.py"
+      },
+      {
+        "path": "/breeding/checkup",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/checkup/<id>/edit",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/checkup/new",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/cleaning",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/cleaning",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/cleaning/<id>/edit",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/cleaning/new",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/deworming",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/deworming/<id>/edit",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/deworming/new",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/excretion",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/excretion/<id>/edit",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/excretion/new",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/feeding",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/feeding/<id>/edit",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/feeding/log",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/feeding/log/<log_id>/edit",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/feeding/log/new",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/feeding/new",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/grooming",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/grooming/<id>/edit",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/grooming/new",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/training-activity",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/training-activity/<id>/edit",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/breeding/training-activity/new",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/create_manager",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "auth",
+        "file": "k9/routes/auth.py"
+      },
+      {
+        "path": "/daily",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "breeding_checkup_reports_ui",
+        "file": "k9/routes/breeding_checkup_reports_routes.py"
+      },
+      {
+        "path": "/daily",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "breeding_feeding_reports_ui",
+        "file": "k9/routes/breeding_feeding_reports_routes.py"
+      },
+      {
+        "path": "/daily",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "veterinary_daily_ui",
+        "file": "k9/routes/veterinary_daily_routes.py"
+      },
+      {
+        "path": "/daily",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "veterinary_legacy_routes",
+        "file": "k9/routes/veterinary_legacy_routes.py"
+      },
+      {
+        "path": "/daily",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "breeding_checkup_reports_api",
+        "file": "k9/api/breeding_checkup_reports_api.py"
+      },
+      {
+        "path": "/daily",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "breeding_feeding_reports_api",
+        "file": "k9/api/breeding_feeding_reports_api.py"
+      },
+      {
+        "path": "/daily/export.pdf",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "breeding_checkup_reports_api",
+        "file": "k9/api/breeding_checkup_reports_api.py"
+      },
+      {
+        "path": "/daily/export.pdf",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "breeding_feeding_reports_api",
+        "file": "k9/api/breeding_feeding_reports_api.py"
+      },
+      {
+        "path": "/dashboard",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/data/dogs",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "veterinary_daily_api",
+        "file": "k9/api/veterinary_daily_api.py"
+      },
+      {
+        "path": "/data/vets",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "veterinary_daily_api",
+        "file": "k9/api/veterinary_daily_api.py"
+      },
+      {
+        "path": "/export.pdf",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "veterinary_reports_api",
+        "file": "k9/api/veterinary_reports_api.py"
+      },
+      {
+        "path": "/export/pdf/daily",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "veterinary_daily_api",
+        "file": "k9/api/veterinary_daily_api.py"
+      },
+      {
+        "path": "/export/pdf/pm-daily",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "reports_attendance_pm_daily_api",
+        "file": "k9/api/pm_daily_api.py"
+      },
+      {
+        "path": "/export/pdf/trainer-daily",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "reports_training_trainer_daily_api",
+        "file": "k9/api/trainer_daily_api.py"
+      },
+      {
+        "path": "/login",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "auth",
+        "file": "k9/routes/auth.py"
+      },
+      {
+        "path": "/logout",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "auth",
+        "file": "k9/routes/auth.py"
+      },
+      {
+        "path": "/production",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/add",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/delivery",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/delivery/add",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/delivery/view/<id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/heat-cycles",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/heat-cycles/add",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/heat-cycles/view/<id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/mating",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/mating/add",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/mating/view/<id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/maturity",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/maturity/add",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/maturity/view/<id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/pregnancy",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/pregnancy/add",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/pregnancy/view/<id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/puppies",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/puppies/add",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/puppies/view/<id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/puppy-training",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/puppy-training/add",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/production/puppy-training/view/<id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/run/daily",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "veterinary_daily_api",
+        "file": "k9/api/veterinary_daily_api.py"
+      },
+      {
+        "path": "/run/pm-daily",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "reports_attendance_pm_daily_api",
+        "file": "k9/api/pm_daily_api.py"
+      },
+      {
+        "path": "/run/trainer-daily",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "reports_training_trainer_daily_api",
+        "file": "k9/api/trainer_daily_api.py"
+      },
+      {
+        "path": "/schedule/",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "schedule",
+        "file": "k9/routes/schedule_routes.py"
+      },
+      {
+        "path": "/schedule/<schedule_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "schedule",
+        "file": "k9/routes/schedule_routes.py"
+      },
+      {
+        "path": "/schedule/<schedule_id>/edit",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "schedule",
+        "file": "k9/routes/schedule_routes.py"
+      },
+      {
+        "path": "/schedule/<schedule_id>/item/<item_id>/delete",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "schedule",
+        "file": "k9/routes/schedule_routes.py"
+      },
+      {
+        "path": "/schedule/create",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "schedule",
+        "file": "k9/routes/schedule_routes.py"
+      },
+      {
+        "path": "/search",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/select-mode",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "auth",
+        "file": "k9/routes/auth.py"
+      },
+      {
+        "path": "/setup",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "auth",
+        "file": "k9/routes/auth.py"
+      },
+      {
+        "path": "/switch-mode",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "auth",
+        "file": "k9/routes/auth.py"
+      },
+      {
+        "path": "/tasks/admin",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "tasks",
+        "file": "k9/routes/task_routes.py"
+      },
+      {
+        "path": "/tasks/admin/<task_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "tasks",
+        "file": "k9/routes/task_routes.py"
+      },
+      {
+        "path": "/tasks/admin/<task_id>/delete",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "tasks",
+        "file": "k9/routes/task_routes.py"
+      },
+      {
+        "path": "/tasks/admin/<task_id>/edit",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "tasks",
+        "file": "k9/routes/task_routes.py"
+      },
+      {
+        "path": "/tasks/admin/create",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "tasks",
+        "file": "k9/routes/task_routes.py"
+      },
+      {
+        "path": "/tasks/my-tasks",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "tasks",
+        "file": "k9/routes/task_routes.py"
+      },
+      {
+        "path": "/tasks/my-tasks/<task_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "tasks",
+        "file": "k9/routes/task_routes.py"
+      },
+      {
+        "path": "/tasks/my-tasks/<task_id>/complete",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "tasks",
+        "file": "k9/routes/task_routes.py"
+      },
+      {
+        "path": "/tasks/my-tasks/<task_id>/start",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "tasks",
+        "file": "k9/routes/task_routes.py"
+      },
+      {
+        "path": "/trainer-daily",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "reports_training_trainer_daily_ui",
+        "file": "k9/routes/trainer_daily_routes.py"
+      },
+      {
+        "path": "/training",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/training/add",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/unified",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "breeding_checkup_reports_api",
+        "file": "k9/api/breeding_checkup_reports_api.py"
+      },
+      {
+        "path": "/unified",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "breeding_feeding_reports_api",
+        "file": "k9/api/breeding_feeding_reports_api.py"
+      },
+      {
+        "path": "/unified",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "caretaker_daily_reports_api",
+        "file": "k9/api/caretaker_daily_report_api.py"
+      },
+      {
+        "path": "/unified/export.pdf",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "breeding_checkup_reports_api",
+        "file": "k9/api/breeding_checkup_reports_api.py"
+      },
+      {
+        "path": "/unified/export.pdf",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "breeding_feeding_reports_api",
+        "file": "k9/api/breeding_feeding_reports_api.py"
+      },
+      {
+        "path": "/unified/export.pdf",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "caretaker_daily_reports_api",
+        "file": "k9/api/caretaker_daily_report_api.py"
+      },
+      {
+        "path": "/veterinary",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/veterinary/add",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/weekly",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "breeding_checkup_reports_ui",
+        "file": "k9/routes/breeding_checkup_reports_routes.py"
+      },
+      {
+        "path": "/weekly",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "breeding_feeding_reports_ui",
+        "file": "k9/routes/breeding_feeding_reports_routes.py"
+      },
+      {
+        "path": "/weekly",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "veterinary_legacy_routes",
+        "file": "k9/routes/veterinary_legacy_routes.py"
+      },
+      {
+        "path": "/weekly",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "breeding_checkup_reports_api",
+        "file": "k9/api/breeding_checkup_reports_api.py"
+      },
+      {
+        "path": "/weekly",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "breeding_feeding_reports_api",
+        "file": "k9/api/breeding_feeding_reports_api.py"
+      },
+      {
+        "path": "/weekly/export.pdf",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "breeding_checkup_reports_api",
+        "file": "k9/api/breeding_checkup_reports_api.py"
+      },
+      {
+        "path": "/weekly/export.pdf",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "breeding_feeding_reports_api",
+        "file": "k9/api/breeding_feeding_reports_api.py"
+      }
+    ],
+    "Admin": [
+      {
+        "path": "/admin",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/admin/",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/accounts/",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "account_management",
+        "file": "k9/routes/account_management_routes.py"
+      },
+      {
+        "path": "/admin/accounts/<user_id>/reset-password",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "account_management",
+        "file": "k9/routes/account_management_routes.py"
+      },
+      {
+        "path": "/admin/accounts/<user_id>/toggle-status",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "account_management",
+        "file": "k9/routes/account_management_routes.py"
+      },
+      {
+        "path": "/admin/accounts/api/generate-password",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "account_management",
+        "file": "k9/routes/account_management_routes.py"
+      },
+      {
+        "path": "/admin/accounts/api/search-employees",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "account_management",
+        "file": "k9/routes/account_management_routes.py"
+      },
+      {
+        "path": "/admin/accounts/create",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "account_management",
+        "file": "k9/routes/account_management_routes.py"
+      },
+      {
+        "path": "/admin/api/reports/pending/count",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/api/unread-count",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/backup",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/backup/cleanup",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/backup/create",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/backup/delete/<path:filename>",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/backup/download/<path:filename>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/backup/list",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/backup/restore/<path:filename>",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/backup/settings",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/employee-user-links",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/admin/employee-user-links/link",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/admin/employee-user-links/unlink",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/admin/google-drive/callback",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/google-drive/connect",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/google-drive/disconnect",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/google-drive/status",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/notifications",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/notifications/<notification_id>/read",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/notifications/read-all",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/permissions",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/permissions/audit",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/permissions/bulk-update",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/permissions/comprehensive",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/permissions/export-excel",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/permissions/export-pdf/<int:user_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/permissions/export/<int:user_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/permissions/initialize/<int:user_id>",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/permissions/matrix/<user_id>/<project_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/permissions/preview/<int:user_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/permissions/projects",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/permissions/update",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/permissions/update-legacy",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/admin/permissions/user/<int:user_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/permissions/users/<project_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/profile",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/reports/<report_type>/<report_id>/approve",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/reports/<report_type>/<report_id>/reject",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/reports/handler/<report_id>/export/excel",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/reports/handler/<report_id>/export/pdf",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/reports/pending",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/reports/shift/<report_id>/export/excel",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/reports/shift/<report_id>/export/pdf",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "admin",
+        "file": "k9/routes/admin_routes.py"
+      },
+      {
+        "path": "/admin/sync_managers",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/admin/update_user",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/admin/users/<int:user_id>/toggle_status",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      }
+    ],
+    "API": [
+      {
+        "path": "/api/admin/permissions/<user_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/api/admin/permissions/update",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/api/breeding/checkup",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "api",
+        "file": "k9/api/api_routes.py"
+      },
+      {
+        "path": "/api/breeding/checkup/<id>",
+        "methods": [
+          "PUT"
+        ],
+        "blueprint": "api",
+        "file": "k9/api/api_routes.py"
+      },
+      {
+        "path": "/api/breeding/checkup/<id>",
+        "methods": [
+          "DELETE"
+        ],
+        "blueprint": "api",
+        "file": "k9/api/api_routes.py"
+      },
+      {
+        "path": "/api/breeding/checkup/list",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "api",
+        "file": "k9/api/api_routes.py"
+      },
+      {
+        "path": "/api/breeding/cleaning",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "api_cleaning",
+        "file": "k9/api/api_cleaning.py"
+      },
+      {
+        "path": "/api/breeding/cleaning/<log_id>",
+        "methods": [
+          "PUT"
+        ],
+        "blueprint": "api_cleaning",
+        "file": "k9/api/api_cleaning.py"
+      },
+      {
+        "path": "/api/breeding/cleaning/<log_id>",
+        "methods": [
+          "DELETE"
+        ],
+        "blueprint": "api_cleaning",
+        "file": "k9/api/api_cleaning.py"
+      },
+      {
+        "path": "/api/breeding/cleaning/list",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "api_cleaning",
+        "file": "k9/api/api_cleaning.py"
+      },
+      {
+        "path": "/api/breeding/deworming",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "api_deworming",
+        "file": "k9/api/api_deworming.py"
+      },
+      {
+        "path": "/api/breeding/deworming/<log_id>",
+        "methods": [
+          "PUT"
+        ],
+        "blueprint": "api_deworming",
+        "file": "k9/api/api_deworming.py"
+      },
+      {
+        "path": "/api/breeding/deworming/<log_id>",
+        "methods": [
+          "DELETE"
+        ],
+        "blueprint": "api_deworming",
+        "file": "k9/api/api_deworming.py"
+      },
+      {
+        "path": "/api/breeding/deworming/list",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "api_deworming",
+        "file": "k9/api/api_deworming.py"
+      },
+      {
+        "path": "/api/breeding/excretion",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "api_excretion",
+        "file": "k9/api/api_excretion.py"
+      },
+      {
+        "path": "/api/breeding/excretion",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "api",
+        "file": "k9/api/api_routes.py"
+      },
+      {
+        "path": "/api/breeding/excretion/<id>",
+        "methods": [
+          "PUT"
+        ],
+        "blueprint": "api",
+        "file": "k9/api/api_routes.py"
+      },
+      {
+        "path": "/api/breeding/excretion/<id>",
+        "methods": [
+          "DELETE"
+        ],
+        "blueprint": "api",
+        "file": "k9/api/api_routes.py"
+      },
+      {
+        "path": "/api/breeding/excretion/<log_id>",
+        "methods": [
+          "PUT"
+        ],
+        "blueprint": "api_excretion",
+        "file": "k9/api/api_excretion.py"
+      },
+      {
+        "path": "/api/breeding/excretion/<log_id>",
+        "methods": [
+          "DELETE"
+        ],
+        "blueprint": "api_excretion",
+        "file": "k9/api/api_excretion.py"
+      },
+      {
+        "path": "/api/breeding/excretion/list",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/api/breeding/excretion/list",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "api_excretion",
+        "file": "k9/api/api_excretion.py"
+      },
+      {
+        "path": "/api/breeding/excretion/list",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "api",
+        "file": "k9/api/api_routes.py"
+      },
+      {
+        "path": "/api/breeding/feeding/log",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "api",
+        "file": "k9/api/api_routes.py"
+      },
+      {
+        "path": "/api/breeding/feeding/log/<log_id>",
+        "methods": [
+          "PUT"
+        ],
+        "blueprint": "api",
+        "file": "k9/api/api_routes.py"
+      },
+      {
+        "path": "/api/breeding/feeding/log/<log_id>",
+        "methods": [
+          "DELETE"
+        ],
+        "blueprint": "api",
+        "file": "k9/api/api_routes.py"
+      },
+      {
+        "path": "/api/breeding/feeding/log/list",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "api",
+        "file": "k9/api/api_routes.py"
+      },
+      {
+        "path": "/api/breeding/grooming",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "api",
+        "file": "k9/api/api_routes.py"
+      },
+      {
+        "path": "/api/breeding/grooming/<id>",
+        "methods": [
+          "PUT"
+        ],
+        "blueprint": "api",
+        "file": "k9/api/api_routes.py"
+      },
+      {
+        "path": "/api/breeding/grooming/<id>",
+        "methods": [
+          "DELETE"
+        ],
+        "blueprint": "api",
+        "file": "k9/api/api_routes.py"
+      },
+      {
+        "path": "/api/breeding/grooming/list",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "api",
+        "file": "k9/api/api_routes.py"
+      },
+      {
+        "path": "/api/breeding/training-activity",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "api_breeding_training_activity",
+        "file": "k9/api/api_breeding_training_activity.py"
+      },
+      {
+        "path": "/api/breeding/training-activity/<activity_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "api_breeding_training_activity",
+        "file": "k9/api/api_breeding_training_activity.py"
+      },
+      {
+        "path": "/api/breeding/training-activity/<activity_id>",
+        "methods": [
+          "PUT"
+        ],
+        "blueprint": "api_breeding_training_activity",
+        "file": "k9/api/api_breeding_training_activity.py"
+      },
+      {
+        "path": "/api/breeding/training-activity/<activity_id>",
+        "methods": [
+          "DELETE"
+        ],
+        "blueprint": "api_breeding_training_activity",
+        "file": "k9/api/api_breeding_training_activity.py"
+      },
+      {
+        "path": "/api/breeding/training-activity/list",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "api_breeding_training_activity",
+        "file": "k9/api/api_breeding_training_activity.py"
+      },
+      {
+        "path": "/api/dashboard/admin/all",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "dashboard_api",
+        "file": "k9/routes/dashboard_api_routes.py"
+      },
+      {
+        "path": "/api/dashboard/admin/attendance-trends",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "dashboard_api",
+        "file": "k9/routes/dashboard_api_routes.py"
+      },
+      {
+        "path": "/api/dashboard/admin/dogs-by-project",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "dashboard_api",
+        "file": "k9/routes/dashboard_api_routes.py"
+      },
+      {
+        "path": "/api/dashboard/admin/dogs-by-status",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "dashboard_api",
+        "file": "k9/routes/dashboard_api_routes.py"
+      },
+      {
+        "path": "/api/dashboard/admin/employee-by-role",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "dashboard_api",
+        "file": "k9/routes/dashboard_api_routes.py"
+      },
+      {
+        "path": "/api/dashboard/admin/project-status",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "dashboard_api",
+        "file": "k9/routes/dashboard_api_routes.py"
+      },
+      {
+        "path": "/api/dashboard/admin/report-status",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "dashboard_api",
+        "file": "k9/routes/dashboard_api_routes.py"
+      },
+      {
+        "path": "/api/dashboard/pm/all",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "dashboard_api",
+        "file": "k9/routes/dashboard_api_routes.py"
+      },
+      {
+        "path": "/api/dashboard/pm/attendance-trends",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "dashboard_api",
+        "file": "k9/routes/dashboard_api_routes.py"
+      },
+      {
+        "path": "/api/dashboard/pm/handler-activity",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "dashboard_api",
+        "file": "k9/routes/dashboard_api_routes.py"
+      },
+      {
+        "path": "/api/dashboard/pm/monthly-trends",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "dashboard_api",
+        "file": "k9/routes/dashboard_api_routes.py"
+      },
+      {
+        "path": "/api/dashboard/pm/report-status",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "dashboard_api",
+        "file": "k9/routes/dashboard_api_routes.py"
+      },
+      {
+        "path": "/api/dogs",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "api",
+        "file": "k9/api/api_routes.py"
+      },
+      {
+        "path": "/api/dogs",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "trainer_daily_data_api",
+        "file": "k9/api/trainer_daily_data_api.py"
+      },
+      {
+        "path": "/api/dogs/<dog_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "api",
+        "file": "k9/api/api_routes.py"
+      },
+      {
+        "path": "/api/dogs/accessible",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "trainer_daily_data_api",
+        "file": "k9/api/trainer_daily_data_api.py"
+      },
+      {
+        "path": "/api/employees",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "trainer_daily_data_api",
+        "file": "k9/api/trainer_daily_data_api.py"
+      },
+      {
+        "path": "/api/health",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "api",
+        "file": "k9/api/api_routes.py"
+      },
+      {
+        "path": "/api/projects",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "trainer_daily_data_api",
+        "file": "k9/api/trainer_daily_data_api.py"
+      }
+    ],
+    "Dogs Management": [
+      {
+        "path": "/dogs",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/dogs/<dog_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/dogs/<dog_id>/edit",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/dogs/add",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      }
+    ],
+    "Employees Management": [
+      {
+        "path": "/employees",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/employees/<employee_id>/delete",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/employees/<employee_id>/edit",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/employees/add",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      }
+    ],
+    "Handler": [
+      {
+        "path": "/handler/api/unread-count",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "handler",
+        "file": "k9/routes/handler_routes.py"
+      },
+      {
+        "path": "/handler/daily-reports/select",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "handler",
+        "file": "k9/routes/handler_routes.py"
+      },
+      {
+        "path": "/handler/dashboard",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "handler",
+        "file": "k9/routes/handler_routes.py"
+      },
+      {
+        "path": "/handler/my-reports",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "handler",
+        "file": "k9/routes/handler_routes.py"
+      },
+      {
+        "path": "/handler/notifications",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "handler",
+        "file": "k9/routes/handler_routes.py"
+      },
+      {
+        "path": "/handler/notifications/<notification_id>/read",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "handler",
+        "file": "k9/routes/handler_routes.py"
+      },
+      {
+        "path": "/handler/notifications/read-all",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "handler",
+        "file": "k9/routes/handler_routes.py"
+      },
+      {
+        "path": "/handler/profile",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "handler",
+        "file": "k9/routes/handler_routes.py"
+      },
+      {
+        "path": "/handler/report/<report_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "handler",
+        "file": "k9/routes/handler_routes.py"
+      },
+      {
+        "path": "/handler/report/<report_id>/edit",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "handler",
+        "file": "k9/routes/handler_routes.py"
+      },
+      {
+        "path": "/handler/report/new",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "handler",
+        "file": "k9/routes/handler_routes.py"
+      },
+      {
+        "path": "/handler/reports/<report_id>/delete",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "handler",
+        "file": "k9/routes/handler_routes.py"
+      },
+      {
+        "path": "/handler/shift-report/<report_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "handler",
+        "file": "k9/routes/handler_routes.py"
+      },
+      {
+        "path": "/handler/shift-report/new/<schedule_item_id>",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "handler",
+        "file": "k9/routes/handler_routes.py"
+      },
+      {
+        "path": "/handler/shift-report/submit/<shift_report_id>",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "handler",
+        "file": "k9/routes/handler_routes.py"
+      }
+    ],
+    "MFA": [
+      {
+        "path": "/mfa/change-password",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "mfa",
+        "file": "k9/routes/mfa_routes.py"
+      },
+      {
+        "path": "/mfa/disable",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "mfa",
+        "file": "k9/routes/mfa_routes.py"
+      },
+      {
+        "path": "/mfa/regenerate-backup-codes",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "mfa",
+        "file": "k9/routes/mfa_routes.py"
+      },
+      {
+        "path": "/mfa/setup",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "mfa",
+        "file": "k9/routes/mfa_routes.py"
+      },
+      {
+        "path": "/mfa/status",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "mfa",
+        "file": "k9/routes/mfa_routes.py"
+      }
+    ],
+    "Password Reset": [
+      {
+        "path": "/password-reset/cleanup-tokens",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "password_reset",
+        "file": "k9/routes/password_reset_routes.py"
+      },
+      {
+        "path": "/password-reset/request",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "password_reset",
+        "file": "k9/routes/password_reset_routes.py"
+      },
+      {
+        "path": "/password-reset/reset/<token>",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "password_reset",
+        "file": "k9/routes/password_reset_routes.py"
+      }
+    ],
+    "Project Manager": [
+      {
+        "path": "/pm-daily",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "reports_attendance_pm_daily_ui",
+        "file": "k9/routes/pm_daily_routes.py"
+      },
+      {
+        "path": "/pm/approve-breeding/<activity_id>",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "pm",
+        "file": "k9/routes/pm_routes.py"
+      },
+      {
+        "path": "/pm/approve-caretaker/<log_id>",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "pm",
+        "file": "k9/routes/pm_routes.py"
+      },
+      {
+        "path": "/pm/approve-report/<report_id>",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "pm",
+        "file": "k9/routes/pm_routes.py"
+      },
+      {
+        "path": "/pm/approve-vet-visit/<visit_id>",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "pm",
+        "file": "k9/routes/pm_routes.py"
+      },
+      {
+        "path": "/pm/dashboard",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "pm",
+        "file": "k9/routes/pm_routes.py"
+      },
+      {
+        "path": "/pm/my-dogs",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "pm",
+        "file": "k9/routes/pm_routes.py"
+      },
+      {
+        "path": "/pm/my-team",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "pm",
+        "file": "k9/routes/pm_routes.py"
+      },
+      {
+        "path": "/pm/pending-approvals",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "pm",
+        "file": "k9/routes/pm_routes.py"
+      },
+      {
+        "path": "/pm/project",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "pm",
+        "file": "k9/routes/pm_routes.py"
+      },
+      {
+        "path": "/pm/reject-breeding/<activity_id>",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "pm",
+        "file": "k9/routes/pm_routes.py"
+      },
+      {
+        "path": "/pm/reject-caretaker/<log_id>",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "pm",
+        "file": "k9/routes/pm_routes.py"
+      },
+      {
+        "path": "/pm/reject-report/<report_id>",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "pm",
+        "file": "k9/routes/pm_routes.py"
+      },
+      {
+        "path": "/pm/reject-vet-visit/<visit_id>",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "pm",
+        "file": "k9/routes/pm_routes.py"
+      },
+      {
+        "path": "/pm/reports/handler/<report_id>/export/excel",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "pm",
+        "file": "k9/routes/pm_routes.py"
+      },
+      {
+        "path": "/pm/reports/handler/<report_id>/export/pdf",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "pm",
+        "file": "k9/routes/pm_routes.py"
+      },
+      {
+        "path": "/pm/reports/shift/<report_id>/export/excel",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "pm",
+        "file": "k9/routes/pm_routes.py"
+      },
+      {
+        "path": "/pm/reports/shift/<report_id>/export/pdf",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "pm",
+        "file": "k9/routes/pm_routes.py"
+      }
+    ],
+    "Projects Management": [
+      {
+        "path": "/projects",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/assignments",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/assignments/<assignment_id>/edit",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/assignments/<assignment_id>/remove",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/assignments/add",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/dashboard",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/delete",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/dogs/add",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/edit",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/evaluations",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/evaluations/add",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/incidents",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/incidents/add",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/incidents/resolve",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/locations",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/locations/<location_id>/delete",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/locations/<location_id>/edit",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/locations/add",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/manager/update",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/shifts",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/shifts/<shift_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/shifts/<shift_id>/toggle",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/status",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/suspicions",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/<project_id>/suspicions/add",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/projects/add",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      }
+    ],
+    "Reports": [
+      {
+        "path": "/reports",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/reports/generate",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/reports/hub",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/reports/preview",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/reports/preview-pdf",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      },
+      {
+        "path": "/reports/simple",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "main",
+        "file": "k9/routes/main.py"
+      }
+    ],
+    "Supervisor": [
+      {
+        "path": "/supervisor/api/dogs-by-project/<project_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/api/handlers-by-project/<project_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/api/locations-by-project/<project_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/api/pm/reports/<report_type>/<report_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/api/pm/reports/<report_type>/<report_id>/approve",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/api/pm/reports/<report_type>/<report_id>/history",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/api/pm/reports/<report_type>/<report_id>/reject",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/api/pm/reports/<report_type>/<report_id>/request-edits",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/api/pm/reports/pending",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/reports",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/reports/<report_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/reports/<report_id>/approve",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/reports/<report_id>/reject",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/schedules",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/schedules/<schedule_id>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/schedules/<schedule_id>/delete",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/schedules/<schedule_id>/lock",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/schedules/<schedule_id>/unlock",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/schedules/create",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/schedules/item/<item_id>/replace-handler",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "supervisor",
+        "file": "k9/routes/supervisor_routes.py"
+      },
+      {
+        "path": "/supervisor/shifts/",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "shift",
+        "file": "k9/routes/shift_routes.py"
+      },
+      {
+        "path": "/supervisor/shifts/<shift_id>/delete",
+        "methods": [
+          "POST"
+        ],
+        "blueprint": "shift",
+        "file": "k9/routes/shift_routes.py"
+      },
+      {
+        "path": "/supervisor/shifts/<shift_id>/edit",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "shift",
+        "file": "k9/routes/shift_routes.py"
+      },
+      {
+        "path": "/supervisor/shifts/api/active",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": "shift",
+        "file": "k9/routes/shift_routes.py"
+      },
+      {
+        "path": "/supervisor/shifts/create",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "blueprint": "shift",
+        "file": "k9/routes/shift_routes.py"
+      }
+    ],
+    "File Uploads": [
+      {
+        "path": "/uploads/<path:filename>",
+        "methods": [
+          "GET"
+        ],
+        "blueprint": null,
+        "file": "app.py"
+      }
+    ]
+  },
+  "all_routes": [
+    {
+      "path": "/",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "caretaker_daily_reports_ui",
+      "file": "k9/routes/caretaker_daily_report_routes.py"
+    },
+    {
+      "path": "/",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "unified_checkup_reports_ui",
+      "file": "k9/routes/unified_checkup_reports_routes.py"
+    },
+    {
+      "path": "/",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "unified_feeding_reports_ui",
+      "file": "k9/routes/unified_feeding_reports_routes.py"
+    },
+    {
+      "path": "/",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "veterinary_reports_ui",
+      "file": "k9/routes/veterinary_reports_routes.py"
+    },
+    {
+      "path": "/",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "veterinary_reports_api",
+      "file": "k9/api/veterinary_reports_api.py"
+    },
+    {
+      "path": "/admin",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/admin/",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/accounts/",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "account_management",
+      "file": "k9/routes/account_management_routes.py"
+    },
+    {
+      "path": "/admin/accounts/<user_id>/reset-password",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "account_management",
+      "file": "k9/routes/account_management_routes.py"
+    },
+    {
+      "path": "/admin/accounts/<user_id>/toggle-status",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "account_management",
+      "file": "k9/routes/account_management_routes.py"
+    },
+    {
+      "path": "/admin/accounts/api/generate-password",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "account_management",
+      "file": "k9/routes/account_management_routes.py"
+    },
+    {
+      "path": "/admin/accounts/api/search-employees",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "account_management",
+      "file": "k9/routes/account_management_routes.py"
+    },
+    {
+      "path": "/admin/accounts/create",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "account_management",
+      "file": "k9/routes/account_management_routes.py"
+    },
+    {
+      "path": "/admin/api/reports/pending/count",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/api/unread-count",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/backup",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/backup/cleanup",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/backup/create",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/backup/delete/<path:filename>",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/backup/download/<path:filename>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/backup/list",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/backup/restore/<path:filename>",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/backup/settings",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/employee-user-links",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/admin/employee-user-links/link",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/admin/employee-user-links/unlink",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/admin/google-drive/callback",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/google-drive/connect",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/google-drive/disconnect",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/google-drive/status",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/notifications",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/notifications/<notification_id>/read",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/notifications/read-all",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/permissions",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/permissions/audit",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/permissions/bulk-update",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/permissions/comprehensive",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/permissions/export-excel",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/permissions/export-pdf/<int:user_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/permissions/export/<int:user_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/permissions/initialize/<int:user_id>",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/permissions/matrix/<user_id>/<project_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/permissions/preview/<int:user_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/permissions/projects",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/permissions/update",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/permissions/update-legacy",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/admin/permissions/user/<int:user_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/permissions/users/<project_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/profile",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/reports/<report_type>/<report_id>/approve",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/reports/<report_type>/<report_id>/reject",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/reports/handler/<report_id>/export/excel",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/reports/handler/<report_id>/export/pdf",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/reports/pending",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/reports/shift/<report_id>/export/excel",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/reports/shift/<report_id>/export/pdf",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "admin",
+      "file": "k9/routes/admin_routes.py"
+    },
+    {
+      "path": "/admin/sync_managers",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/admin/update_user",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/admin/users/<int:user_id>/toggle_status",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/api/admin/permissions/<user_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/api/admin/permissions/update",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/api/breeding/checkup",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "api",
+      "file": "k9/api/api_routes.py"
+    },
+    {
+      "path": "/api/breeding/checkup/<id>",
+      "methods": [
+        "PUT"
+      ],
+      "blueprint": "api",
+      "file": "k9/api/api_routes.py"
+    },
+    {
+      "path": "/api/breeding/checkup/<id>",
+      "methods": [
+        "DELETE"
+      ],
+      "blueprint": "api",
+      "file": "k9/api/api_routes.py"
+    },
+    {
+      "path": "/api/breeding/checkup/list",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "api",
+      "file": "k9/api/api_routes.py"
+    },
+    {
+      "path": "/api/breeding/cleaning",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "api_cleaning",
+      "file": "k9/api/api_cleaning.py"
+    },
+    {
+      "path": "/api/breeding/cleaning/<log_id>",
+      "methods": [
+        "PUT"
+      ],
+      "blueprint": "api_cleaning",
+      "file": "k9/api/api_cleaning.py"
+    },
+    {
+      "path": "/api/breeding/cleaning/<log_id>",
+      "methods": [
+        "DELETE"
+      ],
+      "blueprint": "api_cleaning",
+      "file": "k9/api/api_cleaning.py"
+    },
+    {
+      "path": "/api/breeding/cleaning/list",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "api_cleaning",
+      "file": "k9/api/api_cleaning.py"
+    },
+    {
+      "path": "/api/breeding/deworming",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "api_deworming",
+      "file": "k9/api/api_deworming.py"
+    },
+    {
+      "path": "/api/breeding/deworming/<log_id>",
+      "methods": [
+        "PUT"
+      ],
+      "blueprint": "api_deworming",
+      "file": "k9/api/api_deworming.py"
+    },
+    {
+      "path": "/api/breeding/deworming/<log_id>",
+      "methods": [
+        "DELETE"
+      ],
+      "blueprint": "api_deworming",
+      "file": "k9/api/api_deworming.py"
+    },
+    {
+      "path": "/api/breeding/deworming/list",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "api_deworming",
+      "file": "k9/api/api_deworming.py"
+    },
+    {
+      "path": "/api/breeding/excretion",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "api_excretion",
+      "file": "k9/api/api_excretion.py"
+    },
+    {
+      "path": "/api/breeding/excretion",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "api",
+      "file": "k9/api/api_routes.py"
+    },
+    {
+      "path": "/api/breeding/excretion/<id>",
+      "methods": [
+        "PUT"
+      ],
+      "blueprint": "api",
+      "file": "k9/api/api_routes.py"
+    },
+    {
+      "path": "/api/breeding/excretion/<id>",
+      "methods": [
+        "DELETE"
+      ],
+      "blueprint": "api",
+      "file": "k9/api/api_routes.py"
+    },
+    {
+      "path": "/api/breeding/excretion/<log_id>",
+      "methods": [
+        "PUT"
+      ],
+      "blueprint": "api_excretion",
+      "file": "k9/api/api_excretion.py"
+    },
+    {
+      "path": "/api/breeding/excretion/<log_id>",
+      "methods": [
+        "DELETE"
+      ],
+      "blueprint": "api_excretion",
+      "file": "k9/api/api_excretion.py"
+    },
+    {
+      "path": "/api/breeding/excretion/list",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/api/breeding/excretion/list",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "api_excretion",
+      "file": "k9/api/api_excretion.py"
+    },
+    {
+      "path": "/api/breeding/excretion/list",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "api",
+      "file": "k9/api/api_routes.py"
+    },
+    {
+      "path": "/api/breeding/feeding/log",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "api",
+      "file": "k9/api/api_routes.py"
+    },
+    {
+      "path": "/api/breeding/feeding/log/<log_id>",
+      "methods": [
+        "PUT"
+      ],
+      "blueprint": "api",
+      "file": "k9/api/api_routes.py"
+    },
+    {
+      "path": "/api/breeding/feeding/log/<log_id>",
+      "methods": [
+        "DELETE"
+      ],
+      "blueprint": "api",
+      "file": "k9/api/api_routes.py"
+    },
+    {
+      "path": "/api/breeding/feeding/log/list",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "api",
+      "file": "k9/api/api_routes.py"
+    },
+    {
+      "path": "/api/breeding/grooming",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "api",
+      "file": "k9/api/api_routes.py"
+    },
+    {
+      "path": "/api/breeding/grooming/<id>",
+      "methods": [
+        "PUT"
+      ],
+      "blueprint": "api",
+      "file": "k9/api/api_routes.py"
+    },
+    {
+      "path": "/api/breeding/grooming/<id>",
+      "methods": [
+        "DELETE"
+      ],
+      "blueprint": "api",
+      "file": "k9/api/api_routes.py"
+    },
+    {
+      "path": "/api/breeding/grooming/list",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "api",
+      "file": "k9/api/api_routes.py"
+    },
+    {
+      "path": "/api/breeding/training-activity",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "api_breeding_training_activity",
+      "file": "k9/api/api_breeding_training_activity.py"
+    },
+    {
+      "path": "/api/breeding/training-activity/<activity_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "api_breeding_training_activity",
+      "file": "k9/api/api_breeding_training_activity.py"
+    },
+    {
+      "path": "/api/breeding/training-activity/<activity_id>",
+      "methods": [
+        "PUT"
+      ],
+      "blueprint": "api_breeding_training_activity",
+      "file": "k9/api/api_breeding_training_activity.py"
+    },
+    {
+      "path": "/api/breeding/training-activity/<activity_id>",
+      "methods": [
+        "DELETE"
+      ],
+      "blueprint": "api_breeding_training_activity",
+      "file": "k9/api/api_breeding_training_activity.py"
+    },
+    {
+      "path": "/api/breeding/training-activity/list",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "api_breeding_training_activity",
+      "file": "k9/api/api_breeding_training_activity.py"
+    },
+    {
+      "path": "/api/dashboard/admin/all",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "dashboard_api",
+      "file": "k9/routes/dashboard_api_routes.py"
+    },
+    {
+      "path": "/api/dashboard/admin/attendance-trends",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "dashboard_api",
+      "file": "k9/routes/dashboard_api_routes.py"
+    },
+    {
+      "path": "/api/dashboard/admin/dogs-by-project",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "dashboard_api",
+      "file": "k9/routes/dashboard_api_routes.py"
+    },
+    {
+      "path": "/api/dashboard/admin/dogs-by-status",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "dashboard_api",
+      "file": "k9/routes/dashboard_api_routes.py"
+    },
+    {
+      "path": "/api/dashboard/admin/employee-by-role",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "dashboard_api",
+      "file": "k9/routes/dashboard_api_routes.py"
+    },
+    {
+      "path": "/api/dashboard/admin/project-status",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "dashboard_api",
+      "file": "k9/routes/dashboard_api_routes.py"
+    },
+    {
+      "path": "/api/dashboard/admin/report-status",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "dashboard_api",
+      "file": "k9/routes/dashboard_api_routes.py"
+    },
+    {
+      "path": "/api/dashboard/pm/all",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "dashboard_api",
+      "file": "k9/routes/dashboard_api_routes.py"
+    },
+    {
+      "path": "/api/dashboard/pm/attendance-trends",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "dashboard_api",
+      "file": "k9/routes/dashboard_api_routes.py"
+    },
+    {
+      "path": "/api/dashboard/pm/handler-activity",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "dashboard_api",
+      "file": "k9/routes/dashboard_api_routes.py"
+    },
+    {
+      "path": "/api/dashboard/pm/monthly-trends",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "dashboard_api",
+      "file": "k9/routes/dashboard_api_routes.py"
+    },
+    {
+      "path": "/api/dashboard/pm/report-status",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "dashboard_api",
+      "file": "k9/routes/dashboard_api_routes.py"
+    },
+    {
+      "path": "/api/dogs",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "api",
+      "file": "k9/api/api_routes.py"
+    },
+    {
+      "path": "/api/dogs",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "trainer_daily_data_api",
+      "file": "k9/api/trainer_daily_data_api.py"
+    },
+    {
+      "path": "/api/dogs/<dog_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "api",
+      "file": "k9/api/api_routes.py"
+    },
+    {
+      "path": "/api/dogs/accessible",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "trainer_daily_data_api",
+      "file": "k9/api/trainer_daily_data_api.py"
+    },
+    {
+      "path": "/api/employees",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "trainer_daily_data_api",
+      "file": "k9/api/trainer_daily_data_api.py"
+    },
+    {
+      "path": "/api/health",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "api",
+      "file": "k9/api/api_routes.py"
+    },
+    {
+      "path": "/api/projects",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "trainer_daily_data_api",
+      "file": "k9/api/trainer_daily_data_api.py"
+    },
+    {
+      "path": "/breeding/checkup",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/checkup/<id>/edit",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/checkup/new",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/cleaning",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/cleaning",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/cleaning/<id>/edit",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/cleaning/new",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/deworming",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/deworming/<id>/edit",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/deworming/new",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/excretion",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/excretion/<id>/edit",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/excretion/new",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/feeding",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/feeding/<id>/edit",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/feeding/log",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/feeding/log/<log_id>/edit",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/feeding/log/new",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/feeding/new",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/grooming",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/grooming/<id>/edit",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/grooming/new",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/training-activity",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/training-activity/<id>/edit",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/breeding/training-activity/new",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/create_manager",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "auth",
+      "file": "k9/routes/auth.py"
+    },
+    {
+      "path": "/daily",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "breeding_checkup_reports_ui",
+      "file": "k9/routes/breeding_checkup_reports_routes.py"
+    },
+    {
+      "path": "/daily",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "breeding_feeding_reports_ui",
+      "file": "k9/routes/breeding_feeding_reports_routes.py"
+    },
+    {
+      "path": "/daily",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "veterinary_daily_ui",
+      "file": "k9/routes/veterinary_daily_routes.py"
+    },
+    {
+      "path": "/daily",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "veterinary_legacy_routes",
+      "file": "k9/routes/veterinary_legacy_routes.py"
+    },
+    {
+      "path": "/daily",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "breeding_checkup_reports_api",
+      "file": "k9/api/breeding_checkup_reports_api.py"
+    },
+    {
+      "path": "/daily",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "breeding_feeding_reports_api",
+      "file": "k9/api/breeding_feeding_reports_api.py"
+    },
+    {
+      "path": "/daily/export.pdf",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "breeding_checkup_reports_api",
+      "file": "k9/api/breeding_checkup_reports_api.py"
+    },
+    {
+      "path": "/daily/export.pdf",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "breeding_feeding_reports_api",
+      "file": "k9/api/breeding_feeding_reports_api.py"
+    },
+    {
+      "path": "/dashboard",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/data/dogs",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "veterinary_daily_api",
+      "file": "k9/api/veterinary_daily_api.py"
+    },
+    {
+      "path": "/data/vets",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "veterinary_daily_api",
+      "file": "k9/api/veterinary_daily_api.py"
+    },
+    {
+      "path": "/dogs",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/dogs/<dog_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/dogs/<dog_id>/edit",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/dogs/add",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/employees",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/employees/<employee_id>/delete",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/employees/<employee_id>/edit",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/employees/add",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/export.pdf",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "veterinary_reports_api",
+      "file": "k9/api/veterinary_reports_api.py"
+    },
+    {
+      "path": "/export/pdf/daily",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "veterinary_daily_api",
+      "file": "k9/api/veterinary_daily_api.py"
+    },
+    {
+      "path": "/export/pdf/pm-daily",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "reports_attendance_pm_daily_api",
+      "file": "k9/api/pm_daily_api.py"
+    },
+    {
+      "path": "/export/pdf/trainer-daily",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "reports_training_trainer_daily_api",
+      "file": "k9/api/trainer_daily_api.py"
+    },
+    {
+      "path": "/handler/api/unread-count",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "handler",
+      "file": "k9/routes/handler_routes.py"
+    },
+    {
+      "path": "/handler/daily-reports/select",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "handler",
+      "file": "k9/routes/handler_routes.py"
+    },
+    {
+      "path": "/handler/dashboard",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "handler",
+      "file": "k9/routes/handler_routes.py"
+    },
+    {
+      "path": "/handler/my-reports",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "handler",
+      "file": "k9/routes/handler_routes.py"
+    },
+    {
+      "path": "/handler/notifications",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "handler",
+      "file": "k9/routes/handler_routes.py"
+    },
+    {
+      "path": "/handler/notifications/<notification_id>/read",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "handler",
+      "file": "k9/routes/handler_routes.py"
+    },
+    {
+      "path": "/handler/notifications/read-all",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "handler",
+      "file": "k9/routes/handler_routes.py"
+    },
+    {
+      "path": "/handler/profile",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "handler",
+      "file": "k9/routes/handler_routes.py"
+    },
+    {
+      "path": "/handler/report/<report_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "handler",
+      "file": "k9/routes/handler_routes.py"
+    },
+    {
+      "path": "/handler/report/<report_id>/edit",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "handler",
+      "file": "k9/routes/handler_routes.py"
+    },
+    {
+      "path": "/handler/report/new",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "handler",
+      "file": "k9/routes/handler_routes.py"
+    },
+    {
+      "path": "/handler/reports/<report_id>/delete",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "handler",
+      "file": "k9/routes/handler_routes.py"
+    },
+    {
+      "path": "/handler/shift-report/<report_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "handler",
+      "file": "k9/routes/handler_routes.py"
+    },
+    {
+      "path": "/handler/shift-report/new/<schedule_item_id>",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "handler",
+      "file": "k9/routes/handler_routes.py"
+    },
+    {
+      "path": "/handler/shift-report/submit/<shift_report_id>",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "handler",
+      "file": "k9/routes/handler_routes.py"
+    },
+    {
+      "path": "/login",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "auth",
+      "file": "k9/routes/auth.py"
+    },
+    {
+      "path": "/logout",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "auth",
+      "file": "k9/routes/auth.py"
+    },
+    {
+      "path": "/mfa/change-password",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "mfa",
+      "file": "k9/routes/mfa_routes.py"
+    },
+    {
+      "path": "/mfa/disable",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "mfa",
+      "file": "k9/routes/mfa_routes.py"
+    },
+    {
+      "path": "/mfa/regenerate-backup-codes",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "mfa",
+      "file": "k9/routes/mfa_routes.py"
+    },
+    {
+      "path": "/mfa/setup",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "mfa",
+      "file": "k9/routes/mfa_routes.py"
+    },
+    {
+      "path": "/mfa/status",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "mfa",
+      "file": "k9/routes/mfa_routes.py"
+    },
+    {
+      "path": "/password-reset/cleanup-tokens",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "password_reset",
+      "file": "k9/routes/password_reset_routes.py"
+    },
+    {
+      "path": "/password-reset/request",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "password_reset",
+      "file": "k9/routes/password_reset_routes.py"
+    },
+    {
+      "path": "/password-reset/reset/<token>",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "password_reset",
+      "file": "k9/routes/password_reset_routes.py"
+    },
+    {
+      "path": "/pm-daily",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "reports_attendance_pm_daily_ui",
+      "file": "k9/routes/pm_daily_routes.py"
+    },
+    {
+      "path": "/pm/approve-breeding/<activity_id>",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "pm",
+      "file": "k9/routes/pm_routes.py"
+    },
+    {
+      "path": "/pm/approve-caretaker/<log_id>",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "pm",
+      "file": "k9/routes/pm_routes.py"
+    },
+    {
+      "path": "/pm/approve-report/<report_id>",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "pm",
+      "file": "k9/routes/pm_routes.py"
+    },
+    {
+      "path": "/pm/approve-vet-visit/<visit_id>",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "pm",
+      "file": "k9/routes/pm_routes.py"
+    },
+    {
+      "path": "/pm/dashboard",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "pm",
+      "file": "k9/routes/pm_routes.py"
+    },
+    {
+      "path": "/pm/my-dogs",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "pm",
+      "file": "k9/routes/pm_routes.py"
+    },
+    {
+      "path": "/pm/my-team",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "pm",
+      "file": "k9/routes/pm_routes.py"
+    },
+    {
+      "path": "/pm/pending-approvals",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "pm",
+      "file": "k9/routes/pm_routes.py"
+    },
+    {
+      "path": "/pm/project",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "pm",
+      "file": "k9/routes/pm_routes.py"
+    },
+    {
+      "path": "/pm/reject-breeding/<activity_id>",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "pm",
+      "file": "k9/routes/pm_routes.py"
+    },
+    {
+      "path": "/pm/reject-caretaker/<log_id>",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "pm",
+      "file": "k9/routes/pm_routes.py"
+    },
+    {
+      "path": "/pm/reject-report/<report_id>",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "pm",
+      "file": "k9/routes/pm_routes.py"
+    },
+    {
+      "path": "/pm/reject-vet-visit/<visit_id>",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "pm",
+      "file": "k9/routes/pm_routes.py"
+    },
+    {
+      "path": "/pm/reports/handler/<report_id>/export/excel",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "pm",
+      "file": "k9/routes/pm_routes.py"
+    },
+    {
+      "path": "/pm/reports/handler/<report_id>/export/pdf",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "pm",
+      "file": "k9/routes/pm_routes.py"
+    },
+    {
+      "path": "/pm/reports/shift/<report_id>/export/excel",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "pm",
+      "file": "k9/routes/pm_routes.py"
+    },
+    {
+      "path": "/pm/reports/shift/<report_id>/export/pdf",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "pm",
+      "file": "k9/routes/pm_routes.py"
+    },
+    {
+      "path": "/production",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/add",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/delivery",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/delivery/add",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/delivery/view/<id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/heat-cycles",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/heat-cycles/add",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/heat-cycles/view/<id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/mating",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/mating/add",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/mating/view/<id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/maturity",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/maturity/add",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/maturity/view/<id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/pregnancy",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/pregnancy/add",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/pregnancy/view/<id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/puppies",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/puppies/add",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/puppies/view/<id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/puppy-training",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/puppy-training/add",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/production/puppy-training/view/<id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/assignments",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/assignments/<assignment_id>/edit",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/assignments/<assignment_id>/remove",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/assignments/add",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/dashboard",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/delete",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/dogs/add",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/edit",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/evaluations",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/evaluations/add",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/incidents",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/incidents/add",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/incidents/resolve",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/locations",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/locations/<location_id>/delete",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/locations/<location_id>/edit",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/locations/add",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/manager/update",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/shifts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/shifts/<shift_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/shifts/<shift_id>/toggle",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/status",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/suspicions",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/<project_id>/suspicions/add",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/projects/add",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/reports",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/reports/generate",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/reports/hub",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/reports/preview",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/reports/preview-pdf",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/reports/simple",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/run/daily",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "veterinary_daily_api",
+      "file": "k9/api/veterinary_daily_api.py"
+    },
+    {
+      "path": "/run/pm-daily",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "reports_attendance_pm_daily_api",
+      "file": "k9/api/pm_daily_api.py"
+    },
+    {
+      "path": "/run/trainer-daily",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "reports_training_trainer_daily_api",
+      "file": "k9/api/trainer_daily_api.py"
+    },
+    {
+      "path": "/schedule/",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "schedule",
+      "file": "k9/routes/schedule_routes.py"
+    },
+    {
+      "path": "/schedule/<schedule_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "schedule",
+      "file": "k9/routes/schedule_routes.py"
+    },
+    {
+      "path": "/schedule/<schedule_id>/edit",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "schedule",
+      "file": "k9/routes/schedule_routes.py"
+    },
+    {
+      "path": "/schedule/<schedule_id>/item/<item_id>/delete",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "schedule",
+      "file": "k9/routes/schedule_routes.py"
+    },
+    {
+      "path": "/schedule/create",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "schedule",
+      "file": "k9/routes/schedule_routes.py"
+    },
+    {
+      "path": "/search",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/select-mode",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "auth",
+      "file": "k9/routes/auth.py"
+    },
+    {
+      "path": "/setup",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "auth",
+      "file": "k9/routes/auth.py"
+    },
+    {
+      "path": "/supervisor/api/dogs-by-project/<project_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/api/handlers-by-project/<project_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/api/locations-by-project/<project_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/api/pm/reports/<report_type>/<report_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/api/pm/reports/<report_type>/<report_id>/approve",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/api/pm/reports/<report_type>/<report_id>/history",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/api/pm/reports/<report_type>/<report_id>/reject",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/api/pm/reports/<report_type>/<report_id>/request-edits",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/api/pm/reports/pending",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/reports",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/reports/<report_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/reports/<report_id>/approve",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/reports/<report_id>/reject",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/schedules",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/schedules/<schedule_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/schedules/<schedule_id>/delete",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/schedules/<schedule_id>/lock",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/schedules/<schedule_id>/unlock",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/schedules/create",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/schedules/item/<item_id>/replace-handler",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "supervisor",
+      "file": "k9/routes/supervisor_routes.py"
+    },
+    {
+      "path": "/supervisor/shifts/",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "shift",
+      "file": "k9/routes/shift_routes.py"
+    },
+    {
+      "path": "/supervisor/shifts/<shift_id>/delete",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "shift",
+      "file": "k9/routes/shift_routes.py"
+    },
+    {
+      "path": "/supervisor/shifts/<shift_id>/edit",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "shift",
+      "file": "k9/routes/shift_routes.py"
+    },
+    {
+      "path": "/supervisor/shifts/api/active",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "shift",
+      "file": "k9/routes/shift_routes.py"
+    },
+    {
+      "path": "/supervisor/shifts/create",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "shift",
+      "file": "k9/routes/shift_routes.py"
+    },
+    {
+      "path": "/switch-mode",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "auth",
+      "file": "k9/routes/auth.py"
+    },
+    {
+      "path": "/tasks/admin",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "tasks",
+      "file": "k9/routes/task_routes.py"
+    },
+    {
+      "path": "/tasks/admin/<task_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "tasks",
+      "file": "k9/routes/task_routes.py"
+    },
+    {
+      "path": "/tasks/admin/<task_id>/delete",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "tasks",
+      "file": "k9/routes/task_routes.py"
+    },
+    {
+      "path": "/tasks/admin/<task_id>/edit",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "tasks",
+      "file": "k9/routes/task_routes.py"
+    },
+    {
+      "path": "/tasks/admin/create",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "tasks",
+      "file": "k9/routes/task_routes.py"
+    },
+    {
+      "path": "/tasks/my-tasks",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "tasks",
+      "file": "k9/routes/task_routes.py"
+    },
+    {
+      "path": "/tasks/my-tasks/<task_id>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "tasks",
+      "file": "k9/routes/task_routes.py"
+    },
+    {
+      "path": "/tasks/my-tasks/<task_id>/complete",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "tasks",
+      "file": "k9/routes/task_routes.py"
+    },
+    {
+      "path": "/tasks/my-tasks/<task_id>/start",
+      "methods": [
+        "POST"
+      ],
+      "blueprint": "tasks",
+      "file": "k9/routes/task_routes.py"
+    },
+    {
+      "path": "/trainer-daily",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "reports_training_trainer_daily_ui",
+      "file": "k9/routes/trainer_daily_routes.py"
+    },
+    {
+      "path": "/training",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/training/add",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/unified",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "breeding_checkup_reports_api",
+      "file": "k9/api/breeding_checkup_reports_api.py"
+    },
+    {
+      "path": "/unified",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "breeding_feeding_reports_api",
+      "file": "k9/api/breeding_feeding_reports_api.py"
+    },
+    {
+      "path": "/unified",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "caretaker_daily_reports_api",
+      "file": "k9/api/caretaker_daily_report_api.py"
+    },
+    {
+      "path": "/unified/export.pdf",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "breeding_checkup_reports_api",
+      "file": "k9/api/breeding_checkup_reports_api.py"
+    },
+    {
+      "path": "/unified/export.pdf",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "breeding_feeding_reports_api",
+      "file": "k9/api/breeding_feeding_reports_api.py"
+    },
+    {
+      "path": "/unified/export.pdf",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "caretaker_daily_reports_api",
+      "file": "k9/api/caretaker_daily_report_api.py"
+    },
+    {
+      "path": "/uploads/<path:filename>",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": null,
+      "file": "app.py"
+    },
+    {
+      "path": "/veterinary",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/veterinary/add",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "blueprint": "main",
+      "file": "k9/routes/main.py"
+    },
+    {
+      "path": "/weekly",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "breeding_checkup_reports_ui",
+      "file": "k9/routes/breeding_checkup_reports_routes.py"
+    },
+    {
+      "path": "/weekly",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "breeding_feeding_reports_ui",
+      "file": "k9/routes/breeding_feeding_reports_routes.py"
+    },
+    {
+      "path": "/weekly",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "veterinary_legacy_routes",
+      "file": "k9/routes/veterinary_legacy_routes.py"
+    },
+    {
+      "path": "/weekly",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "breeding_checkup_reports_api",
+      "file": "k9/api/breeding_checkup_reports_api.py"
+    },
+    {
+      "path": "/weekly",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "breeding_feeding_reports_api",
+      "file": "k9/api/breeding_feeding_reports_api.py"
+    },
+    {
+      "path": "/weekly/export.pdf",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "breeding_checkup_reports_api",
+      "file": "k9/api/breeding_checkup_reports_api.py"
+    },
+    {
+      "path": "/weekly/export.pdf",
+      "methods": [
+        "GET"
+      ],
+      "blueprint": "breeding_feeding_reports_api",
+      "file": "k9/api/breeding_feeding_reports_api.py"
+    }
+  ]
+}
