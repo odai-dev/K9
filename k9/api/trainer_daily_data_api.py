@@ -46,6 +46,9 @@ def get_projects():
 @login_required  
 def get_employees():
     """Get list of employees (trainers) for dropdown"""
+    if not has_permission(current_user, "api.employees.access"):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
     try:
         # Filter by role if provided
         role_filter = None
@@ -75,6 +78,9 @@ def get_employees():
 @login_required
 def get_dogs():
     """Get list of dogs for dropdown, optionally filtered by project"""
+    if not has_permission(current_user, "api.dogs.access"):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
     try:
         # Get optional project_id parameter
         project_id = request.args.get('project_id')

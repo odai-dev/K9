@@ -8,6 +8,7 @@ from datetime import datetime, time
 from app import db
 from k9.models.models import Shift
 from k9.utils.permission_decorators import admin_or_pm_required
+from k9.utils.permission_utils import has_permission
 
 shift_bp = Blueprint('shift', __name__, url_prefix='/supervisor/shifts')
 
@@ -17,6 +18,9 @@ shift_bp = Blueprint('shift', __name__, url_prefix='/supervisor/shifts')
 @admin_or_pm_required
 def index():
     """عرض جميع الورديات"""
+    if not has_permission(current_user, "shifts.management.view"):
+        return redirect("/unauthorized")
+    
     shifts = Shift.query.filter_by(is_active=True).order_by(Shift.start_time).all()
     return render_template('shifts/index.html',
                          page_title='إدارة الورديات',
@@ -28,6 +32,9 @@ def index():
 @admin_or_pm_required
 def create():
     """إنشاء وردية جديدة"""
+    if not has_permission(current_user, "shifts.management.create"):
+        return redirect("/unauthorized")
+    
     if request.method == 'POST':
         try:
             name = request.form.get('name')
@@ -95,6 +102,9 @@ def create():
 @admin_or_pm_required
 def edit(shift_id):
     """تعديل وردية"""
+    if not has_permission(current_user, "shifts.management.edit"):
+        return redirect("/unauthorized")
+    
     shift = Shift.query.get_or_404(shift_id)
     
     if request.method == 'POST':
@@ -165,6 +175,9 @@ def edit(shift_id):
 @admin_or_pm_required
 def delete(shift_id):
     """تعطيل وردية (soft delete)"""
+    if not has_permission(current_user, "shifts.management.delete"):
+        return redirect("/unauthorized")
+    
     try:
         shift = Shift.query.get_or_404(shift_id)
         
@@ -206,6 +219,9 @@ def delete(shift_id):
 @admin_or_pm_required
 def api_active_shifts():
     """API لجلب الورديات النشطة (للاستخدام في النماذج)"""
+    if not has_permission(current_user, "shifts.api.access"):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
     shifts = Shift.query.filter_by(is_active=True).order_by(Shift.start_time).all()
     
     shifts_data = []
