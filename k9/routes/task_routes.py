@@ -5,6 +5,7 @@ Task Management Routes
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from k9.utils.permission_decorators import admin_or_pm_required, handler_required
+from k9.utils.permission_utils import has_permission
 from k9.services.task_service import TaskService
 from k9.models.models_handler_daily import Task, TaskStatus, TaskPriority
 from k9.models.models import User, UserRole
@@ -22,6 +23,9 @@ task_bp = Blueprint('tasks', __name__, url_prefix='/tasks')
 @admin_or_pm_required
 def admin_index():
     """قائمة المهام للمشرف"""
+    if not has_permission(current_user, "tasks.admin.view"):
+        return redirect("/unauthorized")
+    
     # Get filter parameters
     status_filter = request.args.get('status')
     assigned_to_filter = request.args.get('assigned_to')
@@ -66,6 +70,9 @@ def admin_index():
 @admin_or_pm_required
 def admin_create():
     """إنشاء مهمة جديدة"""
+    if not has_permission(current_user, "tasks.admin.create"):
+        return redirect("/unauthorized")
+    
     if request.method == 'POST':
         title = request.form.get('title')
         description = request.form.get('description')
@@ -146,6 +153,9 @@ def admin_view(task_id):
 @admin_or_pm_required
 def admin_edit(task_id):
     """تعديل مهمة"""
+    if not has_permission(current_user, "tasks.admin.edit"):
+        return redirect("/unauthorized")
+    
     task = TaskService.get_task(task_id)
     if not task:
         flash('المهمة غير موجودة', 'danger')
@@ -200,6 +210,9 @@ def admin_edit(task_id):
 @admin_or_pm_required
 def admin_delete(task_id):
     """حذف مهمة"""
+    if not has_permission(current_user, "tasks.admin.delete"):
+        return redirect("/unauthorized")
+    
     success, error = TaskService.delete_task(task_id)
     
     if error:
@@ -219,6 +232,9 @@ def admin_delete(task_id):
 @handler_required
 def handler_index():
     """قائمة مهام السائس"""
+    if not has_permission(current_user, "tasks.my_tasks.view"):
+        return redirect("/unauthorized")
+    
     # Get filter parameters
     status_filter = request.args.get('status')
     page = request.args.get('page', 1, type=int)
@@ -280,6 +296,9 @@ def handler_view(task_id):
 @handler_required
 def handler_complete(task_id):
     """إكمال مهمة"""
+    if not has_permission(current_user, "tasks.my_tasks.complete"):
+        return redirect("/unauthorized")
+    
     _, error = TaskService.complete_task(
         task_id=task_id,
         user_id=str(current_user.id)
@@ -298,6 +317,9 @@ def handler_complete(task_id):
 @handler_required
 def handler_start(task_id):
     """بدء العمل على مهمة"""
+    if not has_permission(current_user, "tasks.my_tasks.start"):
+        return redirect("/unauthorized")
+    
     task = TaskService.get_task(task_id)
     if not task:
         flash('المهمة غير موجودة', 'danger')
