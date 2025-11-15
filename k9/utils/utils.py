@@ -763,8 +763,9 @@ def get_user_permissions(user):
     """
     Get user permissions based ONLY on SubPermission grants from database.
     This ensures permissions are controlled by database entries, not hardcoded role logic.
+    NO ROLE-BASED CHECKS - all permissions come from SubPermission table.
     """
-    from k9.models.models import SubPermission, UserRole
+    from k9.models.models import SubPermission
     from k9.utils.permission_utils import _is_admin_mode
     
     # Initialize all sections as False
@@ -777,7 +778,9 @@ def get_user_permissions(user):
         'projects': False,
         'attendance': False,
         'reports': False,
-        'admin': False
+        'admin': False,
+        'breeding': False,
+        'handler_reports': False
     }
     
     # GENERAL_ADMIN in general admin mode has full access
@@ -791,16 +794,13 @@ def get_user_permissions(user):
             'projects': True,
             'attendance': True,
             'reports': True,
-            'admin': True
+            'admin': True,
+            'breeding': True,
+            'handler_reports': True
         }
     
-    # HANDLER users have NO navigation permissions
-    # They only access their own handler dashboard and reports
-    if user.role == UserRole.HANDLER or user.role.value == 'HANDLER':
-        return permissions  # All False
-    
-    # For PROJECT_MANAGER and GENERAL_ADMIN in PM mode:
-    # Read permissions ONLY from SubPermission table
+    # Read permissions ONLY from SubPermission table - NO ROLE CHECKS
+    # Any user (HANDLER, PROJECT_MANAGER, etc.) can have permissions granted
     user_permissions = SubPermission.query.filter_by(
         user_id=user.id, 
         is_granted=True
@@ -817,7 +817,9 @@ def get_user_permissions(user):
         'attendance': 'attendance',
         'reports': 'reports',
         'analytics': 'reports',
-        'admin': 'admin'
+        'admin': 'admin',
+        'breeding': 'breeding',
+        'handler_reports': 'handler_reports'
     }
     
     # Enable sections based on granted permissions in database
