@@ -16,6 +16,7 @@ from k9.models.models_handler_daily import (
     HealthCheckStatus
 )
 from k9.models.models import UserRole, Dog, User
+from k9.utils.permission_utils import has_permission
 from app import db
 from functools import wraps
 
@@ -195,6 +196,9 @@ def parse_shift_incidents_data(form_data, shift_report, request_obj):
 @handler_required
 def dashboard():
     """لوحة تحكم السائس"""
+    if not has_permission(current_user, "handlers.dashboard.view"):
+        return redirect("/unauthorized")
+    
     from k9.models.models import Project
     from k9.models.models_handler_daily import ReportStatus, ShiftReport
     from dateutil.relativedelta import relativedelta
@@ -282,6 +286,9 @@ def dashboard():
 @handler_required
 def select_daily_report():
     """عرض الكلاب المتاحة لإنشاء تقرير يومي"""
+    if not has_permission(current_user, "handlers.reports.view"):
+        return redirect("/unauthorized")
+    
     today = date.today()
     target_date_str = request.args.get('date')
     
@@ -309,6 +316,9 @@ def select_daily_report():
 @handler_required
 def new_report():
     """إنشاء تقرير يومي جديد"""
+    if not has_permission(current_user, "handlers.reports.create"):
+        return redirect("/unauthorized")
+    
     from k9.models.models import Shift
     from k9.models.models_handler_daily import DailyScheduleItem, ReportType
     
@@ -524,6 +534,9 @@ def new_report():
 @handler_required
 def edit_report(report_id):
     """تعديل التقرير اليومي"""
+    if not has_permission(current_user, "handlers.reports.edit"):
+        return redirect("/unauthorized")
+    
     report = HandlerReport.query.get_or_404(report_id)
     
     # Verify ownership
@@ -650,6 +663,9 @@ def view_shift_report(report_id):
 @handler_required
 def notifications():
     """عرض الإشعارات"""
+    if not has_permission(current_user, "handlers.notifications.view"):
+        return redirect("/unauthorized")
+    
     from k9.models.models_handler_daily import Notification
     
     page = request.args.get('page', 1, type=int)
@@ -752,6 +768,9 @@ def my_reports():
 @handler_required
 def get_unread_count():
     """API: الحصول على عدد الإشعارات غير المقروءة"""
+    if not has_permission(current_user, "handlers.general.access"):
+        return redirect("/unauthorized")
+    
     count = len(NotificationService.get_user_notifications(
         str(current_user.id), unread_only=True
     ))
@@ -763,6 +782,9 @@ def get_unread_count():
 @handler_required
 def delete_report(report_id):
     """حذف تقرير (مسودة فقط)"""
+    if not has_permission(current_user, "handlers.reports.delete"):
+        return redirect("/unauthorized")
+    
     report = HandlerReport.query.get_or_404(report_id)
     
     # Verify ownership
@@ -892,6 +914,9 @@ def submit_shift_report(shift_report_id):
 @login_required
 def profile():
     """صفحة البروفايل للسائس ومسؤول المشروع"""
+    if not has_permission(current_user, "handlers.profile.view"):
+        return redirect("/unauthorized")
+    
     from werkzeug.security import check_password_hash, generate_password_hash
     from k9.utils.security_utils import PasswordValidator, SecurityHelper
     from k9.models.models import Employee, AuditAction
