@@ -19,9 +19,8 @@ def caretaker_daily():
     """Unified Arabic/RTL caretaker daily reports page with range selector"""
     
     # Check unified permission
-    if not has_permission(current_user, "reports.breeding.caretaker_daily.view"):
-        flash('ليس لديك صلاحية لعرض تقارير الرعاية اليومية', 'error')
-        return redirect(url_for('main.dashboard'))
+    if not has_permission(current_user, "reports.general.view"):
+        return redirect("/unauthorized")
     
     # Get accessible projects for current user using PM scoping
     projects = get_scoped_projects()
