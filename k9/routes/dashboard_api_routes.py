@@ -5,6 +5,7 @@ Provides JSON endpoints for dashboard chart data
 from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
 from k9.utils.permission_decorators import admin_required
+from k9.utils.permission_utils import has_permission
 from k9.services.dashboard_service import DashboardService
 from k9.routes.pm_routes import get_pm_project, require_pm_project
 from functools import wraps
@@ -140,5 +141,8 @@ def admin_attendance_trends():
 @admin_required
 def admin_all_data():
     """Get all dashboard data for Admin in one request"""
+    if not has_permission(current_user, "api.dashboard.access"):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
     data = DashboardService.get_admin_dashboard_data()
     return jsonify(data)

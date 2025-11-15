@@ -10,6 +10,7 @@ from k9.services.handler_service import DailyScheduleService
 from k9.models.models_handler_daily import DailySchedule, DailyScheduleItem, ScheduleStatus
 from k9.models.models import UserRole, User, Dog, Project, Shift
 from k9.utils.permission_decorators import admin_or_pm_required
+from k9.utils.permission_utils import has_permission
 from k9.utils.utils import validate_required_project_id, get_project_id_for_user
 from app import db
 
@@ -22,6 +23,9 @@ supervisor_bp = Blueprint('supervisor', __name__, url_prefix='/supervisor')
 @admin_or_pm_required
 def schedules_index():
     """قائمة الجداول اليومية"""
+    if not has_permission(current_user, "supervisor.schedules.view"):
+        return redirect("/unauthorized")
+    
     page = request.args.get('page', 1, type=int)
     per_page = 20
     
@@ -338,6 +342,9 @@ def get_handlers_by_project(project_id):
 @admin_or_pm_required
 def get_dogs_by_project(project_id):
     """API: الحصول على الكلاب حسب المشروع"""
+    if not has_permission(current_user, "supervisor.general.access"):
+        return redirect("/unauthorized")
+    
     # Dogs are assigned to handlers, and handlers are assigned to projects
     # Get all handlers in this project
     handlers_in_project = User.query.filter_by(
@@ -644,6 +651,9 @@ def pm_pending_reports():
 @admin_or_pm_required
 def pm_get_report(report_type, report_id):
     """Get detailed report view for PM review"""
+    if not has_permission(current_user, "supervisor.reports.view"):
+        return redirect("/unauthorized")
+    
     from k9.services.report_review_service import ReportReviewService
     
     # Only PROJECT_MANAGER can access
