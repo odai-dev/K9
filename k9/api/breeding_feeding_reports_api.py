@@ -440,6 +440,9 @@ def feeding_weekly_data():
 @require_sub_permission("Reports", "Feeding Daily", PermissionType.EXPORT)
 def export_daily_pdf():
     """Export daily feeding report as PDF"""
+    if not has_permission(current_user, "reports.breeding.feeding.daily.export"):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
     # Get the same data as daily endpoint
     project_id = request.args.get('project_id')
     date_str = request.args.get('date')
@@ -795,8 +798,8 @@ def feeding_unified_data():
     """Unified feeding report data with range selector and smart aggregation"""
     
     # Check unified permission
-    if not has_permission(current_user, "reports.breeding.feeding.view"):
-        return jsonify({'error': 'ليس لديك صلاحية لعرض تقارير التغذية'}), 403
+    if not has_permission(current_user, "reports.breeding.feeding.unified.view"):
+        return jsonify({'error': 'Unauthorized'}), 403
     
     # Get parameters
     range_type = request.args.get('range_type', 'daily')
@@ -1131,8 +1134,8 @@ def feeding_unified_export_pdf():
     """Export unified feeding report as PDF with proper naming"""
     
     # Check export permission
-    if not has_permission(current_user, "reports.breeding.feeding.export"):
-        return jsonify({'error': 'ليس لديك صلاحية لتصدير تقارير التغذية'}), 403
+    if not has_permission(current_user, "reports.breeding.feeding.unified.export"):
+        return jsonify({'error': 'Unauthorized'}), 403
     
     # Get parameters (same as data endpoint)
     range_type = request.args.get('range_type', 'daily')

@@ -7,6 +7,7 @@ from datetime import datetime, date
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from k9.utils.permission_decorators import admin_required
+from k9.utils.permission_utils import has_permission
 from k9.services.trainer_daily_services import get_trainer_daily
 from k9.utils.trainer_daily_exporters import export_trainer_daily_pdf
 
@@ -20,6 +21,9 @@ def run_trainer_daily():
     """
     Run trainer daily report and return JSON data
     """
+    if not has_permission(current_user, "reports.training.trainer_daily.view"):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
     try:
         data = request.get_json()
         if not data:
@@ -70,6 +74,9 @@ def export_pdf_trainer_daily():
     """
     Export trainer daily report as PDF
     """
+    if not has_permission(current_user, "reports.training.trainer_daily.export"):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
     try:
         data = request.get_json()
         if not data:

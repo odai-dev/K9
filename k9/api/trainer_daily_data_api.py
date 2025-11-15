@@ -7,6 +7,7 @@ from flask_login import login_required, current_user
 from k9.models.models import Project, Employee, Dog, EmployeeRole
 from app import db
 from k9.utils.permission_decorators import require_sub_permission
+from k9.utils.permission_utils import has_permission
 
 bp = Blueprint('trainer_daily_data_api', __name__)
 
@@ -15,6 +16,9 @@ bp = Blueprint('trainer_daily_data_api', __name__)
 @login_required
 def get_projects():
     """Get list of projects for dropdown"""
+    if not has_permission(current_user, "api.projects.access"):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
     try:
         # GENERAL_ADMIN sees all projects, PROJECT_MANAGER sees assigned projects
         if current_user.role.value == "GENERAL_ADMIN":

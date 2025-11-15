@@ -420,6 +420,9 @@ def checkup_weekly_data():
 @require_sub_permission("Reports", "Checkup Daily", PermissionType.EXPORT)
 def export_checkup_daily_pdf():
     """Export daily checkup report as PDF"""
+    if not has_permission(current_user, "reports.breeding.checkup.daily.export"):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
     project_id = request.args.get('project_id')
     date_str = request.args.get('date')
     dog_id = request.args.get('dog_id')
@@ -780,8 +783,8 @@ def checkup_unified_data():
     """Unified checkup report data with range selector and smart aggregation"""
     
     # Check unified permission
-    if not has_permission(current_user, "reports.breeding.checkup.view"):
-        return jsonify({'error': 'ليس لديك صلاحية لعرض تقارير الفحص الظاهري'}), 403
+    if not has_permission(current_user, "reports.breeding.checkup.unified.view"):
+        return jsonify({'error': 'Unauthorized'}), 403
     
     # Get parameters
     range_type = request.args.get('range_type', 'daily')
@@ -1087,8 +1090,8 @@ def checkup_unified_export_pdf():
     """Export unified checkup report as PDF with proper naming"""
     
     # Check export permission
-    if not has_permission(current_user, "reports.breeding.checkup.export"):
-        return jsonify({'error': 'ليس لديك صلاحية لتصدير تقارير الفحص الظاهري'}), 403
+    if not has_permission(current_user, "reports.breeding.checkup.unified.export"):
+        return jsonify({'error': 'Unauthorized'}), 403
     
     # Get parameters (same as data endpoint)
     range_type = request.args.get('range_type', 'daily')
