@@ -55,7 +55,8 @@ def feeding_log_list():
         )
         
         # Apply PROJECT_MANAGER scoping
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
+        if True:  # Role check bypassed
             assigned_projects = get_user_assigned_projects(current_user)
             project_ids = [p.id for p in assigned_projects]
             if not project_ids:
@@ -291,7 +292,8 @@ def feeding_log_update(log_id):
         feeding_log = FeedingLog.query.get_or_404(log_id)
         
         # Check PROJECT_MANAGER scoping
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
+        if True:  # Role check bypassed
             assigned_projects = get_user_assigned_projects(current_user)
             project_ids = [p.id for p in assigned_projects]
             # Allow access if project_id is None or in assigned projects
@@ -330,7 +332,8 @@ def feeding_log_delete(log_id):
         feeding_log = FeedingLog.query.get_or_404(log_id)
         
         # Check PROJECT_MANAGER scoping
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
+        if True:  # Role check bypassed
             assigned_projects = get_user_assigned_projects(current_user)
             project_ids = [p.id for p in assigned_projects]
             # Allow access if project_id is None or in assigned projects
@@ -370,7 +373,8 @@ def api_checkup_list():
         query = DailyCheckupLog.query
 
         # Apply project manager scoping
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
+        if True:  # Role check bypassed
             assigned_projects = get_user_assigned_projects(current_user)
             assigned_project_ids = [p.id for p in assigned_projects]
             # Allow PROJECT_MANAGER to see logs from assigned projects OR logs without projects
@@ -489,7 +493,8 @@ def api_checkup_create():
 
         # Check project access for project managers (only if project_id is provided)
         project_id = data.get('project_id')
-        if current_user.role == UserRole.PROJECT_MANAGER and project_id:
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER and project_id:
+        if True:  # Role check bypassed
             assigned_projects = get_user_assigned_projects(current_user)
             assigned_project_ids = [p.id for p in assigned_projects]
             if project_id not in [str(pid) for pid in assigned_project_ids]:
@@ -558,7 +563,8 @@ def api_checkup_update(id):
         checkup = DailyCheckupLog.query.get_or_404(id)
 
         # Check project access for project managers
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
+        if True:  # Role check bypassed
             assigned_projects = get_user_assigned_projects(current_user)
             assigned_project_ids = [p.id for p in assigned_projects]
             if checkup.project_id not in assigned_project_ids:
@@ -620,7 +626,8 @@ def api_checkup_delete(id):
         checkup = DailyCheckupLog.query.get_or_404(id)
 
         # Check project access for project managers
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
+        if True:  # Role check bypassed
             assigned_projects = get_user_assigned_projects(current_user)
             assigned_project_ids = [p.id for p in assigned_projects]
             if checkup.project_id not in assigned_project_ids:
@@ -662,7 +669,8 @@ def api_checkup_delete(id):
         )
         
         # Apply PROJECT_MANAGER scoping
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
+        if True:  # Role check bypassed
             assigned_projects = get_user_assigned_projects(current_user)
             project_ids = [p.id for p in assigned_projects]
             if not project_ids:
@@ -786,7 +794,8 @@ def excretion_create():
                 return jsonify({'error': f'الحقل {field} مطلوب'}), 400
         
         # Check PROJECT_MANAGER access
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
+        if True:  # Role check bypassed
             assigned_projects = get_user_assigned_projects(current_user)
             project_ids = [p.id for p in assigned_projects]
             if data.get('project_id') and data['project_id'] not in project_ids:
@@ -875,7 +884,8 @@ def excretion_update(id):
         excretion_log = ExcretionLog.query.get_or_404(id)
         
         # Check PROJECT_MANAGER access
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
+        if True:  # Role check bypassed
             assigned_projects = get_user_assigned_projects(current_user)
             project_ids = [p.id for p in assigned_projects]
             if excretion_log.project_id not in project_ids:
@@ -958,7 +968,8 @@ def excretion_delete(id):
         excretion_log = ExcretionLog.query.get_or_404(id)
         
         # Check PROJECT_MANAGER access
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
+        if True:  # Role check bypassed
             assigned_projects = get_user_assigned_projects(current_user)
             project_ids = [p.id for p in assigned_projects]
             if excretion_log.project_id not in project_ids:
@@ -1000,7 +1011,8 @@ def grooming_list():
         query = GroomingLog.query
         
         # Apply PROJECT_MANAGER restrictions
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
+        if True:  # Role check bypassed
             assigned_projects = get_user_assigned_projects(current_user)
             project_ids = [p.id for p in assigned_projects]
             if not project_ids:
@@ -1108,7 +1120,8 @@ def grooming_create():
         
         # Check PROJECT_MANAGER access to project (only if project is specified)
         project_id_value = data.get('project_id')
-        if current_user.role == UserRole.PROJECT_MANAGER and project_id_value and project_id_value.strip():
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER and project_id_value and project_id_value.strip():
+        if True:  # Role check bypassed
             assigned_projects = get_user_assigned_projects(current_user)
             project_ids = [p.id for p in assigned_projects]
             if project_id_value not in project_ids:
@@ -1200,7 +1213,8 @@ def grooming_update(id):
         grooming_log = GroomingLog.query.get_or_404(id)
         
         # Check PROJECT_MANAGER access
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
+        if True:  # Role check bypassed
             assigned_projects = get_user_assigned_projects(current_user)
             project_ids = [p.id for p in assigned_projects]
             # Allow access if project_id is None (no project) or if it's in assigned projects
@@ -1270,7 +1284,8 @@ def grooming_delete(id):
         grooming_log = GroomingLog.query.get_or_404(id)
         
         # Check PROJECT_MANAGER access
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
+        if True:  # Role check bypassed
             assigned_projects = get_user_assigned_projects(current_user)
             project_ids = [p.id for p in assigned_projects]
             # Allow access if project_id is None (no project) or if it's in assigned projects
@@ -1326,7 +1341,8 @@ def get_dogs():
             query = query.join(Dog.projects).filter(Project.id == project_id)
         
         # Apply permission filtering - PROJECT_MANAGER sees only their assigned dogs
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
+        if True:  # Role check bypassed
             accessible_dogs = get_user_accessible_dogs(current_user)
             dog_ids = [dog.id for dog in accessible_dogs]
             query = query.filter(Dog.id.in_(dog_ids))
@@ -1373,7 +1389,8 @@ def get_dog(dog_id):
         dog = Dog.query.get_or_404(dog_id)
         
         # Check permissions - PROJECT_MANAGER can only see their assigned dogs
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
+        if True:  # Role check bypassed
             accessible_dogs = get_user_accessible_dogs(current_user)
             dog_ids = [d.id for d in accessible_dogs]
             if dog.id not in dog_ids:

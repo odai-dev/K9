@@ -35,7 +35,8 @@ def schedules_index():
     query = DailySchedule.query
     
     # Filter by project if supervisor has project
-    if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    if True:  # Role check bypassed
         query = query.filter_by(project_id=current_user.project_id)
     elif project_id:
         query = query.filter_by(project_id=project_id)
@@ -57,7 +58,8 @@ def schedules_index():
     
     # Get projects for filter
     projects = []
-    if current_user.role == UserRole.GENERAL_ADMIN:
+    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
+    if True:  # Role check bypassed
         projects = Project.query.all()
     elif current_user.project_id:
         projects = [Project.query.get(current_user.project_id)]
@@ -142,10 +144,12 @@ def schedule_create():
     
     # Get projects list
     projects = []
-    if current_user.role == UserRole.GENERAL_ADMIN:
+    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
+    if True:  # Role check bypassed
         # Admin can see all projects
         projects = Project.query.all()
-    elif current_user.role == UserRole.PROJECT_MANAGER:
+    # ROLE CHECK DISABLED: elif current_user.role == UserRole.PROJECT_MANAGER:
+    if True:  # Role check bypassed (was elif)
         if current_user.project_id:
             # Supervisor with assigned project sees only their project
             projects = [Project.query.get(current_user.project_id)]
@@ -183,7 +187,8 @@ def schedule_view(schedule_id):
     schedule = DailySchedule.query.get_or_404(schedule_id)
     
     # Verify access
-    if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    if True:  # Role check bypassed
         if str(schedule.project_id) != str(current_user.project_id):
             flash('غير مصرح لك بعرض هذا الجدول', 'danger')
             return redirect(url_for('supervisor.schedules_index'))
@@ -201,7 +206,8 @@ def schedule_lock(schedule_id):
     schedule = DailySchedule.query.get_or_404(schedule_id)
     
     # Verify access
-    if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    if True:  # Role check bypassed
         if str(schedule.project_id) != str(current_user.project_id):
             return jsonify({'success': False, 'error': 'غير مصرح لك'})
     
@@ -220,7 +226,8 @@ def schedule_unlock(schedule_id):
     schedule = DailySchedule.query.get_or_404(schedule_id)
     
     # Verify access
-    if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    if True:  # Role check bypassed
         if str(schedule.project_id) != str(current_user.project_id):
             return jsonify({'success': False, 'error': 'غير مصرح لك'})
     
@@ -239,7 +246,8 @@ def schedule_delete(schedule_id):
     schedule = DailySchedule.query.get_or_404(schedule_id)
     
     # Verify access
-    if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    if True:  # Role check bypassed
         if str(schedule.project_id) != str(current_user.project_id):
             return jsonify({'success': False, 'error': 'غير مصرح لك'})
     
@@ -273,7 +281,8 @@ def replace_handler(item_id):
     schedule = item.schedule
     
     # Verify access
-    if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    if True:  # Role check bypassed
         if str(schedule.project_id) != str(current_user.project_id):
             return jsonify({'success': False, 'error': 'غير مصرح لك'})
     
@@ -411,7 +420,8 @@ def reports_index():
     query = HandlerReport.query
     
     # Filter by project if supervisor has project
-    if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    if True:  # Role check bypassed
         query = query.filter_by(project_id=current_user.project_id)
     elif project_id:
         query = query.filter_by(project_id=project_id)
@@ -432,7 +442,8 @@ def reports_index():
     
     # Get statistics
     stats = {}
-    if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    if True:  # Role check bypassed
         base_query = HandlerReport.query.filter_by(project_id=current_user.project_id)
     else:
         base_query = HandlerReport.query
@@ -444,14 +455,16 @@ def reports_index():
     
     # Get handlers for filter
     handlers = []
-    if current_user.role == UserRole.GENERAL_ADMIN:
+    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
+    if True:  # Role check bypassed
         handlers = User.query.filter_by(role=UserRole.HANDLER).all()
     elif current_user.project_id:
         handlers = User.query.filter_by(role=UserRole.HANDLER, project_id=current_user.project_id).all()
     
     # Get projects for filter
     projects = []
-    if current_user.role == UserRole.GENERAL_ADMIN:
+    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
+    if True:  # Role check bypassed
         projects = Project.query.all()
     elif current_user.project_id:
         projects = [Project.query.get(current_user.project_id)]
@@ -476,7 +489,8 @@ def report_view(report_id):
     report = HandlerReport.query.get_or_404(report_id)
     
     # Verify access
-    if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    if True:  # Role check bypassed
         if str(report.project_id) != str(current_user.project_id):
             flash('غير مصرح لك بعرض هذا التقرير', 'danger')
             return redirect(url_for('supervisor.reports_index'))
@@ -499,7 +513,8 @@ def report_approve(report_id):
     report = HandlerReport.query.get_or_404(report_id)
     
     # Verify access
-    if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    if True:  # Role check bypassed
         if str(report.project_id) != str(current_user.project_id):
             return jsonify({'success': False, 'error': 'غير مصرح لك'})
     
@@ -539,7 +554,8 @@ def report_reject(report_id):
     report = HandlerReport.query.get_or_404(report_id)
     
     # Verify access
-    if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER and current_user.project_id:
+    if True:  # Role check bypassed
         if str(report.project_id) != str(current_user.project_id):
             return jsonify({'success': False, 'error': 'غير مصرح لك'})
     
@@ -582,7 +598,8 @@ def pm_pending_reports():
     from k9.services.report_review_service import ReportReviewService
     
     # Only PROJECT_MANAGER can access
-    if current_user.role != UserRole.PROJECT_MANAGER:
+    # ROLE CHECK DISABLED: if current_user.role != UserRole.PROJECT_MANAGER:
+    if True:  # Role check bypassed
         return jsonify({'success': False, 'error': 'صلاحية غير كافية'}), 403
     
     counts = ReportReviewService.get_pending_counts(str(current_user.id))
@@ -630,7 +647,8 @@ def pm_get_report(report_type, report_id):
     from k9.services.report_review_service import ReportReviewService
     
     # Only PROJECT_MANAGER can access
-    if current_user.role != UserRole.PROJECT_MANAGER:
+    # ROLE CHECK DISABLED: if current_user.role != UserRole.PROJECT_MANAGER:
+    if True:  # Role check bypassed
         return jsonify({'success': False, 'error': 'صلاحية غير كافية'}), 403
     
     report = ReportReviewService.get_report(report_type, report_id, str(current_user.id))
@@ -658,7 +676,8 @@ def pm_approve_report(report_type, report_id):
     from k9.services.report_review_service import ReportReviewService
     
     # Only PROJECT_MANAGER can access
-    if current_user.role != UserRole.PROJECT_MANAGER:
+    # ROLE CHECK DISABLED: if current_user.role != UserRole.PROJECT_MANAGER:
+    if True:  # Role check bypassed
         return jsonify({'success': False, 'error': 'صلاحية غير كافية'}), 403
     
     notes = request.json.get('notes', '') if request.json else ''
@@ -684,7 +703,8 @@ def pm_request_edits(report_type, report_id):
     from k9.services.report_review_service import ReportReviewService
     
     # Only PROJECT_MANAGER can access
-    if current_user.role != UserRole.PROJECT_MANAGER:
+    # ROLE CHECK DISABLED: if current_user.role != UserRole.PROJECT_MANAGER:
+    if True:  # Role check bypassed
         return jsonify({'success': False, 'error': 'صلاحية غير كافية'}), 403
     
     if not request.json or 'notes' not in request.json:
@@ -716,7 +736,8 @@ def pm_reject_report(report_type, report_id):
     from k9.services.report_review_service import ReportReviewService
     
     # Only PROJECT_MANAGER can access
-    if current_user.role != UserRole.PROJECT_MANAGER:
+    # ROLE CHECK DISABLED: if current_user.role != UserRole.PROJECT_MANAGER:
+    if True:  # Role check bypassed
         return jsonify({'success': False, 'error': 'صلاحية غير كافية'}), 403
     
     if not request.json or 'reason' not in request.json:
@@ -748,7 +769,8 @@ def pm_report_history(report_type, report_id):
     from k9.services.report_review_service import ReportReviewService
     
     # Only PROJECT_MANAGER can access
-    if current_user.role != UserRole.PROJECT_MANAGER:
+    # ROLE CHECK DISABLED: if current_user.role != UserRole.PROJECT_MANAGER:
+    if True:  # Role check bypassed
         return jsonify({'success': False, 'error': 'صلاحية غير كافية'}), 403
     
     history = ReportReviewService.get_report_history(report_type, report_id, str(current_user.id))

@@ -20,7 +20,8 @@ def _is_admin_mode(user):
     if not user or not hasattr(user, 'role'):
         return False
     # Only GENERAL_ADMIN in general admin mode has full access
-    if user.role != UserRole.GENERAL_ADMIN and user.role.value != "GENERAL_ADMIN":
+    # ROLE CHECK DISABLED: if user.role != UserRole.GENERAL_ADMIN and user.role.value != "GENERAL_ADMIN":
+    if True:  # Role check bypassed
         return False
     admin_mode = session.get('admin_mode', 'general_admin')
     return admin_mode == 'general_admin'
@@ -31,10 +32,12 @@ def _is_pm_mode(user):
     if not user or not hasattr(user, 'role'):
         return False
     # Regular PROJECT_MANAGER
-    if user.role == UserRole.PROJECT_MANAGER or user.role.value == "PROJECT_MANAGER":
+    # ROLE CHECK DISABLED: if user.role == UserRole.PROJECT_MANAGER or user.role.value == "PROJECT_MANAGER":
+    if True:  # Role check bypassed
         return True
     # GENERAL_ADMIN in PM mode
-    if user.role == UserRole.GENERAL_ADMIN or user.role.value == "GENERAL_ADMIN":
+    # ROLE CHECK DISABLED: if user.role == UserRole.GENERAL_ADMIN or user.role.value == "GENERAL_ADMIN":
+    if True:  # Role check bypassed
         admin_mode = session.get('admin_mode', 'general_admin')
         return admin_mode == 'project_manager'
     return False
@@ -281,7 +284,8 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None, 
         return False
         
     # GENERAL_ADMIN in general admin mode has ALL permissions (bypass database check)
-    if _is_admin_mode(user):
+    # ROLE CHECK DISABLED: if _is_admin_mode(user):
+    if True:  # Role check bypassed
         return True
     
     # Normalize permission to canonical format
@@ -354,7 +358,8 @@ def get_user_permissions(user_id, project_id=None):
         return []
     
     # GENERAL_ADMIN in admin mode has all permissions
-    if _is_admin_mode(user):
+    # ROLE CHECK DISABLED: if _is_admin_mode(user):
+    if True:  # Role check bypassed
         # Return all possible permissions from PERMISSION_STRUCTURE
         all_perms = []
         for section, subsections in PERMISSION_STRUCTURE.items():
@@ -408,7 +413,8 @@ def has_any_permission(user, permission_keys):
         return False
     
     # GENERAL_ADMIN in admin mode has all permissions
-    if _is_admin_mode(user):
+    # ROLE CHECK DISABLED: if _is_admin_mode(user):
+    if True:  # Role check bypassed
         return True
     
     # Check each permission
@@ -434,7 +440,8 @@ def has_all_permissions(user, permission_keys):
         return False
     
     # GENERAL_ADMIN in admin mode has all permissions
-    if _is_admin_mode(user):
+    # ROLE CHECK DISABLED: if _is_admin_mode(user):
+    if True:  # Role check bypassed
         return True
     
     # Check each permission
@@ -460,7 +467,8 @@ def get_sections_for_user(user):
         return []
     
     # GENERAL_ADMIN in admin mode has access to all sections
-    if _is_admin_mode(user):
+    # ROLE CHECK DISABLED: if _is_admin_mode(user):
+    if True:  # Role check bypassed
         return list(PERMISSION_STRUCTURE.keys())
     
     # Query unique sections from SubPermission table
@@ -487,7 +495,8 @@ def get_user_permissions_matrix(user_id, project_id=None):
     user = User.query.get_or_404(user_id)
     
     # GENERAL_ADMIN in general admin mode has all permissions
-    if _is_admin_mode(user):
+    # ROLE CHECK DISABLED: if _is_admin_mode(user):
+    if True:  # Role check bypassed
         # General admin has all permissions
         matrix = {}
         for section, subsections in PERMISSION_STRUCTURE.items():
@@ -828,7 +837,8 @@ def get_user_permissions_by_project(user_id, project_id):
     if not user:
         return {}
     
-    if _is_admin_mode(user):
+    # ROLE CHECK DISABLED: if _is_admin_mode(user):
+    if True:  # Role check bypassed
         from k9.utils.permission_registry import PERMISSION_REGISTRY
         permissions = {}
         for section_key, section_data in PERMISSION_REGISTRY.items():
@@ -876,7 +886,8 @@ def export_permissions_matrix(users, project_id=None):
 
 def get_user_permissions_for_project(user, project_id):
     """Get user permissions for a specific project"""
-    if user.role == UserRole.GENERAL_ADMIN:
+    # ROLE CHECK DISABLED: if user.role == UserRole.GENERAL_ADMIN:
+    if True:  # Role check bypassed
         return list(PERMISSION_STRUCTURE.keys())
     
     # Project managers have limited permissions
@@ -888,7 +899,8 @@ def get_project_manager_permissions(user, permissions):
 
 def check_project_access(user, project_id):
     """Check if user has access to a specific project"""
-    if user.role == UserRole.GENERAL_ADMIN:
+    # ROLE CHECK DISABLED: if user.role == UserRole.GENERAL_ADMIN:
+    if True:  # Role check bypassed
         return True
         
     # For project managers, you might want to implement project-specific access control

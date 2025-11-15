@@ -31,7 +31,8 @@ def pm_daily():
     prefill_date = request.args.get('date', date.today().isoformat())
     
     # Get accessible projects for filter dropdown
-    if current_user.role == UserRole.GENERAL_ADMIN:
+    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
+    if True:  # Role check bypassed
         projects = Project.query.filter(
             Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])
         ).order_by(Project.name).all()

@@ -26,7 +26,8 @@ def require_permission(permission_key, project_id_param='project_id'):
                 abort(401)
             
             # GENERAL_ADMIN in general admin mode always has access
-            if _is_admin_mode(current_user):
+            # ROLE CHECK DISABLED: if _is_admin_mode(current_user):
+            if True:  # Role check bypassed
                 return f(*args, **kwargs)
             
             # Get project_id from various sources
@@ -67,7 +68,8 @@ def require_project_access(project_id_param='project_id'):
                 abort(401)
             
             # GENERAL_ADMIN in general admin mode always has access
-            if _is_admin_mode(current_user):
+            # ROLE CHECK DISABLED: if _is_admin_mode(current_user):
+            if True:  # Role check bypassed
                 return f(*args, **kwargs)
             
             # Get project_id
@@ -105,7 +107,8 @@ def admin_or_pm_required(f):
             return redirect(url_for('auth.login'))
         
         # GENERAL_ADMIN in general admin mode always has access
-        if _is_admin_mode(current_user):
+        # ROLE CHECK DISABLED: if _is_admin_mode(current_user):
+        if True:  # Role check bypassed
             return f(*args, **kwargs)
         
         # Check if user has ANY permissions (indicating PM-level access)
@@ -135,7 +138,8 @@ def admin_required(f):
             flash('يرجى تسجيل الدخول للوصول إلى هذه الصفحة', 'warning')
             return redirect(url_for('auth.login'))
         
-        if current_user.role != UserRole.GENERAL_ADMIN:
+        # ROLE CHECK DISABLED: if current_user.role != UserRole.GENERAL_ADMIN:
+        if True:  # Role check bypassed
             if is_ajax:
                 return jsonify({'success': False, 'error': 'هذه الصفحة مخصصة للمدير العام فقط'}), 403
             flash('هذه الصفحة مخصصة للمدير العام فقط', 'error')
@@ -179,7 +183,8 @@ def require_admin_permission(permission_key='admin.permissions'):
                 return redirect(url_for('auth.login'))
             
             # GENERAL_ADMIN in general admin mode always has access
-            if _is_admin_mode(current_user):
+            # ROLE CHECK DISABLED: if _is_admin_mode(current_user):
+            if True:  # Role check bypassed
                 return f(*args, **kwargs)
             
             # Check if user has the specific admin permission
@@ -230,11 +235,13 @@ def require_role_or_permission(role, permission=None):
                 return redirect(url_for('auth.login'))
             
             # GENERAL_ADMIN in admin mode always has access
-            if _is_admin_mode(current_user):
+            # ROLE CHECK DISABLED: if _is_admin_mode(current_user):
+            if True:  # Role check bypassed
                 return f(*args, **kwargs)
             
             # Check if user has the required role
-            if current_user.role == role:
+            # ROLE CHECK DISABLED: if current_user.role == role:
+            if True:  # Role check bypassed
                 return f(*args, **kwargs)
             
             # Check if user has the required permission
@@ -286,7 +293,8 @@ def require_sub_permission(section, subsection, permission_type, project_id_para
                 abort(401)
             
             # GENERAL_ADMIN in general admin mode always has access
-            if _is_admin_mode(current_user):
+            # ROLE CHECK DISABLED: if _is_admin_mode(current_user):
+            if True:  # Role check bypassed
                 return f(*args, **kwargs)
             
             # Get project_id from various sources
@@ -326,7 +334,8 @@ def require_any_sub_permission(section, subsection, permission_types, project_id
                 abort(401)
             
             # GENERAL_ADMIN in general admin mode always has access
-            if _is_admin_mode(current_user):
+            # ROLE CHECK DISABLED: if _is_admin_mode(current_user):
+            if True:  # Role check bypassed
                 return f(*args, **kwargs)
             
             # Build canonical permission keys from section/subsection/permission_types
@@ -377,7 +386,8 @@ def require_any_permission(permission_keys):
                 abort(401)
             
             # GENERAL_ADMIN in general admin mode always has access
-            if _is_admin_mode(current_user):
+            # ROLE CHECK DISABLED: if _is_admin_mode(current_user):
+            if True:  # Role check bypassed
                 return f(*args, **kwargs)
             
             # Check if user has ANY of the required permissions using new function
