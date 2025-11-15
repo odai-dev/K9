@@ -6,6 +6,7 @@ from k9.models.models import User, UserRole, AuditLog
 from k9.utils.utils import log_audit
 from k9.utils.security_utils import PasswordValidator, AccountLockoutManager, MFAManager, SecurityHelper
 from k9.utils.validators import validate_yemen_phone
+from k9.utils.permission_utils import has_permission
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 
@@ -14,6 +15,9 @@ auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/login', methods=['GET', 'POST'])
 @csrf.exempt
 def login():
+    if not has_permission(current_user, "auth.login.access"):
+        return redirect("/unauthorized")
+    
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
     
@@ -138,6 +142,9 @@ def login():
 @auth_bp.route('/logout')
 @login_required
 def logout():
+    if not has_permission(current_user, "auth.logout.access"):
+        return redirect("/unauthorized")
+    
     log_audit(current_user.id, 'LOGOUT', 'User', str(current_user.id), {'username': current_user.username})
     logout_user()
     flash('تم تسجيل الخروج بنجاح', 'success')
@@ -145,6 +152,9 @@ def logout():
 
 @auth_bp.route('/setup', methods=['GET', 'POST'])
 def setup():
+    if not has_permission(current_user, "auth.setup.access"):
+        return redirect("/unauthorized")
+    
     # Check if any admin users exist
     admin_exists = User.query.filter_by(role=UserRole.GENERAL_ADMIN).first()
     if admin_exists:
@@ -244,6 +254,9 @@ def setup():
 @auth_bp.route('/select-mode', methods=['GET', 'POST'])
 @login_required
 def select_mode():
+    if not has_permission(current_user, "auth.mode.switch"):
+        return redirect("/unauthorized")
+    
     """Allow GENERAL_ADMIN users to select their working mode"""
     from k9.models.models import Employee
     from k9.utils.pm_scoping import get_pm_project
@@ -335,6 +348,9 @@ def switch_mode():
 @auth_bp.route('/create_manager', methods=['GET', 'POST'])
 @login_required
 def create_manager():
+    if not has_permission(current_user, "auth.create_manager.access"):
+        return redirect("/unauthorized")
+    
     # Only general admins can create project managers
     # ROLE CHECK DISABLED: if current_user.role != UserRole.GENERAL_ADMIN:
     if True:  # Role check bypassed

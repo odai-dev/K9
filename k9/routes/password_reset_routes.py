@@ -5,6 +5,7 @@ from k9.models.models import User
 from k9.models.password_reset import PasswordResetToken
 from k9.utils.security_utils import PasswordValidator, SecurityHelper
 from k9.utils.email_service import EmailService
+from k9.utils.permission_utils import has_permission
 from werkzeug.security import generate_password_hash
 from datetime import datetime
 
@@ -13,6 +14,9 @@ password_reset_bp = Blueprint('password_reset', __name__, url_prefix='/password-
 @password_reset_bp.route('/request', methods=['GET', 'POST'])
 @csrf.exempt
 def request_reset():
+    if not has_permission(current_user, "password_reset.request.access"):
+        return redirect("/unauthorized")
+    
     """Request password reset."""
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
@@ -175,6 +179,9 @@ def reset_password(token):
 
 @password_reset_bp.route('/cleanup-tokens')
 def cleanup_expired_tokens():
+    if not has_permission(current_user, "password_reset.reset.access"):
+        return redirect("/unauthorized")
+    
     """Clean up expired tokens (admin only)."""
     # Security check: Only allow in development or with explicit admin access
     from flask_login import current_user
