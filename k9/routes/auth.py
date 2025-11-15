@@ -15,9 +15,6 @@ auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/login', methods=['GET', 'POST'])
 @csrf.exempt
 def login():
-    if not has_permission(current_user, "auth.login.access"):
-        return redirect("/unauthorized")
-    
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
     
@@ -142,9 +139,6 @@ def login():
 @auth_bp.route('/logout')
 @login_required
 def logout():
-    if not has_permission(current_user, "auth.logout.access"):
-        return redirect("/unauthorized")
-    
     log_audit(current_user.id, 'LOGOUT', 'User', str(current_user.id), {'username': current_user.username})
     logout_user()
     flash('تم تسجيل الخروج بنجاح', 'success')
@@ -152,9 +146,6 @@ def logout():
 
 @auth_bp.route('/setup', methods=['GET', 'POST'])
 def setup():
-    if not has_permission(current_user, "auth.setup.access"):
-        return redirect("/unauthorized")
-    
     # Check if any admin users exist
     admin_exists = User.query.filter_by(role=UserRole.GENERAL_ADMIN).first()
     if admin_exists:

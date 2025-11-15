@@ -14,9 +14,6 @@ password_reset_bp = Blueprint('password_reset', __name__, url_prefix='/password-
 @password_reset_bp.route('/request', methods=['GET', 'POST'])
 @csrf.exempt
 def request_reset():
-    if not has_permission(current_user, "password_reset.request.access"):
-        return redirect("/unauthorized")
-    
     """Request password reset."""
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
@@ -179,22 +176,9 @@ def reset_password(token):
 
 @password_reset_bp.route('/cleanup-tokens')
 def cleanup_expired_tokens():
+    """Clean up expired tokens (admin only)."""
     if not has_permission(current_user, "password_reset.reset.access"):
         return redirect("/unauthorized")
-    
-    """Clean up expired tokens (admin only)."""
-    # Security check: Only allow in development or with explicit admin access
-    from flask_login import current_user
-    import os
-    
-    is_development = (current_app.debug or 
-                     current_app.config.get('ENV') == 'development' or 
-                     os.getenv('FLASK_ENV') == 'development')
-    
-    if not is_development and not (current_user.is_authenticated and 
-                                  getattr(current_user, 'role', None) == 'GENERAL_ADMIN'):
-        from flask import abort
-        abort(403)
     
     # This would typically be called by a cron job
     try:
