@@ -17,6 +17,7 @@ from k9.models.models import (
 )
 from k9.models.models_handler_daily import HandlerReport, ShiftReport, ReportStatus, DailySchedule
 from k9.services.access_audit_service import log_page_access, log_project_access
+from k9.utils.permission_utils import has_permission
 
 pm_bp = Blueprint('pm', __name__, url_prefix='/pm')
 
@@ -208,6 +209,9 @@ def dashboard():
     
     GENERAL_ADMIN in general_admin mode can view any project by passing project_id parameter
     """
+    if not has_permission(current_user, "pm.dashboard.view"):
+        return redirect("/unauthorized")
+    
     # Get active project using helper function
     project, needs_selection = get_active_project()
     
@@ -401,6 +405,9 @@ def dashboard():
 @require_pm_project
 def project_view():
     """View PM's project details"""
+    if not has_permission(current_user, "pm.project.view"):
+        return redirect("/unauthorized")
+    
     project, needs_selection = get_active_project()
     if needs_selection:
         projects = Project.query.filter_by(is_active=True).order_by(Project.name).all()
@@ -426,6 +433,9 @@ def project_view():
 @require_pm_project
 def my_team():
     """View team members assigned to PM's project"""
+    if not has_permission(current_user, "pm.team.view"):
+        return redirect("/unauthorized")
+    
     project, needs_selection = get_active_project()
     if needs_selection:
         projects = Project.query.filter_by(is_active=True).order_by(Project.name).all()
@@ -460,6 +470,9 @@ def my_team():
 @require_pm_project
 def my_dogs():
     """View dogs assigned to PM's project"""
+    if not has_permission(current_user, "pm.dogs.view"):
+        return redirect("/unauthorized")
+    
     project, needs_selection = get_active_project()
     if needs_selection:
         projects = Project.query.filter_by(is_active=True).order_by(Project.name).all()
@@ -534,6 +547,9 @@ def my_dogs():
 @require_pm_project
 def pending_approvals():
     """View all items pending PM approval"""
+    if not has_permission(current_user, "pm.approvals.view"):
+        return redirect("/unauthorized")
+    
     project, needs_selection = get_active_project()
     if needs_selection:
         projects = Project.query.filter_by(is_active=True).order_by(Project.name).all()
@@ -684,6 +700,9 @@ def reject_vet_visit(visit_id):
 @require_pm_project
 def approve_breeding(activity_id):
     """Approve a breeding training activity"""
+    if not has_permission(current_user, "pm.reports.approve"):
+        return redirect("/unauthorized")
+    
     project = get_pm_project()
     if not project:
         flash('لم يتم العثور على المشروع', 'error')
@@ -720,6 +739,9 @@ def approve_breeding(activity_id):
 @require_pm_project
 def reject_breeding(activity_id):
     """Reject a breeding training activity"""
+    if not has_permission(current_user, "pm.reports.reject"):
+        return redirect("/unauthorized")
+    
     project = get_pm_project()
     if not project:
         flash('لم يتم العثور على المشروع', 'error')
@@ -869,6 +891,9 @@ def export_handler_report_pdf(report_id):
 @require_pm_project
 def export_handler_report_excel(report_id):
     """تصدير تقرير السائس اليومي إلى Excel"""
+    if not has_permission(current_user, "pm.reports.export"):
+        return redirect("/unauthorized")
+    
     from k9.services.report_export_service import ReportExportService
     from k9.services.access_audit_service import log_file_download
     from flask import send_file
