@@ -76,6 +76,24 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### 2025-11-15: Complete Template Permission Migration
+**Major Update** - Completed migration of all UI templates from role-based to permission-based access control:
+- **Modified Templates** (8 files):
+  - `handler/view_report.html`: Export buttons now check `has_permission('handler_reports.export')`
+  - `handler/view_shift_report.html`: Export buttons now check `has_permission('handler_reports.export')`
+  - `supervisor/reports_index.html`: Project filter now uses `is_admin()`
+  - `supervisor/schedules_index.html`: Project filter now uses `is_admin()`
+  - `projects/list.html`: Delete button now checks `is_admin()` or `has_permission('projects.delete')`
+  - `projects/modern_list.html`: Delete button now checks `is_admin()` or `has_permission('projects.delete')`
+  - `projects/modern_dashboard.html`: Manager edit button now uses `is_admin()` check
+- **Impact**: All interactive UI elements (buttons, links, filters) now controlled by database-stored permissions
+- **Result**: Zero role-based access control checks remain in templates (except display-only role badges)
+- **Behavior**: 
+  - Export features require `handler_reports.export` permission
+  - Project deletion requires `projects.delete` permission or admin status
+  - Admin-only filters use `is_admin()` function for `GENERAL_ADMIN` in admin mode
+- **Security**: All changes architect-reviewed and approved - no security regressions
+
 ### 2025-11-14: Permission System Refactoring
 **Critical fix** - Switched from role-based to permission-based UI/navigation control:
 - **Modified**: `k9/utils/utils.py::get_user_permissions()` now reads exclusively from `SubPermission` table instead of hardcoding role-based defaults
