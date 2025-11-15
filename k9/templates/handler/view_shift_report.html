@@ -70,7 +70,7 @@
                 عرض تقرير الوردية
             </h1>
             <div class="btn-group">
-                {% if current_user.role.value in ['PROJECT_MANAGER', 'GENERAL_ADMIN'] %}
+                {% if has_permission(current_user, 'handler_reports.export') %}
                 <div class="btn-group" role="group">
                     <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fas fa-download me-2"></i>
@@ -78,7 +78,7 @@
                     </button>
                     <ul class="dropdown-menu">
                         <li>
-                            {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                            {% if is_admin() %}
                             <a class="dropdown-item" href="{{ url_for('admin.export_shift_report_pdf', report_id=shift_report.id) }}">
                                 <i class="fas fa-file-pdf me-2 text-danger"></i>
                                 تصدير PDF
@@ -91,7 +91,7 @@
                             {% endif %}
                         </li>
                         <li>
-                            {% if current_user.role.value == 'GENERAL_ADMIN' %}
+                            {% if is_admin() %}
                             <a class="dropdown-item" href="{{ url_for('admin.export_shift_report_excel', report_id=shift_report.id) }}">
                                 <i class="fas fa-file-excel me-2 text-success"></i>
                                 تصدير Excel

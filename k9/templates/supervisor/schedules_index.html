@@ -32,7 +32,7 @@
                         <label class="form-label">إلى تاريخ</label>
                         <input type="date" name="date_to" class="form-control" value="{{ request.args.get('date_to', '') }}">
                     </div>
-                    {% if current_user.role.value == 'GENERAL_ADMIN' and projects %}
+                    {% if is_admin() and projects %}
                     <div class="col-md-3">
                         <label class="form-label">المشروع</label>
                         <select name="project_id" class="form-select">
