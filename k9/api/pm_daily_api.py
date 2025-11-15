@@ -10,6 +10,7 @@ import logging
 from k9.services.pm_daily_services import get_pm_daily
 from k9.utils.pm_daily_exporters import export_pm_daily_pdf
 from k9.utils.permission_decorators import require_permission
+from k9.utils.permission_utils import has_permission
 from k9.models.models import Project
 
 # Create blueprint
