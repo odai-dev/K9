@@ -91,7 +91,7 @@
                         </select>
                     </div>
                     
-                    {% if current_user.role.value == 'GENERAL_ADMIN' and projects %}
+                    {% if is_admin() and projects %}
                     <div class="col-md-2">
                         <label class="form-label">المشروع</label>
                         <select name="project_id" class="form-select">
