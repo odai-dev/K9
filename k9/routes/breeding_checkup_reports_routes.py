@@ -5,7 +5,7 @@ Handles Arabic/RTL checkup reports under Reports → Breeding
 
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask_login import login_required, current_user
-from k9.utils.permission_decorators import require_sub_permission
+from k9.utils.permission_utils import has_permission
 from k9.models.models import PermissionType, Project
 from k9.utils.utils import get_user_projects
 
@@ -15,9 +15,11 @@ bp = Blueprint('breeding_checkup_reports_ui', __name__)
 
 @bp.route('/daily')
 @login_required
-@require_sub_permission("Reports", "Checkup Daily", PermissionType.VIEW)
 def checkup_daily():
     """Redirect legacy daily checkup reports to unified checkup reports with daily range"""
+    if not has_permission(current_user, "reports.breeding.checkup.daily.view"):
+        return redirect("/unauthorized")
+    
     # Preserve all original query parameters
     params = dict(request.args)
     # Set range type to daily
@@ -29,9 +31,11 @@ def checkup_daily():
 
 @bp.route('/weekly')
 @login_required
-@require_sub_permission("Reports", "Checkup Weekly", PermissionType.VIEW)
 def checkup_weekly():
     """Redirect legacy weekly checkup reports to unified checkup reports with weekly range"""
+    if not has_permission(current_user, "reports.breeding.checkup.weekly.view"):
+        return redirect("/unauthorized")
+    
     # Preserve all original query parameters
     params = dict(request.args)
     # Set range type to weekly
