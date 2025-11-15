@@ -11,7 +11,7 @@ from k9.utils.permission_utils import (
     PERMISSION_STRUCTURE, get_user_permissions_matrix, update_permission, 
     bulk_update_permissions, get_project_managers, get_all_projects,
     initialize_default_permissions, export_permissions_matrix,
-    get_users_by_project, get_user_permissions_by_project
+    get_users_by_project, get_user_permissions_by_project, has_permission
 )
 from k9.utils.security_utils import PasswordValidator, SecurityHelper
 from k9.models.models import User, Project, SubPermission, PermissionAuditLog, PermissionType, UserRole
@@ -38,6 +38,9 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 @admin_required
 def dashboard():
     """Main admin dashboard with system overview and navigation"""
+    if not has_permission(current_user, "admin.dashboard.view"):
+        return redirect("/unauthorized")
+    
     from k9.models.models import User, Project, SubPermission, PermissionAuditLog, Dog, Employee, TrainingSession, VeterinaryVisit
     from sqlalchemy import func
     
@@ -74,6 +77,9 @@ def dashboard():
 @require_admin_permission('admin.permissions')
 def permissions_dashboard():
     """Main permissions management dashboard"""
+    if not has_permission(current_user, "admin.permissions.view"):
+        return redirect("/unauthorized")
+    
     project_managers = get_project_managers()
     projects = get_all_projects()
     
@@ -188,6 +194,9 @@ def update_user_permission():
 @require_admin_permission('admin.permissions')
 def bulk_update_user_permissions():
     """Bulk update permissions for a section"""
+    if not has_permission(current_user, "admin.permissions.manage"):
+        return redirect("/unauthorized")
+    
     data = request.get_json()
     
     required_fields = ['user_id', 'section', 'is_granted']
@@ -758,6 +767,9 @@ def admin_profile():
 @admin_required
 def backup_management():
     """Backup management page"""
+    if not has_permission(current_user, "admin.backup.manage"):
+        return redirect("/unauthorized")
+    
     from k9.models.models import BackupSettings
     from k9.utils.backup_utils import BackupManager
     
@@ -1083,6 +1095,9 @@ def google_drive_connect():
 @admin_required
 def google_drive_callback():
     """Handle Google Drive OAuth callback"""
+    if not has_permission(current_user, "admin.google_drive.manage"):
+        return redirect("/unauthorized")
+    
     from k9.utils.google_drive_manager import GoogleDriveManager
     from k9.models.models import BackupSettings
     import json
@@ -1248,6 +1263,9 @@ def google_drive_status():
 @login_required
 def notifications():
     """صفحة الإشعارات للأدمن ومسؤولي المشاريع"""
+    if not has_permission(current_user, "admin.notifications.view"):
+        return redirect("/unauthorized")
+    
     from k9.models.models_handler_daily import Notification
     from k9.services.handler_service import NotificationService
     
@@ -1306,6 +1324,9 @@ def mark_all_notifications_read():
 @admin_required
 def get_unread_count():
     """API: الحصول على عدد الإشعارات غير المقروءة"""
+    if not has_permission(current_user, "admin.general.access"):
+        return redirect("/unauthorized")
+    
     from k9.services.handler_service import NotificationService
     count = len(NotificationService.get_user_notifications(
         str(current_user.id), unread_only=True
@@ -1384,6 +1405,9 @@ def admin_reject_report(report_type, report_id):
 @admin_required
 def get_pending_reports_count():
     """API: الحصول على عدد التقارير بانتظار المراجعة"""
+    if not has_permission(current_user, "admin.reports.view_pending"):
+        return redirect("/unauthorized")
+    
     from k9.services.report_review_service import ReportReviewService
     
     reports = ReportReviewService.get_forwarded_reports(str(current_user.id))
