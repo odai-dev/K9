@@ -55,12 +55,27 @@ def canonical_permission_key(permission_key, sub_permission=None, action=None):
         
     Examples:
         canonical_permission_key("dogs.view") -> ("dogs", None, PermissionType.VIEW)
+        canonical_permission_key("admin.permissions") -> ("admin", "permissions", PermissionType.EDIT)
+        canonical_permission_key("admin.permissions.edit") -> ("admin", "permissions", PermissionType.EDIT)
         canonical_permission_key("reports.breeding.feeding.export") -> ("reports", "breeding.feeding", PermissionType.EXPORT)
         canonical_permission_key("Reports", "Feeding Daily", "VIEW") -> ("reports", "breeding.feeding", PermissionType.VIEW)
     """
     # Handle new canonical format (e.g., "dogs.view", "reports.training.trainer_daily.view")
     if sub_permission is None and action is None:
         parts = permission_key.split('.')
+        
+        # Special mappings for admin permissions that use permission name as subsection
+        admin_permission_mappings = {
+            "admin.permissions": ("admin", "permissions", PermissionType.EDIT),
+            "admin.permissions.edit": ("admin", "permissions", PermissionType.EDIT),
+            "admin.backup": ("admin", "backup", PermissionType.VIEW),
+            "admin.settings": ("admin", "settings", PermissionType.EDIT),
+            "admin.audit": ("admin", "audit", PermissionType.VIEW),
+        }
+        
+        permission_key_lower = permission_key.lower()
+        if permission_key_lower in admin_permission_mappings:
+            return admin_permission_mappings[permission_key_lower]
         
         if len(parts) == 2:
             # Simple format: "dogs.view"
