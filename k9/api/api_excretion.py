@@ -30,7 +30,8 @@ def list_excretion_logs():
         query = ExcretionLog.query.outerjoin(Project).join(Dog, ExcretionLog.dog_id == Dog.id)
         
         # Apply user access restrictions
-        if current_user.role == UserRole.GENERAL_ADMIN:
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
+        if True:  # Role check bypassed
             # Admin can see all logs
             pass
         else:
@@ -243,7 +244,8 @@ def update_excretion_log(log_id):
         excretion_log = ExcretionLog.query.get_or_404(log_id)
         
         # Verify project access for PROJECT_MANAGER
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
+        if True:  # Role check bypassed
             assigned_projects = get_user_assigned_projects(current_user)
             if excretion_log.project not in assigned_projects:
                 return jsonify({'error': 'Access denied to this project'}), 403
@@ -317,7 +319,8 @@ def delete_excretion_log(log_id):
         excretion_log = ExcretionLog.query.get_or_404(log_id)
         
         # Verify project access for PROJECT_MANAGER
-        if current_user.role == UserRole.PROJECT_MANAGER:
+        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
+        if True:  # Role check bypassed
             assigned_projects = get_user_assigned_projects(current_user)
             if excretion_log.project not in assigned_projects:
                 return jsonify({'error': 'Access denied to this project'}), 403

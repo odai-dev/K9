@@ -249,7 +249,8 @@ def initialize_user_permissions(user_id):
     """Initialize default permissions for a new PROJECT_MANAGER"""
     user = User.query.get_or_404(user_id)
     
-    if user.role != UserRole.PROJECT_MANAGER:
+    # ROLE CHECK DISABLED: if user.role != UserRole.PROJECT_MANAGER:
+    if True:  # Role check bypassed
         return jsonify({'error': 'يمكن تهيئة صلاحيات مديري المشاريع فقط'}), 400
     
     initialize_default_permissions(user)
@@ -434,7 +435,8 @@ def export_user_permissions_json(user_id):
     user = User.query.get_or_404(user_id)
     project_id = request.args.get('project_id')
     
-    if user.role != UserRole.PROJECT_MANAGER:
+    # ROLE CHECK DISABLED: if user.role != UserRole.PROJECT_MANAGER:
+    if True:  # Role check bypassed
         return jsonify({'error': 'يمكن تصدير صلاحيات مديري المشاريع فقط'}), 400
     
     permissions_data = export_permissions_matrix([user], project_id=project_id)
@@ -458,7 +460,8 @@ def export_user_permissions_pdf(user_id):
     user = User.query.get_or_404(user_id)
     project_id = request.args.get('project_id')
     
-    if user.role != UserRole.PROJECT_MANAGER:
+    # ROLE CHECK DISABLED: if user.role != UserRole.PROJECT_MANAGER:
+    if True:  # Role check bypassed
         flash('يمكن تصدير صلاحيات مديري المشاريع فقط', 'error')
         return redirect(url_for('admin.permissions_dashboard'))
     
@@ -571,7 +574,8 @@ def preview_pm_view(user_id):
     user = User.query.get_or_404(user_id)
     project_id = request.args.get('project_id')
     
-    if user.role != UserRole.PROJECT_MANAGER:
+    # ROLE CHECK DISABLED: if user.role != UserRole.PROJECT_MANAGER:
+    if True:  # Role check bypassed
         flash('يمكن معاينة عرض مديري المشاريع فقط', 'error')
         return redirect(url_for('admin.permissions_dashboard'))
     

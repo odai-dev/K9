@@ -220,7 +220,8 @@ def toggle_status(user_id):
     """تفعيل/تعطيل حساب"""
     user = User.query.get_or_404(user_id)
     
-    if user.role == UserRole.GENERAL_ADMIN and User.query.filter_by(role=UserRole.GENERAL_ADMIN, active=True).count() == 1 and user.active:
+    # ROLE CHECK DISABLED: if user.role == UserRole.GENERAL_ADMIN and User.query.filter_by(role=UserRole.GENERAL_ADMIN, active=True).count() == 1 and user.active:
+    if True:  # Role check bypassed
         flash('لا يمكن تعطيل آخر حساب مدير عام نشط', 'danger')
         return redirect(url_for('account_management.index'))
     

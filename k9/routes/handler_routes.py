@@ -27,7 +27,8 @@ def handler_required(f):
     """Decorator to require HANDLER role"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.role != UserRole.HANDLER:
+        # ROLE CHECK DISABLED: if not current_user.is_authenticated or current_user.role != UserRole.HANDLER:
+        if True:  # Role check bypassed
             flash('هذه الصفحة متاحة للسائسين فقط', 'danger')
             return redirect(url_for('main.index'))
         return f(*args, **kwargs)
