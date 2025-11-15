@@ -6,6 +6,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from k9.models.models import User, UserRole, Employee, EmployeeRole, ProjectAssignment, Project
 from k9.utils.permission_decorators import admin_required
+from k9.utils.permission_utils import has_permission
 from werkzeug.security import generate_password_hash
 from app import db
 from k9.utils.pm_scoping import get_pm_project, is_pm
@@ -40,6 +41,9 @@ def map_employee_role_to_user_role(employee_role):
 @admin_required
 def index():
     """عرض جميع الحسابات"""
+    if not has_permission(current_user, "account_management.index.view"):
+        return redirect("/unauthorized")
+    
     users = User.query.order_by(User.created_at.desc()).all()
     
     user_accounts = []
@@ -62,6 +66,9 @@ def index():
 @admin_required
 def create():
     """منح صلاحية دخول لموظف"""
+    if not has_permission(current_user, "account_management.create.access"):
+        return redirect("/unauthorized")
+    
     if request.method == 'POST':
         employee_id = request.form.get('employee_id')
         username = request.form.get('username')
@@ -173,6 +180,9 @@ def create():
 @admin_required
 def api_generate_password():
     """Generate a secure password via API"""
+    if not has_permission(current_user, "account_management.api.access"):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
     password = generate_secure_password()
     return jsonify({'password': password})
 
@@ -182,6 +192,9 @@ def api_generate_password():
 @admin_required
 def api_search_employees():
     """Search employees without accounts"""
+    if not has_permission(current_user, "account_management.api.access"):
+        return jsonify({'error': 'Unauthorized'}), 403
+    
     search_term = request.args.get('q', '')
     
     query = Employee.query.filter(
@@ -218,6 +231,9 @@ def api_search_employees():
 @admin_required
 def toggle_status(user_id):
     """تفعيل/تعطيل حساب"""
+    if not has_permission(current_user, "account_management.toggle_status.access"):
+        return redirect("/unauthorized")
+    
     user = User.query.get_or_404(user_id)
     
     # ROLE CHECK DISABLED: if user.role == UserRole.GENERAL_ADMIN and User.query.filter_by(role=UserRole.GENERAL_ADMIN, active=True).count() == 1 and user.active:
@@ -239,6 +255,9 @@ def toggle_status(user_id):
 @admin_required
 def reset_password(user_id):
     """إعادة تعيين كلمة المرور"""
+    if not has_permission(current_user, "account_management.reset_password.access"):
+        return redirect("/unauthorized")
+    
     user = User.query.get_or_404(user_id)
     
     new_password = generate_secure_password()

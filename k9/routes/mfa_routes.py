@@ -13,6 +13,9 @@ mfa_bp = Blueprint('mfa', __name__, url_prefix='/mfa')
 @csrf.exempt
 def setup():
     """MFA setup page."""
+    if not has_permission(current_user, "mfa.setup.access"):
+        return redirect("/unauthorized")
+    
     if current_user.mfa_enabled:
         flash('المصادقة الثنائية مفعلة بالفعل', 'info')
         return redirect(url_for('mfa.status'))
@@ -80,6 +83,9 @@ def setup():
 @login_required
 def status():
     """MFA status and management page."""
+    if not has_permission(current_user, "mfa.status.view"):
+        return redirect("/unauthorized")
+    
     return render_template('auth/mfa_status.html')
 
 @mfa_bp.route('/disable', methods=['POST'])
@@ -87,6 +93,9 @@ def status():
 @csrf.exempt
 def disable():
     """Disable MFA."""
+    if not has_permission(current_user, "mfa.disable.access"):
+        return redirect("/unauthorized")
+    
     if not current_user.mfa_enabled:
         flash('المصادقة الثنائية غير مفعلة', 'info')
         return redirect(url_for('mfa.status'))
@@ -118,6 +127,9 @@ def disable():
 @csrf.exempt
 def regenerate_backup_codes():
     """Regenerate backup codes."""
+    if not has_permission(current_user, "mfa.backup_codes.regenerate"):
+        return redirect("/unauthorized")
+    
     if not current_user.mfa_enabled:
         flash('المصادقة الثنائية غير مفعلة', 'error')
         return redirect(url_for('mfa.status'))
@@ -148,6 +160,9 @@ def regenerate_backup_codes():
 @csrf.exempt
 def change_password():
     """Change password with complexity validation."""
+    if not has_permission(current_user, "mfa.password.change"):
+        return redirect("/unauthorized")
+    
     if request.method == 'POST':
         current_password = request.form.get('current_password', '')
         new_password = request.form.get('new_password', '')
