@@ -24,6 +24,7 @@ from k9.models.models import (Dog, Employee, TrainingSession, VeterinaryVisit, P
                    Shift)
 from k9.utils.utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
 from k9.utils.permission_decorators import require_sub_permission, admin_or_pm_required
+from k9.utils.permission_utils import has_permission
 from k9.utils.validators import validate_yemen_phone
 from k9.utils.template_utils import get_base_template, is_pm_view
 from k9.utils.pm_scoping import get_scoped_dogs, get_scoped_employees, get_scoped_projects, is_pm, is_admin
@@ -37,12 +38,16 @@ main_bp = Blueprint('main', __name__)
 @main_bp.route('/')
 def index():
     if current_user.is_authenticated:
+        if not has_permission(current_user, "home.index.view"):
+            return redirect("/unauthorized")
         return redirect(url_for('main.dashboard'))
     return render_template('index.html')
 
 @main_bp.route('/dashboard')
 @login_required
 def dashboard():
+    if not has_permission(current_user, "dashboard.main.view"):
+        return redirect("/unauthorized")
     from flask import session
     
     # HANDLER users should use their own dashboard
@@ -107,6 +112,8 @@ def dashboard():
 @login_required
 @admin_or_pm_required
 def dogs_list():
+    if not has_permission(current_user, "dogs.management.view"):
+        return redirect("/unauthorized")
     from datetime import date
     # Use permission-based access for both roles
     dogs = get_user_accessible_dogs(current_user)
@@ -118,6 +125,8 @@ def dogs_list():
 @login_required
 @admin_or_pm_required  
 def dogs_add():
+    if not has_permission(current_user, "dogs.management.create"):
+        return redirect("/unauthorized")
     # Only GENERAL_ADMIN can add dogs, not PROJECT_MANAGER
     # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
     if True:  # Role check bypassed
@@ -236,6 +245,8 @@ def dogs_view(dog_id):
 @login_required
 @admin_or_pm_required
 def dogs_edit(dog_id):
+    if not has_permission(current_user, "dogs.management.edit"):
+        return redirect("/unauthorized")
     try:
         dog_id = dog_id
         dog = Dog.query.get_or_404(dog_id)
@@ -315,6 +326,8 @@ def dogs_edit(dog_id):
 @login_required
 @admin_or_pm_required
 def employees_list():
+    if not has_permission(current_user, "employees.management.view"):
+        return redirect("/unauthorized")
     # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
     if True:  # Role check bypassed
         employees = Employee.query.order_by(Employee.name).all()
@@ -327,6 +340,8 @@ def employees_list():
 @login_required
 @admin_or_pm_required
 def employees_add():
+    if not has_permission(current_user, "employees.management.create"):
+        return redirect("/unauthorized")
     import time
     print(f"Employee add route called with method: {request.method}")
     if request.method == 'POST':
@@ -521,6 +536,8 @@ def employees_add():
 @login_required
 @admin_or_pm_required
 def employees_edit(employee_id):
+    if not has_permission(current_user, "employees.management.edit"):
+        return redirect("/unauthorized")
     try:
         employee_id = employee_id
         employee = Employee.query.get_or_404(employee_id)
@@ -576,6 +593,8 @@ def employees_edit(employee_id):
 @login_required
 @admin_or_pm_required
 def employees_delete(employee_id):
+    if not has_permission(current_user, "employees.management.delete"):
+        return redirect("/unauthorized")
     try:
         employee = Employee.query.get_or_404(employee_id)
     except ValueError:
@@ -624,6 +643,8 @@ def training_add():
 @login_required
 @admin_or_pm_required
 def veterinary_list():
+    if not has_permission(current_user, "veterinary.visits.view"):
+        return redirect("/unauthorized")
     # Get scoped dogs using PM scoping utility
     scoped_dogs = get_scoped_dogs()
     dog_ids = [d.id for d in scoped_dogs] if scoped_dogs else []
@@ -642,6 +663,8 @@ def veterinary_list():
 @login_required
 @admin_or_pm_required
 def veterinary_add():
+    if not has_permission(current_user, "veterinary.visits.create"):
+        return redirect("/unauthorized")
     if request.method == 'POST':
         try:
             from k9.utils.utils import auto_link_dog_activity_to_project
@@ -699,6 +722,8 @@ def veterinary_add():
 @login_required
 @admin_or_pm_required
 def production_list():
+    if not has_permission(current_user, "production.general.view"):
+        return redirect("/unauthorized")
     # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
     if True:  # Role check bypassed
         cycles = ProductionCycle.query.order_by(ProductionCycle.created_at.desc()).all()
@@ -725,6 +750,8 @@ def production_list():
 @main_bp.route('/production/add', methods=['GET', 'POST'])
 @login_required
 def production_add():
+    if not has_permission(current_user, "production.general.create"):
+        return redirect("/unauthorized")
     if request.method == 'POST':
         try:
             cycle = ProductionCycle()
@@ -774,6 +801,8 @@ def production_add():
 @login_required
 @admin_or_pm_required
 def maturity_list():
+    if not has_permission(current_user, "production.maturity.list"):
+        return redirect("/unauthorized")
     from k9.models.models import DogMaturity
     
     # Get scoped dogs using PM scoping utility
@@ -794,6 +823,8 @@ def maturity_list():
 @login_required
 @admin_or_pm_required
 def maturity_add():
+    if not has_permission(current_user, "production.maturity.create"):
+        return redirect("/unauthorized")
     if request.method == 'POST':
         try:
             from k9.models.models import DogMaturity, MaturityStatus
@@ -838,6 +869,8 @@ def maturity_add():
 @login_required
 @admin_or_pm_required
 def heat_cycles_list():
+    if not has_permission(current_user, "production.heat_cycles.list"):
+        return redirect("/unauthorized")
     from k9.models.models import HeatCycle
     
     # Get scoped dogs using PM scoping utility
@@ -858,6 +891,8 @@ def heat_cycles_list():
 @login_required
 @admin_or_pm_required
 def heat_cycles_add():
+    if not has_permission(current_user, "production.heat_cycles.create"):
+        return redirect("/unauthorized")
     if request.method == 'POST':
         try:
             from k9.models.models import HeatCycle, HeatStatus
@@ -908,6 +943,8 @@ def heat_cycles_add():
 @login_required
 @admin_or_pm_required
 def mating_list():
+    if not has_permission(current_user, "production.mating.list"):
+        return redirect("/unauthorized")
     from k9.models.models import MatingRecord
     
     # Get scoped dogs using PM scoping utility
@@ -930,6 +967,8 @@ def mating_list():
 @login_required
 @admin_or_pm_required
 def mating_add():
+    if not has_permission(current_user, "production.mating.create"):
+        return redirect("/unauthorized")
     if request.method == 'POST':
         try:
             from k9.models.models import MatingRecord, MatingResult
@@ -993,6 +1032,8 @@ def mating_add():
 @login_required
 @admin_or_pm_required
 def pregnancy_list():
+    if not has_permission(current_user, "production.pregnancy.list"):
+        return redirect("/unauthorized")
     from k9.models.models import PregnancyRecord
     
     # Get scoped dogs using PM scoping utility
@@ -1013,6 +1054,8 @@ def pregnancy_list():
 @login_required
 @admin_or_pm_required
 def pregnancy_add():
+    if not has_permission(current_user, "production.pregnancy.create"):
+        return redirect("/unauthorized")
     if request.method == 'POST':
         try:
             from k9.models.models import PregnancyRecord, PregnancyStatus
@@ -1069,6 +1112,8 @@ def pregnancy_add():
 @login_required
 @admin_or_pm_required
 def delivery_list():
+    if not has_permission(current_user, "production.delivery.list"):
+        return redirect("/unauthorized")
     from k9.models.models import DeliveryRecord
     try:
         # Get scoped dogs using PM scoping utility
@@ -1094,6 +1139,8 @@ def delivery_list():
 @login_required
 @admin_or_pm_required
 def delivery_add():
+    if not has_permission(current_user, "production.delivery.create"):
+        return redirect("/unauthorized")
     if request.method == 'POST':
         try:
             from k9.models.models import DeliveryRecord, PregnancyRecord, PregnancyStatus
@@ -1169,6 +1216,8 @@ def delivery_add():
 @login_required
 @admin_or_pm_required
 def puppies_list():
+    if not has_permission(current_user, "production.puppies.list"):
+        return redirect("/unauthorized")
     from k9.models.models import PuppyRecord, DeliveryRecord
     try:
         # Get scoped dogs using PM scoping utility
@@ -1194,6 +1243,8 @@ def puppies_list():
 @login_required
 @admin_or_pm_required
 def puppies_add():
+    if not has_permission(current_user, "production.puppies.create"):
+        return redirect("/unauthorized")
     if request.method == 'POST':
         try:
             from k9.models.models import PuppyRecord, DeliveryRecord
@@ -1261,6 +1312,8 @@ def puppies_add():
 @main_bp.route('/production/maturity/view/<id>')
 @login_required
 def maturity_view(id):
+    if not has_permission(current_user, "production.maturity.view"):
+        return redirect("/unauthorized")
     from k9.models.models import DogMaturity
     maturity = DogMaturity.query.get_or_404(id)
     
@@ -1277,6 +1330,8 @@ def maturity_view(id):
 @main_bp.route('/production/heat-cycles/view/<id>')
 @login_required
 def heat_cycles_view(id):
+    if not has_permission(current_user, "production.heat_cycles.view"):
+        return redirect("/unauthorized")
     from k9.models.models import HeatCycle
     heat_cycle = HeatCycle.query.get_or_404(id)
     
@@ -1293,6 +1348,8 @@ def heat_cycles_view(id):
 @main_bp.route('/production/mating/view/<id>')
 @login_required
 def mating_view(id):
+    if not has_permission(current_user, "production.mating.view"):
+        return redirect("/unauthorized")
     from k9.models.models import MatingRecord
     mating = MatingRecord.query.get_or_404(id)
     
@@ -1309,6 +1366,8 @@ def mating_view(id):
 @main_bp.route('/production/pregnancy/view/<id>')
 @login_required
 def pregnancy_view(id):
+    if not has_permission(current_user, "production.pregnancy.view"):
+        return redirect("/unauthorized")
     from k9.models.models import PregnancyRecord
     pregnancy = PregnancyRecord.query.get_or_404(id)
     
@@ -1325,6 +1384,8 @@ def pregnancy_view(id):
 @main_bp.route('/production/delivery/view/<id>')
 @login_required
 def delivery_view(id):
+    if not has_permission(current_user, "production.delivery.view"):
+        return redirect("/unauthorized")
     from k9.models.models import DeliveryRecord
     delivery = DeliveryRecord.query.get_or_404(id)
     
@@ -1341,6 +1402,8 @@ def delivery_view(id):
 @main_bp.route('/production/puppies/view/<id>')
 @login_required
 def puppies_view(id):
+    if not has_permission(current_user, "production.puppies.view"):
+        return redirect("/unauthorized")
     from k9.models.models import PuppyRecord
     puppy = PuppyRecord.query.get_or_404(id)
     
@@ -1391,6 +1454,8 @@ def puppy_training_view(id):
 @main_bp.route('/production/puppy-training/add', methods=['GET', 'POST'])
 @login_required
 def puppy_training_add():
+    if not has_permission(current_user, "training.sessions.create"):
+        return redirect("/unauthorized")
     if request.method == 'POST':
         # Create new puppy training record
         puppy_training = PuppyTraining()
@@ -3506,9 +3571,8 @@ from sqlalchemy.orm import joinedload
 @login_required
 def breeding_feeding_log():
     """Feeding Log main page (Arabic RTL)"""
-    # Check permissions
-    if not has_permission(current_user, "Breeding", "التغذية - السجل اليومي", "VIEW"):
-        abort(403)
+    if not has_permission(current_user, "breeding.feeding_log.view"):
+        return redirect("/unauthorized")
     
     return render_template('breeding/feeding_log.html')
 
@@ -3516,9 +3580,8 @@ def breeding_feeding_log():
 @login_required
 def breeding_feeding_log_new():
     """Create new feeding log entry"""
-    # Check permissions
-    if not has_permission(current_user, "Breeding", "التغذية - السجل اليومي", "CREATE"):
-        abort(403)
+    if not has_permission(current_user, "breeding.feeding_log.create"):
+        return redirect("/unauthorized")
     
     # Get available projects and dogs for dropdowns
     assigned_projects = get_user_assigned_projects(current_user)
@@ -3532,9 +3595,8 @@ def breeding_feeding_log_new():
 @login_required
 def breeding_feeding_log_edit(log_id):
     """Edit existing feeding log entry"""
-    # Check permissions
-    if not has_permission(current_user, "Breeding", "التغذية - السجل اليومي", "EDIT"):
-        abort(403)
+    if not has_permission(current_user, "breeding.feeding_log.edit"):
+        return redirect("/unauthorized")
     
     # Get the log entry with eager loading
     log_entry = FeedingLog.query.options(
@@ -3566,6 +3628,8 @@ def breeding_feeding_log_edit(log_id):
 @require_sub_permission('Breeding', 'الفحص الظاهري اليومي', PermissionType.VIEW)
 def breeding_checkup():
     """List daily checkup records"""
+    if not has_permission(current_user, "breeding.checkup.view"):
+        return redirect("/unauthorized")
     return render_template('breeding/checkup_list.html')
 
 @main_bp.route('/breeding/checkup/new')
@@ -3573,6 +3637,8 @@ def breeding_checkup():
 @require_sub_permission('Breeding', 'الفحص الظاهري اليومي', PermissionType.CREATE)
 def breeding_checkup_new():
     """Create new daily checkup record"""
+    if not has_permission(current_user, "breeding.checkup.create"):
+        return redirect("/unauthorized")
     # Get user's accessible projects and dogs
     # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
     if True:  # Role check bypassed
@@ -3618,6 +3684,8 @@ def breeding_checkup_new():
 @require_sub_permission('Breeding', 'الفحص الظاهري اليومي', PermissionType.EDIT)
 def breeding_checkup_edit(id):
     """Edit daily checkup record"""
+    if not has_permission(current_user, "breeding.checkup.edit"):
+        return redirect("/unauthorized")
     checkup = DailyCheckupLog.query.get_or_404(id)
     
     # Check project access for project managers
@@ -3675,6 +3743,8 @@ def breeding_checkup_edit(id):
 @require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.VIEW)
 def breeding_excretion():
     """List excretion logs"""
+    if not has_permission(current_user, "breeding.excretion.view"):
+        return redirect("/unauthorized")
     return render_template('breeding/excretion_list.html')
 
 @main_bp.route('/breeding/excretion/new')
@@ -3682,6 +3752,8 @@ def breeding_excretion():
 @require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.CREATE)
 def breeding_excretion_new():
     """Create new excretion log entry"""
+    if not has_permission(current_user, "breeding.excretion.create"):
+        return redirect("/unauthorized")
     # Get user's accessible projects and dogs
     # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
     if True:  # Role check bypassed
@@ -3721,6 +3793,8 @@ def breeding_excretion_new():
 @require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.EDIT)
 def breeding_excretion_edit(id):
     """Edit excretion log record"""
+    if not has_permission(current_user, "breeding.excretion.edit"):
+        return redirect("/unauthorized")
     excretion_log = ExcretionLog.query.get_or_404(id)
     
     # Check project access for project managers
@@ -3901,6 +3975,8 @@ def api_list_excretion_deprecated():
 @require_sub_permission('Breeding', 'العناية (الاستحمام)', PermissionType.VIEW)
 def breeding_grooming():
     """Grooming care main page"""
+    if not has_permission(current_user, "breeding.grooming.view"):
+        return redirect("/unauthorized")
     # Get projects accessible by user
     # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
     if True:  # Role check bypassed
@@ -3936,6 +4012,8 @@ def breeding_grooming():
 @require_sub_permission('Breeding', 'العناية (الاستحمام)', PermissionType.CREATE)
 def breeding_grooming_new():
     """Create new grooming log entry"""
+    if not has_permission(current_user, "breeding.grooming.create"):
+        return redirect("/unauthorized")
     # Get projects accessible by user  
     # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
     if True:  # Role check bypassed
@@ -3976,6 +4054,8 @@ def breeding_grooming_new():
 @require_sub_permission('Breeding', 'العناية (الاستحمام)', PermissionType.EDIT)
 def breeding_grooming_edit(id):
     """Edit existing grooming log entry"""
+    if not has_permission(current_user, "breeding.grooming.edit"):
+        return redirect("/unauthorized")
     grooming_log = GroomingLog.query.get_or_404(id)
     
     # Get projects accessible by user
@@ -4022,6 +4102,8 @@ def breeding_grooming_edit(id):
 @require_sub_permission('Breeding', 'النظافة (البيئة/القفص)', PermissionType.VIEW)
 def cleaning_list():
     """Cleaning logs main page"""
+    if not has_permission(current_user, "breeding.cleaning.view"):
+        return redirect("/unauthorized")
     # Get projects accessible by user
     # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
     if True:  # Role check bypassed
@@ -4041,6 +4123,8 @@ def cleaning_list():
 @require_sub_permission('Breeding', 'النظافة (البيئة/القفص)', PermissionType.CREATE)
 def cleaning_new():
     """Create new cleaning log entry"""
+    if not has_permission(current_user, "breeding.cleaning.create"):
+        return redirect("/unauthorized")
     # Get projects accessible by user  
     # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
     if True:  # Role check bypassed
@@ -4062,6 +4146,8 @@ def cleaning_new():
 @require_sub_permission('Breeding', 'النظافة (البيئة/القفص)', PermissionType.EDIT)
 def cleaning_edit(id):
     """Edit existing cleaning log entry"""
+    if not has_permission(current_user, "breeding.cleaning.edit"):
+        return redirect("/unauthorized")
     cleaning_log = CleaningLog.query.get_or_404(id)
     
     # Get projects accessible by user
@@ -4089,6 +4175,8 @@ def cleaning_edit(id):
 @require_sub_permission('Breeding', 'التغذية', PermissionType.VIEW)
 def breeding_feeding():
     """Feeding logs main page"""
+    if not has_permission(current_user, "breeding.feeding.view"):
+        return redirect("/unauthorized")
     # Get projects accessible by user
     # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
     if True:  # Role check bypassed
@@ -4134,6 +4222,8 @@ def breeding_feeding():
 @require_sub_permission('Breeding', 'التغذية', PermissionType.CREATE)
 def breeding_feeding_new():
     """Create new feeding log entry"""
+    if not has_permission(current_user, "breeding.feeding.create"):
+        return redirect("/unauthorized")
     # Get projects accessible by user  
     # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
     if True:  # Role check bypassed
@@ -4181,6 +4271,8 @@ def breeding_feeding_new():
 @require_sub_permission('Breeding', 'التغذية', PermissionType.EDIT)
 def breeding_feeding_edit(id):
     """Edit existing feeding log entry"""
+    if not has_permission(current_user, "breeding.feeding.edit"):
+        return redirect("/unauthorized")
     feeding_log = FeedingLog.query.get_or_404(id)
     
     # Get projects accessible by user
@@ -4233,11 +4325,8 @@ def breeding_feeding_edit(id):
 @login_required
 def breeding_deworming():
     """List deworming logs"""
-    # Check permissions
-    from k9.utils.permission_utils import has_permission
-    from k9.models.models import PermissionType
-    if not has_permission(current_user, 'Breeding', 'جرعة الديدان', PermissionType.VIEW):
-        abort(403)
+    if not has_permission(current_user, "breeding.deworming.view"):
+        return redirect("/unauthorized")
     
     from k9.utils.utils import get_user_assigned_projects
     assigned_projects = get_user_assigned_projects(current_user)
@@ -4258,11 +4347,8 @@ def breeding_deworming():
 @login_required
 def breeding_deworming_new():
     """Add new deworming log"""
-    # Check permissions
-    from k9.utils.permission_utils import has_permission
-    from k9.models.models import PermissionType
-    if not has_permission(current_user, 'Breeding', 'جرعة الديدان', PermissionType.CREATE):
-        abort(403)
+    if not has_permission(current_user, "breeding.deworming.create"):
+        return redirect("/unauthorized")
         
     from k9.utils.utils import get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
     assigned_projects = get_user_assigned_projects(current_user)
@@ -4292,13 +4378,9 @@ def breeding_deworming_new():
 @login_required
 def breeding_deworming_edit(id):
     """Edit deworming log"""
+    if not has_permission(current_user, "breeding.deworming.edit"):
+        return redirect("/unauthorized")
     from k9.models.models import DewormingLog, Employee, Dog, Route, Unit, Reaction
-    
-    # Check permissions
-    from k9.utils.permission_utils import has_permission
-    from k9.models.models import PermissionType
-    if not has_permission(current_user, 'Breeding', 'جرعة الديدان', PermissionType.EDIT):
-        abort(403)
     
     log = DewormingLog.query.get_or_404(id)
     
@@ -4338,11 +4420,8 @@ def breeding_deworming_edit(id):
 @login_required
 def breeding_training_activity():
     """List training activities"""
-    # Check permissions
-    from k9.utils.permission_utils import has_permission
-    from k9.models.models import PermissionType
-    if not has_permission(current_user, 'Breeding', 'تدريب — أنشطة يومية', PermissionType.VIEW):
-        abort(403)
+    if not has_permission(current_user, "training.sessions.view"):
+        return redirect("/unauthorized")
     
     from k9.utils.utils import get_user_assigned_projects
     assigned_projects = get_user_assigned_projects(current_user)
@@ -4424,6 +4503,8 @@ def breeding_cleaning():
 @login_required
 def search():
     """Global search functionality - works independently of projects"""
+    if not has_permission(current_user, "search.global.access"):
+        return redirect("/unauthorized")
     query = request.args.get('q', '').strip()
     
     if not query or len(query) < 2:
