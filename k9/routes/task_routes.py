@@ -116,8 +116,7 @@ def admin_create():
     
     # Get projects for the dropdown
     from k9.models.models import Project
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         # Admin can see all projects
         projects = Project.query.all()
     else:  # PROJECT_MANAGER

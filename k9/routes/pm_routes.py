@@ -55,8 +55,7 @@ def get_active_project():
     - needs_selection: True if GENERAL_ADMIN needs to select a project
     """
     # GENERAL_ADMIN in general_admin mode can view any project
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN and session.get('admin_mode') == 'general_admin':
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN and session.get('admin_mode') == 'general_admin':
         # Check query parameter first
         project_id = request.args.get('project_id')
         if project_id:
@@ -89,8 +88,7 @@ def require_pm_project(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         # GENERAL_ADMIN in general_admin mode has unrestricted access
-        # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN and session.get('admin_mode') == 'general_admin':
-        if True:  # Role check bypassed
+        if current_user.role == UserRole.GENERAL_ADMIN and session.get('admin_mode') == 'general_admin':
             # Log access for general admin
             log_page_access(
                 page_name=f.__name__,
@@ -228,8 +226,7 @@ def dashboard():
         return redirect(url_for('main.index'))
     
     # Log project access for auditing
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN and session.get('admin_mode') == 'general_admin':
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN and session.get('admin_mode') == 'general_admin':
         log_project_access(project.id, project.name, action='view', outcome=AccessOutcome.SUCCESS)
     
     # Get dashboard statistics with ProjectAssignment system
@@ -449,8 +446,7 @@ def my_team():
     # Get handlers with their user accounts
     handlers = []
     for emp in project_employees:
-        # ROLE CHECK DISABLED: if emp.role == EmployeeRole.HANDLER:
-        if True:  # Role check bypassed
+        if emp.role == EmployeeRole.HANDLER:
             # Use existing relationship: Employee.user_account links to User
             user_account = emp.user_account if emp.user_account and emp.user_account.role == UserRole.HANDLER else None
             handlers.append({
