@@ -784,8 +784,7 @@ def get_user_permissions(user):
     }
     
     # GENERAL_ADMIN in general admin mode has full access
-    # ROLE CHECK DISABLED: if _is_admin_mode(user):
-    if True:  # Role check bypassed
+    if _is_admin_mode(user):
         return {
             'dogs': True,
             'employees': True,
@@ -841,8 +840,7 @@ def get_project_manager_permissions(user, project_id):
     """Get granular permissions for a PROJECT_MANAGER user on a specific project"""
     from k9.models.models import ProjectManagerPermission, UserRole
     
-    # ROLE CHECK DISABLED: if user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if user.role == UserRole.GENERAL_ADMIN:
         # GENERAL_ADMIN has all permissions
         return {
             'can_manage_assignments': True,
@@ -855,8 +853,7 @@ def get_project_manager_permissions(user, project_id):
             'can_view_production': True
         }
     
-    # ROLE CHECK DISABLED: if user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if user.role == UserRole.PROJECT_MANAGER:
         # Check if permission record exists
         permission = ProjectManagerPermission.query.filter_by(
             user_id=user.id,
@@ -918,11 +915,9 @@ def get_user_assigned_projects(user):
     """Get projects with data that PROJECT_MANAGER can access based on SubPermission"""
     from k9.models.models import Project, UserRole, SubPermission
     
-    # ROLE CHECK DISABLED: if user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if user.role == UserRole.GENERAL_ADMIN:
         return Project.query.all()
-    # ROLE CHECK DISABLED: elif user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed (was elif)
+    elif user.role == UserRole.PROJECT_MANAGER:
         # Get projects where this user is assigned as manager
         assigned_projects = Project.query.filter_by(manager_id=user.id).all()
         
@@ -971,11 +966,9 @@ def check_project_access(user, project_id):
     """Check if user has access to a specific project"""
     from k9.models.models import Project, UserRole
     
-    # ROLE CHECK DISABLED: if user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if user.role == UserRole.GENERAL_ADMIN:
         return True
-    # ROLE CHECK DISABLED: elif user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed (was elif)
+    elif user.role == UserRole.PROJECT_MANAGER:
         project = Project.query.get(project_id)
         # Check through employee profile
         employee = user.employee
@@ -987,11 +980,9 @@ def filter_data_by_project_access(user, query, model_class):
     """Filter query results based on user's project access"""
     from k9.models.models import UserRole
     
-    # ROLE CHECK DISABLED: if user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if user.role == UserRole.GENERAL_ADMIN:
         return query
-    # ROLE CHECK DISABLED: elif user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed (was elif)
+    elif user.role == UserRole.PROJECT_MANAGER:
         user_projects = get_user_projects(user)
         project_ids = [p.id for p in user_projects]
         
@@ -1052,8 +1043,7 @@ def get_employee_profile_for_user(user):
     from k9.models.models import Employee, EmployeeRole
     
     employee = user.employee
-    # ROLE CHECK DISABLED: if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
         return employee
     return None
 
@@ -1061,11 +1051,9 @@ def get_user_active_projects(user):
     """Get active projects for a PROJECT_MANAGER user"""
     from k9.models.models import Project, UserRole, Employee, EmployeeRole, ProjectStatus
     
-    # ROLE CHECK DISABLED: if user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if user.role == UserRole.GENERAL_ADMIN:
         return Project.query.filter_by(status=ProjectStatus.ACTIVE).all()
-    # ROLE CHECK DISABLED: elif user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed (was elif)
+    elif user.role == UserRole.PROJECT_MANAGER:
         # Get active projects where this user is the manager through employee profile
         active_projects = []
         
@@ -1085,11 +1073,9 @@ def get_user_all_projects(user):
     """Get ALL projects (regardless of status) for a PROJECT_MANAGER user"""
     from k9.models.models import Project, UserRole, Employee, EmployeeRole
     
-    # ROLE CHECK DISABLED: if user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if user.role == UserRole.GENERAL_ADMIN:
         return Project.query.all()
-    # ROLE CHECK DISABLED: elif user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed (was elif)
+    elif user.role == UserRole.PROJECT_MANAGER:
         # Get all projects where this user is the manager through employee profile
         manager_projects = []
         
@@ -1154,8 +1140,7 @@ def validate_project_status_change(project, new_status, current_user=None):
         from k9.models.models import Employee, EmployeeRole
         employee = Employee.query.get(project.project_manager_id)
         
-        # ROLE CHECK DISABLED: if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
-        if True:  # Role check bypassed
+        if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
             # Temporarily set the new status for validation
             original_status = project.status
             project.status = new_status
@@ -1335,8 +1320,7 @@ def get_project_id_for_user(user=None, form_project_id=None):
             return False, 'لم يتم تعيين مشروع لهذا المستخدم'
     
     # For HANDLER, get their assigned project via employee record
-    # ROLE CHECK DISABLED: if user.role == UserRole.HANDLER:
-    if True:  # Role check bypassed
+    if user.role == UserRole.HANDLER:
         from k9.models.models import Employee, ProjectAssignment
         employee = user.employee
         if employee:

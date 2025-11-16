@@ -34,8 +34,7 @@ def create_deworming_log():
             print('Deworming log created without project assignment')
         
         # Verify project access for PROJECT_MANAGER
-        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
-        if True:  # Role check bypassed
+        if current_user.role == UserRole.PROJECT_MANAGER:
             if data.get('project_id'):  # Only check if project is assigned
                 assigned_projects = get_user_assigned_projects(current_user)
                 project_ids = [str(p.id) for p in assigned_projects]
@@ -126,8 +125,7 @@ def update_deworming_log(log_id):
         deworming_log = DewormingLog.query.get_or_404(log_id)
         
         # Verify project access for PROJECT_MANAGER
-        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
-        if True:  # Role check bypassed
+        if current_user.role == UserRole.PROJECT_MANAGER:
             assigned_projects = get_user_assigned_projects(current_user)
             if deworming_log.project not in assigned_projects:
                 return jsonify({'error': 'Access denied to this project'}), 403
@@ -203,8 +201,7 @@ def delete_deworming_log(log_id):
         deworming_log = DewormingLog.query.get_or_404(log_id)
         
         # Verify project access for PROJECT_MANAGER
-        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
-        if True:  # Role check bypassed
+        if current_user.role == UserRole.PROJECT_MANAGER:
             assigned_projects = get_user_assigned_projects(current_user)
             if deworming_log.project not in assigned_projects:
                 return jsonify({'error': 'Access denied to this project'}), 403
@@ -241,8 +238,7 @@ def api_deworming_list():
         query = DewormingLog.query.join(Dog).outerjoin(Project)
         
         # Apply project scoping for PROJECT_MANAGER
-        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
-        if True:  # Role check bypassed
+        if current_user.role == UserRole.PROJECT_MANAGER:
             assigned_projects = get_user_assigned_projects(current_user)
             assigned_project_ids = [p.id for p in assigned_projects]
             # Include both assigned projects AND records without project assignment
@@ -315,8 +311,7 @@ def api_deworming_list():
         
         # Calculate KPIs
         total_query = DewormingLog.query
-        # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
-        if True:  # Role check bypassed
+        if current_user.role == UserRole.PROJECT_MANAGER:
             assigned_projects = get_user_assigned_projects(current_user)
             assigned_project_ids = [p.id for p in assigned_projects]
             # Include both assigned projects AND records without project assignment
