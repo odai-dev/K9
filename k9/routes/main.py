@@ -38,8 +38,6 @@ main_bp = Blueprint('main', __name__)
 @main_bp.route('/')
 def index():
     if current_user.is_authenticated:
-        if not has_permission(current_user, "home.index.view"):
-            return redirect("/unauthorized")
         return redirect(url_for('main.dashboard'))
     return render_template('index.html')
 
@@ -52,32 +50,28 @@ def unauthorized():
 @main_bp.route('/dashboard')
 @login_required
 def dashboard():
-    if not has_permission(current_user, "dashboard.main.view"):
-        return redirect("/unauthorized")
     from flask import session
     
     # HANDLER users should use their own dashboard
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.HANDLER:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.HANDLER:
         return redirect(url_for('handler.dashboard'))
     
     # GENERAL_ADMIN in PM mode should use PM dashboard
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         admin_mode = session.get('admin_mode', 'general_admin')
         if admin_mode == 'project_manager':
             return redirect(url_for('pm.dashboard'))
+        else:
+            return redirect(url_for('admin.dashboard'))
     
     # PROJECT_MANAGER users should use their own dashboard
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.PROJECT_MANAGER:
         return redirect(url_for('pm.dashboard'))
     
-    # Get dashboard statistics
+    # Get dashboard statistics (fallback for other roles)
     stats = {}
     
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         # Optimize with single queries combining multiple counts
         from sqlalchemy import func
         stats['total_dogs'] = Dog.query.count()
