@@ -169,7 +169,7 @@
                                     {% endif %}
                                 </a>
                             </li>
-                            {% if has_permission(current_user, 'admin.permissions') %}
+                            {% if has_permission(current_user, 'admin.permissions.view') %}
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <a class="dropdown-item" href="{{ url_for('admin.permissions_dashboard') }}">
