@@ -74,11 +74,9 @@ def dashboard():
 
 @admin_bp.route('/permissions')
 @login_required
-@require_admin_permission('admin.permissions')
+@require_admin_permission('admin.permissions.view')
 def permissions_dashboard():
     """Main permissions management dashboard"""
-    if not has_permission(current_user, "admin.permissions.view"):
-        return redirect("/unauthorized")
     
     project_managers = get_project_managers()
     projects = get_all_projects()
@@ -90,7 +88,7 @@ def permissions_dashboard():
 
 @admin_bp.route('/permissions/user/<int:user_id>')
 @login_required
-@require_admin_permission('admin.permissions')
+@require_admin_permission('admin.permissions.view')
 def get_user_permissions(user_id):
     """Get permissions matrix for a specific user"""
     user = User.query.get_or_404(user_id)
@@ -110,7 +108,7 @@ def get_user_permissions(user_id):
 
 @admin_bp.route('/permissions/update', methods=['POST'])
 @login_required
-@require_admin_permission('admin.permissions')
+@require_admin_permission('admin.permissions.edit')
 def update_user_permission():
     """Update a specific permission for a user"""
     try:
@@ -191,11 +189,9 @@ def update_user_permission():
 
 @admin_bp.route('/permissions/bulk-update', methods=['POST'])
 @login_required
-@require_admin_permission('admin.permissions')
+@require_admin_permission('admin.permissions.edit')
 def bulk_update_user_permissions():
     """Bulk update permissions for a section"""
-    if not has_permission(current_user, "admin.permissions.manage"):
-        return redirect("/unauthorized")
     
     data = request.get_json()
     
@@ -253,7 +249,7 @@ def bulk_update_user_permissions():
 
 @admin_bp.route('/permissions/initialize/<int:user_id>', methods=['POST'])
 @login_required
-@require_admin_permission('admin.permissions')
+@require_admin_permission('admin.permissions.edit')
 def initialize_user_permissions(user_id):
     """Initialize default permissions for a new PROJECT_MANAGER"""
     user = User.query.get_or_404(user_id)
@@ -277,14 +273,14 @@ def initialize_user_permissions(user_id):
 
 @admin_bp.route('/permissions/comprehensive')
 @login_required
-@require_admin_permission('admin.permissions')
+@require_admin_permission('admin.permissions.view')
 def comprehensive_permissions():
     """Comprehensive permissions management interface"""
     return render_template('admin/comprehensive_permissions.html')
 
 @admin_bp.route('/permissions/projects')
 @login_required
-@require_admin_permission('admin.permissions')
+@require_admin_permission('admin.permissions.view')
 def get_projects_list():
     """Get list of all projects for permissions management"""
     projects = Project.query.all()
@@ -301,7 +297,7 @@ def get_projects_list():
 
 @admin_bp.route('/permissions/users/<project_id>')
 @login_required
-@require_admin_permission('admin.permissions')
+@require_admin_permission('admin.permissions.view')
 def get_project_users(project_id):
     """Get list of ALL users (for comprehensive permissions management)"""
     try:
@@ -339,7 +335,7 @@ def get_project_users(project_id):
 
 @admin_bp.route('/permissions/matrix/<user_id>/<project_id>')
 @login_required
-@require_admin_permission('admin.permissions')
+@require_admin_permission('admin.permissions.view')
 def get_permissions_matrix(user_id, project_id):
     """Get complete permissions matrix for a user in a project"""
     try:
@@ -395,7 +391,7 @@ def get_permissions_matrix(user_id, project_id):
 
 @admin_bp.route('/permissions/audit')
 @login_required
-@require_admin_permission('admin.permissions')
+@require_admin_permission('admin.permissions.view')
 def permissions_audit_log():
     """View permission change audit log"""
     page = request.args.get('page', 1, type=int)
@@ -438,7 +434,7 @@ def permissions_audit_log():
 
 @admin_bp.route('/permissions/export/<int:user_id>')
 @login_required
-@require_admin_permission('admin.permissions')
+@require_admin_permission('admin.permissions.view')
 def export_user_permissions_json(user_id):
     """Export user permissions as JSON"""
     user = User.query.get_or_404(user_id)
@@ -463,7 +459,7 @@ def export_user_permissions_json(user_id):
 
 @admin_bp.route('/permissions/export-pdf/<int:user_id>')
 @login_required
-@require_admin_permission('admin.permissions')
+@require_admin_permission('admin.permissions.view')
 def export_user_permissions_pdf(user_id):
     """Export user permissions as PDF"""
     user = User.query.get_or_404(user_id)
@@ -545,7 +541,7 @@ def export_user_permissions_pdf(user_id):
 
 @admin_bp.route('/permissions/export-excel')
 @login_required
-@require_admin_permission('admin.permissions')
+@require_admin_permission('admin.permissions.view')
 def export_all_permissions_excel():
     """Export all permissions to Excel for compliance tracking"""
     from k9.utils.excel_exporter import create_permissions_report_excel, save_excel_to_bytes
@@ -577,7 +573,7 @@ def export_all_permissions_excel():
 
 @admin_bp.route('/permissions/preview/<int:user_id>')
 @login_required
-@require_admin_permission('admin.permissions')
+@require_admin_permission('admin.permissions.view')
 def preview_pm_view(user_id):
     """Preview what a PROJECT_MANAGER user can see (for testing)"""
     user = User.query.get_or_404(user_id)

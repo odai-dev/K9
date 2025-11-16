@@ -69,8 +69,9 @@ def canonical_permission_key(permission_key, sub_permission=None, action=None):
         
         # Special mappings for admin permissions that use permission name as subsection
         admin_permission_mappings = {
-            "admin.permissions": ("admin", "permissions", PermissionType.EDIT),
+            "admin.permissions.view": ("admin", "permissions", PermissionType.VIEW),
             "admin.permissions.edit": ("admin", "permissions", PermissionType.EDIT),
+            "admin.permissions": ("admin", "permissions", PermissionType.VIEW),  # Legacy fallback
             "admin.backup": ("admin", "backup", PermissionType.VIEW),
             "admin.settings": ("admin", "settings", PermissionType.EDIT),
             "admin.audit": ("admin", "audit", PermissionType.VIEW),

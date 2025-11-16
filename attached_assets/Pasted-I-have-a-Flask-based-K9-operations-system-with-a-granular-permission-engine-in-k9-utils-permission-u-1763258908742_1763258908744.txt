@@ -1,0 +1,44 @@
+I have a Flask-based K9 operations system with a granular permission engine in k9/utils/permission_utils.py.
+
+Right now there is a critical bug in the admin permissions module:
+
+1) The key "admin.permissions" is used in many places, for example:
+   - require_admin_permission('admin.permissions') in k9/utils/permission_decorators.py and k9/routes/admin_routes.py
+   - has_permission(current_user, 'admin.permissions') in k9/templates/base.html and admin templates.
+
+2) The permission system expects canonical permission keys like:
+   "section.subsection.action" (e.g. "admin.permissions.view"),
+   where the last part maps to PermissionType (VIEW, CREATE, EDIT, DELETE, EXPORT, ASSIGN, APPROVE).
+
+3) Because of this mismatch, the key "admin.permissions" can’t actually be granted correctly via SubPermission,
+   so giving a project manager “permissions access” in the UI does not allow them to open the permissions pages.
+
+4) Additionally, some admin routes are still protected only by role-based decorators like @admin_required,
+   which blocks project managers even if they have the right permission.
+
+Please do the following ONLY (no big plan, just implement):
+
+A) Fix the admin permission key usage:
+   - Introduce a proper canonical view permission key like "admin.permissions.view".
+   - Optionally also introduce an edit permission like "admin.permissions.edit" for modifying permissions.
+   - Update require_admin_permission() and all its usages so they use canonical keys
+     (e.g. require_admin_permission("admin.permissions.view") for read-only pages, and "admin.permissions.edit" for write actions).
+
+B) Make the admin permissions dashboard and related pages accessible based on permission, not only role:
+   - For routes that only need to VIEW the permissions dashboard or audit logs,
+     replace pure @admin_required with @require_admin_permission("admin.permissions.view").
+   - Keep GENERAL_ADMIN users with full access, but allow PROJECT_MANAGER (or other roles)
+     to access these pages if they have the appropriate admin.permissions.* permission.
+
+C) Fix the navbar/admin links:
+   - In base.html and admin templates, replace any checks like:
+       is_admin() or has_permission(current_user, "admin.permissions")
+     with a pure permission-based check such as:
+       has_permission(current_user, "admin.permissions.view")
+
+D) Do NOT change the overall PERMISSION_STRUCTURE design or the generic permission engine.
+Just fix the admin permissions integration so that:
+   - If the general admin grants "admin.permissions.view" (and "admin.permissions.edit") to a project manager via the UI,
+   - that project manager can actually see and open the permissions pages and use them accordingly.
+
+Please implement these changes directly in the code, without generating a long multi-step plan.
