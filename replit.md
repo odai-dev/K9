@@ -76,6 +76,17 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### 2025-11-16: Fix Account Management Menu Visibility
+**Critical Fix** - Restored "Account Management" (إدارة الحسابات) visibility in admin dropdown menu:
+- **Modified Files**:
+  - `k9/utils/template_utils.py`: Fixed 2 bypassed role checks (if True) in `get_base_template()` and `is_pm_view()` functions
+  - `k9/templates/base.html`: Replaced `current_user.is_general_admin` (non-existent property) with `is_admin()` function call in 3 locations
+- **Issue**: Account Management menu item was not visible due to incorrect admin status check
+- **Root Cause**: Template was checking `current_user.is_general_admin` which doesn't exist as a model property
+- **Solution**: Use `is_admin()` helper function which correctly checks `UserRole.GENERAL_ADMIN` and `session['admin_mode'] == 'general_admin'`
+- **Result**: Account Management menu item now correctly appears for GENERAL_ADMIN users in admin mode
+- **Security**: All changes maintain proper role and admin_mode enforcement
+
 ### 2025-11-15: Complete Template Permission Migration
 **Major Update** - Completed migration of all UI templates from role-based to permission-based access control:
 - **Modified Templates** (8 files):
