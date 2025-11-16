@@ -41,8 +41,7 @@ def get_pm_daily(project_id: str, date_str: str, user) -> Dict[str, Any]:
         raise ValueError(f"Invalid project_id or date format: {e}")
     
     # Validate user permission + project visibility
-    # ROLE CHECK DISABLED: if user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if user.role == UserRole.PROJECT_MANAGER:
         if not check_project_access(user, project_id):
             raise PermissionError("User does not have access to this project")
         

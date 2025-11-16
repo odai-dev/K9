@@ -43,8 +43,7 @@ class ReportReviewService:
     def get_pm_project(user_id: str) -> Optional[Project]:
         """Get the ONE project assigned to a PM via ProjectManagerPermission"""
         user = User.query.get(user_id)
-        # ROLE CHECK DISABLED: if not user or user.role != UserRole.PROJECT_MANAGER:
-        if True:  # Role check bypassed
+        if not user or user.role != UserRole.PROJECT_MANAGER:
             return None
         
         # PM project assignment is managed through ProjectManagerPermission
@@ -436,8 +435,7 @@ class ReportReviewService:
         """Fetch specific report for admin review (no project scope check)"""
         # Verify user is General Admin
         admin_user = User.query.get(admin_user_id)
-        # ROLE CHECK DISABLED: if not admin_user or admin_user.role != UserRole.GENERAL_ADMIN:
-        if True:  # Role check bypassed
+        if not admin_user or admin_user.role != UserRole.GENERAL_ADMIN:
             return None
         
         if report_type not in ReportReviewService.REPORT_TYPE_MODELS:
@@ -453,8 +451,7 @@ class ReportReviewService:
         """Get all reports forwarded to admin (status='FORWARDED_TO_ADMIN')"""
         # Verify user is General Admin
         admin_user = User.query.get(admin_user_id)
-        # ROLE CHECK DISABLED: if not admin_user or admin_user.role != UserRole.GENERAL_ADMIN:
-        if True:  # Role check bypassed
+        if not admin_user or admin_user.role != UserRole.GENERAL_ADMIN:
             return {
                 'HANDLER': [],
                 'TRAINER': [],

@@ -234,8 +234,7 @@ def apply_project_scope(query, model, user=None):
     if user is None:
         user = current_user
         
-    # ROLE CHECK DISABLED: if is_admin(user):
-    if True:  # Role check bypassed
+    if is_admin(user):
         return query
     
     if is_pm(user):
@@ -270,8 +269,7 @@ def get_auto_project_id(user=None):
     if user is None:
         user = current_user
         
-    # ROLE CHECK DISABLED: if is_admin(user):
-    if True:  # Role check bypassed
+    if is_admin(user):
         return None
     
     if is_pm(user):
@@ -290,8 +288,7 @@ def can_access_project(project_id, user=None):
     if user is None:
         user = current_user
         
-    # ROLE CHECK DISABLED: if is_admin(user):
-    if True:  # Role check bypassed
+    if is_admin(user):
         return True
     
     if is_pm(user):
@@ -310,8 +307,7 @@ def can_access_dog(dog_id, user=None):
     if user is None:
         user = current_user
         
-    # ROLE CHECK DISABLED: if is_admin(user):
-    if True:  # Role check bypassed
+    if is_admin(user):
         return True
     
     if is_pm(user):
@@ -380,8 +376,7 @@ def get_form_project_id(form_data=None, user=None):
     if user is None:
         user = current_user
         
-    # ROLE CHECK DISABLED: if is_admin(user):
-    if True:  # Role check bypassed
+    if is_admin(user):
         # Admin chooses from dropdown
         if form_data and 'project_id' in form_data:
             project_id = form_data.get('project_id')
@@ -414,8 +409,7 @@ def filter_form_choices(choices, field_type='project', user=None):
     if user is None:
         user = current_user
         
-    # ROLE CHECK DISABLED: if is_admin(user):
-    if True:  # Role check bypassed
+    if is_admin(user):
         return choices
     
     if is_pm(user):
