@@ -153,16 +153,16 @@ def admin_required(f):
     return decorated_function
 
 
-def require_admin_permission(permission_key='admin.permissions'):
+def require_admin_permission(permission_key='admin.permissions.view'):
     """
     Decorator that allows access to GENERAL_ADMIN in admin mode OR users with specific admin permission.
     This enables delegating admin features to PROJECT_MANAGER users via granular permissions.
     
     Args:
-        permission_key: Admin permission key (e.g., "admin.permissions", "admin.settings")
+        permission_key: Admin permission key (e.g., "admin.permissions.view", "admin.settings")
     
     Example:
-        @require_admin_permission('admin.permissions')
+        @require_admin_permission('admin.permissions.view')
         def permissions_dashboard():
             ...
     """
