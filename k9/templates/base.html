@@ -47,55 +47,79 @@
                     
                     {% set permissions = get_user_permissions(current_user) %}
                     
-                    {% if permissions.dogs or permissions.employees %}
+                    {% if has_permission(current_user, 'dogs.management.view') or has_permission(current_user, 'employees.management.view') %}
                     {% set is_resources_active = request.endpoint and (request.endpoint.startswith('main.dogs_') or request.endpoint.startswith('main.employees_')) %}
                     <li class="nav-item dropdown {% if is_resources_active %}active{% endif %}">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_resources_active %}active{% endif %}" href="#" id="resourcesDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-users me-1"></i>الموارد
                         </a>
                         <ul class="dropdown-menu shadow">
-                            {% if permissions.dogs %}
+                            {% if has_permission(current_user, 'dogs.management.view') %}
                             <li><h6 class="dropdown-header">الكلاب</h6></li>
                             <li><a class="dropdown-item {% if request.endpoint == 'main.dogs_list' %}active{% endif %}" href="{{ url_for('main.dogs_list') }}"><i class="fas fa-dog me-2"></i>قائمة الكلاب</a></li>
+                            {% if has_permission(current_user, 'dogs.management.create') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.dogs_add' %}active{% endif %}" href="{{ url_for('main.dogs_add') }}"><i class="fas fa-plus me-2"></i>إضافة كلب</a></li>
                             {% endif %}
-                            {% if permissions.dogs and permissions.employees %}
+                            {% endif %}
+                            {% if has_permission(current_user, 'dogs.management.view') and has_permission(current_user, 'employees.management.view') %}
                             <li><hr class="dropdown-divider"></li>
                             {% endif %}
-                            {% if permissions.employees %}
+                            {% if has_permission(current_user, 'employees.management.view') %}
                             <li><h6 class="dropdown-header">الموظفين</h6></li>
                             <li><a class="dropdown-item {% if request.endpoint == 'main.employees_list' %}active{% endif %}" href="{{ url_for('main.employees_list') }}"><i class="fas fa-users me-2"></i>قائمة الموظفين</a></li>
+                            {% if has_permission(current_user, 'employees.management.create') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.employees_add' %}active{% endif %}" href="{{ url_for('main.employees_add') }}"><i class="fas fa-user-plus me-2"></i>إضافة موظف</a></li>
+                            {% endif %}
                             {% endif %}
                         </ul>
                     </li>
                     {% endif %}
                     
-                    {% if permissions.training %}
+                    {% if has_permission(current_user, 'training.view_sessions.view') or has_permission(current_user, 'breeding.feeding.view') or has_permission(current_user, 'breeding.checkup.view') or has_permission(current_user, 'breeding.excretion.view') or has_permission(current_user, 'breeding.grooming.view') or has_permission(current_user, 'breeding.deworming.view') or has_permission(current_user, 'breeding.cleaning.view') %}
                     {% set is_breeding_active = request.endpoint and (request.endpoint.startswith('main.training_') or request.endpoint.startswith('main.breeding_')) %}
                     <li class="nav-item dropdown {% if is_breeding_active %}active{% endif %}">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_breeding_active %}active{% endif %}" href="#" id="breedingDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-leaf me-1"></i>التربية
                         </a>
                         <ul class="dropdown-menu shadow">
+                            {% if has_permission(current_user, 'training.view_sessions.view') %}
                             <li><h6 class="dropdown-header">التدريب</h6></li>
                             <li><a class="dropdown-item {% if request.endpoint == 'main.training_list' %}active{% endif %}" href="{{ url_for('main.training_list') }}"><i class="fas fa-clipboard me-2"></i>جلسات التدريب</a></li>
+                            {% if has_permission(current_user, 'training.add_session.create') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.training_add' %}active{% endif %}" href="{{ url_for('main.training_add') }}"><i class="fas fa-plus me-2"></i>إضافة جلسة</a></li>
+                            {% endif %}
                             <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'breeding.feeding.view') or has_permission(current_user, 'breeding.checkup.view') or has_permission(current_user, 'breeding.excretion.view') %}
                             <li><h6 class="dropdown-header">الرعاية اليومية</h6></li>
+                            {% if has_permission(current_user, 'breeding.feeding.view') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.breeding_feeding' %}active{% endif %}" href="{{ url_for('main.breeding_feeding') }}"><i class="fas fa-utensils me-2"></i>التغذية</a></li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'breeding.checkup.view') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.breeding_checkup' %}active{% endif %}" href="{{ url_for('main.breeding_checkup') }}"><i class="fas fa-stethoscope me-2"></i>الفحص الظاهري</a></li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'breeding.excretion.view') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.breeding_excretion' %}active{% endif %}" href="{{ url_for('main.breeding_excretion') }}"><i class="fas fa-tint me-2"></i>البراز / البول / القيء</a></li>
+                            {% endif %}
                             <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'breeding.grooming.view') or has_permission(current_user, 'breeding.deworming.view') or has_permission(current_user, 'breeding.cleaning.view') %}
                             <li><h6 class="dropdown-header">الرعاية والتدريب</h6></li>
+                            {% if has_permission(current_user, 'breeding.grooming.view') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.breeding_grooming' %}active{% endif %}" href="{{ url_for('main.breeding_grooming') }}"><i class="fas fa-cut me-2"></i>العناية (الاستحمام والصيانة)</a></li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'breeding.deworming.view') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.breeding_deworming' %}active{% endif %}" href="{{ url_for('main.breeding_deworming') }}"><i class="fas fa-capsules me-2"></i>جرعة الديدان</a></li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'breeding.cleaning.view') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.breeding_cleaning' %}active{% endif %}" href="{{ url_for('main.breeding_cleaning') }}"><i class="fas fa-broom me-2"></i>النظافة (البيئة/القفص)</a></li>
+                            {% endif %}
+                            {% endif %}
                         </ul>
                     </li>
                     {% endif %}
                     
-                    {% if permissions.veterinary %}
+                    {% if has_permission(current_user, 'veterinary.visits.view') %}
                     {% set is_vet_active = request.endpoint and request.endpoint.startswith('main.veterinary_') %}
                     <li class="nav-item dropdown {% if is_vet_active %}active{% endif %}">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_vet_active %}active{% endif %}" href="#" id="vetDropdown" role="button" data-bs-toggle="dropdown">
@@ -103,36 +127,58 @@
                         </a>
                         <ul class="dropdown-menu shadow">
                             <li><a class="dropdown-item {% if request.endpoint == 'main.veterinary_list' %}active{% endif %}" href="{{ url_for('main.veterinary_list') }}"><i class="fas fa-notes-medical me-2"></i>الزيارات البيطرية</a></li>
+                            {% if has_permission(current_user, 'veterinary.visits.create') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.veterinary_add' %}active{% endif %}" href="{{ url_for('main.veterinary_add') }}"><i class="fas fa-plus-square me-2"></i>إضافة زيارة</a></li>
+                            {% endif %}
                         </ul>
                     </li>
                     {% endif %}
                     
-                    {% if permissions.production %}
+                    {% if has_permission(current_user, 'production.overview.view') or has_permission(current_user, 'production.maturity.view') or has_permission(current_user, 'production.heat_cycle.view') or has_permission(current_user, 'production.mating.view') or has_permission(current_user, 'production.pregnancy.view') or has_permission(current_user, 'production.delivery.list') or has_permission(current_user, 'production.puppies.view') or has_permission(current_user, 'production.puppy_training.view') %}
                     {% set is_production_active = request.endpoint and (request.endpoint.startswith('main.production_') or request.endpoint.startswith('main.maturity_') or request.endpoint.startswith('main.heat_cycles_') or request.endpoint.startswith('main.mating_') or request.endpoint.startswith('main.pregnancy_') or request.endpoint.startswith('main.delivery_') or request.endpoint.startswith('main.puppies_') or request.endpoint.startswith('main.puppy_training_')) %}
                     <li class="nav-item dropdown {% if is_production_active %}active{% endif %}">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_production_active %}active{% endif %}" href="#" id="productionDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-heart me-1"></i>الإنتاج
                         </a>
                         <ul class="dropdown-menu shadow">
+                            {% if has_permission(current_user, 'production.overview.view') %}
                             <li><h6 class="dropdown-header">إدارة الإنتاج</h6></li>
                             <li><a class="dropdown-item {% if request.endpoint == 'main.production_list' %}active{% endif %}" href="{{ url_for('main.production_list') }}"><i class="fas fa-tachometer-alt me-2"></i>لوحة الإنتاج</a></li>
                             <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'production.maturity.view') or has_permission(current_user, 'production.heat_cycle.view') or has_permission(current_user, 'production.mating.view') or has_permission(current_user, 'production.pregnancy.view') or has_permission(current_user, 'production.delivery.list') %}
                             <li><h6 class="dropdown-header">دورة الحياة</h6></li>
+                            {% if has_permission(current_user, 'production.maturity.view') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.maturity_list' %}active{% endif %}" href="{{ url_for('main.maturity_list') }}"><i class="fas fa-seedling me-2"></i>البلوغ</a></li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'production.heat_cycle.view') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.heat_cycles_list' %}active{% endif %}" href="{{ url_for('main.heat_cycles_list') }}"><i class="fas fa-calendar-alt me-2"></i>الدورة</a></li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'production.mating.view') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.mating_list' %}active{% endif %}" href="{{ url_for('main.mating_list') }}"><i class="fas fa-heart me-2"></i>التزاوج</a></li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'production.pregnancy.view') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.pregnancy_list' %}active{% endif %}" href="{{ url_for('main.pregnancy_list') }}"><i class="fas fa-baby me-2"></i>الحمل</a></li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'production.delivery.list') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.delivery_list' %}active{% endif %}" href="{{ url_for('main.delivery_list') }}"><i class="fas fa-baby-carriage me-2"></i>الولادة</a></li>
+                            {% endif %}
                             <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'production.puppies.view') or has_permission(current_user, 'production.puppy_training.view') %}
                             <li><h6 class="dropdown-header">الجراء</h6></li>
+                            {% if has_permission(current_user, 'production.puppies.view') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.puppies_list' %}active{% endif %}" href="{{ url_for('main.puppies_list') }}"><i class="fas fa-paw me-2"></i>الجراء</a></li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'production.puppy_training.view') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.puppy_training_list' %}active{% endif %}" href="{{ url_for('main.puppy_training_list') }}"><i class="fas fa-graduation-cap me-2"></i>تدريب الجراء</a></li>
+                            {% endif %}
+                            {% endif %}
                         </ul>
                     </li>
                     {% endif %}
                     
-                    {% if permissions.projects %}
+                    {% if has_permission(current_user, 'projects.management.view') %}
                     {% set is_projects_active = request.endpoint and (request.endpoint.startswith('main.project')) %}
                     <li class="nav-item dropdown {% if is_projects_active %}active{% endif %}">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_projects_active %}active{% endif %}" href="#" id="projectsDropdown" role="button" data-bs-toggle="dropdown">
@@ -141,7 +187,9 @@
                         <ul class="dropdown-menu shadow">
                             <li><h6 class="dropdown-header">إدارة المشاريع</h6></li>
                             <li><a class="dropdown-item {% if request.endpoint == 'main.projects' %}active{% endif %}" href="{{ url_for('main.projects') }}"><i class="fas fa-folder me-2"></i>قائمة المشاريع</a></li>
+                            {% if has_permission(current_user, 'projects.management.create') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.project_add' %}active{% endif %}" href="{{ url_for('main.project_add') }}"><i class="fas fa-plus-circle me-2"></i>إضافة مشروع</a></li>
+                            {% endif %}
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header text-muted">عمليات المشروع</h6></li>
                             <li><small class="dropdown-item text-muted" style="font-size: 0.85rem; cursor: default;">
@@ -206,7 +254,7 @@
                     </li>
                     {% endif %}
                     
-                    {% if is_admin() %}
+                    {% if is_admin() or has_permission(current_user, 'admin.permissions.view') or has_permission(current_user, 'admin.tasks.send') or has_permission(current_user, 'supervisor.reports.view') or has_permission(current_user, 'supervisor.schedules.view') or has_permission(current_user, 'admin.notifications.view') or has_permission(current_user, 'admin.backup.manage') %}
                     {% set is_management_active = request.endpoint and (request.endpoint.startswith('account_management.') or request.endpoint.startswith('tasks.admin_') or request.endpoint.startswith('supervisor.') or request.endpoint.startswith('admin.')) %}
                     <li class="nav-item dropdown {% if is_management_active %}active{% endif %}">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_management_active %}active{% endif %}" href="#" id="managementDropdown" role="button" data-bs-toggle="dropdown">
@@ -224,7 +272,7 @@
                             </li>
                             <li><hr class="dropdown-divider"></li>
                             {% endif %}
-                            {% if is_admin() or has_permission(current_user, 'admin.permissions') %}
+                            {% if is_admin() or has_permission(current_user, 'admin.permissions.view') %}
                             <li>
                                 <a class="dropdown-item {% if request.endpoint == 'admin.permissions_dashboard' %}active{% endif %}" href="{{ url_for('admin.permissions_dashboard') }}">
                                     <i class="fas fa-key me-2"></i>إدارة الصلاحيات
@@ -232,11 +280,14 @@
                             </li>
                             <li><hr class="dropdown-divider"></li>
                             {% endif %}
+                            {% if has_permission(current_user, 'admin.tasks.send') %}
                             <li>
                                 <a class="dropdown-item {% if request.endpoint == 'tasks.admin_index' %}active{% endif %}" href="{{ url_for('tasks.admin_index') }}">
                                     <i class="fas fa-tasks me-2"></i>إرسال المهام
                                 </a>
                             </li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'supervisor.reports.view') %}
                             <li>
                                 <a class="dropdown-item {% if request.endpoint == 'supervisor.reports_index' %}active{% endif %} d-flex justify-content-between align-items-center" href="{{ url_for('supervisor.reports_index') }}">
                                     <span><i class="fas fa-file-alt me-2"></i>تقارير السائسين</span>
@@ -246,11 +297,15 @@
                                     {% endif %}
                                 </a>
                             </li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'supervisor.schedules.view') %}
                             <li>
                                 <a class="dropdown-item {% if request.endpoint == 'supervisor.schedules_index' %}active{% endif %}" href="{{ url_for('supervisor.schedules_index') }}">
                                     <i class="fas fa-calendar-alt me-2"></i>الجداول اليومية
                                 </a>
                             </li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'admin.notifications.view') %}
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <a class="dropdown-item {% if request.endpoint == 'admin.notifications' %}active{% endif %} d-flex justify-content-between align-items-center" href="{{ url_for('admin.notifications') }}">
@@ -260,7 +315,8 @@
                                     {% endif %}
                                 </a>
                             </li>
-                            {% if is_admin() %}
+                            {% endif %}
+                            {% if has_permission(current_user, 'admin.backup.manage') %}
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <a class="dropdown-item {% if request.endpoint == 'admin.backup_management' %}active{% endif %}" href="{{ url_for('admin.backup_management') }}">
@@ -272,28 +328,44 @@
                     </li>
                     {% endif %}
                     
-                    {% if permissions.reports %}
+                    {% if has_permission(current_user, 'reports.hub.view') or has_permission(current_user, 'reports.training.trainer_daily.view') or has_permission(current_user, 'reports.breeding.feeding.unified.view') or has_permission(current_user, 'reports.breeding.checkup.unified.view') or has_permission(current_user, 'reports.caretaker_daily.view') or has_permission(current_user, 'reports.veterinary.unified.view') or has_permission(current_user, 'reports.general.view') %}
                     {% set is_reports_active = request.endpoint and (request.endpoint.startswith('main.reports_') or request.endpoint.startswith('reports_') or request.endpoint.startswith('unified_') or request.endpoint.startswith('veterinary_reports_') or request.endpoint.startswith('caretaker_daily_reports_')) %}
                     <li class="nav-item dropdown {% if is_reports_active %}active{% endif %}">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_reports_active %}active{% endif %}" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-chart-bar me-1"></i>التقارير
                         </a>
                         <ul class="dropdown-menu dropdown-menu-long shadow">
+                            {% if has_permission(current_user, 'reports.hub.view') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.reports_hub' %}active{% endif %} fw-bold" href="{{ url_for('main.reports_hub') }}"><i class="fas fa-chart-line me-2 text-primary"></i>مركز التقارير</a></li>
                             <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'reports.training.trainer_daily.view') %}
                             <li><h6 class="dropdown-header">تقارير التدريب</h6></li>
                             <li><a class="dropdown-item {% if request.path == '/reports/training/trainer-daily' %}active{% endif %}" href="/reports/training/trainer-daily"><i class="fas fa-dumbbell me-2"></i>التقرير اليومي للمدرب</a></li>
                             <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'reports.breeding.feeding.unified.view') or has_permission(current_user, 'reports.breeding.checkup.unified.view') or has_permission(current_user, 'reports.caretaker_daily.view') %}
                             <li><h6 class="dropdown-header">تقارير التربية والرعاية</h6></li>
+                            {% if has_permission(current_user, 'reports.breeding.feeding.unified.view') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'unified_feeding_reports_ui.feeding' %}active{% endif %}" href="{{ url_for('unified_feeding_reports_ui.feeding') }}"><i class="fas fa-bone me-2"></i>تقرير التغذية الموحد</a></li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'reports.breeding.checkup.unified.view') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'unified_checkup_reports_ui.checkup' %}active{% endif %}" href="{{ url_for('unified_checkup_reports_ui.checkup') }}"><i class="fas fa-stethoscope me-2"></i>تقرير الفحص الظاهري الموحد</a></li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'reports.caretaker_daily.view') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'caretaker_daily_reports_ui.caretaker_daily' %}active{% endif %}" href="{{ url_for('caretaker_daily_reports_ui.caretaker_daily') }}"><i class="fas fa-broom me-2"></i>تقرير الرعاية اليومية</a></li>
+                            {% endif %}
                             <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'reports.veterinary.unified.view') %}
                             <li><h6 class="dropdown-header">تقارير بيطرية</h6></li>
                             <li><a class="dropdown-item {% if request.endpoint == 'veterinary_reports_ui.veterinary' %}active{% endif %}" href="{{ url_for('veterinary_reports_ui.veterinary') }}"><i class="fas fa-user-md me-2"></i>التقرير البيطري الموحد</a></li>
                             <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            {% if has_permission(current_user, 'reports.general.view') %}
                             <li><h6 class="dropdown-header">تقارير عامة</h6></li>
                             <li><a class="dropdown-item {% if request.endpoint == 'main.reports_index' %}active{% endif %}" href="{{ url_for('main.reports_index') }}"><i class="fas fa-chart-pie me-2"></i>التقارير العامة</a></li>
+                            {% endif %}
                         </ul>
                     </li>
                     {% endif %}
