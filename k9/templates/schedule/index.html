@@ -33,10 +33,12 @@
                 <i class="fas fa-calendar-alt me-2"></i>
                 {{ page_title }}
             </h1>
+            {% if has_permission(current_user, 'schedule.management.create') %}
             <a href="{{ url_for('schedule.create') }}" class="btn btn-primary">
                 <i class="fas fa-plus me-2"></i>
                 إنشاء جدول جديد
             </a>
+            {% endif %}
         </div>
     </div>
 </div>
