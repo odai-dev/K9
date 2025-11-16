@@ -254,7 +254,7 @@
                     </li>
                     {% endif %}
                     
-                    {% if current_user.is_general_admin or has_permission(current_user, 'admin.permissions.view') or has_permission(current_user, 'admin.tasks.send') or has_permission(current_user, 'supervisor.reports.view') or has_permission(current_user, 'supervisor.schedules.view') or has_permission(current_user, 'admin.notifications.view') or has_permission(current_user, 'admin.backup.manage') %}
+                    {% if is_admin() or has_permission(current_user, 'admin.permissions.view') or has_permission(current_user, 'admin.tasks.send') or has_permission(current_user, 'supervisor.reports.view') or has_permission(current_user, 'supervisor.schedules.view') or has_permission(current_user, 'admin.notifications.view') or has_permission(current_user, 'admin.backup.manage') %}
                     {% set is_management_active = request.endpoint and (request.endpoint.startswith('account_management.') or request.endpoint.startswith('tasks.admin_') or request.endpoint.startswith('supervisor.') or request.endpoint.startswith('admin.')) %}
                     <li class="nav-item dropdown {% if is_management_active %}active{% endif %}">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_management_active %}active{% endif %}" href="#" id="managementDropdown" role="button" data-bs-toggle="dropdown">
@@ -264,7 +264,7 @@
                             {% endif %}
                         </a>
                         <ul class="dropdown-menu shadow">
-                            {% if current_user.is_general_admin %}
+                            {% if is_admin() %}
                             <li>
                                 <a class="dropdown-item {% if request.endpoint == 'account_management.index' %}active{% endif %}" href="{{ url_for('account_management.index') }}">
                                     <i class="fas fa-user-shield me-2"></i>إدارة الحسابات
@@ -272,7 +272,7 @@
                             </li>
                             <li><hr class="dropdown-divider"></li>
                             {% endif %}
-                            {% if current_user.is_general_admin or has_permission(current_user, 'admin.permissions.view') %}
+                            {% if is_admin() or has_permission(current_user, 'admin.permissions.view') %}
                             <li>
                                 <a class="dropdown-item {% if request.endpoint == 'admin.permissions_dashboard' %}active{% endif %}" href="{{ url_for('admin.permissions_dashboard') }}">
                                     <i class="fas fa-key me-2"></i>إدارة الصلاحيات
