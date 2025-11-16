@@ -43,6 +43,12 @@ def index():
         return redirect(url_for('main.dashboard'))
     return render_template('index.html')
 
+@main_bp.route('/unauthorized')
+@login_required
+def unauthorized():
+    """صفحة عدم التصريح"""
+    return render_template('unauthorized.html'), 403
+
 @main_bp.route('/dashboard')
 @login_required
 def dashboard():
