@@ -123,6 +123,7 @@ def admin_required(f):
     """
     Decorator to restrict access to GENERAL_ADMIN in general admin mode only.
     GENERAL_ADMIN users in PM mode will be rejected.
+    Also allows access if user has admin.permissions.view or admin.permissions.edit.
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -135,21 +136,21 @@ def admin_required(f):
             flash('يرجى تسجيل الدخول للوصول إلى هذه الصفحة', 'warning')
             return redirect(url_for('auth.login'))
         
-        if current_user.role != UserRole.GENERAL_ADMIN:
-            if is_ajax:
-                return jsonify({'success': False, 'error': 'هذه الصفحة مخصصة للمدير العام فقط'}), 403
-            flash('هذه الصفحة مخصصة للمدير العام فقط', 'error')
-            return redirect(url_for('main.dashboard'))
+        # GENERAL_ADMIN in general admin mode has access
+        if current_user.role == UserRole.GENERAL_ADMIN:
+            admin_mode = session.get('admin_mode', 'general_admin')
+            if admin_mode == 'general_admin':
+                return f(*args, **kwargs)
         
-        # Check admin mode to prevent GENERAL_ADMIN in PM mode from accessing admin routes
-        admin_mode = session.get('admin_mode', 'general_admin')
-        if admin_mode != 'general_admin':
-            if is_ajax:
-                return jsonify({'success': False, 'error': 'هذه الصفحة متاحة في وضع المدير العام فقط'}), 403
-            flash('هذه الصفحة متاحة في وضع المدير العام فقط', 'error')
-            return redirect(url_for('main.dashboard'))
+        # Check if user has admin permissions
+        if has_permission(current_user, 'admin.permissions.view') or has_permission(current_user, 'admin.permissions.edit'):
+            return f(*args, **kwargs)
         
-        return f(*args, **kwargs)
+        # Access denied
+        if is_ajax:
+            return jsonify({'success': False, 'error': 'هذه الصفحة مخصصة للمدير العام فقط'}), 403
+        flash('هذه الصفحة مخصصة للمدير العام فقط', 'error')
+        return redirect(url_for('main.dashboard'))
     return decorated_function
 
 
