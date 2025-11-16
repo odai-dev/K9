@@ -29,13 +29,11 @@ def get_pm_project(user=None):
     
     # GENERAL_ADMIN in PM mode should be treated like PROJECT_MANAGER
     from flask import session
-    # ROLE CHECK DISABLED: if user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if user.role == UserRole.GENERAL_ADMIN:
         admin_mode = session.get('admin_mode', 'general_admin')
         if admin_mode != 'project_manager':
             return None  # Not in PM mode, so no project scoping
-    # ROLE CHECK DISABLED: elif user.role != UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed (was elif)
+    elif user.role != UserRole.PROJECT_MANAGER:
         return None  # Not a PM and not an admin in PM mode
     
     # Find project where user is the manager (direct User FK)
@@ -64,13 +62,11 @@ def is_pm(user=None):
         return False
     
     # Regular PROJECT_MANAGER
-    # ROLE CHECK DISABLED: if user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if user.role == UserRole.PROJECT_MANAGER:
         return True
     
     # GENERAL_ADMIN in PM mode
-    # ROLE CHECK DISABLED: if user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if user.role == UserRole.GENERAL_ADMIN:
         from flask import session
         admin_mode = session.get('admin_mode', 'general_admin')
         return admin_mode == 'project_manager'
@@ -94,8 +90,7 @@ def is_admin(user=None):
         return False
     
     # Only GENERAL_ADMIN can have full admin access
-    # ROLE CHECK DISABLED: if user.role != UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if user.role != UserRole.GENERAL_ADMIN:
         return False
     
     # Check if in PM mode - if so, not acting as admin
@@ -113,8 +108,7 @@ def get_scoped_dogs(user=None):
     if user is None:
         user = current_user
         
-    # ROLE CHECK DISABLED: if is_admin(user):
-    if True:  # Role check bypassed
+    if is_admin(user):
         return Dog.query.all()
     
     if is_pm(user):
@@ -146,8 +140,7 @@ def get_scoped_dog_ids(user=None):
     if user is None:
         user = current_user
         
-    # ROLE CHECK DISABLED: if is_admin(user):
-    if True:  # Role check bypassed
+    if is_admin(user):
         return [dog.id for dog in Dog.query.all()]
     
     if is_pm(user):
@@ -174,8 +167,7 @@ def get_scoped_projects(user=None):
     if user is None:
         user = current_user
         
-    # ROLE CHECK DISABLED: if is_admin(user):
-    if True:  # Role check bypassed
+    if is_admin(user):
         return Project.query.all()
     
     if is_pm(user):
@@ -194,8 +186,7 @@ def get_scoped_employees(user=None):
     if user is None:
         user = current_user
         
-    # ROLE CHECK DISABLED: if is_admin(user):
-    if True:  # Role check bypassed
+    if is_admin(user):
         return Employee.query.all()
     
     if is_pm(user):

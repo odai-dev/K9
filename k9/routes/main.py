@@ -128,8 +128,7 @@ def dogs_add():
     if not has_permission(current_user, "dogs.management.create"):
         return redirect("/unauthorized")
     # Only GENERAL_ADMIN can add dogs, not PROJECT_MANAGER
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.PROJECT_MANAGER:
         flash('غير مسموح لك بإضافة كلاب. هذه الصلاحية للمسؤول العام فقط.', 'error')
         return redirect(url_for('pm.my_dogs'))
     
@@ -212,8 +211,7 @@ def dogs_view(dog_id):
         return redirect(url_for('main.dogs_list'))
     
     # Check permissions
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.PROJECT_MANAGER:
         # For Project Managers, check if dog is assigned to their project
         from k9.routes.pm_routes import get_pm_project, get_project_dog_ids
         project = get_pm_project()
@@ -225,8 +223,7 @@ def dogs_view(dog_id):
         else:
             flash('غير مسموح لك بعرض بيانات هذا الكلب', 'error')
             return redirect(url_for('main.index'))
-    # ROLE CHECK DISABLED: elif not is_admin(current_user):
-    if True:  # Role check bypassed (was elif)
+    elif not is_admin(current_user):
         flash('غير مسموح لك بعرض بيانات هذا الكلب', 'error')
         return redirect(url_for('main.index'))
     
@@ -255,8 +252,7 @@ def dogs_edit(dog_id):
         return redirect(url_for('main.dogs_list'))
     
     # Check permissions
-    # ROLE CHECK DISABLED: if current_user.role != UserRole.GENERAL_ADMIN and dog.assigned_to_user_id != current_user.id:
-    if True:  # Role check bypassed
+    if current_user.role != UserRole.GENERAL_ADMIN and dog.assigned_to_user_id != current_user.id:
         flash('غير مسموح لك بتعديل بيانات هذا الكلب', 'error')
         return redirect(url_for('main.dogs_list'))
     
@@ -328,8 +324,7 @@ def dogs_edit(dog_id):
 def employees_list():
     if not has_permission(current_user, "employees.management.view"):
         return redirect("/unauthorized")
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         employees = Employee.query.order_by(Employee.name).all()
     else:
         employees = Employee.query.filter_by(assigned_to_user_id=current_user.id).order_by(Employee.name).all()
@@ -546,8 +541,7 @@ def employees_edit(employee_id):
         return redirect(url_for('main.employees_list'))
     
     # Check permissions
-    # ROLE CHECK DISABLED: if current_user.role != UserRole.GENERAL_ADMIN and employee.assigned_to_user_id != current_user.id:
-    if True:  # Role check bypassed
+    if current_user.role != UserRole.GENERAL_ADMIN and employee.assigned_to_user_id != current_user.id:
         flash('غير مسموح لك بتعديل بيانات هذا الموظف', 'error')
         return redirect(url_for('main.employees_list'))
     
@@ -602,8 +596,7 @@ def employees_delete(employee_id):
         return redirect(url_for('main.employees_list'))
     
     # Check permissions
-    # ROLE CHECK DISABLED: if current_user.role != UserRole.GENERAL_ADMIN and employee.assigned_to_user_id != current_user.id:
-    if True:  # Role check bypassed
+    if current_user.role != UserRole.GENERAL_ADMIN and employee.assigned_to_user_id != current_user.id:
         flash('غير مسموح لك بحذف هذا الموظف', 'error')
         return redirect(url_for('main.employees_list'))
     
@@ -724,8 +717,7 @@ def veterinary_add():
 def production_list():
     if not has_permission(current_user, "production.general.view"):
         return redirect("/unauthorized")
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         cycles = ProductionCycle.query.order_by(ProductionCycle.created_at.desc()).all()
         all_dogs = Dog.query.all()
     else:
@@ -785,8 +777,7 @@ def production_add():
             flash(f'حدث خطأ أثناء تسجيل دورة التربية: {str(e)}', 'error')
     
     # Get available dogs for the form - separate males and females
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         all_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
     else:
         all_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
@@ -1318,8 +1309,7 @@ def maturity_view(id):
     maturity = DogMaturity.query.get_or_404(id)
     
     # Check permissions
-    # ROLE CHECK DISABLED: if not is_admin(current_user):
-    if True:  # Role check bypassed
+    if not is_admin(current_user):
         assigned_dogs = get_user_accessible_dogs(current_user)
         assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
         if maturity.dog_id not in assigned_dog_ids:
@@ -1336,8 +1326,7 @@ def heat_cycles_view(id):
     heat_cycle = HeatCycle.query.get_or_404(id)
     
     # Check permissions
-    # ROLE CHECK DISABLED: if not is_admin(current_user):
-    if True:  # Role check bypassed
+    if not is_admin(current_user):
         assigned_dogs = get_user_accessible_dogs(current_user)
         assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
         if heat_cycle.dog_id not in assigned_dog_ids:
@@ -1354,8 +1343,7 @@ def mating_view(id):
     mating = MatingRecord.query.get_or_404(id)
     
     # Check permissions
-    # ROLE CHECK DISABLED: if not is_admin(current_user):
-    if True:  # Role check bypassed
+    if not is_admin(current_user):
         assigned_dogs = get_user_accessible_dogs(current_user)
         assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
         if mating.female_id not in assigned_dog_ids and mating.male_id not in assigned_dog_ids:
@@ -1372,8 +1360,7 @@ def pregnancy_view(id):
     pregnancy = PregnancyRecord.query.get_or_404(id)
     
     # Check permissions
-    # ROLE CHECK DISABLED: if not is_admin(current_user):
-    if True:  # Role check bypassed
+    if not is_admin(current_user):
         assigned_dogs = get_user_accessible_dogs(current_user)
         assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
         if pregnancy.dog_id not in assigned_dog_ids:
@@ -1390,8 +1377,7 @@ def delivery_view(id):
     delivery = DeliveryRecord.query.get_or_404(id)
     
     # Check permissions
-    # ROLE CHECK DISABLED: if not is_admin(current_user):
-    if True:  # Role check bypassed
+    if not is_admin(current_user):
         assigned_dogs = get_user_accessible_dogs(current_user)
         assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
         if delivery.pregnancy_record.dog_id not in assigned_dog_ids:
@@ -1408,8 +1394,7 @@ def puppies_view(id):
     puppy = PuppyRecord.query.get_or_404(id)
     
     # Check permissions
-    # ROLE CHECK DISABLED: if not is_admin(current_user):
-    if True:  # Role check bypassed
+    if not is_admin(current_user):
         assigned_dogs = get_user_accessible_dogs(current_user)
         assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
         if puppy.delivery_record.pregnancy_record.dog_id not in assigned_dog_ids:
@@ -1421,8 +1406,7 @@ def puppies_view(id):
 @login_required
 def puppy_training_list():
     # Get puppy training sessions
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         # Get all training sessions
         sessions = PuppyTraining.query.order_by(PuppyTraining.session_date.desc()).all()
     else:
@@ -1442,8 +1426,7 @@ def puppy_training_view(id):
     session = PuppyTraining.query.get_or_404(id)
     
     # Check permissions
-    # ROLE CHECK DISABLED: if not is_admin(current_user):
-    if True:  # Role check bypassed
+    if not is_admin(current_user):
         assigned_dogs = get_user_accessible_dogs(current_user)
         assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
         if session.puppy.delivery_record.pregnancy_record.dog_id not in assigned_dog_ids:
@@ -1484,8 +1467,7 @@ def puppy_training_add():
         return redirect(url_for('main.puppy_training_list'))
     
     # Get puppies and trainers for puppy training
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         # Get all available puppies (alive and healthy)
         puppies = PuppyRecord.query.filter(
             PuppyRecord.alive_at_birth == True,
@@ -1521,8 +1503,7 @@ def puppy_training_add():
 @login_required
 @admin_or_pm_required
 def projects():
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.order_by(Project.created_at.desc()).all()
     else:
         # PROJECT_MANAGER users - get projects where they are assigned as project manager via Employee relationship
@@ -1617,8 +1598,7 @@ def project_add():
                 # Find the employee profile for project manager
                 employee = Employee.query.get(manager_id)
                 print(f"Employee found: {employee}")
-                # ROLE CHECK DISABLED: if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
-                if True:  # Role check bypassed
+                if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
                     # Validate one-project-per-manager constraint
                     can_assign, error_msg = validate_project_manager_assignment(employee.id, project)
                     if not can_assign:
@@ -1648,8 +1628,7 @@ def project_add():
             flash(f'حدث خطأ أثناء إنشاء المشروع: {str(e)}', 'error')
     
     # Get available data for the form
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         # Get only project managers who are NOT assigned to any active/planned projects
         subquery = db.session.query(Project.project_manager_id).filter(
             Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])
@@ -1678,8 +1657,7 @@ def project_edit(project_id):
     
     # Check permissions
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -1701,13 +1679,11 @@ def project_edit(project_id):
             project.sector = request.form.get('sector')
             
             # Update project manager if admin is editing
-            # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-            if True:  # Role check bypassed
+            if current_user.role == UserRole.GENERAL_ADMIN:
                 manager_id = request.form.get('manager_id')
                 if manager_id:
                     employee = Employee.query.get(manager_id)
-                    # ROLE CHECK DISABLED: if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
-                    if True:  # Role check bypassed
+                    if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
                         # Validate one-project-per-manager constraint
                         can_assign, error_msg = validate_project_manager_assignment(employee.id, project)
                         if not can_assign:
@@ -1733,8 +1709,7 @@ def project_edit(project_id):
     locations = ProjectLocation.query.filter_by(project_id=project.id).all()
     
     # Get available managers for admin
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         # Get only project managers who are NOT assigned to any active/planned projects
         # OR the current project manager
         subquery = db.session.query(Project.project_manager_id).filter(
@@ -1771,8 +1746,7 @@ def project_dashboard(project_id):
     # Check permissions
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -1862,8 +1836,7 @@ def project_status_change(project_id):
     # Check permissions
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -1879,8 +1852,7 @@ def project_status_change(project_id):
         # If changing to ACTIVE or PLANNED, validate project manager constraints
         if new_project_status in [ProjectStatus.ACTIVE, ProjectStatus.PLANNED] and project.project_manager_id:
             employee = Employee.query.get(project.project_manager_id)
-            # ROLE CHECK DISABLED: if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
-            if True:  # Role check bypassed
+            if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
                 # Temporarily set the new status for validation
                 original_status = project.status
                 project.status = new_project_status
@@ -1922,8 +1894,7 @@ def project_delete(project_id):
         return redirect(url_for('main.projects'))
     
     # Check permissions - Only GENERAL_ADMIN can delete projects
-    # ROLE CHECK DISABLED: if not is_admin(current_user):
-    if True:  # Role check bypassed
+    if not is_admin(current_user):
         flash('غير مسموح لك بحذف المشاريع', 'error')
         return redirect(url_for('main.projects'))
     
@@ -1978,8 +1949,7 @@ def project_dog_add(project_id):
     # Check permissions
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -2020,8 +1990,7 @@ def project_manager_update(project_id):
         return redirect(url_for('main.projects'))
     
     # Check permissions
-    # ROLE CHECK DISABLED: if not is_admin(current_user):
-    if True:  # Role check bypassed
+    if not is_admin(current_user):
         flash('غير مسموح لك بتعديل مدير المشروع', 'error')
         return redirect(url_for('main.project_dashboard', project_id=project_id))
     
@@ -2031,8 +2000,7 @@ def project_manager_update(project_id):
         if project_manager_id:
             # Verify it's actually a project manager
             manager = Employee.query.get(project_manager_id)
-            # ROLE CHECK DISABLED: if manager and manager.role == EmployeeRole.PROJECT_MANAGER:
-            if True:  # Role check bypassed
+            if manager and manager.role == EmployeeRole.PROJECT_MANAGER:
                 # Validate project manager assignment constraints
                 can_assign, error_msg = validate_project_manager_assignment(manager.id, project)
                 if not can_assign:
@@ -2085,8 +2053,7 @@ def project_assignments(project_id):
     # Check permissions
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -2143,8 +2110,7 @@ def project_assignment_add(project_id):
     # Check permissions
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -2196,8 +2162,7 @@ def project_assignment_add(project_id):
                 if employee_id:
                     # Verify employee is not a project manager
                     employee = Employee.query.get(employee_id)
-                    # ROLE CHECK DISABLED: if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
-                    if True:  # Role check bypassed
+                    if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
                         flash('لا يمكن تعيين مدراء المشاريع كموظفين عاديين. استخدم قسم مدير المشروع.', 'error')
                         continue
                         
@@ -2222,8 +2187,7 @@ def project_assignment_add(project_id):
             if project_manager_id:
                 # Verify it's actually a project manager
                 manager = Employee.query.get(project_manager_id)
-                # ROLE CHECK DISABLED: if manager and manager.role == EmployeeRole.PROJECT_MANAGER:
-                if True:  # Role check bypassed
+                if manager and manager.role == EmployeeRole.PROJECT_MANAGER:
                     # Validate project manager assignment constraints
                     can_assign, error_msg = validate_project_manager_assignment(manager.id, project)
                     if not can_assign:
@@ -2264,8 +2228,7 @@ def project_assignment_remove(project_id, assignment_id):
     # Check permissions
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -2302,8 +2265,7 @@ def project_assignment_edit(project_id, assignment_id):
     # Check permissions
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -2338,8 +2300,7 @@ def project_incidents(project_id):
     # Check permissions
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -2364,8 +2325,7 @@ def project_incident_add(project_id):
     # Check permissions
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -2413,8 +2373,7 @@ def project_resolve_incident(project_id):
     
     # Check permissions
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -2461,8 +2420,7 @@ def project_suspicions(project_id):
     # Check permissions
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -2487,8 +2445,7 @@ def project_suspicion_add(project_id):
     # Check permissions
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -2540,8 +2497,7 @@ def project_evaluations(project_id):
     # Check permissions
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -2566,8 +2522,7 @@ def project_evaluation_add(project_id):
     # Check permissions
     # Check project access - for project managers, check if they have an employee profile linked to this project
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -2610,8 +2565,7 @@ def project_evaluation_add(project_id):
             flash(f'حدث خطأ أثناء تسجيل التقييم: {str(e)}', 'error')
     
     # Get employees and dogs for the form
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         employees = Employee.query.filter_by(is_active=True).all()
         dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
     else:
@@ -3174,8 +3128,7 @@ def admin_panel():
 @login_required
 def get_user_permissions_api(user_id):
     """API endpoint to get user permissions for AJAX requests"""
-    # ROLE CHECK DISABLED: if not is_admin(current_user):
-    if True:  # Role check bypassed
+    if not is_admin(current_user):
         return jsonify({'error': 'Unauthorized'}), 403
     
     try:
@@ -3201,8 +3154,7 @@ def get_user_permissions_api(user_id):
 @login_required  
 def update_user_permissions_api():
     """API endpoint to update user permissions via AJAX"""
-    # ROLE CHECK DISABLED: if not is_admin(current_user):
-    if True:  # Role check bypassed
+    if not is_admin(current_user):
         return jsonify({'error': 'Unauthorized'}), 403
     
     try:
@@ -3256,8 +3208,7 @@ def update_user_permissions_api():
 @login_required
 def sync_project_managers():
     """Automatically create user accounts for all PROJECT_MANAGER employees"""
-    # ROLE CHECK DISABLED: if not is_admin(current_user):
-    if True:  # Role check bypassed
+    if not is_admin(current_user):
         flash('ليس لديك صلاحية لهذا الإجراء', 'error')
         return redirect(url_for('main.dashboard'))
     
@@ -3287,8 +3238,7 @@ def sync_project_managers():
 @login_required
 def update_user_credentials():
     """Update user credentials (username, email, password)"""
-    # ROLE CHECK DISABLED: if not is_admin(current_user):
-    if True:  # Role check bypassed
+    if not is_admin(current_user):
         flash('ليس لديك صلاحية لتعديل بيانات المستخدمين', 'error')
         return redirect(url_for('main.dashboard'))
     
@@ -3361,8 +3311,7 @@ def update_permissions_legacy():
     from k9.models.models import ProjectManagerPermission
     
     # Check admin access
-    # ROLE CHECK DISABLED: if not is_admin(current_user):
-    if True:  # Role check bypassed
+    if not is_admin(current_user):
         flash('ليس لديك صلاحية لتعديل الصلاحيات', 'error')
         return redirect(url_for('main.dashboard'))
     
@@ -3417,8 +3366,7 @@ def update_permissions_legacy():
 @login_required
 def toggle_user_status(user_id):
     """Toggle user active status"""
-    # ROLE CHECK DISABLED: if not is_admin(current_user):
-    if True:  # Role check bypassed
+    if not is_admin(current_user):
         flash('ليس لديك صلاحية لتعديل حالة المستخدمين', 'error')
         return redirect(url_for('main.dashboard'))
     
@@ -3444,8 +3392,7 @@ def toggle_user_status(user_id):
 @login_required
 def employee_user_links():
     """Manage links between employees and user accounts"""
-    # ROLE CHECK DISABLED: if not is_admin(current_user):
-    if True:  # Role check bypassed
+    if not is_admin(current_user):
         flash('ليس لديك صلاحية للوصول إلى إدارة الربط', 'error')
         return redirect(url_for('main.dashboard'))
     
@@ -3476,8 +3423,7 @@ def employee_user_links():
 @login_required
 def link_employee_to_user():
     """Link an employee to a user account"""
-    # ROLE CHECK DISABLED: if not is_admin(current_user):
-    if True:  # Role check bypassed
+    if not is_admin(current_user):
         return jsonify({'success': False, 'error': 'ليس لديك صلاحية لربط الحسابات'}), 403
     
     try:
@@ -3522,8 +3468,7 @@ def link_employee_to_user():
 @login_required
 def unlink_employee_from_user():
     """Unlink an employee from a user account"""
-    # ROLE CHECK DISABLED: if not is_admin(current_user):
-    if True:  # Role check bypassed
+    if not is_admin(current_user):
         return jsonify({'success': False, 'error': 'ليس لديك صلاحية لفك الربط'}), 403
     
     try:
@@ -3606,8 +3551,7 @@ def breeding_feeding_log_edit(log_id):
     ).get_or_404(log_id)
     
     # Check if user has access to this project
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.PROJECT_MANAGER:
         assigned_projects = get_user_assigned_projects(current_user)
         project_ids = [p.id for p in assigned_projects]
         if log_entry.project_id not in project_ids:
@@ -3640,8 +3584,7 @@ def breeding_checkup_new():
     if not has_permission(current_user, "breeding.checkup.create"):
         return redirect("/unauthorized")
     # Get user's accessible projects and dogs
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.all()
         dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
         employees = Employee.query.filter_by(is_active=True).all()
@@ -3689,16 +3632,14 @@ def breeding_checkup_edit(id):
     checkup = DailyCheckupLog.query.get_or_404(id)
     
     # Check project access for project managers
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.PROJECT_MANAGER:
         assigned_projects = get_user_assigned_projects(current_user)
         assigned_project_ids = [p.id for p in assigned_projects]
         if checkup.project_id not in assigned_project_ids:
             abort(403)
     
     # Get data for form
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.all()
         dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
         employees = Employee.query.filter_by(is_active=True).all()
@@ -3755,8 +3696,7 @@ def breeding_excretion_new():
     if not has_permission(current_user, "breeding.excretion.create"):
         return redirect("/unauthorized")
     # Get user's accessible projects and dogs
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.all()
         # Include ACTIVE and TRAINING dogs for health monitoring
         dogs = Dog.query.filter(Dog.current_status.in_([DogStatus.ACTIVE, DogStatus.TRAINING])).all()
@@ -3798,16 +3738,14 @@ def breeding_excretion_edit(id):
     excretion_log = ExcretionLog.query.get_or_404(id)
     
     # Check project access for project managers
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.PROJECT_MANAGER:
         assigned_projects = get_user_assigned_projects(current_user)
         assigned_project_ids = [p.id for p in assigned_projects]
         if excretion_log.project_id not in assigned_project_ids:
             abort(403)
     
     # Get data for form
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.all()
         # Include ACTIVE and TRAINING dogs for health monitoring in edit form too
         dogs = Dog.query.filter(Dog.current_status.in_([DogStatus.ACTIVE, DogStatus.TRAINING])).all()
@@ -3860,8 +3798,7 @@ def api_list_excretion_deprecated():
         query = query.outerjoin(Project, ExcretionLog.project_id == Project.id)
         
         # Apply user access restrictions
-        # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-        if True:  # Role check bypassed
+        if current_user.role == UserRole.GENERAL_ADMIN:
             # Admin can see all logs
             pass
         else:
@@ -3978,8 +3915,7 @@ def breeding_grooming():
     if not has_permission(current_user, "breeding.grooming.view"):
         return redirect("/unauthorized")
     # Get projects accessible by user
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.filter(Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])).all()
     else:
         projects = get_user_assigned_projects(current_user)
@@ -4015,8 +3951,7 @@ def breeding_grooming_new():
     if not has_permission(current_user, "breeding.grooming.create"):
         return redirect("/unauthorized")
     # Get projects accessible by user  
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.filter(Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])).all()
     else:
         projects = get_user_assigned_projects(current_user)
@@ -4059,8 +3994,7 @@ def breeding_grooming_edit(id):
     grooming_log = GroomingLog.query.get_or_404(id)
     
     # Get projects accessible by user
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.filter(Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])).all()
     else:
         projects = get_user_assigned_projects(current_user)
@@ -4105,8 +4039,7 @@ def cleaning_list():
     if not has_permission(current_user, "breeding.cleaning.view"):
         return redirect("/unauthorized")
     # Get projects accessible by user
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.filter(Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])).all()
     else:
         projects = get_user_assigned_projects(current_user)
@@ -4126,8 +4059,7 @@ def cleaning_new():
     if not has_permission(current_user, "breeding.cleaning.create"):
         return redirect("/unauthorized")
     # Get projects accessible by user  
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.filter(Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])).all()
     else:
         projects = get_user_assigned_projects(current_user)
@@ -4151,8 +4083,7 @@ def cleaning_edit(id):
     cleaning_log = CleaningLog.query.get_or_404(id)
     
     # Get projects accessible by user
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.filter(Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])).all()
     else:
         projects = get_user_assigned_projects(current_user)
@@ -4178,8 +4109,7 @@ def breeding_feeding():
     if not has_permission(current_user, "breeding.feeding.view"):
         return redirect("/unauthorized")
     # Get projects accessible by user
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.filter(Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])).all()
     else:
         projects = get_user_assigned_projects(current_user)
@@ -4225,8 +4155,7 @@ def breeding_feeding_new():
     if not has_permission(current_user, "breeding.feeding.create"):
         return redirect("/unauthorized")
     # Get projects accessible by user  
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.filter(Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])).all()
     else:
         projects = get_user_assigned_projects(current_user)
@@ -4276,8 +4205,7 @@ def breeding_feeding_edit(id):
     feeding_log = FeedingLog.query.get_or_404(id)
     
     # Get projects accessible by user
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         projects = Project.query.filter(Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])).all()
     else:
         projects = get_user_assigned_projects(current_user)
@@ -4517,8 +4445,7 @@ def search():
     try:
         # Search ALL dogs globally (no project restriction)
         dogs_results = []
-        # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-        if True:  # Role check bypassed
+        if current_user.role == UserRole.GENERAL_ADMIN:
             # Admin can search all dogs regardless of project assignment
             dogs = Dog.query.filter(
                 Dog.name.ilike(f'%{query}%') | 
@@ -4549,8 +4476,7 @@ def search():
         
         # Search ALL employees globally 
         employees_results = []
-        # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-        if True:  # Role check bypassed
+        if current_user.role == UserRole.GENERAL_ADMIN:
             employees = Employee.query.filter(
                 Employee.name.ilike(f'%{query}%') | 
                 Employee.employee_id.ilike(f'%{query}%')
@@ -4578,8 +4504,7 @@ def search():
         
         # Search projects (for completeness)
         projects_results = []
-        # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-        if True:  # Role check bypassed
+        if current_user.role == UserRole.GENERAL_ADMIN:
             projects = Project.query.filter(
                 Project.name.ilike(f'%{query}%') | 
                 Project.code.ilike(f'%{query}%')
@@ -4629,8 +4554,7 @@ def project_locations(project_id):
     
     # Check permissions
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -4659,8 +4583,7 @@ def project_location_add(project_id):
     
     # Check permissions
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -4717,8 +4640,7 @@ def project_location_edit(project_id, location_id):
     
     # Check permissions
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -4773,8 +4695,7 @@ def project_location_delete(project_id, location_id):
     
     # Check permissions
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -4811,8 +4732,7 @@ def project_shifts(project_id):
         return redirect(url_for('main.projects'))
     
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -4821,8 +4741,7 @@ def project_shifts(project_id):
         return redirect(url_for('main.projects'))
     
     if request.method == 'POST':
-        # ROLE CHECK DISABLED: if current_user.role != UserRole.GENERAL_ADMIN:
-        if True:  # Role check bypassed
+        if current_user.role != UserRole.GENERAL_ADMIN:
             flash('فقط المسؤول العام يمكنه إضافة ورديات جديدة', 'error')
             return redirect(url_for('main.project_shifts', project_id=project.id))
         
@@ -4862,8 +4781,7 @@ def project_shifts(project_id):
             db.session.rollback()
             flash(f'حدث خطأ أثناء إضافة الوردية: {str(e)}', 'error')
     
-    # ROLE CHECK DISABLED: if current_user.role == UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role == UserRole.GENERAL_ADMIN:
         shifts = Shift.query.order_by(Shift.start_time).all()
     else:
         shifts = Shift.query.filter_by(is_active=True).order_by(Shift.start_time).all()
@@ -4884,8 +4802,7 @@ def shift_assignments(project_id, shift_id):
         return redirect(url_for('main.projects'))
     
     has_access = current_user.role == UserRole.GENERAL_ADMIN
-    # ROLE CHECK DISABLED: if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-    if True:  # Role check bypassed
+    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
         employee = current_user.employee
         has_access = employee and project.project_manager_id == employee.id
     
@@ -4926,8 +4843,7 @@ def shift_assignments(project_id, shift_id):
 @admin_or_pm_required
 def toggle_shift(project_id, shift_id):
     """Toggle shift active status (admin only)"""
-    # ROLE CHECK DISABLED: if current_user.role != UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role != UserRole.GENERAL_ADMIN:
         flash('فقط المسؤول العام يمكنه تعطيل/تفعيل الورديات', 'error')
         return redirect(url_for('main.project_shifts', project_id=project_id))
     

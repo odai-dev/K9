@@ -142,8 +142,7 @@ def login():
         })
         
         # Check if user is GENERAL_ADMIN with linked Employee - show mode selection
-        # ROLE CHECK DISABLED: if user.role == UserRole.GENERAL_ADMIN:
-        if True:  # Role check bypassed
+        if user.role == UserRole.GENERAL_ADMIN:
             from k9.models.models import Employee
             employee = user.employee
             if employee:
@@ -277,8 +276,7 @@ def select_mode():
     from k9.utils.pm_scoping import get_pm_project
     
     # Only for GENERAL_ADMIN users
-    # ROLE CHECK DISABLED: if current_user.role != UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role != UserRole.GENERAL_ADMIN:
         return redirect(url_for('main.dashboard'))
     
     # Get linked employee record
@@ -331,8 +329,7 @@ def switch_mode():
     from k9.models.models import Employee, AccessOutcome
     from k9.services.access_audit_service import log_mode_switch
     
-    # ROLE CHECK DISABLED: if current_user.role != UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role != UserRole.GENERAL_ADMIN:
         log_mode_switch('N/A', 'N/A', outcome=AccessOutcome.BLOCKED)
         flash('ليس لديك صلاحية لتبديل الأوضاع', 'error')
         return redirect(url_for('main.dashboard'))
@@ -367,8 +364,7 @@ def create_manager():
         return redirect("/unauthorized")
     
     # Only general admins can create project managers
-    # ROLE CHECK DISABLED: if current_user.role != UserRole.GENERAL_ADMIN:
-    if True:  # Role check bypassed
+    if current_user.role != UserRole.GENERAL_ADMIN:
         flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
         return redirect(url_for('main.dashboard'))
     
