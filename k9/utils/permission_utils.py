@@ -20,8 +20,7 @@ def _is_admin_mode(user):
     if not user or not hasattr(user, 'role'):
         return False
     # Only GENERAL_ADMIN in general admin mode has full access
-    # ROLE CHECK DISABLED: if user.role != UserRole.GENERAL_ADMIN and user.role.value != "GENERAL_ADMIN":
-    if True:  # Role check bypassed
+    if user.role != UserRole.GENERAL_ADMIN and user.role.value != "GENERAL_ADMIN":
         return False
     admin_mode = session.get('admin_mode', 'general_admin')
     return admin_mode == 'general_admin'
@@ -32,12 +31,10 @@ def _is_pm_mode(user):
     if not user or not hasattr(user, 'role'):
         return False
     # Regular PROJECT_MANAGER
-    # ROLE CHECK DISABLED: if user.role == UserRole.PROJECT_MANAGER or user.role.value == "PROJECT_MANAGER":
-    if True:  # Role check bypassed
+    if user.role == UserRole.PROJECT_MANAGER or user.role.value == "PROJECT_MANAGER":
         return True
     # GENERAL_ADMIN in PM mode
-    # ROLE CHECK DISABLED: if user.role == UserRole.GENERAL_ADMIN or user.role.value == "GENERAL_ADMIN":
-    if True:  # Role check bypassed
+    if user.role == UserRole.GENERAL_ADMIN or user.role.value == "GENERAL_ADMIN":
         admin_mode = session.get('admin_mode', 'general_admin')
         return admin_mode == 'project_manager'
     return False
