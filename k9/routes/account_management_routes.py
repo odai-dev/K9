@@ -7,6 +7,7 @@ from flask_login import login_required, current_user
 from k9.models.models import User, UserRole, Employee, EmployeeRole, ProjectAssignment, Project
 from k9.utils.permission_decorators import admin_required
 from k9.utils.permission_utils import has_permission
+from k9.utils.default_permissions import create_base_permissions_for_user
 from werkzeug.security import generate_password_hash
 from app import db
 from k9.utils.pm_scoping import get_pm_project, is_pm
@@ -130,6 +131,9 @@ def create():
             
             db.session.add(user)
             db.session.flush()
+            
+            # Create base permissions for the user based on their role
+            permissions_created = create_base_permissions_for_user(user, db.session)
             
             # Auto-assign employee to project if creator is a PM and employee has no active assignments
             if is_pm(current_user):
