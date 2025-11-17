@@ -156,7 +156,7 @@ def create_training_activity():
         
     except Exception as e:
         db.session.rollback()
-        print(f'Training activity creation error: {e}')
+        current_app.logger.error(f'Training activity creation error: {e}')
         import traceback
         traceback.print_exc()
         return jsonify({'error': f'حدث خطأ في النظام: {str(e)}'}), 500
@@ -366,7 +366,7 @@ def list_training_activities():
         })
         
     except Exception as e:
-        print(f'Error listing training activities: {e}')
+        current_app.logger.error(f'Error listing training activities: {e}')
         import traceback
         traceback.print_exc()
         return jsonify({'error': f'حدث خطأ في تحميل البيانات: {str(e)}'}), 500
@@ -422,7 +422,7 @@ def get_training_activity(activity_id):
         return jsonify(activity_data)
         
     except Exception as e:
-        print(f'Error getting training activity: {e}')
+        current_app.logger.error(f'Error getting training activity: {e}')
         return jsonify({'error': f'حدث خطأ في تحميل البيانات: {str(e)}'}), 500
 
 
@@ -522,7 +522,7 @@ def update_training_activity(activity_id):
         
     except Exception as e:
         db.session.rollback()
-        print(f'Training activity update error: {e}')
+        current_app.logger.error(f'Training activity update error: {e}')
         return jsonify({'error': f'حدث خطأ في تحديث البيانات: {str(e)}'}), 500
 
 
@@ -551,5 +551,5 @@ def delete_training_activity(activity_id):
         
     except Exception as e:
         db.session.rollback()
-        print(f'Training activity deletion error: {e}')
+        current_app.logger.error(f'Training activity deletion error: {e}')
         return jsonify({'error': f'حدث خطأ في حذف البيانات: {str(e)}'}), 500

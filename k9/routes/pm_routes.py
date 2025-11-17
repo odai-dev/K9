@@ -160,7 +160,7 @@ def get_project_employees(project_id):
         employees = Employee.query.filter(Employee.id.in_(employee_ids)).all()
         return employees
     except Exception as e:
-        print(f"Error getting project employees: {e}")
+        current_app.logger.error(f"Error getting project employees: {e}")
         return []
 
 def get_pending_count(project):

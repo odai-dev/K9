@@ -31,7 +31,6 @@ def create_deworming_log():
         if not project_id or project_id == '' or project_id == 'null':
             project_id = None
             data['project_id'] = None
-            print('Deworming log created without project assignment')
         
         # Verify project access for PROJECT_MANAGER
         if current_user.role == UserRole.PROJECT_MANAGER:
