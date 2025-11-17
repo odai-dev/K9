@@ -74,19 +74,7 @@ def dashboard():
                          project_managers=project_managers,
                          projects=projects)
 
-@admin_bp.route('/permissions')
-@login_required
-@require_admin_permission('admin.permissions.view')
-def permissions_dashboard():
-    """Main permissions management dashboard"""
-    
-    project_managers = get_project_managers()
-    projects = get_all_projects()
-    
-    return render_template('admin/permissions_dashboard.html',
-                         project_managers=project_managers,
-                         projects=projects,
-                         permission_structure=PERMISSION_STRUCTURE)
+# Old permissions_dashboard route removed - now using /permissions/comprehensive
 
 @admin_bp.route('/permissions/user/<int:user_id>')
 @login_required

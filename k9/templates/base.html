@@ -274,7 +274,7 @@
                             {% endif %}
                             {% if is_admin() or has_permission(current_user, 'admin.permissions.view') %}
                             <li>
-                                <a class="dropdown-item {% if request.endpoint == 'admin.permissions_dashboard' %}active{% endif %}" href="{{ url_for('admin.permissions_dashboard') }}">
+                                <a class="dropdown-item {% if request.endpoint == 'admin.comprehensive_permissions' %}active{% endif %}" href="{{ url_for('admin.comprehensive_permissions') }}">
                                     <i class="fas fa-key me-2"></i>إدارة الصلاحيات
                                 </a>
                             </li>
