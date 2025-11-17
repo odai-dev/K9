@@ -24,6 +24,7 @@ def create_admin_user():
     try:
         from app import app, db
         from k9.models.models import User, UserRole, Employee, EmployeeRole
+        from k9.utils.default_permissions import create_base_permissions_for_user
         from datetime import datetime, date
     except ImportError as e:
         print(f"Error importing application modules: {e}")
@@ -130,6 +131,9 @@ def create_admin_user():
                 user.phone = phone
                 db.session.add(user)
                 db.session.flush()
+                
+                # Create base permissions for the user (GENERAL_ADMIN gets all via is_admin(), but good for consistency)
+                permissions_created = create_base_permissions_for_user(user, db.session)
                 
                 # Update employee with user account link (for backward compatibility)
                 employee.user_account_id = user.id
