@@ -1136,6 +1136,14 @@ class PermissionAuditLog(db.Model):
     target_user = db.relationship('User', foreign_keys=[target_user_id], backref='permission_changes_received')
     project = db.relationship('Project', backref='permission_audit_logs')
     
+    @property
+    def description(self):
+        """Generate a human-readable description of the permission change"""
+        action = "منح" if self.new_value else "إزالة"
+        permission_label = f"{self.section} - {self.subsection} ({self.permission_type.value})"
+        project_info = f" في {self.project.name}" if self.project else ""
+        return f"{action} صلاحية {permission_label}{project_info} للمستخدم {self.target_user.full_name}"
+    
     def __repr__(self):
         return f'<PermissionAuditLog {self.changed_by.username} -> {self.target_user.username}: {self.section}->{self.subsection}>'
 
