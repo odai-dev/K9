@@ -62,6 +62,12 @@ Preferred communication style: Simple, everyday language.
 - **Structured Logging**: All error handling uses Flask's current_app.logger with appropriate levels (DEBUG, INFO, WARNING, ERROR) instead of print statements for production monitoring.
 - **Code Standards**: Clean, maintainable codebase ready for deployment with zero runtime errors, proper error handling, and production-grade security measures.
 - **Unified PDF Design**: Minimal Elegant design system implemented across all PDF reports with `k9/utils/pdf_minimal_elegant.py` template providing consistent headers, typography, color scheme, and table styling for professional document generation.
+- **Permissions System Verification (Nov 2025)**: 
+  - Fixed `has_permission()` project_id filter logic to correctly check project-specific AND global permissions
+  - Added comprehensive logging to permission update route for debugging
+  - Verified complete permission lifecycle: save to DB → read from DB → check permissions → display in UI
+  - All automated tests passing: save, read, verify, and display permissions work correctly
+  - System reads permissions directly from database (no stale cache issues)
 
 ## External Dependencies
 
