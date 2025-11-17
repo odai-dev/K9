@@ -2,7 +2,7 @@
 Project Manager Routes
 Workflow-oriented interface for PMs managing their assigned project
 """
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, session
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, session, current_app
 from flask_login import login_required, current_user
 from functools import wraps
 from datetime import datetime, date, timedelta
