@@ -40,7 +40,7 @@ def sanitize_text(text):
         
         return text_str
     except Exception as e:
-        print(f"Error sanitizing text: {e}")
+        current_app.logger.error(f"Error sanitizing text: {e}")
         return str(text) if text else ''
 
 @bp.route('/api/breeding/cleaning/list')
@@ -450,8 +450,8 @@ def calculate_cleaning_kpis(query, date_to_str=None):
         
     except Exception as e:
         import traceback
-        print(f"Error calculating KPIs: {str(e)}")
-        print(f"Traceback: {traceback.format_exc()}")
+        current_app.logger.error(f"Error calculating KPIs: {str(e)}")
+        current_app.logger.error(f"Traceback: {traceback.format_exc()}")
         return {
             'total': 0,
             'cleaned_yes': 0,

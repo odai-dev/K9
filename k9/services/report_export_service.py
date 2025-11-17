@@ -57,7 +57,7 @@ class ReportExportService:
             ReportExportService._arabic_fonts_available = True
             return True
         except Exception as e:
-            print(f"Warning: Could not register Arabic fonts: {e}")
+            current_app.logger.error(f"Warning: Could not register Arabic fonts: {e}")
             ReportExportService._arabic_fonts_available = False
             return False
     

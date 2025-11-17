@@ -229,8 +229,8 @@ def create_excretion_log():
         db.session.rollback()
         error_msg = str(e)
         # Log detailed error for debugging
-        print(f"ERROR creating excretion log: {error_msg}")
-        print(f"Data received: {data}")
+        current_app.logger.error(f"ERROR creating excretion log: {error_msg}")
+        current_app.logger.error(f"Data received: {data}")
         return jsonify({'error': 'حدث خطأ في حفظ سجل الإفراز'}), 500
 
 
@@ -392,7 +392,7 @@ def calculate_excretion_kpis(query):
         }
         
     except Exception as e:
-        print(f"Error calculating KPIs: {e}")
+        current_app.logger.error(f"Error calculating KPIs: {e}")
         return {
             'total': 0,
             'stool': {

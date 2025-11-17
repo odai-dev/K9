@@ -872,7 +872,7 @@ class AttachmentService:
             
         except Exception as e:
             # Log the exception
-            print(f"Error saving attachment: {str(e)}")
+            current_app.logger.error(f"Error saving attachment: {str(e)}")
             return None, f"خطأ في حفظ الملف: {str(e)}"
     
     @staticmethod
