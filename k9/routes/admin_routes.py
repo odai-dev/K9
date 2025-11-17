@@ -13,6 +13,7 @@ from k9.utils.permission_utils import (
     initialize_default_permissions, export_permissions_matrix,
     get_users_by_project, get_user_permissions_by_project, has_permission
 )
+from k9.utils.default_permissions import is_base_permission
 from k9.utils.security_utils import PasswordValidator, SecurityHelper
 from k9.models.models import User, Project, SubPermission, PermissionAuditLog, PermissionType, UserRole
 from k9.models.models_handler_daily import HandlerReport, ShiftReport
@@ -361,6 +362,14 @@ def get_permissions_matrix(user_id, project_id):
             perm_type_value = perm['permission_type'].value if hasattr(perm['permission_type'], 'value') else str(perm['permission_type'])
             key = f"{perm['section']}.{subsection_key}.{perm_type_value}"
             
+            # Check if this is a base permission for the user's role
+            is_base = is_base_permission(
+                user, 
+                perm['section'], 
+                perm['subsection'], 
+                perm['permission_type']
+            )
+            
             permissions_data.append({
                 'section': perm['section'],
                 'subsection': subsection_key,
@@ -368,7 +377,8 @@ def get_permissions_matrix(user_id, project_id):
                 'permission_type': perm_type_value,
                 'name_ar': perm['name_ar'],
                 'name_en': perm['name_en'],
-                'is_granted': perm_dict.get(key, False)
+                'is_granted': perm_dict.get(key, False),
+                'is_base_permission': is_base  # Flag to indicate if this is a base permission
             })
         
         return jsonify({
