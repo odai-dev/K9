@@ -137,11 +137,23 @@ def dogs_add():
     
     if request.method == 'POST':
         try:
+            # File size limits
+            MAX_IMAGE_SIZE = 2 * 1024 * 1024  # 2MB
+            
             # Handle photo upload
             photo_filename = None
             if 'photo' in request.files and request.files['photo'].filename:
                 photo = request.files['photo']
                 if photo.filename and allowed_file(photo.filename):
+                    # Check file size
+                    photo.seek(0, os.SEEK_END)
+                    file_size = photo.tell()
+                    photo.seek(0)
+                    
+                    if file_size > MAX_IMAGE_SIZE:
+                        flash(f'الصورة كبيرة جداً ({file_size / 1024 / 1024:.1f} ميجابايت). الحد الأقصى 2 ميجابايت', 'error')
+                        return render_template('dogs/add.html', potential_parents=potential_parents)
+                    
                     # Create unique filename
                     safe_filename = secure_filename(photo.filename or 'image')
                     photo_filename = f"{uuid.uuid4()}_{safe_filename}"
@@ -153,6 +165,15 @@ def dogs_add():
             if 'birth_certificate' in request.files and request.files['birth_certificate'].filename:
                 cert = request.files['birth_certificate']
                 if cert.filename and allowed_file(cert.filename):
+                    # Check file size
+                    cert.seek(0, os.SEEK_END)
+                    file_size = cert.tell()
+                    cert.seek(0)
+                    
+                    if file_size > MAX_IMAGE_SIZE:
+                        flash(f'شهادة الميلاد كبيرة جداً ({file_size / 1024 / 1024:.1f} ميجابايت). الحد الأقصى 2 ميجابايت', 'error')
+                        return render_template('dogs/add.html', potential_parents=potential_parents)
+                    
                     # Create unique filename
                     safe_cert_filename = secure_filename(cert.filename or 'certificate')
                     birth_cert_filename = f"{uuid.uuid4()}_{safe_cert_filename}"
@@ -256,10 +277,25 @@ def dogs_edit(dog_id):
     
     if request.method == 'POST':
         try:
+            # File size limits
+            MAX_IMAGE_SIZE = 2 * 1024 * 1024  # 2MB
+            
+            # Get potential parents for error rendering
+            potential_parents = get_user_accessible_dogs(current_user)
+            
             # Handle photo upload
             if 'photo' in request.files and request.files['photo'].filename != '':
                 photo = request.files['photo']
                 if allowed_file(photo.filename):
+                    # Check file size
+                    photo.seek(0, os.SEEK_END)
+                    file_size = photo.tell()
+                    photo.seek(0)
+                    
+                    if file_size > MAX_IMAGE_SIZE:
+                        flash(f'الصورة كبيرة جداً ({file_size / 1024 / 1024:.1f} ميجابايت). الحد الأقصى 2 ميجابايت', 'error')
+                        return render_template('dogs/edit.html', dog=dog, potential_parents=potential_parents)
+                    
                     # Delete old photo if exists
                     if dog.photo_path:
                         old_photo_path = os.path.join(current_app.config['UPLOAD_FOLDER'], dog.photo_path)
@@ -276,6 +312,15 @@ def dogs_edit(dog_id):
             if 'birth_certificate' in request.files and request.files['birth_certificate'].filename != '':
                 birth_cert = request.files['birth_certificate']
                 if allowed_file(birth_cert.filename):
+                    # Check file size
+                    birth_cert.seek(0, os.SEEK_END)
+                    file_size = birth_cert.tell()
+                    birth_cert.seek(0)
+                    
+                    if file_size > MAX_IMAGE_SIZE:
+                        flash(f'شهادة الميلاد كبيرة جداً ({file_size / 1024 / 1024:.1f} ميجابايت). الحد الأقصى 2 ميجابايت', 'error')
+                        return render_template('dogs/edit.html', dog=dog, potential_parents=potential_parents)
+                    
                     # Delete old certificate if exists
                     if dog.birth_certificate:
                         old_cert_path = os.path.join(current_app.config['UPLOAD_FOLDER'], dog.birth_certificate)
