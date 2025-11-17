@@ -164,7 +164,7 @@ def require_admin_permission(permission_key='admin.permissions.view'):
     
     Example:
         @require_admin_permission('admin.permissions.view')
-        def permissions_dashboard():
+        def comprehensive_permissions():
             ...
     """
     def decorator(f):

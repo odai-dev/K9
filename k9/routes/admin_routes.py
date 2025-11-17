@@ -464,7 +464,7 @@ def export_user_permissions_pdf(user_id):
     
     if user.role != UserRole.PROJECT_MANAGER:
         flash('يمكن تصدير صلاحيات مديري المشاريع فقط', 'error')
-        return redirect(url_for('admin.permissions_dashboard'))
+        return redirect(url_for('admin.comprehensive_permissions'))
     
     # Get permissions matrix
     matrix = get_user_permissions_matrix(user.id, project_id=project_id)
@@ -577,7 +577,7 @@ def preview_pm_view(user_id):
     
     if user.role != UserRole.PROJECT_MANAGER:
         flash('يمكن معاينة عرض مديري المشاريع فقط', 'error')
-        return redirect(url_for('admin.permissions_dashboard'))
+        return redirect(url_for('admin.comprehensive_permissions'))
     
     # Get user's permissions
     matrix = get_user_permissions_matrix(user.id, project_id=project_id)
