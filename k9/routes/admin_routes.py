@@ -6,6 +6,7 @@ Provides comprehensive permission control interface for GENERAL_ADMIN users
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, send_file, session
 from flask_login import login_required, current_user, logout_user, login_user
 from werkzeug.security import check_password_hash, generate_password_hash
+from app import csrf
 from k9.utils.permission_decorators import admin_required, require_admin_permission
 from k9.utils.permission_utils import (
     PERMISSION_STRUCTURE, get_user_permissions_matrix, update_permission, 
@@ -1322,6 +1323,7 @@ def mark_all_notifications_read():
 
 
 @admin_bp.route('/api/unread-count')
+@csrf.exempt
 @login_required
 @admin_required
 def get_unread_count():

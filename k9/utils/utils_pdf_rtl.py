@@ -4,10 +4,13 @@ Provides helper functions for generating RTL Arabic text in PDFs using ReportLab
 """
 
 import os
+import logging
 from reportlab.lib.fonts import addMapping
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.units import inch, cm
+
+logger = logging.getLogger(__name__)
 
 # Try to import Arabic text processing libraries
 try:
@@ -15,7 +18,7 @@ try:
     from bidi.algorithm import get_display
     ARABIC_SUPPORT = True
 except ImportError:
-    print("Warning: arabic_reshaper or python-bidi not available. Arabic text may not display correctly.")
+    logger.warning("arabic_reshaper or python-bidi not available. Arabic text may not display correctly.")
     ARABIC_SUPPORT = False
 
 # Font registration status
@@ -43,7 +46,7 @@ def register_arabic_fonts():
             if os.path.exists(font_path):
                 pdfmetrics.registerFont(TTFont(font_name, font_path))
                 addMapping(font_name, 0, 0, font_name)  # normal
-                print(f"Successfully registered {font_name} font from: {font_path}")
+                logger.debug(f"Successfully registered {font_name} font from: {font_path}")
                 _FONTS_REGISTERED = True
                 return True
         
@@ -59,15 +62,15 @@ def register_arabic_fonts():
             if os.path.exists(path):
                 pdfmetrics.registerFont(TTFont('DejaVuSans', path))
                 addMapping('DejaVuSans', 0, 0, 'DejaVuSans')  # normal
-                print(f"Successfully registered DejaVu Sans font from: {path}")
+                logger.debug(f"Successfully registered DejaVu Sans font from: {path}")
                 _FONTS_REGISTERED = True
                 return True
         
-        print("No Arabic-compatible fonts found. Using default fonts (Arabic may not display correctly)")
+        logger.warning("No Arabic-compatible fonts found. Using default fonts (Arabic may not display correctly)")
         return False
             
     except Exception as e:
-        print(f"Error registering Arabic fonts: {e}")
+        logger.error(f"Error registering Arabic fonts: {e}")
         return False
 
 def rtl(text: str) -> str:
@@ -92,7 +95,7 @@ def rtl(text: str) -> str:
         
         return display_text
     except Exception as e:
-        print(f"Error processing Arabic text: {e}")
+        logger.error(f"Error processing Arabic text: {e}")
         return text
 
 def get_arabic_font_name() -> str:

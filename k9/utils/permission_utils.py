@@ -3,7 +3,7 @@ Permission management utilities for K9 Operations Management System
 """
 
 from functools import wraps
-from flask import abort, request, flash, redirect, url_for, session, g
+from flask import abort, request, flash, redirect, url_for, session, g, current_app
 from flask_login import current_user
 from k9.models.models import User, Project, SubPermission, PermissionAuditLog, PermissionType, UserRole
 from app import db
@@ -664,7 +664,7 @@ def update_permission(user_id, section, subsection, permission_type, granted, up
         return True
     except Exception as e:
         db.session.rollback()
-        print(f"Error updating permission: {e}")
+        current_app.logger.error(f"Error updating permission: {e}")
         return False
 
 def bulk_update_permissions(user_id, permissions_data, updated_by, project_id=None):
@@ -699,7 +699,7 @@ def bulk_update_permissions(user_id, permissions_data, updated_by, project_id=No
                 section_perms = get_section_permissions(section)
             except Exception as e:
                 # Fallback if permission registry is not available
-                print(f"Could not get section permissions: {e}")
+                current_app.logger.error(f"Could not get section permissions: {e}")
                 section_perms = []
             
             # Update each permission in the section
@@ -731,15 +731,13 @@ def bulk_update_permissions(user_id, permissions_data, updated_by, project_id=No
                 if success:
                     count += 1
         else:
-            print(f"Invalid permissions_data format: {type(permissions_data)}")
+            current_app.logger.error(f"Invalid permissions_data format: {type(permissions_data)}")
             return 0
         
         return count
     except Exception as e:
         db.session.rollback()
-        print(f"Error in bulk update: {e}")
-        import traceback
-        traceback.print_exc()
+        current_app.logger.error(f"Error in bulk update: {e}", exc_info=True)
         return 0
 
 def get_project_managers():
