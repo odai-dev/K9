@@ -1,3 +1,4 @@
+from flask import current_app
 """
 خدمات نظام السائس اليومي
 Handler Daily System Services

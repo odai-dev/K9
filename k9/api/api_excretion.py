@@ -2,7 +2,7 @@
 API endpoints for breeding excretion logs management
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
 from sqlalchemy import and_, or_
 from datetime import datetime, date

@@ -1,3 +1,4 @@
+from flask import current_app
 """
 Report Export Service
 Handles PDF and Excel export for all report types

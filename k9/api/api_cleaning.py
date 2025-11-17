@@ -4,7 +4,7 @@ Provides CRUD operations and listing functionality
 """
 # -*- coding: utf-8 -*-
 
-from flask import Blueprint, request, jsonify, abort
+from flask import Blueprint, request, jsonify, abort, current_app
 from flask_login import login_required, current_user
 from app import db
 from k9.models.models import (CleaningLog, Project, Dog, Employee, User, UserRole, ProjectStatus)
