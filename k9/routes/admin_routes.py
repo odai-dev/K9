@@ -3,7 +3,7 @@ Admin Routes for Enhanced Permission Management System
 Provides comprehensive permission control interface for GENERAL_ADMIN users
 """
 
-from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, send_file, session
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, send_file, session, current_app
 from flask_login import login_required, current_user, logout_user, login_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from app import csrf
