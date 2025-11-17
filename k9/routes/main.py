@@ -192,9 +192,7 @@ def dogs_add():
             
         except Exception as e:
             db.session.rollback()
-            print(f"Error adding dog: {e}")
-            import traceback
-            traceback.print_exc()
+            current_app.logger.error(f"Error adding dog: {e}")
             flash(f'حدث خطأ أثناء إضافة الكلب: {str(e)}', 'error')
     
     return render_template('dogs/add.html', genders=DogGender, potential_parents=potential_parents)
@@ -337,11 +335,7 @@ def employees_list():
 def employees_add():
     if not has_permission(current_user, "employees.management.create"):
         return redirect("/unauthorized")
-    import time
-    print(f"Employee add route called with method: {request.method}")
     if request.method == 'POST':
-        start_time = time.time()
-        print(f"Form data: {dict(request.form)}")
         try:
             # Validate phone number format
             phone = request.form.get('phone', '').strip()
@@ -400,8 +394,6 @@ def employees_add():
             # Add employee to session but don't commit yet (flush to get ID)
             db.session.add(employee)
             db.session.flush()
-            
-            file_start = time.time()
             
             # Create employee upload folder once
             employee_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'employees', str(employee.id))
@@ -494,13 +486,8 @@ def employees_add():
             if employee_documents:
                 db.session.bulk_save_objects(employee_documents)
             
-            print(f"File operations took: {time.time() - file_start:.3f}s")
-            
             # Single commit for everything
             db.session.commit()
-            
-            elapsed = time.time() - start_time
-            print(f"Total employee creation time: {elapsed:.3f}s")
             
             if rejected_files:
                 flash(f'تنبيه: تم رفض بعض الملفات بسبب صيغة غير مسموحة: {", ".join(rejected_files)}', 'warning')
@@ -511,7 +498,7 @@ def employees_add():
             
         except IntegrityError as e:
             db.session.rollback()
-            print(f"Integrity error adding employee: {e}")
+            current_app.logger.error(f"Integrity error adding employee: {e}")
             if 'employee_id' in str(e):
                 flash('رقم الموظف مستخدم بالفعل', 'error')
             elif 'phone' in str(e):
@@ -520,9 +507,7 @@ def employees_add():
                 flash('حدث خطأ: البيانات المدخلة مكررة', 'error')
         except Exception as e:
             db.session.rollback()
-            print(f"Error adding employee: {e}")
-            import traceback
-            traceback.print_exc()
+            current_app.logger.error(f"Error adding employee: {e}")
             flash(f'حدث خطأ أثناء إضافة الموظف: {str(e)}', 'error')
     
     return render_template('employees/add.html', roles=EmployeeRole)
@@ -842,7 +827,7 @@ def maturity_add():
             return redirect(url_for('main.maturity_list'))
         except Exception as e:
             db.session.rollback()
-            print(f'Maturity add error: {e}')
+            current_app.logger.error(f'Maturity add error: {e}')
             import traceback
             traceback.print_exc()
             flash(f'حدث خطأ: {str(e)}', 'error')
@@ -915,7 +900,7 @@ def heat_cycles_add():
             return redirect(url_for('main.heat_cycles_list'))
         except Exception as e:
             db.session.rollback()
-            print(f'Heat cycle add error: {e}')
+            current_app.logger.error(f'Heat cycle add error: {e}')
             import traceback
             traceback.print_exc()
             flash(f'حدث خطأ: {str(e)}', 'error')
@@ -1000,7 +985,7 @@ def mating_add():
             return redirect(url_for('main.mating_list'))
         except Exception as e:
             db.session.rollback()
-            print(f'Mating add error: {e}')
+            current_app.logger.error(f'Mating add error: {e}')
             import traceback
             traceback.print_exc()
             flash(f'حدث خطأ: {str(e)}', 'error')
@@ -1075,7 +1060,7 @@ def pregnancy_add():
             return redirect(url_for('main.pregnancy_list'))
         except Exception as e:
             db.session.rollback()
-            print(f'Pregnancy add error: {e}')
+            current_app.logger.error(f'Pregnancy add error: {e}')
             import traceback
             traceback.print_exc()
             flash(f'حدث خطأ: {str(e)}', 'error')
@@ -1118,7 +1103,7 @@ def delivery_list():
         else:
             delivery_records = []
     except Exception as e:
-        print(f"Error fetching delivery records: {e}")
+        current_app.logger.error(f"Error fetching delivery records: {e}")
         delivery_records = []
     
     # Get correct base template for PM vs Admin
@@ -1180,7 +1165,7 @@ def delivery_add():
             return redirect(url_for('main.delivery_list'))
         except Exception as e:
             db.session.rollback()
-            print(f'Delivery add error: {e}')
+            current_app.logger.error(f'Delivery add error: {e}')
             import traceback
             traceback.print_exc()
             flash(f'حدث خطأ: {str(e)}', 'error')
@@ -1222,7 +1207,7 @@ def puppies_list():
         else:
             puppies = []
     except Exception as e:
-        print(f"Error fetching puppy records: {e}")
+        current_app.logger.error(f"Error fetching puppy records: {e}")
         puppies = []
     
     # Get correct base template for PM vs Admin
@@ -1287,7 +1272,7 @@ def puppies_add():
         else:
             deliveries = []
     except Exception as e:
-        print(f"Error fetching delivery records: {e}")
+        current_app.logger.error(f"Error fetching delivery records: {e}")
         deliveries = []
     
     # Add helpful message if no delivery records exist
@@ -1556,8 +1541,7 @@ def projects():
 def project_add():
     if request.method == 'POST':
         try:
-            print("=== تشخيص إضافة المشروع ===")
-            print(f"Form data: {dict(request.form)}")
+            current_app.logger.error(f"Form data: {dict(request.form)}")
             
             # التحقق من وجود البيانات المطلوبة
             if not request.form.get('name'):
@@ -1570,13 +1554,13 @@ def project_add():
             
             # Determine the manager ID
             manager_id = current_user.id if current_user.role == UserRole.PROJECT_MANAGER else request.form.get('manager_id')
-            print(f"Manager ID: {manager_id}")
+            current_app.logger.error(f"Manager ID: {manager_id}")
             
             # Generate unique project code
             import random
             import string
             code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
-            print(f"Generated code: {code}")
+            current_app.logger.error(f"Generated code: {code}")
             
             project = Project()
             project.name = request.form['name']
@@ -1591,13 +1575,13 @@ def project_add():
             project.priority = request.form.get('priority', 'MEDIUM')
             project.sector = request.form.get('sector')
             
-            print(f"Project object created: {project.name}, {project.code}")
+            current_app.logger.error(f"Project object created: {project.name}, {project.code}")
             
             # Validate project manager assignment if provided
             if manager_id:
                 # Find the employee profile for project manager
                 employee = Employee.query.get(manager_id)
-                print(f"Employee found: {employee}")
+                current_app.logger.error(f"Employee found: {employee}")
                 if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
                     # Validate one-project-per-manager constraint
                     can_assign, error_msg = validate_project_manager_assignment(employee.id, project)
@@ -1606,15 +1590,13 @@ def project_add():
                         raise Exception("Project manager assignment validation failed")
                     
                     project.project_manager_id = employee.id
-                    print(f"Project manager assigned: {employee.name}")
+                    current_app.logger.error(f"Project manager assigned: {employee.name}")
                 else:
                     flash('الموظف المحدد ليس مدير مشروع صالح', 'error')
                     raise Exception("Invalid project manager")
             
-            print("Adding project to database...")
             db.session.add(project)
             db.session.commit()
-            print("Project committed successfully!")
             
             log_audit(current_user.id, AuditAction.CREATE, 'Project', project.id, f'مشروع جديد: {project.name}', None, {'name': project.name})
             flash('تم إنشاء المشروع بنجاح', 'success')
@@ -1622,7 +1604,7 @@ def project_add():
             
         except Exception as e:
             db.session.rollback()
-            print(f"Error creating project: {str(e)}")
+            current_app.logger.error(f"Error creating project: {str(e)}")
             import traceback
             traceback.print_exc()
             flash(f'حدث خطأ أثناء إنشاء المشروع: {str(e)}', 'error')

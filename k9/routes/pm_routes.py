@@ -594,28 +594,6 @@ def pending_approvals():
                          pending_caretaker=pending_caretaker,
                          pending_count=get_pending_count(project))
 
-@pm_bp.route('/approve-report/<report_id>', methods=['POST'])
-@login_required
-@require_pm_project
-def approve_report(report_id):
-    """
-    DEPRECATED: Use ReportReviewService.approve_and_forward instead
-    This route redirects to the unified review system
-    """
-    flash('يُرجى استخدام نظام المراجعة الموحد في لوحة التقارير', 'warning')
-    return redirect(url_for('pm.pending_approvals'))
-
-@pm_bp.route('/reject-report/<report_id>', methods=['POST'])
-@login_required
-@require_pm_project
-def reject_report(report_id):
-    """
-    DEPRECATED: Use ReportReviewService.reject_completely instead
-    This route redirects to the unified review system
-    """
-    flash('يُرجى استخدام نظام المراجعة الموحد في لوحة التقارير', 'warning')
-    return redirect(url_for('pm.pending_approvals'))
-
 @pm_bp.route('/approve-vet-visit/<visit_id>', methods=['POST'])
 @login_required
 @require_pm_project
