@@ -201,7 +201,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(error => {
-                if (error && error.message) { console.error('Error:', error.message); }
                 showAlert('حدث خطأ أثناء الحذف', 'error');
             });
         }
@@ -235,9 +234,7 @@ function loadFilterOptions() {
     })
     .catch(error => {
         if (error && error.message) { 
-            console.error(error.message); 
         } else if (error) { 
-            console.error(String(error)); 
         }
     });
 }
@@ -274,7 +271,6 @@ function loadExcretions() {
             updatePagination(data.pagination);
         })
         .catch(error => {
-            if (error && error.message) { console.error('Error loading excretions:', error.message); }
             updateTable([]);
         });
 }

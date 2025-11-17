@@ -843,7 +843,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 hasUnsavedChanges = false;
             })
             .catch(error => {
-                if (error && error.message) { console.error('Error loading permissions:', error.message); }
                 alert('خطأ في تحميل الصلاحيات');
             });
     }
@@ -970,7 +969,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
-            if (error && error.message) { console.error('Error saving permissions:', error.message); }
             alert('خطأ في حفظ الصلاحيات');
         })
         .finally(() => {

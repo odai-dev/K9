@@ -786,7 +786,6 @@ async function loadReportStatusChart() {
             'doughnut'
         );
     } catch (error) {
-        console.error('Error loading report status chart:', error);
         ChartUtils.showChartError('reportStatusChart');
     }
 }
@@ -814,7 +813,6 @@ async function loadHandlerActivityChart() {
             '#667eea'
         );
     } catch (error) {
-        console.error('Error loading handler activity chart:', error);
         ChartUtils.showChartError('handlerActivityChart');
     }
 }
@@ -842,7 +840,6 @@ async function loadMonthlyTrendsChart() {
             '#667eea'
         );
     } catch (error) {
-        console.error('Error loading monthly trends chart:', error);
         ChartUtils.showChartError('monthlyTrendsChart');
     }
 }

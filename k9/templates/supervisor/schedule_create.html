@@ -127,10 +127,8 @@ document.getElementById('projectSelect')?.addEventListener('change', function() 
         .then(response => response.json())
         .then(data => {
             handlers = data.handlers;
-            console.log('Loaded handlers:', handlers.length);
         })
         .catch(error => {
-            console.error('Error loading handlers:', error);
             handlers = [];
         });
     
@@ -138,10 +136,8 @@ document.getElementById('projectSelect')?.addEventListener('change', function() 
         .then(response => response.json())
         .then(data => {
             dogs = data.dogs;
-            console.log('Loaded dogs:', dogs.length);
         })
         .catch(error => {
-            console.error('Error loading dogs:', error);
             dogs = [];
         });
     
@@ -149,10 +145,8 @@ document.getElementById('projectSelect')?.addEventListener('change', function() 
         .then(response => response.json())
         .then(data => {
             locations = data.locations;
-            console.log('Loaded locations:', locations.length);
         })
         .catch(error => {
-            console.error('Error loading locations:', error);
             locations = [];
         });
     

@@ -241,7 +241,6 @@ function loadGroomingLogs() {
         })
         .catch(error => {
             if (error && error.message) {
-                console.error('Error loading grooming logs:', error.message);
             }
             updateTable([]);
         });
@@ -379,7 +378,6 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 if (error && error.message) {
-                    console.error('Error:', error.message);
                 }
                 showAlert('حدث خطأ أثناء الحذف', 'error');
             });

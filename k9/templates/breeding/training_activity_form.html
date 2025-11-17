@@ -311,7 +311,6 @@ function loadDogOptions() {
             });
         })
         .catch(error => {
-            console.error('Error loading dogs:', error);
             // Show user-friendly error message
             const select = document.getElementById('dog_id');
             select.innerHTML = '<option value="">خطأ في تحميل الكلاب</option>';
@@ -352,7 +351,6 @@ function loadTrainerOptions() {
             });
         })
         .catch(error => {
-            console.error('Error loading trainers:', error);
             // Show user-friendly error message
             const select = document.getElementById('trainer_id');
             select.innerHTML = '<option value="">خطأ في تحميل المدربين</option>';
@@ -475,7 +473,6 @@ function submitForm(event) {
         }, 1500);
     })
     .catch(error => {
-        console.error('Error submitting form:', error);
         showError('حدث خطأ: ' + error.message);
         
         // Re-enable submit button

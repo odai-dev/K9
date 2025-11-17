@@ -24,7 +24,6 @@ const ExcretionManager = {
         
         if (isEdit) {
             // Form is pre-populated by the template
-            console.log('Edit mode initialized');
         } else {
             // Set default date and time for new entries
             const now = new Date();
@@ -96,7 +95,6 @@ const ExcretionManager = {
             }
         } catch (error) {
             if (error && error.message) {
-                console.error('Error loading projects:', error.message);
             }
         }
     },
@@ -130,7 +128,6 @@ const ExcretionManager = {
                 });
             }
         } catch (error) {
-            console.error('Error loading dogs:', error);
         }
     },
 
@@ -188,7 +185,6 @@ const ExcretionManager = {
             }
         } catch (error) {
             if (error && error.message) {
-                console.error('Error loading excretion data:', error.message);
                 this.showError('حدث خطأ في تحميل البيانات');
             }
         } finally {
@@ -380,7 +376,6 @@ const ExcretionManager = {
             }
         } catch (error) {
             if (error && error.message) {
-                console.error('Error deleting item:', error.message);
                 this.showError('حدث خطأ في حذف السجل');
             }
         }
@@ -442,7 +437,6 @@ const ExcretionManager = {
             }
         } catch (error) {
             if (error && error.message) {
-                console.error('Error submitting form:', error.message);
                 this.showError('حدث خطأ في حفظ البيانات');
             }
         } finally {

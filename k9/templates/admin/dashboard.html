@@ -710,7 +710,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-refresh stats every 30 seconds
     setInterval(function() {
         // You can add AJAX calls here to update stats dynamically
-        console.log('Stats auto-refresh would happen here');
     }, 30000);
 });
 
@@ -749,7 +748,6 @@ async function loadDogsByProjectChart() {
             colors[0]
         );
     } catch (error) {
-        console.error('Error loading dogs by project chart:', error);
         ChartUtils.showChartError('dogsByProjectChart');
     }
 }
@@ -778,7 +776,6 @@ async function loadDogsByStatusChart() {
             'doughnut'
         );
     } catch (error) {
-        console.error('Error loading dogs by status chart:', error);
         ChartUtils.showChartError('dogsByStatusChart');
     }
 }
@@ -807,7 +804,6 @@ async function loadEmployeeByRoleChart() {
             'doughnut'
         );
     } catch (error) {
-        console.error('Error loading employee by role chart:', error);
         ChartUtils.showChartError('employeeByRoleChart');
     }
 }
@@ -836,7 +832,6 @@ async function loadProjectStatusChart() {
             'doughnut'
         );
     } catch (error) {
-        console.error('Error loading project status chart:', error);
         ChartUtils.showChartError('projectStatusChart');
     }
 }
@@ -872,7 +867,6 @@ async function loadSystemReportsChart() {
             'doughnut'
         );
     } catch (error) {
-        console.error('Error loading system reports chart:', error);
         ChartUtils.showChartError('systemReportsChart');
     }
 }

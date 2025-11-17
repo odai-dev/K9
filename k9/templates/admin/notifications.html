@@ -204,7 +204,6 @@ function markAsRead(notificationId) {
             updateUnreadCount();
         }
     })
-    .catch(error => console.error('Error:', error));
 }
 
 function markAllAsRead() {
@@ -225,7 +224,6 @@ function markAllAsRead() {
             window.location.reload();
         }
     })
-    .catch(error => console.error('Error:', error));
 }
 
 function updateUnreadCount() {

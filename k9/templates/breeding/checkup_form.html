@@ -361,7 +361,6 @@ function submitForm() {
         }
     })
     .catch(error => {
-        if (error && error.message) { console.error('Error:', error.message); }
         showAlert('حدث خطأ أثناء الحفظ', 'error');
         submitButton.disabled = false;
         submitButton.textContent = originalText;

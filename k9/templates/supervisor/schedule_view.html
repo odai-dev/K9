@@ -293,7 +293,6 @@ function lockSchedule() {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         alert('حدث خطأ أثناء قفل الجدول');
     });
 }
@@ -320,7 +319,6 @@ function unlockSchedule() {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         alert('حدث خطأ أثناء إلغاء قفل الجدول');
     });
 }
@@ -346,7 +344,6 @@ function replaceHandler(itemId) {
             modal.show();
         })
         .catch(error => {
-            console.error('Error:', error);
             alert('حدث خطأ أثناء تحميل السائسين');
         });
 }
@@ -382,7 +379,6 @@ function confirmReplace() {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         alert('حدث خطأ أثناء استبدال السائس');
     });
 }

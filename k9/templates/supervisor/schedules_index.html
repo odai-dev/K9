@@ -233,7 +233,6 @@ function lockSchedule(scheduleId) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         alert('حدث خطأ أثناء قفل الجدول');
     });
 }
@@ -260,7 +259,6 @@ function unlockSchedule(scheduleId) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         alert('حدث خطأ أثناء إلغاء قفل الجدول');
     });
 }
@@ -287,7 +285,6 @@ function deleteSchedule(scheduleId) {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         alert('حدث خطأ أثناء حذف الجدول');
     });
 }

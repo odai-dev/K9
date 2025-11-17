@@ -332,7 +332,6 @@ async function loadBackups() {
             container.innerHTML += backupHtml;
         });
     } catch (error) {
-        console.error('Error loading backups:', error);
         showAlert('فشل تحميل قائمة النسخ الاحتياطية', 'danger');
     }
 }
@@ -367,7 +366,6 @@ async function confirmCreateBackup() {
             showAlert(data.message, 'danger');
         }
     } catch (error) {
-        console.error('Error creating backup:', error);
         showAlert('فشل إنشاء النسخة الاحتياطية', 'danger');
     }
 }
@@ -402,7 +400,6 @@ async function confirmRestore() {
             showAlert(data.message, 'danger');
         }
     } catch (error) {
-        console.error('Error restoring backup:', error);
         showAlert('فشلت عملية الاستعادة', 'danger');
     }
 }
@@ -424,7 +421,6 @@ async function deleteBackup(filename) {
             showAlert(data.message, 'danger');
         }
     } catch (error) {
-        console.error('Error deleting backup:', error);
         showAlert('فشل حذف النسخة الاحتياطية', 'danger');
     }
 }
@@ -454,7 +450,6 @@ async function updateSettings() {
             showAlert(data.message, 'danger');
         }
     } catch (error) {
-        console.error('Error updating settings:', error);
         showAlert('فشل تحديث الإعدادات', 'danger');
     }
 }
@@ -476,7 +471,6 @@ async function cleanupOldBackups() {
             showAlert(data.message, 'danger');
         }
     } catch (error) {
-        console.error('Error cleaning up backups:', error);
         showAlert('فشل حذف النسخ القديمة', 'danger');
     }
 }
@@ -526,7 +520,6 @@ async function loadGoogleDriveStatus() {
             `;
         }
     } catch (error) {
-        console.error('Error loading Google Drive status:', error);
         const container = document.getElementById('googleDriveStatus');
         container.innerHTML = `
             <div class="alert alert-warning" role="alert">
@@ -554,7 +547,6 @@ async function disconnectGoogleDrive() {
             showAlert(data.message, 'danger');
         }
     } catch (error) {
-        console.error('Error disconnecting Google Drive:', error);
         showAlert('فشل قطع الاتصال بـ Google Drive', 'danger');
     }
 }

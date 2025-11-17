@@ -26,7 +26,6 @@ class FeedingLogManager {
     }
 
     initListPage() {
-        console.log('Initializing feeding log list page...');
         
         // Load initial data
         this.loadFeedingLogs();
@@ -53,7 +52,6 @@ class FeedingLogManager {
     }
 
     initFormPage() {
-        console.log('Initializing feeding log form page...');
         
         const form = document.getElementById('feedingLogForm');
         const addSupplementBtn = document.getElementById('addSupplement');
@@ -128,7 +126,6 @@ class FeedingLogManager {
             
         } catch (error) {
             if (error && error.message) {
-                console.error('Error loading feeding logs:', error.message);
                 this.showError('خطأ في تحميل سجلات التغذية');
             }
             this.hideLoading();
@@ -148,7 +145,6 @@ class FeedingLogManager {
                 if (Array.isArray(projectsData)) {
                     this.populateSelect('projectFilter', projectsData, 'id', 'name');
                 } else {
-                    console.error('Error loading projects: Expected array but got:', projectsData);
                     this.populateSelect('projectFilter', [], 'id', 'name');
                 }
                 
@@ -161,7 +157,6 @@ class FeedingLogManager {
                     projectFilter.setAttribute('data-listener-added', 'true');
                 }
             } else {
-                console.error('Error loading projects:', await projectsResponse.text());
                 this.populateSelect('projectFilter', [], 'id', 'name');
             }
             
@@ -169,7 +164,6 @@ class FeedingLogManager {
             await this.updateDogFilter();
             
         } catch (error) {
-            console.error('Error loading filter options:', error);
             // Ensure selects are populated with empty arrays
             this.populateSelect('projectFilter', [], 'id', 'name');
             this.populateSelect('dogFilter', [], 'id', dog => `${dog.name} (${dog.code})`);
@@ -192,18 +186,15 @@ class FeedingLogManager {
                 if (Array.isArray(dogsData)) {
                     this.populateSelect('dogFilter', dogsData, 'id', dog => `${dog.name} (${dog.code})`);
                 } else {
-                    console.error('Error loading dogs: Expected array but got:', dogsData);
                     // Clear the select with empty array
                     this.populateSelect('dogFilter', [], 'id', dog => `${dog.name} (${dog.code})`);
                 }
             } else {
-                console.error('Error loading dogs:', await dogsResponse.text());
                 // Clear the select with empty array
                 this.populateSelect('dogFilter', [], 'id', dog => `${dog.name} (${dog.code})`);
             }
             
         } catch (error) {
-            console.error('Error loading dogs:', error);
             // Clear the select with empty array
             this.populateSelect('dogFilter', [], 'id', dog => `${dog.name} (${dog.code})`);
         }
@@ -369,7 +360,6 @@ class FeedingLogManager {
             
         } catch (error) {
             if (error && error.message) {
-                console.error('Error deleting feeding log:', error.message);
                 this.showError('خطأ في حذف سجل التغذية');
             }
         }
@@ -418,7 +408,6 @@ class FeedingLogManager {
             
         } catch (error) {
             if (error && error.message) {
-                console.error('Error submitting form:', error.message);
                 this.showError('خطأ في إرسال البيانات');
             }
         }

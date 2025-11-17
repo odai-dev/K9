@@ -536,11 +536,9 @@ function loadProjects() {
             return response.json();
         })
         .then(data => {
-            console.log('Projects loaded:', data.projects.length);
             displayProjects(data.projects);
         })
         .catch(error => {
-            console.error('Error loading projects:', error);
             container.className = '';
             container.innerHTML = `
                 <div class="empty-state">
@@ -613,7 +611,6 @@ function loadUsers(projectId) {
             displayUsers(data.users);
         })
         .catch(error => {
-            console.error('Error loading users:', error);
             showError('فشل في تحميل المستخدمين');
         });
 }
@@ -678,7 +675,6 @@ function loadPermissions(userId, projectId) {
             displayPermissions(data.permissions);
         })
         .catch(error => {
-            console.error('Error loading permissions:', error);
             showError('فشل في تحميل الصلاحيات');
         });
 }
@@ -846,7 +842,6 @@ function savePermissions() {
             return Promise.all(responses.map(r => {
                 if (!r.ok) {
                     return r.text().then(text => {
-                        console.error('Server returned non-OK response:', text);
                         return { success: false, error: 'فشل في الحفظ' };
                     });
                 }
@@ -862,12 +857,10 @@ function savePermissions() {
                 // Reload permissions to reflect changes
                 loadPermissions(selectedUser.id, selectedProject.id);
             } else {
-                console.error('Failed results:', failed);
                 showError(`فشل حفظ ${failed.length} من التغييرات`);
             }
         })
         .catch(error => {
-            console.error('Error saving permissions:', error);
             showError('فشل في حفظ التغييرات: ' + error.message);
         })
         .finally(() => {

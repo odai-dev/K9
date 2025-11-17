@@ -106,7 +106,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         } catch (error) {
-            console.error('Error loading dogs:', error);
         }
     }
     
@@ -342,7 +341,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error('لم يتم استلام بيانات صحيحة من الخادم');
                 }
             } catch (parseError) {
-                console.error('JSON parsing error:', parseError);
                 throw new Error('خطأ في تحليل البيانات المستلمة');
             }
             
@@ -373,7 +371,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
         } catch (error) {
-            console.error('Error loading report data:', error);
             showError(error.message);
         }
     }
@@ -443,7 +440,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
         } catch (error) {
-            console.error('Error exporting PDF:', error);
             alert(`خطأ في التصدير: ${error.message}`);
         } finally {
             exportBtn.disabled = false;
