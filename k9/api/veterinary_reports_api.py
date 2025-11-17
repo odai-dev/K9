@@ -22,6 +22,13 @@ from k9.models.models import (
 )
 from k9.utils.utils import get_user_projects, check_project_access
 from k9.utils.utils_pdf_rtl import register_arabic_fonts, rtl, get_arabic_font_name
+from k9.utils.pdf_minimal_elegant import (
+    create_minimal_header,
+    create_info_section,
+    create_data_table,
+    get_minimal_table_style,
+    get_minimal_styles
+)
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
@@ -450,10 +457,7 @@ def export_pdf():
         doc = SimpleDocTemplate(file_path, pagesize=A4)
         story = []
         
-        # Import and create standardized header
-        from k9.utils.report_header import create_pdf_report_header
-        
-        # Header information
+        # Create minimal elegant header
         project_name = "الكل" if not data['filters']['project_id'] else "مشروع محدد"
         date_range = format_date_range_for_display(
             parse_date_string(date_from), 
@@ -461,40 +465,37 @@ def export_pdf():
             data['filters']['range_type']
         )
         
-        additional_info = f"المشروع: {project_name}   الفترة: {date_range}"
+        # Build structured metadata
+        metadata = {
+            'project': project_name,
+            'period': date_range,
+            'date': date_to
+        }
         
-        # Add standardized header
-        header_elements = create_pdf_report_header(
-            report_title_ar="التقرير البيطري",
-            additional_info=additional_info
+        # Add minimal elegant header
+        header_elements = create_minimal_header(
+            report_title="التقرير البيطري",
+            metadata=metadata
         )
         story.extend(header_elements)
         
-        # KPIs section
+        # KPIs section using minimal elegant design
         if data.get('kpis') and data['filters']['show_kpis']:
             kpis = data['kpis']
-            kpis_data = [
-                [rtl("إجمالي الزيارات"), str(kpis['total_visits'])],
-                [rtl("إجمالي الأدوية"), str(kpis['total_medications'])],
-                [rtl("إجمالي التكلفة"), f"{kpis['total_cost']} ر.س"],
-            ]
             
-            # No duration data for veterinary visits
+            # Build KPI info dict
+            kpi_info = {
+                'إجمالي الزيارات': str(kpis['total_visits']),
+                'إجمالي الأدوية': str(kpis['total_medications']),
+                'إجمالي التكلفة': f"{kpis['total_cost']} ر.س"
+            }
             
-            # Visit type breakdown
+            # Add visit type breakdown
             for visit_type, count in kpis['by_visit_type'].items():
-                kpis_data.append([rtl(f"زيارات {visit_type}"), str(count)])
+                kpi_info[f"زيارات {visit_type}"] = str(count)
             
-            kpis_table = Table(kpis_data, colWidths=[200, 100])
-            kpis_table.setStyle(TableStyle([
-                ('FONTNAME', (0, 0), (-1, -1), get_arabic_font_name()),
-                ('FONTSIZE', (0, 0), (-1, -1), 10),
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
-            ]))
-            story.append(kpis_table)
-            story.append(Spacer(1, 20))
+            # Use create_info_section for clean KPIs display
+            story.extend(create_info_section("الإحصائيات", kpi_info))
         
         # Data table
         table_data = None
@@ -587,42 +588,32 @@ def export_pdf():
                     ]
                 
                 table = Table(table_data, colWidths=col_widths)
-                table.setStyle(TableStyle([
+                
+                # Use minimal elegant table style
+                minimal_style = get_minimal_table_style()
+                table_style = minimal_style._cmds + [
                     ('FONTNAME', (0, 0), (-1, -1), get_arabic_font_name()),
                     ('FONTSIZE', (0, 0), (-1, -1), 7),  # Smaller font for better fit
                     ('FONTSIZE', (0, 0), (-1, 0), 8),   # Slightly larger for headers
                     ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightblue]),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 2),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 2),
-                    ('TOPPADDING', (0, 0), (-1, -1), 3),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-                ]))
+                ]
+                
+                table.setStyle(TableStyle(table_style))
                 story.append(table)
             else:
                 # Fallback for empty data
                 story.append(Paragraph(rtl("لا توجد بيانات لعرضها"), title_style))
         
-        # Footer for daily reports
+        # Footer for daily reports using minimal styles
         if data['granularity'] == "day":
             story.append(Spacer(1, 40))
-            footer_style = ParagraphStyle(
-                'Footer',
-                fontName=get_arabic_font_name(),
-                fontSize=12,
-                alignment=TA_RIGHT,
-                spaceAfter=10
-            )
+            styles = get_minimal_styles()
             
-            story.append(Paragraph(rtl("ملاحظات عامة:"), footer_style))
+            story.append(Paragraph(rtl("ملاحظات عامة:"), styles['SectionHeading']))
             story.append(Spacer(1, 20))
-            story.append(Paragraph(rtl("اسم الطبيب البيطري: ________________    التوقيع: ________________"), footer_style))
+            story.append(Paragraph(rtl("اسم الطبيب البيطري: ________________    التوقيع: ________________"), styles['Normal']))
             story.append(Spacer(1, 10))
-            story.append(Paragraph(rtl("مسؤول المشروع: ________________    التوقيع: ________________"), footer_style))
+            story.append(Paragraph(rtl("مسؤول المشروع: ________________    التوقيع: ________________"), styles['Normal']))
         
         # Build PDF
         doc.build(story)
