@@ -1,10 +1,10 @@
 """
 PM Report Review Service
-Handles review workflow for all report types (Handler, Trainer, Vet, Caretaker)
+Handles review workflow for all report types (Handler, Shift, Trainer, Vet, Caretaker)
 """
 from app import db
 from k9.models.models import User, Project, VeterinaryVisit, BreedingTrainingActivity, CaretakerDailyLog, ProjectManagerPermission
-from k9.models.models_handler_daily import HandlerReport, Notification, ReportReview, NotificationType
+from k9.models.models_handler_daily import HandlerReport, ShiftReport, Notification, ReportReview, NotificationType
 from k9.models.models import UserRole
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
@@ -17,6 +17,7 @@ class ReportReviewService:
     # Report type to model mapping
     REPORT_TYPE_MODELS = {
         'HANDLER': HandlerReport,
+        'SHIFT': ShiftReport,
         'TRAINER': BreedingTrainingActivity,
         'VET': VeterinaryVisit,
         'CARETAKER': CaretakerDailyLog
@@ -25,6 +26,7 @@ class ReportReviewService:
     # Report type to display names (Arabic)
     REPORT_TYPE_NAMES = {
         'HANDLER': 'تقرير السائس اليومي',
+        'SHIFT': 'تقرير الوردية',
         'TRAINER': 'تقرير التدريب',
         'VET': 'تقرير الطبيب البيطري',
         'CARETAKER': 'تقرير المربي اليومي'
@@ -33,7 +35,7 @@ class ReportReviewService:
     @staticmethod
     def _get_submitter_id(report, report_type: str) -> str:
         """Get the submitter user ID from a report"""
-        if report_type == 'HANDLER':
+        if report_type in ('HANDLER', 'SHIFT'):
             return str(report.handler_user_id)
         else:
             # TRAINER, VET, CARETAKER all use created_by_user_id
@@ -62,6 +64,7 @@ class ReportReviewService:
         if not project:
             return {
                 'HANDLER': [],
+                'SHIFT': [],
                 'TRAINER': [],
                 'VET': [],
                 'CARETAKER': []
@@ -76,6 +79,13 @@ class ReportReviewService:
             status='SUBMITTED'
         ).order_by(desc(HandlerReport.submitted_at)).all()
         result['HANDLER'] = [report for report in handler_reports]
+        
+        # Get SHIFT reports
+        shift_reports = ShiftReport.query.filter_by(
+            project_id=project_id,
+            status='SUBMITTED'
+        ).order_by(desc(ShiftReport.submitted_at)).all()
+        result['SHIFT'] = [report for report in shift_reports]
         
         # Get TRAINER reports
         trainer_reports = BreedingTrainingActivity.query.filter_by(
@@ -107,6 +117,7 @@ class ReportReviewService:
         if not project:
             return {
                 'HANDLER': 0,
+                'SHIFT': 0,
                 'TRAINER': 0,
                 'VET': 0,
                 'CARETAKER': 0,
@@ -117,6 +128,7 @@ class ReportReviewService:
         
         counts = {
             'HANDLER': HandlerReport.query.filter_by(project_id=project_id, status='SUBMITTED').count(),
+            'SHIFT': ShiftReport.query.filter_by(project_id=project_id, status='SUBMITTED').count(),
             'TRAINER': BreedingTrainingActivity.query.filter_by(project_id=project_id, status='SUBMITTED').count(),
             'VET': VeterinaryVisit.query.filter_by(project_id=project_id, status='SUBMITTED').count(),
             'CARETAKER': CaretakerDailyLog.query.filter_by(project_id=project_id, status='SUBMITTED').count()
