@@ -322,12 +322,13 @@ def has_permission(user, permission_key: str, sub_permission=None, action=None, 
     
     # Add project_id filter if specified
     if project_id is not None:
-        permission_query = permission_query.filter_by(project_id=project_id)
-    else:
-        # For global permissions, check both project_id=None and any project-specific permissions
+        # Check for permissions specific to this project OR global permissions (project_id=None)
         permission_query = permission_query.filter(
-            (SubPermission.project_id.is_(None)) | (SubPermission.project_id.isnot(None))
+            (SubPermission.project_id == project_id) | (SubPermission.project_id.is_(None))
         )
+    else:
+        # When no project is specified, only check global permissions (project_id=None)
+        permission_query = permission_query.filter(SubPermission.project_id.is_(None))
     
     # Check if permission exists and is granted
     has_perm = permission_query.first() is not None

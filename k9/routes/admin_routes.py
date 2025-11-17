@@ -105,25 +105,33 @@ def update_user_permission():
         data = request.get_json()
         
         if not data:
+            current_app.logger.error("Permission update failed: No data received")
             return jsonify({'success': False, 'error': 'لا توجد بيانات'}), 400
+        
+        # Log incoming data for debugging
+        current_app.logger.info(f"Permission update request: user_id={data.get('user_id')}, section={data.get('section')}, subsection={data.get('subsection')}, type={data.get('permission_type')}, granted={data.get('is_granted')}, project_id={data.get('project_id')}")
         
         required_fields = ['user_id', 'section', 'subsection', 'permission_type', 'is_granted']
         if not all(field in data for field in required_fields):
+            missing = [f for f in required_fields if f not in data]
+            current_app.logger.error(f"Permission update failed: Missing fields: {missing}")
             return jsonify({'success': False, 'error': 'بيانات ناقصة'}), 400
     except Exception as e:
-        logger.error(f"Error parsing JSON: {e}")
+        current_app.logger.error(f"Error parsing JSON: {e}")
         return jsonify({'success': False, 'error': 'خطأ في تنسيق البيانات'}), 400
     
     try:
         user = User.query.get(data['user_id'])
         if not user:
+            current_app.logger.error(f"Permission update failed: User not found: {data['user_id']}")
             return jsonify({'success': False, 'error': 'مستخدم غير موجود'}), 404
         
         permission_type = PermissionType(data['permission_type'])
-    except ValueError:
+    except ValueError as e:
+        current_app.logger.error(f"Permission update failed: Invalid permission type: {data.get('permission_type')}, error: {e}")
         return jsonify({'success': False, 'error': 'نوع صلاحية غير صحيح'}), 400
     except Exception as e:
-        logger.error(f"Error fetching user: {e}")
+        current_app.logger.error(f"Error fetching user: {e}")
         return jsonify({'success': False, 'error': 'خطأ في جلب بيانات المستخدم'}), 500
     
     project_id = data.get('project_id')
@@ -139,6 +147,8 @@ def update_user_permission():
     old_value = existing_perm.is_granted if existing_perm else False
     new_value = data['is_granted']
     
+    current_app.logger.info(f"Updating permission for user {user.username}: {data['section']}.{data['subsection']}.{permission_type.value} from {old_value} to {new_value} (project_id={project_id})")
+    
     success = update_permission(
         user_id=user.id,
         section=data['section'],
@@ -150,20 +160,8 @@ def update_user_permission():
     )
     
     if success:
-        # Create audit log entry
-        audit_log = PermissionAuditLog()
-        audit_log.changed_by_user_id = current_user.id
-        audit_log.target_user_id = user.id
-        audit_log.section = data['section']
-        audit_log.subsection = data['subsection']
-        audit_log.permission_type = permission_type
-        audit_log.project_id = project_id
-        audit_log.old_value = old_value
-        audit_log.new_value = new_value
-        audit_log.ip_address = request.remote_addr
-        audit_log.user_agent = request.headers.get('User-Agent', '')
-        db.session.add(audit_log)
-        db.session.commit()
+        current_app.logger.info(f"Permission update successful for user {user.username}")
+        # Note: update_permission already creates audit log, no need to duplicate
         # Log audit
         log_audit(
             user_id=current_user.id,
@@ -175,6 +173,7 @@ def update_user_permission():
         
         return jsonify({'success': True, 'message': 'تم تحديث الصلاحية بنجاح'})
     else:
+        current_app.logger.error(f"Permission update FAILED for user {user.username}: {data['section']}.{data['subsection']}.{permission_type.value}")
         return jsonify({'success': False, 'error': 'فشل في تحديث الصلاحية'}), 500
 
 @admin_bp.route('/permissions/bulk-update', methods=['POST'])
