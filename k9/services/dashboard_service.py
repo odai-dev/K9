@@ -67,10 +67,7 @@ class DashboardService:
             DogStatus.ACTIVE: 'نشط',
             DogStatus.TRAINING: 'في التدريب',
             DogStatus.RETIRED: 'متقاعد',
-            DogStatus.INJURED: 'مصاب',
-            DogStatus.SICK: 'مريض',
-            DogStatus.DECEASED: 'متوفى',
-            DogStatus.TRANSFERRED: 'منقول'
+            DogStatus.DECEASED: 'متوفى'
         }
         
         labels = [status_labels.get(r.current_status, str(r.current_status)) for r in results]
@@ -99,8 +96,12 @@ class DashboardService:
             ReportStatus.DRAFT: 'مسودة',
             ReportStatus.SUBMITTED: 'مقدم',
             ReportStatus.APPROVED: 'موافق عليه',
+            ReportStatus.APPROVED_BY_PM: 'معتمد من PM',
+            ReportStatus.FORWARDED_TO_ADMIN: 'محول للإدارة',
             ReportStatus.REJECTED: 'مرفوض',
-            ReportStatus.NEEDS_REVISION: 'يحتاج مراجعة'
+            ReportStatus.REJECTED_BY_PM: 'مرفوض من PM',
+            ReportStatus.APPROVED_BY_ADMIN: 'معتمد من الإدارة',
+            ReportStatus.REJECTED_BY_ADMIN: 'مرفوض من الإدارة'
         }
         
         labels = [status_labels.get(r.status, str(r.status)) for r in results]
@@ -297,10 +298,9 @@ class DashboardService:
         role_labels = {
             EmployeeRole.HANDLER: 'سائس',
             EmployeeRole.TRAINER: 'مدرب',
-            EmployeeRole.CARETAKER: 'مربي',
-            EmployeeRole.VETERINARIAN: 'طبيب بيطري',
-            EmployeeRole.SUPERVISOR: 'مشرف',
-            EmployeeRole.MANAGER: 'مدير'
+            EmployeeRole.BREEDER: 'مربي',
+            EmployeeRole.VET: 'طبيب بيطري',
+            EmployeeRole.PROJECT_MANAGER: 'مدير مشروع'
         }
         
         labels = [role_labels.get(r.role, str(r.role)) for r in results]
@@ -326,8 +326,7 @@ class DashboardService:
             ProjectStatus.PLANNED: 'مخطط',
             ProjectStatus.ACTIVE: 'نشط',
             ProjectStatus.COMPLETED: 'مكتمل',
-            ProjectStatus.CANCELLED: 'ملغي',
-            ProjectStatus.ON_HOLD: 'معلق'
+            ProjectStatus.CANCELLED: 'ملغي'
         }
         
         labels = [status_labels.get(r.status, str(r.status)) for r in results]
