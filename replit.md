@@ -32,7 +32,7 @@ Preferred communication style: Simple, everyday language.
 - **Excel Export System**: Comprehensive XLSX export functionality for reports with Arabic RTL support.
 - **Modern Reporting Hub**: Centralized dashboard with dynamic statistics, categorized report organization, and integrated chart visualization.
 - **Handler Daily System**: Comprehensive daily operations management for K9 handlers including schedule creation, two-tier reporting (Shift and Daily Reports), and a modern notification system.
-- **Report Export System**: PDF and Excel export functionality for HandlerReport and ShiftReport with Arabic RTL support and role-based access control.
+- **Report Export System**: Unified Minimal Elegant PDF design for all report types (Handler, Shift, PM Daily, Veterinary) with Arabic RTL support, clean typography (Tajawal/Cairo fonts), calm color palette (#3A6EA5 blue, #333333 gray), and consistent table styling.
 - **PM Report Review Workflow**: A 2-tier review process for project-based reports with statuses, audit trails, and notifications.
 - **Admin Final Approval System**: Two-tier approval workflow (Project Manager review, General Admin final approval/rejection) for all report types, with dual notifications and audit logging.
 - **Account Management System**: Streamlined system access control for employees, linking employee records to user accounts, auto-role mapping, and secure password management.
@@ -61,6 +61,7 @@ Preferred communication style: Simple, everyday language.
   - Comprehensive permission checks throughout the application
 - **Structured Logging**: All error handling uses Flask's current_app.logger with appropriate levels (DEBUG, INFO, WARNING, ERROR) instead of print statements for production monitoring.
 - **Code Standards**: Clean, maintainable codebase ready for deployment with zero runtime errors, proper error handling, and production-grade security measures.
+- **Unified PDF Design**: Minimal Elegant design system implemented across all PDF reports with `k9/utils/pdf_minimal_elegant.py` template providing consistent headers, typography, color scheme, and table styling for professional document generation.
 
 ## External Dependencies
 
