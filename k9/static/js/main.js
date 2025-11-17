@@ -74,7 +74,7 @@ function updateNotificationCount(endpoint) {
             updateNotificationBadges(data.count);
         })
         .catch(error => {
-            console.error('Error fetching notification count:', error);
+            // Silent fail for polling - non-critical
         });
 }
 
@@ -212,7 +212,6 @@ function performSearch(query) {
     // Show loading state
     const searchInput = document.getElementById('globalSearch');
     if (!searchInput) {
-        console.warn('Search input not found');
         return;
     }
     const originalPlaceholder = searchInput.placeholder;
@@ -228,7 +227,6 @@ function performSearch(query) {
         })
         .catch(error => {
             if (error && error.message) {
-                console.error('Search error:', error.message);
                 showNotification('حدث خطأ أثناء البحث', 'error');
             }
         })
@@ -244,7 +242,6 @@ function performSearch(query) {
 function displaySearchResults(data) {
     const resultsContainer = document.getElementById('searchResults');
     if (!resultsContainer) {
-        console.warn('Search results container not found');
         return;
     }
     let html = '';
@@ -771,7 +768,6 @@ function initializeDashboard() {
 
 function initializeReports() {
     // Add any reports-specific functionality here
-    console.log('Reports page initialized');
 }
 
 function initializeFormHelpers() {

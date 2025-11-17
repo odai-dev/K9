@@ -141,7 +141,6 @@ function loadDogsForProject(projectId) {
             }
         })
         .catch(error => {
-            console.error('Error loading dogs:', error);
             dogSelect.innerHTML = '<option value="">جميع الكلاب</option>';
         });
 }
@@ -184,7 +183,6 @@ async function loadReport() {
         reportContentArea.style.display = 'block';
         
     } catch (error) {
-        console.error('Error loading report:', error);
         showError('خطأ في تحميل التقرير: ' + error.message);
     } finally {
         // Hide loading
@@ -632,7 +630,6 @@ async function exportToPDF() {
         }
         
     } catch (error) {
-        console.error('Export error:', error);
         showError('خطأ في تصدير الملف: ' + error.message);
     } finally {
         // Reset button
@@ -647,7 +644,6 @@ async function exportToPDF() {
  */
 function showSuccess(message) {
     // Create and show toast/alert (simplified version)
-    console.log('Success:', message);
     alert(message); // In production, use a proper toast notification
 }
 
@@ -657,6 +653,5 @@ function showSuccess(message) {
  */
 function showError(message) {
     // Create and show toast/alert (simplified version)
-    console.error('Error:', message);
     alert(message); // In production, use a proper toast notification
 }

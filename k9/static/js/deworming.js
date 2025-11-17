@@ -65,7 +65,6 @@ function loadDewormingData(page = 1) {
             hideLoading();
         })
         .catch(error => {
-            console.error('Error loading deworming data:', error.message);
             hideLoading();
             alert('خطأ في تحميل البيانات: ' + error.message);
         });
@@ -107,11 +106,9 @@ function updateDogFilter() {
                     dogFilter.appendChild(option);
                     });
                 } else {
-                    console.error('Expected dogs array but got:', typeof dogs, dogs);
                 }
             })
             .catch(error => {
-                console.error('Error loading dogs:', error);
             });
     } else {
         // Load all dogs when no project is selected
@@ -127,11 +124,9 @@ function updateDogFilter() {
                         dogFilter.appendChild(option);
                     });
                 } else {
-                    console.error('Expected dogs array but got:', typeof dogs, dogs);
                 }
             })
             .catch(error => {
-                console.error('Error loading all dogs:', error);
             });
     }
 }
@@ -311,7 +306,6 @@ function deleteDeworming(id) {
         loadDewormingData(currentPage);
     })
     .catch(error => {
-        console.error('Error deleting deworming:', error.message);
         alert('خطأ في حذف السجل: ' + error.message);
     });
 }
@@ -380,7 +374,6 @@ function handleFormSubmission(e) {
         window.location.href = '/breeding/deworming';
     })
     .catch(error => {
-        console.error('Error:', error.message);
         alert('خطأ في حفظ البيانات: ' + error.message);
     });
 }

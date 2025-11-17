@@ -67,7 +67,6 @@ async function loadProjects() {
         projectSelect.addEventListener('change', updateDogFilter);
     } catch (error) {
         if (error && error.message) {
-            console.error('Error loading projects:', error.message);
         }
     }
 }
@@ -98,7 +97,6 @@ async function updateDogFilter() {
             dogSelect.appendChild(option);
         });
     } catch (error) {
-        console.error('Error loading dogs:', error);
     }
 }
 
@@ -142,7 +140,6 @@ async function loadCleaningData() {
         }
     } catch (error) {
         if (error && error.message) {
-            console.error('Error loading cleaning data:', error.message);
             showError('خطأ في تحميل بيانات النظافة: ' + error.message);
         }
     }
@@ -273,7 +270,6 @@ async function deleteCleaning(id) {
         }
     } catch (error) {
         if (error && error.message) {
-            console.error('Error deleting cleaning:', error.message);
             showError('خطأ في حذف السجل: ' + error.message);
         }
     }
@@ -420,11 +416,9 @@ async function submitForm() {
             }, 1500);
         } else {
             const errorMessage = result.error || result.message || 'خطأ في حفظ البيانات';
-            console.error('Server error:', errorMessage);
             showError(errorMessage);
         }
     } catch (error) {
-        console.error('Error submitting form:', error.message || error);
         showError(error.message || 'خطأ في حفظ البيانات');
     }
 }

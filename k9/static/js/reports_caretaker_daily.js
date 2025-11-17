@@ -56,7 +56,6 @@ function loadReport(page = 1) {
             document.getElementById('report-content-area').style.display = 'block';
         })
         .catch(error => {
-            console.error('Error loading report:', error);
             showError('حدث خطأ أثناء تحميل التقرير');
         })
         .finally(() => {

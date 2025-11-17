@@ -179,7 +179,6 @@ function loadDogsForProject(projectId) {
             }
         })
         .catch(error => {
-            console.error('Error loading dogs:', error);
             dogSelect.innerHTML = '<option value="">جميع الكلاب</option>';
         });
 }

@@ -223,7 +223,6 @@ function loadData() {
             hideLoading();
         })
         .catch(error => {
-            console.error('Error loading data:', error);
             showError('حدث خطأ في تحميل البيانات: ' + error.message);
             hideLoading();
         });
@@ -374,7 +373,6 @@ function loadDogOptions() {
                 select.innerHTML += `<option value="${dog.id}">${dog.name}</option>`;
             });
         })
-        .catch(error => console.error('Error loading dogs:', error));
 }
 
 function loadTrainerOptions() {
@@ -388,7 +386,6 @@ function loadTrainerOptions() {
                 select.innerHTML += `<option value="${trainer.id}">${trainer.name}</option>`;
             });
         })
-        .catch(error => console.error('Error loading trainers:', error));
 }
 
 function viewActivity(activityId) {

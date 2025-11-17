@@ -279,7 +279,6 @@ async function loadChartData(endpoint) {
         const data = await response.json();
         return { success: true, data };
     } catch (error) {
-        console.error('Error loading chart data:', error);
         return { success: false, error: error.message };
     }
 }

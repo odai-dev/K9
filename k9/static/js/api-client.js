@@ -52,7 +52,6 @@ class K9ApiClient {
 
             return await response.json();
         } catch (error) {
-            console.error('API Request Error:', error);
             throw error;
         }
     }
@@ -127,7 +126,6 @@ class K9ApiClient {
 
             return { success: true, filename: finalFilename };
         } catch (error) {
-            console.error('Download Error:', error);
             throw error;
         }
     }

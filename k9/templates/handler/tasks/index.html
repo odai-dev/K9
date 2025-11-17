@@ -288,7 +288,6 @@ function startTask(taskId) {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
             alert('حدث خطأ أثناء بدء المهمة');
         });
     }
@@ -319,7 +318,6 @@ function completeTask() {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         alert('حدث خطأ أثناء إكمال المهمة');
     });
 }

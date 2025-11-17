@@ -42,7 +42,6 @@ class TrainerDailyReport {
             }
         } catch (error) {
             if (error && error.message) {
-                console.error('Error loading projects:', error.message);
             }
         }
     }
@@ -64,7 +63,6 @@ class TrainerDailyReport {
             }
         } catch (error) {
             if (error && error.message) {
-                console.error('Error loading trainers:', error.message);
             }
         }
     }
@@ -76,7 +74,6 @@ class TrainerDailyReport {
             });
             if (response.ok) {
                 const dogs = await response.json();
-                console.log('Dogs loaded successfully:', dogs);
                 const select = document.getElementById('dog_id');
                 dogs.forEach(dog => {
                     const option = document.createElement('option');
@@ -86,7 +83,6 @@ class TrainerDailyReport {
                 });
             }
         } catch (error) {
-            console.error('Error loading dogs:', error);
         }
     }
 

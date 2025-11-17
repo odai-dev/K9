@@ -88,7 +88,6 @@ function loadVets() {
         })
         .catch(error => {
             if (error && error.message) {
-                console.error('Error loading vets:', error.message);
             }
         });
 }
@@ -114,7 +113,6 @@ function loadDogs() {
         })
         .catch(error => {
             if (error && error.message) {
-                console.error('Error loading dogs:', error.message);
             }
         });
 }
@@ -159,7 +157,6 @@ function loadReport() {
     .catch(error => {
         hideLoading();
         if (error && error.message) {
-            console.error('Error loading report:', error.message);
             alert('حدث خطأ أثناء تحميل التقرير');
         }
     });
@@ -265,7 +262,6 @@ function exportPDF() {
     })
     .catch(error => {
         if (error && error.message) {
-            console.error('Error exporting PDF:', error.message);
             alert('حدث خطأ أثناء تصدير PDF');
         }
     });
