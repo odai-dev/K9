@@ -1,6 +1,8 @@
 """
 Standardized report header utilities for K9 Operations Management System
 Provides consistent header design across all PDF and Excel reports
+
+Updated to use Minimal Elegant design template
 """
 
 import os
@@ -11,6 +13,7 @@ from reportlab.lib.units import inch, cm
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
 from k9.utils.utils_pdf_rtl import rtl, register_arabic_fonts, get_arabic_font_name
+from k9.utils.pdf_minimal_elegant import create_minimal_header
 
 logger = logging.getLogger(__name__)
 
@@ -37,17 +40,50 @@ def get_company_header_data():
     }
 
 
-def create_pdf_report_header(report_title_ar, report_subtitle_ar="", additional_info=""):
+def create_pdf_report_header(report_title_ar, report_subtitle_ar="", additional_info="", metadata=None):
     """
-    Create standardized PDF report header with company logo and information
+    Create standardized PDF report header with Minimal Elegant design
     
     Args:
         report_title_ar: Arabic title of the report
         report_subtitle_ar: Optional Arabic subtitle  
-        additional_info: Optional additional information (date, project, etc.)
+        additional_info: Optional additional information (date, project, etc.) [Legacy support]
+        metadata: Optional metadata dict for modern template (preferred)
         
     Returns:
         List of ReportLab elements to add to story
+    """
+    # Use new Minimal Elegant template if metadata is provided
+    if metadata is not None:
+        return create_minimal_header(report_title_ar, metadata=metadata)
+    
+    # Legacy support - convert parameters to metadata format
+    legacy_metadata = {}
+    if report_subtitle_ar:
+        legacy_metadata['subtitle'] = report_subtitle_ar
+    
+    # Try to parse additional_info (simple approach)
+    # This is for backward compatibility
+    if additional_info:
+        # For now, just add as subtitle if no subtitle exists
+        if not legacy_metadata.get('subtitle'):
+            legacy_metadata['subtitle'] = additional_info
+    
+    return create_minimal_header(report_title_ar, metadata=legacy_metadata if legacy_metadata else None)
+
+
+def create_pdf_report_header_legacy(report_title_ar, report_subtitle_ar="", additional_info=""):
+    """
+    Legacy header creation function - kept for backward compatibility
+    This is the old implementation before Minimal Elegant design
+    
+    Args:
+        report_title_ar: Arabic title of the report
+        report_subtitle_ar: Optional Arabic subtitle  
+        additional_info: Optional additional information
+        
+    Returns:
+        List of ReportLab elements
     """
     # Register Arabic fonts
     register_arabic_fonts()
