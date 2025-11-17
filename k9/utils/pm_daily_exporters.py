@@ -1,6 +1,6 @@
 """
 PM Daily Report PDF Exporter
-Generates Arabic RTL PDF reports exactly matching the DOCX form structure
+Generates Arabic RTL PDF reports with Minimal Elegant design
 """
 
 import os
@@ -18,7 +18,12 @@ from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from k9.utils.utils_pdf_rtl import register_arabic_fonts, rtl, get_arabic_font_name
 from k9.utils.dates_ar import format_arabic_date
 from k9.services.pm_daily_services import get_pm_daily
-from k9.utils.report_header import create_pdf_report_header
+from k9.utils.pdf_minimal_elegant import (
+    create_minimal_header,
+    get_minimal_table_style,
+    get_minimal_styles,
+    add_page_number
+)
 
 
 def export_pm_daily_pdf(project_id: str, date_str: str, user, project_code: str | None = None) -> Dict[str, str]:
@@ -102,20 +107,24 @@ def _generate_pdf(data: Dict[str, Any], file_path: str):
 
 
 def _build_header(data: Dict[str, Any], font_name: str) -> List[Any]:
-    """Build standardized PDF header with company logo and information"""
+    """Build minimal elegant header with structured metadata"""
     # Date formatting
     report_date = date.fromisoformat(data['date'])
     formatted_date = format_arabic_date(report_date)
     day_name = data['day_name_ar']
     project_name = data.get('project_name', 'غير محدد')
     
-    # Create additional info
-    additional_info = f"اليوم: {day_name}   التاريخ: {formatted_date}   المشروع: {project_name}"
+    # Build structured metadata for minimal header
+    metadata = {
+        'date': formatted_date,
+        'project': project_name,
+        'period': day_name
+    }
     
-    # Create standardized header
-    return create_pdf_report_header(
-        report_title_ar="التقرير اليومي لرئيس الميدان",
-        additional_info=additional_info
+    # Create minimal elegant header
+    return create_minimal_header(
+        report_title="التقرير اليومي لرئيس الميدان",
+        metadata=metadata
     )
 
 
@@ -144,15 +153,10 @@ def _build_main_table(data: Dict[str, Any], font_name: str) -> List[Any]:
     for group in sorted(groups, key=lambda g: g.get('group_no', 0)):
         group_no = group.get('group_no', 0)
         
-        # Add group title/header
-        styles = getSampleStyleSheet()
-        group_title_style = styles['Normal'].clone('GroupTitleStyle')
-        group_title_style.fontName = font_name
-        group_title_style.fontSize = 12
-        group_title_style.alignment = TA_CENTER
-        
+        # Add group title using minimal styles
+        styles = get_minimal_styles()
         group_title = rtl(f"المجموعة {group_no}")
-        group_title_para = Paragraph(group_title, group_title_style)
+        group_title_para = Paragraph(group_title, styles['SubsectionHeading'])
         story.append(group_title_para)
         story.append(Spacer(1, 5*mm))
         
@@ -200,20 +204,15 @@ def _build_main_table(data: Dict[str, Any], font_name: str) -> List[Any]:
             
             table = Table(table_data, colWidths=col_widths)
             
-            # Table styling with optimized font sizes
-            table_style = [
-                # Header row styling
-                ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            # Use minimal elegant table style with compact sizing for landscape
+            minimal_style = get_minimal_table_style()
+            
+            # Add compact font sizes for landscape layout
+            table_style = minimal_style._cmds + [
+                ('FONTSIZE', (0, 0), (-1, 0), 6),   # Header font - compact for landscape
+                ('FONTSIZE', (0, 1), (-1, -1), 5),  # Data font - compact for landscape
                 ('FONTNAME', (0, 0), (-1, -1), font_name),
-                ('FONTSIZE', (0, 0), (-1, 0), 6),   # Header font - reduced for compact view
-                ('FONTSIZE', (0, 1), (-1, -1), 5), # Data font - reduced for compact view
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 3),
-                ('TOPPADDING', (0, 0), (-1, -1), 2),
-                ('BOTTOMPADDING', (0, 1), (-1, -1), 2),
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),  # Center align for PM tables
                 ('WORDWRAP', (0, 0), (-1, -1), 'CJK'),  # Enable text wrapping
             ]
             
@@ -334,16 +333,15 @@ def _build_special_rows(data: Dict[str, Any], font_name: str) -> List[Any]:
                 
             special_table_data.append(special_row)
         
-        # Create special table
+        # Create special table with minimal elegant style
         special_table = Table(special_table_data)
         
-        special_style = [
-            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        # Use minimal elegant style
+        minimal_style = get_minimal_table_style()
+        special_style = minimal_style._cmds + [
             ('FONTNAME', (0, 0), (-1, -1), font_name),
             ('FONTSIZE', (0, 0), (-1, -1), 8),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ]
         
         special_table.setStyle(TableStyle(special_style))
