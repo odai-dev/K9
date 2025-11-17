@@ -2,6 +2,8 @@ from flask import current_app
 """
 Report Export Service
 Handles PDF and Excel export for all report types
+
+Updated to use Minimal Elegant PDF design template
 """
 import os
 from io import BytesIO
@@ -24,6 +26,17 @@ from openpyxl.utils import get_column_letter
 
 from k9.models.models_handler_daily import HandlerReport, ShiftReport, ReportStatus
 from k9.models.models import VeterinaryVisit, BreedingTrainingActivity, CaretakerDailyLog
+from k9.utils.pdf_minimal_elegant import (
+    create_minimal_header, 
+    create_info_section,
+    create_text_section,
+    create_data_table,
+    get_minimal_table_style,
+    get_minimal_styles,
+    add_page_number,
+    MinimalColors
+)
+from k9.utils.utils_pdf_rtl import rtl, register_arabic_fonts, get_arabic_font_name
 
 
 class ReportExportService:
