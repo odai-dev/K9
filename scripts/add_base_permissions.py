@@ -23,8 +23,11 @@ def add_base_permissions_to_users():
         print("=" * 60)
         
         try:
-            # Get all users except GENERAL_ADMIN (they don't need DB permissions)
-            users = User.query.filter(User.role != UserRole.GENERAL_ADMIN).all()
+            # Get ALL users except GENERAL_ADMIN (they don't need DB permissions)
+            # This includes inactive users for complete audit trail
+            users = User.query.filter(
+                User.role != UserRole.GENERAL_ADMIN
+            ).all()
             
             if not users:
                 print("No users found that need base permissions.")

@@ -193,11 +193,15 @@ def create_base_permissions_for_user(user, db_session, project_id=None):
     created_count = 0
     
     for section, subsection, perm_type in base_perms:
+        # Normalize subsection for storage: use "" for None to maintain compatibility
+        # with existing permission-matrix code that expects empty strings
+        subsection_for_db = subsection if subsection else ""
+        
         # Check if permission already exists
         existing = SubPermission.query.filter_by(
             user_id=user.id,
             section=section,
-            subsection=subsection if subsection else "",
+            subsection=subsection_for_db,
             permission_type=perm_type,
             project_id=project_id
         ).first()
@@ -206,7 +210,7 @@ def create_base_permissions_for_user(user, db_session, project_id=None):
             new_perm = SubPermission(
                 user_id=user.id,
                 section=section,
-                subsection=subsection if subsection else "",
+                subsection=subsection_for_db,  # Store as "" for compatibility
                 permission_type=perm_type,
                 project_id=project_id,
                 is_granted=True
@@ -225,7 +229,7 @@ def is_base_permission(user, section, subsection, permission_type):
     Args:
         user: User object
         section: Permission section
-        subsection: Permission subsection (can be None or empty string)
+        subsection: Permission subsection (None or string, normalized for comparison)
         permission_type: PermissionType enum
         
     Returns:
@@ -233,7 +237,7 @@ def is_base_permission(user, section, subsection, permission_type):
     """
     base_perms = get_base_permissions_for_role(user.role)
     
-    # Normalize subsection for comparison
+    # Normalize subsection: treat None and "" equivalently to handle legacy data
     subsection_normalized = subsection if subsection else None
     
     for base_section, base_subsection, base_type in base_perms:
