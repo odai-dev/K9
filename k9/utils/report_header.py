@@ -4,12 +4,15 @@ Provides consistent header design across all PDF and Excel reports
 """
 
 import os
+import logging
 from reportlab.platypus import Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib import colors
 from reportlab.lib.units import inch, cm
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
 from k9.utils.utils_pdf_rtl import rtl, register_arabic_fonts, get_arabic_font_name
+
+logger = logging.getLogger(__name__)
 
 
 def get_company_header_data():
@@ -168,7 +171,7 @@ def create_pdf_report_header(report_title_ar, report_subtitle_ar="", additional_
             
     except Exception as e:
         # Fallback in case of any error
-        print(f"Warning: Could not create company header with logo: {e}")
+        logger.warning(f"Could not create company header with logo: {e}")
         company_header_text = f"{company_data['english']['company_name']} - {rtl(company_data['arabic']['company_name'])}"
         company_header = Paragraph(company_header_text, company_style_en)
         header_elements.append(company_header)

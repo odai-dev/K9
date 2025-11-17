@@ -2,8 +2,11 @@
 RTL PDF utilities for Arabic text
 """
 
+import logging
 import arabic_reshaper
 from bidi.algorithm import get_display
+
+logger = logging.getLogger(__name__)
 
 def fix_arabic_text_for_pdf(text):
     """Fix Arabic text for proper display in PDFs"""
@@ -45,7 +48,7 @@ def register_arabic_fonts():
             
         return True
     except Exception as e:
-        print(f"Warning: Could not register Arabic fonts: {e}")
+        logger.warning(f"Could not register Arabic fonts: {e}")
         return False
 
 def rtl(text):

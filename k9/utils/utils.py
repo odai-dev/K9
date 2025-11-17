@@ -53,7 +53,7 @@ def log_audit(user_id, action, target_type, target_id, description=None, old_val
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        print(f"Error logging audit: {str(e)}")
+        current_app.logger.error(f"Error logging audit: {str(e)}")
 
 def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
     """
@@ -88,14 +88,14 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
                 with open(font_path, 'rb') as f:
                     header = f.read(4)
                     if header[:2] == b'PK':  # ZIP file signature
-                        print(f"Font file {font_file} is corrupted (ZIP file)")
+                        current_app.logger.warning(f"Font file {font_file} is corrupted (ZIP file)")
                         continue
                 
                 pdfmetrics.registerFont(TTFont(font_name, font_path))
                 registered_fonts.append(font_name)
-                print(f"Successfully registered font: {font_name}")
+                current_app.logger.debug(f"Successfully registered font: {font_name}")
         except Exception as e:
-            print(f"Font registration error for {font_file}: {e}")
+            current_app.logger.error(f"Font registration error for {font_file}: {e}")
             continue
     
     # Set primary Arabic font
@@ -511,7 +511,7 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
         })
     except Exception as e:
         # Don't let audit logging errors break report generation
-        print(f"Warning: Could not log export audit trail: {e}")
+        current_app.logger.warning(f"Could not log export audit trail: {e}")
     
     return filename
 
@@ -755,7 +755,7 @@ def generate_excel_report(report_type, start_date, end_date, user, filters=None)
         })
     except Exception as e:
         # Don't let audit logging errors break report generation
-        print(f"Warning: Could not log export audit trail: {e}")
+        current_app.logger.warning(f"Could not log export audit trail: {e}")
     
     return filename
 
