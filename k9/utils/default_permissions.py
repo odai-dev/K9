@@ -26,7 +26,13 @@ ROLE_BASE_PERMISSIONS = {
         # Employees - view
         ("employees", None, PermissionType.VIEW),
         
-        # Schedules - full management
+        # Daily Schedules - full management
+        ("schedule", "daily", PermissionType.VIEW),
+        ("schedule", "daily", PermissionType.CREATE),
+        ("schedule", "daily", PermissionType.EDIT),
+        ("schedule", "daily", PermissionType.DELETE),
+        
+        # Legacy schedules support
         ("schedules", None, PermissionType.VIEW),
         ("schedules", None, PermissionType.CREATE),
         ("schedules", None, PermissionType.EDIT),
@@ -36,6 +42,12 @@ ROLE_BASE_PERMISSIONS = {
         ("attendance", None, PermissionType.VIEW),
         ("attendance", None, PermissionType.CREATE),
         ("attendance", None, PermissionType.EDIT),
+        
+        # Handler reports - view and approve
+        ("handler", "shift_reports", PermissionType.VIEW),
+        ("handler", "daily_reports", PermissionType.VIEW),
+        ("handler", "shift_reports.review", PermissionType.APPROVE),
+        ("handler", "daily_reports.review", PermissionType.APPROVE),
         
         # Reports - view and approve
         ("reports", "handler.daily", PermissionType.VIEW),
