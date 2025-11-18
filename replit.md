@@ -41,6 +41,7 @@ Preferred communication style: Simple, everyday language.
 - **Employee Document Management System**: Comprehensive document attachment system for employee records with categorized document types and secure file storage.
 - **Employee Geolocation Feature**: Automatic browser-based geolocation capture for employee residence with database storage and Google Maps link generation.
 - **Multi-Cloud Backup Integration**: Integrated cloud backup system supporting Google Drive and Dropbox with secure OAuth 2.0 authentication flow (CSRF state validation using Flow-generated state for Google Drive and cryptographically strong secrets.token_urlsafe for Dropbox), storage quota visualization, distributed backup across multiple providers, refresh token preservation to prevent authentication failures, and secure token management in UserCloudIntegration table.
+  - **OAuth Setup Requirements**: Requires environment secrets GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, DROPBOX_APP_KEY, DROPBOX_APP_SECRET. OAuth redirect URIs must be configured in respective provider consoles pointing to application callback URLs.
 
 ### System Design Choices
 - **Client/Server Separation**: Clear distinction between frontend and backend.
