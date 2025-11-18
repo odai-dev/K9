@@ -277,6 +277,7 @@
 
 {% block extra_js %}
 <script>
+const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 let selectedBackupForRestore = null;
 let createBackupModal, restoreBackupModal;
 
@@ -358,6 +359,7 @@ async function confirmCreateBackup() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
             },
             body: JSON.stringify({ description })
         });
@@ -393,6 +395,7 @@ async function confirmRestore() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
             },
             body: JSON.stringify({ confirm: true })
         });
@@ -415,7 +418,10 @@ async function deleteBackup(filename) {
     
     try {
         const response = await fetch(`{{ url_for('admin.delete_backup', filename='') }}${filename}`, {
-            method: 'POST'
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
         });
         
         const data = await response.json();
@@ -444,6 +450,7 @@ async function updateSettings() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
             },
             body: JSON.stringify(settings)
         });
@@ -465,7 +472,10 @@ async function cleanupOldBackups() {
     
     try {
         const response = await fetch('{{ url_for("admin.cleanup_old_backups") }}', {
-            method: 'POST'
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
         });
         
         const data = await response.json();
@@ -603,7 +613,10 @@ async function disconnectProvider(provider) {
     
     try {
         const response = await fetch(`{{ url_for('admin.disconnect_cloud_provider', provider='') }}${provider}`, {
-            method: 'POST'
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
         });
         
         const data = await response.json();
@@ -629,6 +642,7 @@ async function createDistributedBackup() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
             },
             body: JSON.stringify({
                 include_local: true,
