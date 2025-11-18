@@ -1798,3 +1798,38 @@ class BackupSettings(db.Model):
         return settings
 
 
+class CloudProvider(str, enum.Enum):
+    GOOGLE_DRIVE = "GOOGLE_DRIVE"
+    DROPBOX = "DROPBOX"
+
+
+class UserCloudIntegration(db.Model):
+    __tablename__ = "user_cloud_integrations"
+    
+    id = db.Column(get_uuid_column(), primary_key=True, default=generate_uuid)
+    user_id = db.Column(get_uuid_column(), db.ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
+    provider = db.Column(db.Enum(CloudProvider), nullable=False)
+    access_token = db.Column(Text, nullable=True)
+    refresh_token = db.Column(Text, nullable=True)
+    expires_at = db.Column(db.DateTime, nullable=True)
+    user_email = db.Column(db.String(255), nullable=True)
+    metadata = db.Column(JSON, nullable=True)
+    
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    user = db.relationship('User', backref='cloud_integrations')
+    
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'provider', name='uq_user_provider'),
+    )
+    
+    def __repr__(self):
+        return f'<UserCloudIntegration {self.user_id}: {self.provider.value}>'
+    
+    def is_token_valid(self):
+        if not self.expires_at:
+            return True
+        return datetime.utcnow() < self.expires_at
+
+
