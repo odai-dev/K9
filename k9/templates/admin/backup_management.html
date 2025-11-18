@@ -206,14 +206,20 @@
             </div>
 
             <div class="settings-section">
-                <h6 class="mb-3"><i class="fab fa-google-drive me-2"></i> Google Drive</h6>
+                <h6 class="mb-3"><i class="fas fa-cloud me-2"></i> النسخ الاحتياطي السحابي</h6>
                 
-                <div id="googleDriveStatus">
+                <div id="cloudStatus">
                     <div class="text-center py-3">
                         <div class="spinner-border spinner-border-sm text-primary" role="status">
                             <span class="visually-hidden">جاري التحميل...</span>
                         </div>
                     </div>
+                </div>
+                
+                <div class="mt-3">
+                    <button class="btn btn-outline-primary btn-sm w-100" onclick="createDistributedBackup()">
+                        <i class="fas fa-cloud-upload-alt me-2"></i> نسخ احتياطي موزع
+                    </button>
                 </div>
             </div>
         </div>
@@ -278,7 +284,7 @@ document.addEventListener('DOMContentLoaded', function() {
     createBackupModal = new bootstrap.Modal(document.getElementById('createBackupModal'));
     restoreBackupModal = new bootstrap.Modal(document.getElementById('restoreBackupModal'));
     loadBackups();
-    loadGoogleDriveStatus();
+    loadCloudStatus();
 });
 
 async function loadBackups() {
@@ -490,51 +496,113 @@ function showAlert(message, type) {
     }, 5000);
 }
 
-async function loadGoogleDriveStatus() {
+async function loadCloudStatus() {
     try {
-        const response = await fetch('{{ url_for("admin.google_drive_status") }}');
+        const response = await fetch('{{ url_for("admin.cloud_backup_status") }}');
         const data = await response.json();
         
-        const container = document.getElementById('googleDriveStatus');
+        const container = document.getElementById('cloudStatus');
         
-        if (data.connected) {
-            container.innerHTML = `
-                <div class="alert alert-success mb-3" role="alert">
-                    <i class="fas fa-check-circle me-2"></i>
-                    <strong>متصل بـ Google Drive</strong>
-                    ${data.user_email ? `<br><small class="text-muted">${data.user_email}</small>` : ''}
+        if (!data.success) {
+            container.innerHTML = '<div class="alert alert-danger">خطأ في تحميل الحالة</div>';
+            return;
+        }
+        
+        const { connections, storage } = data;
+        
+        let html = '';
+        
+        html += '<div class="mb-3"><strong class="d-block mb-2">Google Drive</strong>';
+        if (connections.google_drive) {
+            const quota = storage.google_drive.quota;
+            const percentage = quota ? quota.percentage.toFixed(1) : 0;
+            const used = quota ? formatBytes(quota.used) : '0 B';
+            const total = quota ? formatBytes(quota.total) : '0 B';
+            
+            html += `
+                <div class="alert alert-success alert-sm mb-2">
+                    <i class="fas fa-check-circle me-1"></i> متصل
                 </div>
-                <button class="btn btn-outline-danger btn-sm w-100" onclick="disconnectGoogleDrive()">
-                    <i class="fas fa-unlink me-2"></i> قطع الاتصال
+                ${quota ? `
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small>المستخدم: ${used}</small>
+                        <small>المتاح: ${total}</small>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar ${percentage > 90 ? 'bg-danger' : (percentage > 70 ? 'bg-warning' : 'bg-success')}" 
+                             style="width: ${percentage}%"></div>
+                    </div>
+                    <small class="text-muted">${percentage}% مستخدم</small>
+                </div>` : ''}
+                <button class="btn btn-outline-danger btn-sm w-100" onclick="disconnectProvider('google_drive')">
+                    <i class="fas fa-unlink me-1"></i> قطع الاتصال
                 </button>
             `;
         } else {
-            container.innerHTML = `
-                <div class="alert alert-info mb-3" role="alert">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <small>قم بربط حساب Google Drive لحفظ النسخ الاحتياطية تلقائياً في السحابة</small>
+            html += `
+                <div class="alert alert-info alert-sm mb-2">
+                    <i class="fas fa-info-circle me-1"></i> غير متصل
                 </div>
-                <a href="{{ url_for('admin.google_drive_connect') }}" class="btn btn-primary btn-sm w-100">
-                    <i class="fab fa-google me-2"></i> الاتصال بـ Google Drive
+                <a href="{{ url_for('admin.connect_google_drive_v2') }}" class="btn btn-primary btn-sm w-100 mb-2">
+                    <i class="fab fa-google me-1"></i> ربط Google Drive
                 </a>
             `;
         }
+        html += '</div>';
+        
+        html += '<div class="mb-3"><strong class="d-block mb-2">Dropbox</strong>';
+        if (connections.dropbox) {
+            const quota = storage.dropbox.quota;
+            const percentage = quota ? quota.percentage.toFixed(1) : 0;
+            const used = quota ? formatBytes(quota.used) : '0 B';
+            const allocated = quota ? formatBytes(quota.allocated) : '0 B';
+            
+            html += `
+                <div class="alert alert-success alert-sm mb-2">
+                    <i class="fas fa-check-circle me-1"></i> متصل
+                </div>
+                ${quota ? `
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small>المستخدم: ${used}</small>
+                        <small>المتاح: ${allocated}</small>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar ${percentage > 90 ? 'bg-danger' : (percentage > 70 ? 'bg-warning' : 'bg-success')}" 
+                             style="width: ${percentage}%"></div>
+                    </div>
+                    <small class="text-muted">${percentage}% مستخدم</small>
+                </div>` : ''}
+                <button class="btn btn-outline-danger btn-sm w-100" onclick="disconnectProvider('dropbox')">
+                    <i class="fas fa-unlink me-1"></i> قطع الاتصال
+                </button>
+            `;
+        } else {
+            html += `
+                <div class="alert alert-info alert-sm mb-2">
+                    <i class="fas fa-info-circle me-1"></i> غير متصل
+                </div>
+                <a href="{{ url_for('admin.connect_dropbox') }}" class="btn btn-primary btn-sm w-100 mb-2">
+                    <i class="fab fa-dropbox me-1"></i> ربط Dropbox
+                </a>
+            `;
+        }
+        html += '</div>';
+        
+        container.innerHTML = html;
     } catch (error) {
-        const container = document.getElementById('googleDriveStatus');
-        container.innerHTML = `
-            <div class="alert alert-warning" role="alert">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                <small>فشل تحميل حالة الاتصال</small>
-            </div>
-        `;
+        const container = document.getElementById('cloudStatus');
+        container.innerHTML = '<div class="alert alert-danger">فشل تحميل الحالة</div>';
     }
 }
 
-async function disconnectGoogleDrive() {
-    if (!confirm('هل أنت متأكد من قطع الاتصال بـ Google Drive؟ سيتم حذف بيانات الاعتماد المحفوظة.')) return;
+async function disconnectProvider(provider) {
+    const providerName = provider === 'google_drive' ? 'Google Drive' : 'Dropbox';
+    if (!confirm(`هل أنت متأكد من قطع الاتصال بـ ${providerName}؟`)) return;
     
     try {
-        const response = await fetch('{{ url_for("admin.google_drive_disconnect") }}', {
+        const response = await fetch(`{{ url_for('admin.disconnect_cloud_provider', provider='') }}${provider}`, {
             method: 'POST'
         });
         
@@ -542,13 +610,60 @@ async function disconnectGoogleDrive() {
         
         if (data.success) {
             showAlert(data.message, 'success');
-            loadGoogleDriveStatus();
+            loadCloudStatus();
         } else {
             showAlert(data.message, 'danger');
         }
     } catch (error) {
-        showAlert('فشل قطع الاتصال بـ Google Drive', 'danger');
+        showAlert(`فشل قطع الاتصال بـ ${providerName}`, 'danger');
     }
+}
+
+async function createDistributedBackup() {
+    if (!confirm('سيتم إنشاء نسخة احتياطية وتوزيعها على جميع المزودات المتصلة. هل تريد المتابعة؟')) return;
+    
+    try {
+        showAlert('جاري إنشاء وتوزيع النسخة الاحتياطية...', 'info');
+        
+        const response = await fetch('{{ url_for("admin.create_distributed_backup") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                include_local: true,
+                include_google_drive: true,
+                include_dropbox: true
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const results = data.results;
+            let message = 'تم إنشاء النسخة الاحتياطية بنجاح!\n';
+            if (results.local.success) message += '✓ محلي ';
+            if (results.google_drive.success) message += '✓ Google Drive ';
+            if (results.dropbox.success) message += '✓ Dropbox';
+            
+            showAlert(message, 'success');
+            loadBackups();
+            loadCloudStatus();
+            location.reload();
+        } else {
+            showAlert('فشل إنشاء النسخة الاحتياطية: ' + (data.errors?.join(', ') || data.message), 'danger');
+        }
+    } catch (error) {
+        showAlert('فشل إنشاء النسخة الموزعة', 'danger');
+    }
+}
+
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 }
 </script>
 {% endblock %}
