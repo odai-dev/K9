@@ -2,28 +2,10 @@ from app import db
 from flask_login import UserMixin
 from datetime import datetime, date
 from enum import Enum
-import uuid
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy import String, Text
 from sqlalchemy.orm import validates
-import os
-
-# Use String for UUID when using SQLite, UUID when using PostgreSQL
-def get_uuid_column():
-    database_url = os.environ.get("DATABASE_URL", "")
-    if database_url.startswith("sqlite") or not database_url:
-        return String(36)
-    else:
-        from sqlalchemy.dialects.postgresql import UUID
-        return UUID(as_uuid=True)
-
-# Helper function to ensure UUID values are strings for SQLite
-def ensure_uuid_string():
-    return lambda: str(uuid.uuid4())
-
-# Helper to get default UUID - always returns string for compatibility
-def default_uuid():
-    return str(uuid.uuid4())
+from k9.models.model_utils import get_uuid_column, default_uuid, ensure_uuid_string
 
 class UserRole(Enum):
     GENERAL_ADMIN = "GENERAL_ADMIN"
@@ -1798,7 +1780,7 @@ class BackupSettings(db.Model):
         return settings
 
 
-class CloudProvider(str, enum.Enum):
+class CloudProvider(str, Enum):
     GOOGLE_DRIVE = "GOOGLE_DRIVE"
     DROPBOX = "DROPBOX"
 
@@ -1806,14 +1788,14 @@ class CloudProvider(str, enum.Enum):
 class UserCloudIntegration(db.Model):
     __tablename__ = "user_cloud_integrations"
     
-    id = db.Column(get_uuid_column(), primary_key=True, default=generate_uuid)
+    id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     user_id = db.Column(get_uuid_column(), db.ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
     provider = db.Column(db.Enum(CloudProvider), nullable=False)
     access_token = db.Column(Text, nullable=True)
     refresh_token = db.Column(Text, nullable=True)
     expires_at = db.Column(db.DateTime, nullable=True)
     user_email = db.Column(db.String(255), nullable=True)
-    metadata = db.Column(JSON, nullable=True)
+    provider_metadata = db.Column(JSON, nullable=True)
     
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)

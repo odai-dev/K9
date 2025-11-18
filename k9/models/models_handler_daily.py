@@ -5,7 +5,7 @@ Daily Schedule and Handler Daily Report Models
 from app import db
 from datetime import datetime, date, time
 from enum import Enum
-from k9.models.models import get_uuid_column, default_uuid
+from k9.models.model_utils import get_uuid_column, default_uuid
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy import Text
 
