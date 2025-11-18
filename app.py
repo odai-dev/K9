@@ -527,7 +527,7 @@ with app.app_context():
         from apscheduler.schedulers.background import BackgroundScheduler
         from apscheduler.triggers.cron import CronTrigger
         from k9.models.models import BackupSettings, BackupFrequency
-        from k9.utils.backup_utils import BackupManager
+        from k9.utils.backup_utils import LocalBackupManager
         from datetime import datetime
         
         backup_scheduler = BackgroundScheduler()
@@ -542,7 +542,7 @@ with app.app_context():
                         print("⚠ Automated backup skipped: disabled in settings")
                         return
                     
-                    backup_manager = BackupManager()
+                    backup_manager = LocalBackupManager()
                     description = f'Automated {settings.backup_frequency.value.lower()} backup'
                     success, filename, error = backup_manager.create_backup(description)
                     

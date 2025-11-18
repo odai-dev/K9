@@ -761,10 +761,10 @@ def backup_management():
         return redirect("/unauthorized")
     
     from k9.models.models import BackupSettings
-    from k9.utils.backup_utils import BackupManager
+    from k9.utils.backup_utils import LocalBackupManager
     
     settings = BackupSettings.get_settings()
-    backup_manager = BackupManager()
+    backup_manager = LocalBackupManager()
     backups = backup_manager.list_backups()
     
     return render_template('admin/backup_management.html',
@@ -777,13 +777,13 @@ def backup_management():
 @admin_required
 def create_backup():
     """Create a new database backup"""
-    from k9.utils.backup_utils import BackupManager
+    from k9.utils.backup_utils import LocalBackupManager
     from k9.models.models import BackupSettings
     
     data = request.get_json() or {}
     description = data.get('description', '')
     
-    backup_manager = BackupManager()
+    backup_manager = LocalBackupManager()
     success, filename, error = backup_manager.create_backup(description)
     
     if success:
@@ -833,9 +833,9 @@ def create_backup():
 @admin_required
 def list_backups():
     """List all available backups"""
-    from k9.utils.backup_utils import BackupManager
+    from k9.utils.backup_utils import LocalBackupManager
     
-    backup_manager = BackupManager()
+    backup_manager = LocalBackupManager()
     backups = backup_manager.list_backups()
     
     backups_data = []
@@ -858,7 +858,7 @@ def list_backups():
 @admin_required
 def restore_backup(filename):
     """Restore database from backup"""
-    from k9.utils.backup_utils import BackupManager
+    from k9.utils.backup_utils import LocalBackupManager
     
     data = request.get_json() or {}
     confirm = data.get('confirm', False)
@@ -869,7 +869,7 @@ def restore_backup(filename):
             'message': 'يرجى التأكيد على الاستعادة'
         }), 400
     
-    backup_manager = BackupManager()
+    backup_manager = LocalBackupManager()
     success, error = backup_manager.restore_backup(filename)
     
     if success:
@@ -897,10 +897,10 @@ def restore_backup(filename):
 @admin_required
 def download_backup(filename):
     """Download a backup file"""
-    from k9.utils.backup_utils import BackupManager
+    from k9.utils.backup_utils import LocalBackupManager
     import os
     
-    backup_manager = BackupManager()
+    backup_manager = LocalBackupManager()
     backup_path = os.path.join(backup_manager.backup_dir, filename)
     
     if not os.path.exists(backup_path):
@@ -923,9 +923,9 @@ def download_backup(filename):
 @admin_required
 def delete_backup(filename):
     """Delete a backup file"""
-    from k9.utils.backup_utils import BackupManager
+    from k9.utils.backup_utils import LocalBackupManager
     
-    backup_manager = BackupManager()
+    backup_manager = LocalBackupManager()
     success, error = backup_manager.delete_backup(filename)
     
     if success:
@@ -1030,11 +1030,11 @@ def backup_settings():
 @admin_required
 def cleanup_old_backups():
     """Clean up old backups based on retention policy"""
-    from k9.utils.backup_utils import BackupManager
+    from k9.utils.backup_utils import LocalBackupManager
     from k9.models.models import BackupSettings
     
     settings = BackupSettings.get_settings()
-    backup_manager = BackupManager()
+    backup_manager = LocalBackupManager()
     
     count = backup_manager.cleanup_old_backups(settings.retention_days)
     
