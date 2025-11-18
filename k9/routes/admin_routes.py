@@ -1534,7 +1534,8 @@ def cloud_backup_status():
         current_app.logger.error(f"Error getting cloud backup status: {e}")
         return jsonify({
             'success': False,
-            'error': str(e)
+            'message': 'فشل تحميل حالة النسخ السحابي',
+            'errors': [str(e)]
         }), 500
 
 
@@ -1580,7 +1581,8 @@ def create_distributed_backup():
         current_app.logger.error(f"Error creating distributed backup: {e}")
         return jsonify({
             'success': False,
-            'error': str(e)
+            'message': 'فشل إنشاء النسخة الاحتياطية',
+            'errors': [str(e)]
         }), 500
 
 
@@ -1771,5 +1773,6 @@ def disconnect_cloud_provider(provider):
         current_app.logger.error(f"Error disconnecting {provider}: {e}")
         return jsonify({
             'success': False,
-            'error': str(e)
+            'message': f'فشل قطع الاتصال بـ {provider}',
+            'errors': [str(e)]
         }), 500
