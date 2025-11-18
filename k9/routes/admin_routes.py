@@ -831,6 +831,7 @@ def create_backup():
 @admin_bp.route('/backup/list')
 @login_required
 @admin_required
+@csrf.exempt
 def list_backups():
     """List all available backups"""
     from k9.utils.backup_utils import LocalBackupManager
@@ -1516,6 +1517,7 @@ def export_shift_report_excel(report_id):
 @admin_bp.route('/backup/cloud/status')
 @login_required
 @admin_required
+@csrf.exempt
 def cloud_backup_status():
     """Get cloud backup connection and storage status"""
     from k9.services.backup_manager import BackupManager
