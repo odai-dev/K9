@@ -1670,10 +1670,11 @@ def connect_dropbox():
     try:
         service = DropboxService(str(current_user.id))
         redirect_uri = url_for('admin.dropbox_callback', _external=True)
-        auth_url = service.get_authorization_url(redirect_uri)
+        auth_url, state = service.get_authorization_url(redirect_uri)
         
         session['cloud_oauth_provider'] = 'dropbox'
         session['cloud_oauth_user_id'] = str(current_user.id)
+        session['cloud_oauth_state'] = state
         
         return redirect(auth_url)
         
@@ -1694,26 +1695,34 @@ def dropbox_callback():
     
     stored_provider = session.get('cloud_oauth_provider')
     stored_user_id = session.get('cloud_oauth_user_id')
+    stored_state = session.get('cloud_oauth_state')
     
-    if not stored_provider or stored_provider != 'dropbox':
+    if not stored_provider or stored_provider != 'dropbox' or not stored_state:
         session.pop('cloud_oauth_provider', None)
         session.pop('cloud_oauth_user_id', None)
+        session.pop('cloud_oauth_state', None)
         flash('جلسة OAuth غير صالحة', 'error')
         return redirect(url_for('admin.backup_management'))
     
     try:
         code = request.args.get('code')
-        if not code:
-            flash('لم يتم استلام رمز التفويض', 'error')
+        state_from_callback = request.args.get('state')
+        
+        if not code or not state_from_callback or state_from_callback != stored_state:
+            session.pop('cloud_oauth_provider', None)
+            session.pop('cloud_oauth_user_id', None)
+            session.pop('cloud_oauth_state', None)
+            flash('رمز التفويض أو الحالة غير صالحة', 'error')
             return redirect(url_for('admin.backup_management'))
         
         service = DropboxService(stored_user_id)
         redirect_uri = url_for('admin.dropbox_callback', _external=True)
         
-        success = service.handle_oauth_callback(code, redirect_uri)
+        success = service.handle_oauth_callback(code, redirect_uri, stored_state)
         
         session.pop('cloud_oauth_provider', None)
         session.pop('cloud_oauth_user_id', None)
+        session.pop('cloud_oauth_state', None)
         
         if success:
             flash('تم ربط Dropbox بنجاح!', 'success')
