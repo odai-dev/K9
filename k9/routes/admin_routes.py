@@ -1507,3 +1507,252 @@ def export_shift_report_excel(report_id):
         as_attachment=True,
         download_name=filename
     )
+
+
+# ============================================================================
+# Multi-Cloud Backup Integration Routes
+# ============================================================================
+
+@admin_bp.route('/backup/cloud/status')
+@login_required
+@admin_required
+def cloud_backup_status():
+    """Get cloud backup connection and storage status"""
+    from k9.services.backup_manager import BackupManager
+    
+    try:
+        backup_manager = BackupManager(str(current_user.id))
+        connections = backup_manager.get_connection_status()
+        storage = backup_manager.get_storage_status()
+        
+        return jsonify({
+            'success': True,
+            'connections': connections,
+            'storage': storage
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error getting cloud backup status: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@admin_bp.route('/backup/cloud/create-distributed', methods=['POST'])
+@login_required
+@admin_required
+def create_distributed_backup():
+    """Create backup and distribute to selected cloud providers"""
+    from k9.services.backup_manager import BackupManager
+    
+    try:
+        data = request.get_json() or {}
+        
+        backup_manager = BackupManager(str(current_user.id))
+        results = backup_manager.create_and_distribute_backup(
+            include_local=data.get('include_local', True),
+            include_google_drive=data.get('include_google_drive', True),
+            include_dropbox=data.get('include_dropbox', True)
+        )
+        
+        if results['success']:
+            log_audit(
+                user_id=current_user.id,
+                action='CREATE',
+                target_type='MultiCloudBackup',
+                target_id=results.get('backup_file', 'unknown'),
+                description=f'Created distributed backup: Local={results["local"]["success"]}, Drive={results["google_drive"]["success"]}, Dropbox={results["dropbox"]["success"]}'
+            )
+            
+            return jsonify({
+                'success': True,
+                'message': 'تم إنشاء النسخة الاحتياطية وتوزيعها بنجاح',
+                'results': results
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'فشل إنشاء النسخة الاحتياطية',
+                'errors': results.get('errors', [])
+            }), 500
+            
+    except Exception as e:
+        current_app.logger.error(f"Error creating distributed backup: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@admin_bp.route('/backup/cloud/google-drive/connect')
+@login_required
+@admin_required
+def connect_google_drive_v2():
+    """Initiate Google Drive OAuth connection"""
+    from k9.services.google_drive_service import GoogleDriveService
+    
+    try:
+        service = GoogleDriveService(str(current_user.id))
+        redirect_uri = url_for('admin.google_drive_callback_v2', _external=True)
+        auth_url = service.get_authorization_url(redirect_uri)
+        
+        session['cloud_oauth_provider'] = 'google_drive'
+        session['cloud_oauth_user_id'] = str(current_user.id)
+        
+        return redirect(auth_url)
+        
+    except ValueError as e:
+        flash(f'خطأ في الإعداد: {str(e)}', 'error')
+        return redirect(url_for('admin.backup_management'))
+    except Exception as e:
+        current_app.logger.error(f"Error initiating Google Drive OAuth: {e}")
+        flash(f'فشل الاتصال بـ Google Drive: {str(e)}', 'error')
+        return redirect(url_for('admin.backup_management'))
+
+
+@admin_bp.route('/backup/cloud/google-drive/callback')
+@csrf.exempt
+def google_drive_callback_v2():
+    """Handle Google Drive OAuth callback"""
+    from k9.services.google_drive_service import GoogleDriveService
+    
+    stored_provider = session.get('cloud_oauth_provider')
+    stored_user_id = session.get('cloud_oauth_user_id')
+    
+    if not stored_provider or stored_provider != 'google_drive':
+        session.pop('cloud_oauth_provider', None)
+        session.pop('cloud_oauth_user_id', None)
+        flash('جلسة OAuth غير صالحة', 'error')
+        return redirect(url_for('admin.backup_management'))
+    
+    try:
+        code = request.args.get('code')
+        if not code:
+            flash('لم يتم استلام رمز التفويض', 'error')
+            return redirect(url_for('admin.backup_management'))
+        
+        service = GoogleDriveService(stored_user_id)
+        redirect_uri = url_for('admin.google_drive_callback_v2', _external=True)
+        
+        success = service.handle_oauth_callback(code, redirect_uri)
+        
+        session.pop('cloud_oauth_provider', None)
+        session.pop('cloud_oauth_user_id', None)
+        
+        if success:
+            flash('تم ربط Google Drive بنجاح!', 'success')
+        else:
+            flash('فشل ربط Google Drive', 'error')
+        
+        return redirect(url_for('admin.backup_management'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error handling Google Drive callback: {e}")
+        flash(f'حدث خطأ: {str(e)}', 'error')
+        return redirect(url_for('admin.backup_management'))
+
+
+@admin_bp.route('/backup/cloud/dropbox/connect')
+@login_required
+@admin_required
+def connect_dropbox():
+    """Initiate Dropbox OAuth connection"""
+    from k9.services.dropbox_service import DropboxService
+    
+    try:
+        service = DropboxService(str(current_user.id))
+        redirect_uri = url_for('admin.dropbox_callback', _external=True)
+        auth_url = service.get_authorization_url(redirect_uri)
+        
+        session['cloud_oauth_provider'] = 'dropbox'
+        session['cloud_oauth_user_id'] = str(current_user.id)
+        
+        return redirect(auth_url)
+        
+    except ValueError as e:
+        flash(f'خطأ في الإعداد: {str(e)}', 'error')
+        return redirect(url_for('admin.backup_management'))
+    except Exception as e:
+        current_app.logger.error(f"Error initiating Dropbox OAuth: {e}")
+        flash(f'فشل الاتصال بـ Dropbox: {str(e)}', 'error')
+        return redirect(url_for('admin.backup_management'))
+
+
+@admin_bp.route('/backup/cloud/dropbox/callback')
+@csrf.exempt
+def dropbox_callback():
+    """Handle Dropbox OAuth callback"""
+    from k9.services.dropbox_service import DropboxService
+    
+    stored_provider = session.get('cloud_oauth_provider')
+    stored_user_id = session.get('cloud_oauth_user_id')
+    
+    if not stored_provider or stored_provider != 'dropbox':
+        session.pop('cloud_oauth_provider', None)
+        session.pop('cloud_oauth_user_id', None)
+        flash('جلسة OAuth غير صالحة', 'error')
+        return redirect(url_for('admin.backup_management'))
+    
+    try:
+        code = request.args.get('code')
+        if not code:
+            flash('لم يتم استلام رمز التفويض', 'error')
+            return redirect(url_for('admin.backup_management'))
+        
+        service = DropboxService(stored_user_id)
+        redirect_uri = url_for('admin.dropbox_callback', _external=True)
+        
+        success = service.handle_oauth_callback(code, redirect_uri)
+        
+        session.pop('cloud_oauth_provider', None)
+        session.pop('cloud_oauth_user_id', None)
+        
+        if success:
+            flash('تم ربط Dropbox بنجاح!', 'success')
+        else:
+            flash('فشل ربط Dropbox', 'error')
+        
+        return redirect(url_for('admin.backup_management'))
+        
+    except Exception as e:
+        current_app.logger.error(f"Error handling Dropbox callback: {e}")
+        flash(f'حدث خطأ: {str(e)}', 'error')
+        return redirect(url_for('admin.backup_management'))
+
+
+@admin_bp.route('/backup/cloud/disconnect/<provider>', methods=['POST'])
+@login_required
+@admin_required
+def disconnect_cloud_provider(provider):
+    """Disconnect a cloud provider"""
+    from k9.services.backup_manager import BackupManager
+    
+    try:
+        backup_manager = BackupManager(str(current_user.id))
+        success = backup_manager.disconnect_provider(provider)
+        
+        if success:
+            log_audit(
+                user_id=current_user.id,
+                action='DISCONNECT',
+                target_type='CloudProvider',
+                target_id=provider,
+                description=f'Disconnected {provider}'
+            )
+            
+            return jsonify({
+                'success': True,
+                'message': f'تم فصل {provider} بنجاح'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'فشل الفصل'
+            }), 500
+            
+    except Exception as e:
+        current_app.logger.error(f"Error disconnecting {provider}: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
