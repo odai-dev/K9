@@ -8,7 +8,7 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime
 from flask import current_app
 
-from k9.utils.backup_utils import create_backup
+from k9.utils.backup_utils import LocalBackupManager
 from k9.services.google_drive_service import GoogleDriveService
 from k9.services.dropbox_service import DropboxService
 from k9.models.models import BackupSettings, CloudProvider
@@ -52,16 +52,18 @@ class BackupManager:
         }
         
         try:
-            # Create backup file
+            # Create backup file using local backup manager
             current_app.logger.info("Creating backup file...")
-            backup_file_path = create_backup()
+            local_backup = LocalBackupManager()
+            success, filename, error = local_backup.create_backup(description='', upload_to_drive=False)
             
-            if not backup_file_path:
-                results['errors'].append("Failed to create backup file")
+            if not success:
+                results['errors'].append(error or "Failed to create backup file")
                 return results
             
+            backup_file_path = os.path.join(local_backup.backup_dir, filename)
             results['backup_file'] = backup_file_path
-            backup_file_name = os.path.basename(backup_file_path)
+            backup_file_name = filename
             
             # Local storage
             if include_local:
@@ -257,8 +259,9 @@ class BackupManager:
     @staticmethod
     def format_bytes(bytes_value: int) -> str:
         """Format bytes to human readable string"""
+        size = float(bytes_value)
         for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-            if bytes_value < 1024.0:
-                return f"{bytes_value:.2f} {unit}"
-            bytes_value /= 1024.0
-        return f"{bytes_value:.2f} PB"
+            if size < 1024.0:
+                return f"{size:.2f} {unit}"
+            size /= 1024.0
+        return f"{size:.2f} PB"

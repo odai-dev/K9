@@ -8,7 +8,8 @@ import json
 
 logger = logging.getLogger(__name__)
 
-class BackupManager:
+class LocalBackupManager:
+    """Legacy local backup manager - use BackupManager from k9/services for multi-cloud backups"""
     def __init__(self, backup_dir: str = 'backups'):
         self.backup_dir = backup_dir
         os.makedirs(backup_dir, exist_ok=True)
@@ -132,7 +133,7 @@ class BackupManager:
             success, file_id, error = drive_manager.upload_backup(
                 credentials_dict,
                 backup_path,
-                settings.google_drive_folder_id,
+                settings.google_drive_folder_id or "",
                 description
             )
             
