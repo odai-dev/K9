@@ -22,7 +22,7 @@ Preferred communication style: Simple, everyday language.
 - **File Handling**: Local file system storage for uploads.
 - **Security**: Incorporates CSRF protection, configurable session timeouts, input validation, audit logging, and a strict permission-based access control with consolidated decorators. All decorators enforce admin_mode checking to prevent privilege escalation.
 - **Database Backup & Restore**: Comprehensive backup/restore functionality using pg_dump/psql, automated scheduling via APScheduler, configurable retention, and an admin dashboard for management.
-- **Multi-Cloud Backup System**: Advanced cloud backup integration with Google Drive and Dropbox support, featuring OAuth 2.0 authentication, storage quota monitoring, distributed backup capabilities, and unified BackupManager coordinating multiple cloud providers.
+- **Multi-Cloud Backup System**: Advanced cloud backup integration with Google Drive and Dropbox support, featuring secure OAuth 2.0 authentication with CSRF state validation, storage quota monitoring, distributed backup capabilities, refresh token preservation, and unified BackupManager coordinating multiple cloud providers.
 
 ### Feature Specifications
 - **Core Management**: Tracks K9 lifecycle, employee information, training records, veterinary care, and breeding production.
@@ -40,7 +40,7 @@ Preferred communication style: Simple, everyday language.
 - **Project Manager Dashboard**: Workflow-focused interface for the `PROJECT_MANAGER` role, providing a project overview, pending approvals, team status, and project-scoped data views.
 - **Employee Document Management System**: Comprehensive document attachment system for employee records with categorized document types and secure file storage.
 - **Employee Geolocation Feature**: Automatic browser-based geolocation capture for employee residence with database storage and Google Maps link generation.
-- **Multi-Cloud Backup Integration**: Integrated cloud backup system supporting Google Drive and Dropbox with OAuth authentication flow, storage quota visualization, distributed backup across multiple providers, and secure token management in UserCloudIntegration table.
+- **Multi-Cloud Backup Integration**: Integrated cloud backup system supporting Google Drive and Dropbox with secure OAuth 2.0 authentication flow (CSRF state validation using Flow-generated state for Google Drive and cryptographically strong secrets.token_urlsafe for Dropbox), storage quota visualization, distributed backup across multiple providers, refresh token preservation to prevent authentication failures, and secure token management in UserCloudIntegration table.
 
 ### System Design Choices
 - **Client/Server Separation**: Clear distinction between frontend and backend.
