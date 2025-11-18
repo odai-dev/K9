@@ -1594,10 +1594,11 @@ def connect_google_drive_v2():
     try:
         service = GoogleDriveService(str(current_user.id))
         redirect_uri = url_for('admin.google_drive_callback_v2', _external=True)
-        auth_url = service.get_authorization_url(redirect_uri)
+        auth_url, state = service.get_authorization_url(redirect_uri)
         
         session['cloud_oauth_provider'] = 'google_drive'
         session['cloud_oauth_user_id'] = str(current_user.id)
+        session['cloud_oauth_state'] = state
         
         return redirect(auth_url)
         
@@ -1618,23 +1619,30 @@ def google_drive_callback_v2():
     
     stored_provider = session.get('cloud_oauth_provider')
     stored_user_id = session.get('cloud_oauth_user_id')
+    stored_state = session.get('cloud_oauth_state')
     
-    if not stored_provider or stored_provider != 'google_drive':
+    if not stored_provider or stored_provider != 'google_drive' or not stored_state:
         session.pop('cloud_oauth_provider', None)
         session.pop('cloud_oauth_user_id', None)
+        session.pop('cloud_oauth_state', None)
         flash('جلسة OAuth غير صالحة', 'error')
         return redirect(url_for('admin.backup_management'))
     
     try:
         code = request.args.get('code')
-        if not code:
-            flash('لم يتم استلام رمز التفويض', 'error')
+        state_from_callback = request.args.get('state')
+        
+        if not code or not state_from_callback or state_from_callback != stored_state:
+            session.pop('cloud_oauth_provider', None)
+            session.pop('cloud_oauth_user_id', None)
+            session.pop('cloud_oauth_state', None)
+            flash('رمز التفويض أو الحالة غير صالحة', 'error')
             return redirect(url_for('admin.backup_management'))
         
         service = GoogleDriveService(stored_user_id)
         redirect_uri = url_for('admin.google_drive_callback_v2', _external=True)
         
-        success = service.handle_oauth_callback(code, redirect_uri)
+        success = service.handle_oauth_callback(code, redirect_uri, stored_state)
         
         session.pop('cloud_oauth_provider', None)
         session.pop('cloud_oauth_user_id', None)

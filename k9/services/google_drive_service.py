@@ -42,15 +42,15 @@ class GoogleDriveService:
         """Check if user has connected Google Drive"""
         return self.integration is not None and self.integration.access_token is not None
     
-    def get_authorization_url(self, redirect_uri: str) -> str:
+    def get_authorization_url(self, redirect_uri: str) -> Tuple[str, str]:
         """
-        Get OAuth authorization URL
+        Get OAuth authorization URL with state parameter
         
         Args:
             redirect_uri: OAuth callback URL
             
         Returns:
-            Authorization URL for user to visit
+            Tuple of (authorization_url, state) for CSRF protection
         """
         try:
             # Get client config from environment
@@ -68,19 +68,20 @@ class GoogleDriveService:
                 prompt='consent'
             )
             
-            return authorization_url
+            return authorization_url, state
             
         except Exception as e:
             current_app.logger.error(f"Error generating Google Drive auth URL: {e}")
             raise
     
-    def handle_oauth_callback(self, code: str, redirect_uri: str) -> bool:
+    def handle_oauth_callback(self, code: str, redirect_uri: str, state: str) -> bool:
         """
-        Handle OAuth callback and store credentials
+        Handle OAuth callback and store credentials with state validation
         
         Args:
             code: Authorization code from OAuth callback
             redirect_uri: OAuth callback URL
+            state: State parameter for CSRF protection
             
         Returns:
             True if successful, False otherwise
@@ -91,7 +92,8 @@ class GoogleDriveService:
             flow = Flow.from_client_config(
                 client_config,
                 scopes=self.SCOPES,
-                redirect_uri=redirect_uri
+                redirect_uri=redirect_uri,
+                state=state
             )
             
             flow.fetch_token(code=code)
@@ -104,8 +106,10 @@ class GoogleDriveService:
             
             # Save or update integration
             if self.integration:
+                # Preserve existing refresh_token if new one is None
+                old_refresh_token = self.integration.refresh_token
                 self.integration.access_token = credentials.token
-                self.integration.refresh_token = credentials.refresh_token
+                self.integration.refresh_token = credentials.refresh_token or old_refresh_token
                 self.integration.expires_at = expires_at
                 self.integration.updated_at = datetime.utcnow()
             else:
