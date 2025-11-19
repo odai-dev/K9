@@ -281,6 +281,13 @@ const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 let selectedBackupForRestore = null;
 let createBackupModal, restoreBackupModal;
 
+// Security: Escape HTML to prevent XSS attacks
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     createBackupModal = new bootstrap.Modal(document.getElementById('createBackupModal'));
     restoreBackupModal = new bootstrap.Modal(document.getElementById('restoreBackupModal'));
@@ -308,35 +315,70 @@ async function loadBackups() {
         
         data.backups.forEach(backup => {
             const backupDate = new Date(backup.created_at);
-            const backupHtml = `
-                <div class="backup-item">
-                    <div class="row align-items-center">
-                        <div class="col-md-6">
-                            <h6 class="mb-1">
-                                <i class="fas fa-file-archive me-2 text-primary"></i>
-                                ${backup.filename}
-                            </h6>
-                            <small class="text-muted">
-                                ${backupDate.toLocaleString('ar-SA')} | ${backup.size_mb} MB
-                            </small>
-                            ${backup.description ? `<p class="mb-0 mt-2 small text-secondary">${backup.description}</p>` : ''}
-                        </div>
-                        <div class="col-md-6 text-end">
-                            <button class="btn btn-sm btn-outline-success me-2" onclick="restoreBackup('${backup.filename}')">
-                                <i class="fas fa-redo"></i> استعادة
-                            </button>
-                            <a href="{{ url_for('admin.download_backup', filename='') }}${backup.filename}" 
-                               class="btn btn-sm btn-outline-primary me-2">
-                                <i class="fas fa-download"></i> تحميل
-                            </a>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteBackup('${backup.filename}')">
-                                <i class="fas fa-trash"></i> حذف
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            container.innerHTML += backupHtml;
+            
+            // Create backup item element
+            const backupItem = document.createElement('div');
+            backupItem.className = 'backup-item';
+            
+            const row = document.createElement('div');
+            row.className = 'row align-items-center';
+            
+            // Left column - Info
+            const leftCol = document.createElement('div');
+            leftCol.className = 'col-md-6';
+            
+            const title = document.createElement('h6');
+            title.className = 'mb-1';
+            title.innerHTML = '<i class="fas fa-file-archive me-2 text-primary"></i>';
+            const filenameText = document.createTextNode(backup.filename);
+            title.appendChild(filenameText);
+            
+            const dateInfo = document.createElement('small');
+            dateInfo.className = 'text-muted';
+            dateInfo.textContent = `${backupDate.toLocaleString('ar-SA')} | ${backup.size_mb} MB`;
+            
+            leftCol.appendChild(title);
+            leftCol.appendChild(dateInfo);
+            
+            if (backup.description) {
+                const desc = document.createElement('p');
+                desc.className = 'mb-0 mt-2 small text-secondary';
+                desc.textContent = backup.description;
+                leftCol.appendChild(desc);
+            }
+            
+            // Right column - Actions
+            const rightCol = document.createElement('div');
+            rightCol.className = 'col-md-6 text-end';
+            
+            // Restore button
+            const restoreBtn = document.createElement('button');
+            restoreBtn.className = 'btn btn-sm btn-outline-success me-2';
+            restoreBtn.innerHTML = '<i class="fas fa-redo"></i> استعادة';
+            restoreBtn.dataset.filename = backup.filename;
+            restoreBtn.addEventListener('click', () => restoreBackup(backup.filename));
+            
+            // Download link
+            const downloadLink = document.createElement('a');
+            downloadLink.className = 'btn btn-sm btn-outline-primary me-2';
+            downloadLink.href = '{{ url_for("admin.download_backup", filename="") }}' + encodeURIComponent(backup.filename);
+            downloadLink.innerHTML = '<i class="fas fa-download"></i> تحميل';
+            
+            // Delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn btn-sm btn-outline-danger';
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i> حذف';
+            deleteBtn.dataset.filename = backup.filename;
+            deleteBtn.addEventListener('click', () => deleteBackup(backup.filename));
+            
+            rightCol.appendChild(restoreBtn);
+            rightCol.appendChild(downloadLink);
+            rightCol.appendChild(deleteBtn);
+            
+            row.appendChild(leftCol);
+            row.appendChild(rightCol);
+            backupItem.appendChild(row);
+            container.appendChild(backupItem);
         });
     } catch (error) {
         showAlert('فشل تحميل قائمة النسخ الاحتياطية', 'danger');
@@ -391,7 +433,7 @@ async function confirmRestore() {
         restoreBackupModal.hide();
         showAlert('جاري استعادة النسخة الاحتياطية...', 'info');
         
-        const response = await fetch(`{{ url_for('admin.restore_backup', filename='') }}${selectedBackupForRestore}`, {
+        const response = await fetch(`{{ url_for('admin.restore_backup', filename='') }}${encodeURIComponent(selectedBackupForRestore)}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -495,10 +537,18 @@ function showAlert(message, type) {
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
     alertDiv.style.zIndex = '9999';
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
+    
+    // Security: Use textContent to prevent XSS
+    const messageSpan = document.createElement('span');
+    messageSpan.textContent = message;
+    alertDiv.appendChild(messageSpan);
+    
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'btn-close';
+    closeButton.setAttribute('data-bs-dismiss', 'alert');
+    alertDiv.appendChild(closeButton);
+    
     document.body.appendChild(alertDiv);
     
     setTimeout(() => {
