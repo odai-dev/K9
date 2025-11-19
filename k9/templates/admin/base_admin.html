@@ -220,11 +220,13 @@
                     </ol>
                 </nav>
             </div>
+            {% if request.endpoint != 'admin.dashboard' %}
             <div>
-                <a href="{{ url_for('main.dashboard') }}" class="btn btn-light">
-                    <i class="fas fa-arrow-right me-2"></i>العودة للرئيسية
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-light">
+                    <i class="fas fa-arrow-right me-2"></i>العودة للوحة التحكم
                 </a>
             </div>
+            {% endif %}
         </div>
     </div>
 </div>
