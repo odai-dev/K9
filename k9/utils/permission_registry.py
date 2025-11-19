@@ -508,12 +508,20 @@ def get_all_permissions_flat():
     """
     permissions_list = []
     
-    def process_section(section_key, section_data, parent_path=""):
+    def process_section(section_key, section_data, subsection_path=""):
+        """
+        Recursively process sections and their subsections
+        
+        Args:
+            section_key: Top-level section name (e.g., 'reports', 'admin')
+            section_data: Section configuration dictionary
+            subsection_path: Accumulated path for nested subsections (e.g., 'breeding_reports.feeding')
+        """
         if "permissions" in section_data:
             for perm_key, perm_data in section_data["permissions"].items():
                 permissions_list.append({
                     "section": section_key,
-                    "subsection": parent_path,
+                    "subsection": subsection_path,
                     "permission_key": perm_key,
                     "name_ar": perm_data["name_ar"],
                     "name_en": perm_data["name_en"],
@@ -523,8 +531,9 @@ def get_all_permissions_flat():
         
         if "subsections" in section_data:
             for subsection_key, subsection_data in section_data["subsections"].items():
-                new_path = f"{parent_path}.{subsection_key}" if parent_path else subsection_key
-                process_section(section_key, subsection_data, new_path)
+                # Build the full subsection path
+                new_subsection_path = f"{subsection_path}.{subsection_key}" if subsection_path else subsection_key
+                process_section(section_key, subsection_data, new_subsection_path)
     
     for section_key, section_data in PERMISSION_REGISTRY.items():
         process_section(section_key, section_data)
