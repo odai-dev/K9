@@ -71,72 +71,107 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
-/* Admin navigation tabs */
-.admin-nav-tabs {
-    background: white;
-    border-radius: 0;
-    padding: 0;
+/* Admin Quick Navigation */
+.admin-quick-nav {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 1.75rem 0;
     margin-bottom: 2rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    border-top: none;
 }
 
-[data-theme="dark"] .admin-nav-tabs {
-    background: #1a1a1a;
+[data-theme="dark"] .admin-quick-nav {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
-.admin-nav-tabs .nav-link {
-    color: #6c757d !important;
-    border: none;
-    border-radius: 0;
-    padding: 1rem 1.75rem;
-    transition: all 0.3s ease;
-    text-decoration: none !important;
+.admin-quick-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.875rem 1.5rem;
+    background: white;
+    border: 2px solid #e0e4e8;
+    border-radius: 12px;
+    color: #495057;
     font-weight: 600;
     font-size: 0.95rem;
-    border-bottom: 3px solid transparent;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    white-space: nowrap;
     position: relative;
+    overflow: hidden;
 }
 
-[data-theme="dark"] .admin-nav-tabs .nav-link {
-    color: #adb5bd !important;
+[data-theme="dark"] .admin-quick-nav-btn {
+    background: #2d2d2d;
+    border-color: #404040;
+    color: #e0e0e0;
 }
 
-.admin-nav-tabs .nav-link:hover {
-    background: rgba(102, 126, 234, 0.05);
-    color: #667eea !important;
-    text-decoration: none !important;
-    border-bottom-color: rgba(102, 126, 234, 0.3);
+.admin-quick-nav-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 0;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transition: width 0.3s ease;
+    z-index: 0;
 }
 
-[data-theme="dark"] .admin-nav-tabs .nav-link:hover {
-    background: rgba(79, 172, 254, 0.1);
-    color: #4facfe !important;
-    border-bottom-color: rgba(79, 172, 254, 0.3);
+.admin-quick-nav-btn i {
+    font-size: 1.15rem;
+    color: #667eea;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
 }
 
-.admin-nav-tabs .nav-link.active {
-    background: rgba(102, 126, 234, 0.1);
-    color: #667eea !important;
-    text-decoration: none !important;
-    border-bottom-color: #667eea;
+[data-theme="dark"] .admin-quick-nav-btn i {
+    color: #4facfe;
 }
 
-[data-theme="dark"] .admin-nav-tabs .nav-link.active {
-    background: rgba(79, 172, 254, 0.15);
-    color: #4facfe !important;
-    border-bottom-color: #4facfe;
+.admin-quick-nav-btn span {
+    position: relative;
+    z-index: 1;
 }
 
-.admin-nav-tabs .nav-link i {
-    opacity: 0.8;
-    transition: opacity 0.3s ease;
+.admin-quick-nav-btn:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+    color: white;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
 }
 
-.admin-nav-tabs .nav-link:hover i,
-.admin-nav-tabs .nav-link.active i {
-    opacity: 1;
+[data-theme="dark"] .admin-quick-nav-btn:hover {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    border-color: #4facfe;
+    box-shadow: 0 8px 16px rgba(79, 172, 254, 0.3);
+}
+
+.admin-quick-nav-btn:hover i {
+    color: white;
+    transform: scale(1.15) rotate(5deg);
+}
+
+.admin-quick-nav-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+    color: white;
+    box-shadow: 0 6px 12px rgba(102, 126, 234, 0.35);
+}
+
+[data-theme="dark"] .admin-quick-nav-btn.active {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    border-color: #4facfe;
+    box-shadow: 0 6px 12px rgba(79, 172, 254, 0.35);
+}
+
+.admin-quick-nav-btn.active i {
+    color: white;
 }
 
 .admin-card {
@@ -231,38 +266,61 @@
     </div>
 </div>
 
-<!-- Admin Navigation Tabs -->
-<ul class="nav admin-nav-tabs" role="tablist">
+<!-- Admin Navigation Cards -->
+<div class="admin-quick-nav">
     <div class="container-fluid px-4">
-        <div class="d-flex">
-            <li class="nav-item">
-                <a class="nav-link {{ 'active' if request.endpoint == 'admin.dashboard' }}" href="{{ url_for('admin.dashboard') }}">
-                    <i class="fas fa-tachometer-alt me-2"></i>لوحة التحكم
+        <div class="row g-3">
+            <div class="col-auto">
+                <a class="admin-quick-nav-btn {{ 'active' if request.endpoint == 'admin.dashboard' }}" href="{{ url_for('admin.dashboard') }}">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>لوحة التحكم</span>
                 </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ 'active' if 'permissions' in request.endpoint }}" href="{{ url_for('admin.comprehensive_permissions') }}">
-                    <i class="fas fa-user-shield me-2"></i>إدارة الصلاحيات
+            </div>
+            <div class="col-auto">
+                <a class="admin-quick-nav-btn {{ 'active' if 'permissions' in request.endpoint }}" href="{{ url_for('admin.comprehensive_permissions') }}">
+                    <i class="fas fa-user-shield"></i>
+                    <span>إدارة الصلاحيات</span>
                 </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ 'active' if request.endpoint == 'admin.admin_profile' }}" href="{{ url_for('admin.admin_profile') }}">
-                    <i class="fas fa-user-cog me-2"></i>الملف الشخصي
+            </div>
+            <div class="col-auto">
+                <a class="admin-quick-nav-btn {{ 'active' if request.endpoint == 'admin.admin_profile' }}" href="{{ url_for('admin.admin_profile') }}">
+                    <i class="fas fa-user-cog"></i>
+                    <span>الملف الشخصي</span>
                 </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ 'active' if 'audit' in request.endpoint }}" href="{{ url_for('admin.permissions_audit_log') }}">
-                    <i class="fas fa-history me-2"></i>سجل التدقيق
+            </div>
+            <div class="col-auto">
+                <a class="admin-quick-nav-btn {{ 'active' if 'audit' in request.endpoint }}" href="{{ url_for('admin.permissions_audit_log') }}">
+                    <i class="fas fa-history"></i>
+                    <span>سجل التدقيق</span>
                 </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ 'active' if 'backup' in request.endpoint }}" href="{{ url_for('admin.backup_management') }}">
-                    <i class="fas fa-database me-2"></i>النسخ الاحتياطي
+            </div>
+            <div class="col-auto">
+                <a class="admin-quick-nav-btn {{ 'active' if 'backup' in request.endpoint }}" href="{{ url_for('admin.backup_management') }}">
+                    <i class="fas fa-database"></i>
+                    <span>النسخ الاحتياطي</span>
                 </a>
-            </li>
+            </div>
+            <div class="col-auto">
+                <a class="admin-quick-nav-btn" href="{{ url_for('main.employee_user_links') }}">
+                    <i class="fas fa-link"></i>
+                    <span>ربط الموظفين</span>
+                </a>
+            </div>
+            <div class="col-auto">
+                <a class="admin-quick-nav-btn" href="{{ url_for('supervisor.schedules_index') }}">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>الجداول اليومية</span>
+                </a>
+            </div>
+            <div class="col-auto">
+                <a class="admin-quick-nav-btn" href="{{ url_for('main.reports_hub') }}">
+                    <i class="fas fa-chart-line"></i>
+                    <span>مركز التقارير</span>
+                </a>
+            </div>
         </div>
     </div>
-</ul>
+</div>
 
 <!-- Admin Content -->
 <div class="container-fluid px-4">
@@ -272,16 +330,16 @@
 
 {% block extra_js %}
 <script>
-// Admin page JavaScript utilities
+// Admin quick navigation utilities
 document.addEventListener('DOMContentLoaded', function() {
-    // Add active state to nav links based on current page
-    const currentPath = window.location.pathname;
-    const navLinks = document.querySelectorAll('.admin-nav-tabs .nav-link');
+    // Active state is handled server-side via Jinja2 templates
+    // Add smooth hover animations
+    const quickNavBtns = document.querySelectorAll('.admin-quick-nav-btn');
     
-    navLinks.forEach(link => {
-        if (link.getAttribute('href') === currentPath) {
-            link.classList.add('active');
-        }
+    quickNavBtns.forEach(btn => {
+        btn.addEventListener('mouseenter', function() {
+            this.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        });
     });
 });
 </script>

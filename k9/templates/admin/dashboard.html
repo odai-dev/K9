@@ -23,11 +23,12 @@
 .stat-card {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    border-radius: 15px;
-    padding: 25px;
-    margin-bottom: 20px;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 0;
     position: relative;
     overflow: hidden;
+    height: 100%;
 }
 
 .stat-card::before {
@@ -41,11 +42,11 @@
 }
 
 .stat-icon {
-    font-size: 3rem;
+    font-size: 2.5rem;
     opacity: 0.3;
     position: absolute;
-    top: 15px;
-    left: 20px;
+    top: 10px;
+    left: 15px;
 }
 
 .stat-content {
@@ -54,20 +55,20 @@
 }
 
 .stat-number {
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: 700;
-    margin-bottom: 5px;
+    margin-bottom: 3px;
 }
 
 .stat-label {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     opacity: 0.9;
 }
 
 .admin-nav-card {
     background: white;
-    border-radius: 15px;
-    padding: 30px;
+    border-radius: 12px;
+    padding: 1.5rem;
     text-align: center;
     transition: all 0.3s ease;
     border: 2px solid transparent;
@@ -81,22 +82,22 @@
 }
 
 .admin-nav-icon {
-    font-size: 3.5rem;
+    font-size: 2.75rem;
     color: #1a365d;
-    margin-bottom: 20px;
+    margin-bottom: 1rem;
 }
 
 .admin-nav-title {
-    font-size: 1.4rem;
+    font-size: 1.15rem;
     font-weight: 600;
     color: #2d3748;
-    margin-bottom: 10px;
+    margin-bottom: 0.5rem;
 }
 
 .admin-nav-desc {
     color: #718096;
-    font-size: 0.95rem;
-    line-height: 1.5;
+    font-size: 0.85rem;
+    line-height: 1.4;
 }
 
 .activity-item {
@@ -156,38 +157,9 @@
 {% endblock %}
 
 {% block admin_content %}
-<div class="container-fluid">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h2 mb-1">
-                <i class="fas fa-tachometer-alt me-2"></i>
-                لوحة تحكم المدير العام
-            </h1>
-            <p class="text-muted mb-0">مرحباً {{ current_user.full_name }}، نظرة عامة على النظام</p>
-        </div>
-        <div class="btn-group">
-            <a href="{{ url_for('account_management.create') }}" class="btn btn-success">
-                <i class="fas fa-user-plus me-1"></i>
-                إنشاء مستخدم جديد
-            </a>
-            <a href="{{ url_for('tasks.admin_create') }}" class="btn btn-primary">
-                <i class="fas fa-tasks me-1"></i>
-                إرسال مهمة جديدة
-            </a>
-            <a href="{{ url_for('supervisor.reports_index') }}" class="btn btn-info">
-                <i class="fas fa-file-alt me-1"></i>
-                التقارير
-            </a>
-            <a href="{{ url_for('admin.comprehensive_permissions') }}" class="btn btn-outline-primary">
-                <i class="fas fa-user-shield me-1"></i>
-                الصلاحيات
-            </a>
-        </div>
-    </div>
-
-    <!-- Statistics Cards Row -->
-    <div class="row mb-4">
+<div class="container-fluid px-3">
+    <!-- Statistics Cards Row - Compact -->
+    <div class="row g-3 mb-3">
         <div class="col-lg-3 col-md-6">
             <div class="stat-card">
                 <i class="fas fa-users stat-icon"></i>
@@ -227,16 +199,16 @@
     </div>
 
     <!-- Main Navigation Cards -->
-    <div class="row mb-4">
+    <div class="row g-3 mb-3">
         <div class="col-12">
-            <h3 class="h4 mb-3">
+            <h5 class="mb-2 text-muted">
                 <i class="fas fa-th-large me-2"></i>
                 الوظائف الإدارية
-            </h3>
+            </h5>
         </div>
         
         <!-- Account Management -->
-        <div class="col-lg-4 col-md-6 mb-4">
+        <div class="col-lg-4 col-md-6">
             <a href="{{ url_for('account_management.index') }}" class="text-decoration-none">
                 <div class="admin-nav-card admin-card">
                     <div class="admin-nav-icon">
@@ -251,7 +223,7 @@
         </div>
         
         <!-- Employee-User Links -->
-        <div class="col-lg-4 col-md-6 mb-4">
+        <div class="col-lg-4 col-md-6">
             <a href="{{ url_for('main.employee_user_links') }}" class="text-decoration-none">
                 <div class="admin-nav-card admin-card" style="border-color: #10b981;">
                     <div class="admin-nav-icon" style="color: #10b981;">
@@ -266,7 +238,7 @@
         </div>
         
         <!-- Task Assignment -->
-        <div class="col-lg-4 col-md-6 mb-4">
+        <div class="col-lg-4 col-md-6">
             <a href="{{ url_for('tasks.admin_index') }}" class="text-decoration-none">
                 <div class="admin-nav-card admin-card" style="border-color: #f5576c;">
                     <div class="admin-nav-icon" style="color: #f5576c;">
@@ -281,7 +253,7 @@
         </div>
         
         <!-- Handler Reports -->
-        <div class="col-lg-4 col-md-6 mb-4">
+        <div class="col-lg-4 col-md-6">
             <a href="{{ url_for('supervisor.reports_index') }}" class="text-decoration-none">
                 <div class="admin-nav-card admin-card" style="border-color: #4facfe;">
                     <div class="admin-nav-icon" style="color: #4facfe;">
@@ -296,7 +268,7 @@
         </div>
         
         <!-- Pending Reports for Final Approval -->
-        <div class="col-lg-4 col-md-6 mb-4">
+        <div class="col-lg-4 col-md-6">
             <a href="{{ url_for('admin.admin_pending_reports') }}" class="text-decoration-none">
                 <div class="admin-nav-card admin-card" style="border-color: #f59e0b;">
                     <div class="admin-nav-icon" style="color: #f59e0b;">
@@ -310,7 +282,7 @@
             </a>
         </div>
         
-        <div class="col-lg-4 col-md-6 mb-4">
+        <div class="col-lg-4 col-md-6">
             <a href="{{ url_for('admin.comprehensive_permissions') }}" class="text-decoration-none">
                 <div class="admin-nav-card admin-card">
                     <div class="admin-nav-icon">
@@ -323,7 +295,7 @@
                 </div>
             </a>
         </div>
-        <div class="col-lg-4 col-md-6 mb-4">
+        <div class="col-lg-4 col-md-6">
             <a href="{{ url_for('admin.admin_profile') }}" class="text-decoration-none">
                 <div class="admin-nav-card admin-card">
                     <div class="admin-nav-icon">
@@ -336,7 +308,7 @@
                 </div>
             </a>
         </div>
-        <div class="col-lg-4 col-md-6 mb-4">
+        <div class="col-lg-4 col-md-6">
             <a href="{{ url_for('admin.permissions_audit_log') }}" class="text-decoration-none">
                 <div class="admin-nav-card admin-card">
                     <div class="admin-nav-icon">
@@ -351,7 +323,7 @@
         </div>
         
         <!-- Backup Management -->
-        <div class="col-lg-4 col-md-6 mb-4">
+        <div class="col-lg-4 col-md-6">
             <a href="{{ url_for('admin.backup_management') }}" class="text-decoration-none">
                 <div class="admin-nav-card admin-card" style="border-color: #38b2ac;">
                     <div class="admin-nav-icon" style="color: #38b2ac;">
@@ -366,7 +338,7 @@
         </div>
         
         <!-- Daily Schedule Management -->
-        <div class="col-lg-4 col-md-6 mb-4">
+        <div class="col-lg-4 col-md-6">
             <a href="{{ url_for('supervisor.schedules_index') }}" class="text-decoration-none">
                 <div class="admin-nav-card admin-card" style="border-color: #dd6b20;">
                     <div class="admin-nav-icon" style="color: #dd6b20;">
@@ -381,7 +353,7 @@
         </div>
         
         <!-- Project Management -->
-        <div class="col-lg-4 col-md-6 mb-4">
+        <div class="col-lg-4 col-md-6">
             <a href="{{ url_for('main.projects') }}" class="text-decoration-none">
                 <div class="admin-nav-card admin-card" style="border-color: #ec4899;">
                     <div class="admin-nav-icon" style="color: #ec4899;">
@@ -396,7 +368,7 @@
         </div>
         
         <!-- Reports Hub -->
-        <div class="col-lg-4 col-md-6 mb-4">
+        <div class="col-lg-4 col-md-6">
             <a href="{{ url_for('main.reports_hub') }}" class="text-decoration-none">
                 <div class="admin-nav-card admin-card" style="border-color: #8b5cf6;">
                     <div class="admin-nav-icon" style="color: #8b5cf6;">
@@ -411,7 +383,7 @@
         </div>
         
         <!-- Breeding Care -->
-        <div class="col-lg-4 col-md-6 mb-4">
+        <div class="col-lg-4 col-md-6">
             <a href="{{ url_for('main.breeding_feeding') }}" class="text-decoration-none">
                 <div class="admin-nav-card admin-card" style="border-color: #10b981;">
                     <div class="admin-nav-icon" style="color: #10b981;">
@@ -539,7 +511,7 @@
         </div>
         
         <!-- Dogs by Project -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-lg-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white">
                     <h6 class="mb-0">
@@ -560,7 +532,7 @@
         </div>
 
         <!-- Dogs by Status -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-lg-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white">
                     <h6 class="mb-0">
@@ -581,7 +553,7 @@
         </div>
 
         <!-- Employee by Role -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-lg-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white">
                     <h6 class="mb-0">
@@ -602,7 +574,7 @@
         </div>
 
         <!-- Project Status -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-lg-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white">
                     <h6 class="mb-0">
@@ -623,7 +595,7 @@
         </div>
 
         <!-- System Reports Status -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-lg-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white">
                     <h6 class="mb-0">
