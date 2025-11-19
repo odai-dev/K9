@@ -167,7 +167,7 @@ def update_user_permission():
             user_id=current_user.id,
             action='EDIT',
             target_type='SubPermission',
-            target_id=f"{user.id}-{data['section']}-{data['subsection']}",
+            target_id=None,  # Fixed: Use None instead of invalid UUID string
             description=f"Updated permission for {user.username}: {data['section']} -> {data['subsection']} ({data['permission_type']}) = {data['is_granted']}"
         )
         
@@ -228,7 +228,7 @@ def bulk_update_user_permissions():
             user_id=current_user.id,
             action='EDIT',
             target_type='SubPermission',
-            target_id=f"{user.id}-{data['section']}-bulk",
+            target_id=None,  # Fixed: Use None instead of invalid UUID string
             description=f"Bulk updated {count} permissions for {user.username} in section {data['section']} = {data['is_granted']}"
         )
         
@@ -253,7 +253,7 @@ def initialize_user_permissions(user_id):
         user_id=current_user.id,
         action='CREATE',
         target_type='SubPermission',
-        target_id=f"{user.id}-default-init",
+        target_id=None,  # Fixed: Use None instead of invalid UUID string
         description=f"Initialized default permissions for {user.username}"
     )
     
@@ -447,7 +447,7 @@ def export_user_permissions_json(user_id):
         user_id=current_user.id,
         action='EXPORT',
         target_type='SubPermission',
-        target_id=f"{user.id}-export-json",
+        target_id=None,  # Fixed: Use None instead of invalid UUID string
         description=f"Exported permissions matrix for {user.username}"
     )
     
@@ -528,7 +528,7 @@ def export_user_permissions_pdf(user_id):
         user_id=current_user.id,
         action='EXPORT',
         target_type='SubPermission',
-        target_id=f"{user.id}-export-pdf",
+        target_id=None,  # Fixed: Use None instead of invalid UUID string
         description=f"Exported permissions PDF for {user.username}"
     )
     
@@ -555,7 +555,7 @@ def export_all_permissions_excel():
         user_id=current_user.id,
         action='EXPORT',
         target_type='SubPermission',
-        target_id='all-permissions-excel',
+        target_id=None,  # Fixed: Use None instead of invalid UUID string
         description="Exported all permissions to Excel for compliance"
     )
     
