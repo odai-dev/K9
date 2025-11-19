@@ -194,10 +194,10 @@ def create_permissions_report_excel(permissions: List[Any]) -> Workbook:
     data = []
     for perm in permissions:
         row = [
-            perm.user_id,
+            str(perm.user_id),  # Convert UUID to string for Excel
             perm.user.username,
             perm.user.full_name,
-            perm.project_id or 'Global',
+            str(perm.project_id) if perm.project_id else 'Global',  # Convert UUID to string
             perm.section,
             perm.subsection,
             perm.permission_type.value,
