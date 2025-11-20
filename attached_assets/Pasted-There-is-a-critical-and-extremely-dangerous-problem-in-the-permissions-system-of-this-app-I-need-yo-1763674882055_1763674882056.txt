@@ -1,0 +1,67 @@
+There is a critical and extremely dangerous problem in the permissions system of this app.
+I need you to perform a full deep diagnostic test on the entire permissions mechanism and fix everything that is not working correctly.
+
+THE SCENARIO (READ CAREFULLY):
+
+I created employees, assigned them accounts, added dogs, created a project, assigned handlers and dogs to it, and set a project manager.
+
+Then, I opened the "permissions configuration" screen and enabled several permissions for the project manager.
+
+HOWEVER:
+When I logged in using the project manager’s own account, none of the permissions I gave him appeared.
+
+Instead, he sees only one useless screen saying:
+“You are not allowed to access here, go back to homepage.”
+
+This means:
+The permissions system is NOT functional, NOT connected to the UI, NOT respected by the backend routes, and NOT applied to user interfaces.
+
+YOUR TASK: DO A FULL SYSTEM-WIDE PERMISSIONS AUDIT
+
+I want you to:
+
+1 — Verify that the permissions I activate are being stored correctly in the database.
+
+2 — Verify that when ANY user logs in, the system actually loads his granted permissions into his session/profile.
+
+3 — Ensure that the UI shows ALL allowed features and screens for that user, based only on his permission set.
+
+4 — Ensure that ALL forbidden screens disappear or redirect automatically.
+
+5 — Ensure that backend routes properly check the user’s loaded permissions.
+
+6 — Ensure there are NO broken routes, broken headers, broken links, missing permission keys, or outdated logic.
+
+7 — FIX ANY issue you discover immediately. Don’t just report it—repair it.
+
+8 — Run a FULL automatic test:
+
+User with zero permissions → sees nothing except home.
+
+User with partial permissions → sees only allowed features.
+
+User with full permissions → sees everything.
+
+9 — Ensure that permissions for project managers, handlers, admins, and all roles work consistently.
+
+10 — If the current permissions system design is broken, redesign it cleanly.
+Redesigning it is allowed and encouraged if needed.
+
+GOAL:
+
+I want the permissions system to be:
+
+100% functional
+
+100% reliable
+
+100% reflected correctly in all user interfaces
+
+100% compatible with backend logic
+
+100% dynamic and update instantly when I change permissions
+
+Fix everything and deliver a working permissions system that behaves exactly as expected.
+
+Do NOT skip anything. Do NOT leave any part untested.
+Make sure the final system is truly functional.
