@@ -96,8 +96,12 @@ def canonical_permission_key(permission_key, sub_permission=None, action=None):
     
     # Handle legacy 4-argument format
     category = permission_key.lower()
-    action_lower = action.value.lower() if hasattr(action, 'value') else str(action).lower()
-    action_enum = getattr(PermissionType, action_lower.upper(), None)
+    
+    # Safely extract action enum, handling None case
+    action_enum = None
+    if action is not None:
+        action_lower = action.value.lower() if hasattr(action, 'value') else str(action).lower()
+        action_enum = getattr(PermissionType, action_lower.upper(), None)
     
     # Map legacy categories
     legacy_mappings = {
@@ -864,32 +868,287 @@ def get_user_permissions_by_project(user_id, project_id):
     return permissions
 
 def initialize_default_permissions(user):
-    """Initialize default permissions for a user"""
-    # This is a placeholder - permissions are handled by role
-    pass
+    """
+    Initialize default permissions for a user based on their role.
+    For PROJECT_MANAGER users, creates database records for their default permissions.
+    
+    Args:
+        user: User object to initialize permissions for
+        
+    Returns:
+        Boolean indicating success
+    """
+    if not user or not user.role:
+        return False
+    
+    # Only initialize for PROJECT_MANAGER users - GENERAL_ADMIN has implicit all permissions
+    if user.role != UserRole.PROJECT_MANAGER:
+        return True
+    
+    try:
+        # Check if user already has permissions initialized
+        existing_perms = SubPermission.query.filter_by(user_id=user.id).first()
+        if existing_perms:
+            return True
+        
+        # Create default PM permissions in database
+        for section, permissions in PM_DEFAULT_PERMISSIONS.items():
+            if isinstance(permissions, list):
+                for perm in permissions:
+                    perm_type = getattr(PermissionType, perm.upper(), None)
+                    if perm_type:
+                        new_perm = SubPermission(
+                            user_id=user.id,
+                            section=section,
+                            subsection="",
+                            permission_type=perm_type,
+                            project_id=None,
+                            is_granted=True
+                        )
+                        db.session.add(new_perm)
+            elif isinstance(permissions, dict):
+                def add_nested_perms(section_name, perms_dict, path=""):
+                    for key, value in perms_dict.items():
+                        if isinstance(value, list):
+                            for perm in value:
+                                perm_type = getattr(PermissionType, perm.upper(), None)
+                                if perm_type:
+                                    subsection = f"{path}.{key}" if path else key
+                                    new_perm = SubPermission(
+                                        user_id=user.id,
+                                        section=section_name,
+                                        subsection=subsection,
+                                        permission_type=perm_type,
+                                        project_id=None,
+                                        is_granted=True
+                                    )
+                                    db.session.add(new_perm)
+                        elif isinstance(value, dict):
+                            new_path = f"{path}.{key}" if path else key
+                            add_nested_perms(section_name, value, new_path)
+                        elif isinstance(value, bool) and value:
+                            perm_type = getattr(PermissionType, key.upper(), None)
+                            if perm_type:
+                                new_perm = SubPermission(
+                                    user_id=user.id,
+                                    section=section_name,
+                                    subsection=path,
+                                    permission_type=perm_type,
+                                    project_id=None,
+                                    is_granted=True
+                                )
+                                db.session.add(new_perm)
+                
+                add_nested_perms(section, permissions)
+        
+        db.session.commit()
+        return True
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error initializing default permissions: {e}")
+        return False
 
 def export_permissions_matrix(users, project_id=None):
-    """Export permissions matrix to CSV format"""
-    # This is a placeholder for export functionality
-    # The project_id parameter allows filtering permissions by project
-    return "permissions_export.csv"
+    """
+    Export permissions matrix to CSV format.
+    
+    Args:
+        users: List of User objects to export permissions for
+        project_id: Optional project ID to filter permissions
+        
+    Returns:
+        String containing CSV data
+    """
+    import csv
+    from io import StringIO
+    
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    # Write header
+    header = ['User ID', 'Username', 'Role']
+    sections_set = set()
+    
+    # Collect all sections and subsections
+    for user in users:
+        matrix = get_user_permissions_matrix(user.id, project_id)
+        for section in matrix.keys():
+            sections_set.add(section)
+    
+    sections_list = sorted(list(sections_set))
+    
+    for section in sections_list:
+        subsections = PERMISSION_STRUCTURE.get(section, {})
+        if isinstance(subsections, dict):
+            for subsection, perms in subsections.items():
+                if isinstance(perms, dict):
+                    for perm in perms.keys():
+                        header.append(f"{section}.{subsection}.{perm}")
+                else:
+                    header.append(f"{section}.{subsection}")
+        else:
+            header.append(section)
+    
+    writer.writerow(header)
+    
+    # Write user permissions
+    for user in users:
+        row = [user.id, user.username, user.role.value if hasattr(user.role, 'value') else str(user.role)]
+        matrix = get_user_permissions_matrix(user.id, project_id)
+        
+        for section in sections_list:
+            subsections = PERMISSION_STRUCTURE.get(section, {})
+            if isinstance(subsections, dict):
+                for subsection, perms in subsections.items():
+                    if isinstance(perms, dict):
+                        for perm in perms.keys():
+                            value = False
+                            if section in matrix and isinstance(matrix[section], dict):
+                                if subsection in matrix[section] and isinstance(matrix[section][subsection], dict):
+                                    value = matrix[section][subsection].get(perm, False)
+                            row.append('Yes' if value else 'No')
+                    else:
+                        value = False
+                        if section in matrix and isinstance(matrix[section], dict):
+                            value = matrix[section].get(subsection, False)
+                        row.append('Yes' if value else 'No')
+            else:
+                value = matrix.get(section, False)
+                row.append('Yes' if value else 'No')
+        
+        writer.writerow(row)
+    
+    return output.getvalue()
 
 def get_user_permissions_for_project(user, project_id):
-    """Get user permissions for a specific project"""
-    if user.role == UserRole.GENERAL_ADMIN:
-        return list(PERMISSION_STRUCTURE.keys())
+    """
+    Get user permissions for a specific project.
     
-    # Project managers have limited permissions
-    return ["view", "record"]
+    Args:
+        user: User object
+        project_id: ID of the project
+        
+    Returns:
+        Dict with permission structure showing what user can do in the project
+    """
+    if not user or not project_id:
+        return {}
+    
+    # GENERAL_ADMIN has all permissions
+    if _is_admin_mode(user):
+        return {section: True for section in PERMISSION_STRUCTURE.keys()}
+    
+    # Query permissions for this specific project
+    permissions = get_user_permissions_by_project(user.id, project_id)
+    
+    return permissions
 
-def get_project_manager_permissions(user, permissions):
-    """Get permissions for project manager users"""
-    return permissions if user.role == UserRole.GENERAL_ADMIN else []
+def get_project_manager_permissions(user, project_id=None):
+    """
+    Get comprehensive permissions for a project manager user.
+    
+    Args:
+        user: User object (should be PROJECT_MANAGER role)
+        project_id: Optional project ID to get project-specific permissions
+        
+    Returns:
+        Dict with structure: {section: {permission_type: is_granted}}
+    """
+    if not user:
+        return {}
+    
+    # GENERAL_ADMIN has all permissions
+    if _is_admin_mode(user):
+        result = {}
+        for section in PERMISSION_STRUCTURE.keys():
+            result[section] = {
+                'view': True,
+                'create': True,
+                'edit': True,
+                'delete': True,
+                'export': True
+            }
+        return result
+    
+    # For PROJECT_MANAGER, get permissions from database
+    if project_id:
+        return get_user_permissions_by_project(user.id, project_id)
+    else:
+        # Get all global permissions
+        perms_list = get_user_permissions(user.id)
+        result = {}
+        for perm in perms_list:
+            section = perm['section']
+            perm_type = perm['permission_type'].lower()
+            if section not in result:
+                result[section] = {}
+            result[section][perm_type] = True
+        return result
 
 def check_project_access(user, project_id):
-    """Check if user has access to a specific project"""
-    if user.role == UserRole.GENERAL_ADMIN:
-        return True
+    """
+    Check if user has access to a specific project.
+    
+    A user has access if:
+    - They are GENERAL_ADMIN
+    - They are the project manager
+    - They have any permissions set for this project
+    - They are assigned to the project via employee assignments
+    
+    Args:
+        user: User object
+        project_id: ID of the project to check access for
         
-    # For project managers, you might want to implement project-specific access control
-    return True  # Simplified for now
+    Returns:
+        Boolean indicating if user has access
+    """
+    if not user or not project_id:
+        return False
+    
+    # GENERAL_ADMIN always has access
+    if _is_admin_mode(user):
+        return True
+    
+    # Get the project
+    project = Project.query.get(project_id)
+    if not project:
+        return False
+    
+    # Check if user is the project manager
+    if project.manager_id == user.id:
+        return True
+    
+    # Check if user has any permissions for this project
+    project_perms = SubPermission.query.filter_by(
+        user_id=user.id,
+        project_id=project_id,
+        is_granted=True
+    ).first()
+    
+    if project_perms:
+        return True
+    
+    # Check if user is assigned to project via employee
+    if user.employee_id:
+        from k9.models.models import project_employee_assignment, ProjectAssignment
+        
+        # Check project_employee_assignment table
+        assignment = db.session.query(project_employee_assignment).filter_by(
+            project_id=project_id,
+            employee_id=user.employee_id
+        ).first()
+        
+        if assignment:
+            return True
+        
+        # Check ProjectAssignment table
+        proj_assignment = ProjectAssignment.query.filter_by(
+            project_id=project_id,
+            employee_id=user.employee_id,
+            is_active=True
+        ).first()
+        
+        if proj_assignment:
+            return True
+    
+    return False
