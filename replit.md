@@ -71,6 +71,12 @@ Preferred communication style: Simple, everyday language.
   - Verified complete permission lifecycle: save to DB → read from DB → check permissions → display in UI
   - All automated tests passing: save, read, verify, and display permissions work correctly
   - System reads permissions directly from database (no stale cache issues)
+- **Permission-UI Connection Fix (Nov 22, 2025)**:
+  - **Dashboard Routing**: Replaced hard-coded role checks with `get_sections_for_user()` - users with granted permissions now reach the correct dashboard regardless of role
+  - **Route Handler Refactor**: Eliminated 8+ hard-coded role checks in `k9/routes/main.py` - all routes now use permission-aware helpers (`get_user_accessible_dogs`, `get_user_accessible_employees`, `get_user_assigned_projects`)
+  - **Report Generation Fix**: PDF/Excel exports in `k9/utils/utils.py` now use permission-aware helpers instead of role-based filtering
+  - **PM Scoping Critical Fix**: Updated `get_scoped_dogs` and `get_scoped_employees` in `k9/utils/pm_scoping.py` to support ALL three assignment methods: ProjectDog table (legacy), ProjectAssignment table (current), and assigned_to_user_id field (direct) - ensures complete data visibility for PROJECT_MANAGER users
+  - **Impact**: Users with granted permissions can now access data and UI elements immediately upon permission assignment, without role restrictions bypassing the permission system
 
 ## External Dependencies
 
