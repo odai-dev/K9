@@ -76,7 +76,8 @@ Preferred communication style: Simple, everyday language.
   - **Route Handler Refactor**: Eliminated 8+ hard-coded role checks in `k9/routes/main.py` - all routes now use permission-aware helpers (`get_user_accessible_dogs`, `get_user_accessible_employees`, `get_user_assigned_projects`)
   - **Report Generation Fix**: PDF/Excel exports in `k9/utils/utils.py` now use permission-aware helpers instead of role-based filtering
   - **PM Scoping Critical Fix**: Updated `get_scoped_dogs` and `get_scoped_employees` in `k9/utils/pm_scoping.py` to support ALL three assignment methods: ProjectDog table (legacy), ProjectAssignment table (current), and assigned_to_user_id field (direct) - ensures complete data visibility for PROJECT_MANAGER users
-  - **Impact**: Users with granted permissions can now access data and UI elements immediately upon permission assignment, without role restrictions bypassing the permission system
+  - **Template Permission Enforcement**: Removed all hard-coded role checks from UI templates - `unauthorized.html` now uses `is_admin()` and `get_sections_for_user()` for dashboard redirects; `handler/profile.html` displays role badge based on permissions instead of `current_user.role.value`; all navigation already uses `has_permission()` checks ensuring UI visibility matches granted permissions
+  - **Impact**: Users with granted permissions can now access data and UI elements immediately upon permission assignment, without role restrictions bypassing the permission system. UI dynamically shows/hides features based solely on permissions - no permissions = minimal handler interface, partial permissions = only assigned features, full permissions = complete interface
 
 ## External Dependencies
 
