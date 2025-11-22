@@ -494,16 +494,29 @@ def get_user_permissions_matrix(user_id, project_id=None):
     
     # GENERAL_ADMIN in general admin mode has all permissions
     if _is_admin_mode(user):
-        # General admin has all permissions
-        matrix = {}
-        for section, subsections in PERMISSION_STRUCTURE.items():
-            if isinstance(subsections, dict):
-                matrix[section] = {}
-                for subsection, permissions in subsections.items():
-                    if isinstance(permissions, dict):
-                        matrix[section][subsection] = {perm: True for perm in permissions.keys()}
+        # General admin has all permissions - build proper action-level nested structure
+        def build_admin_matrix_recursive(structure):
+            """Recursively build admin matrix preserving action-level dictionaries"""
+            result = {}
+            for key, value in structure.items():
+                if isinstance(value, dict):
+                    # Check if ALL values are strings (action-level permission descriptions)
+                    all_strings = all(isinstance(v, str) for v in value.values())
+                    if all_strings:
+                        # This is an action-level dict - create {action: True} for each
+                        result[key] = {action_key: True for action_key in value.keys()}
                     else:
-                        matrix[section][subsection] = True
+                        # Nested subsections - recurse deeper
+                        result[key] = build_admin_matrix_recursive(value)
+                elif isinstance(value, str):
+                    # Simple permission with description - set to True
+                    result[key] = True
+            return result
+        
+        matrix = {}
+        for section, structure in PERMISSION_STRUCTURE.items():
+            if isinstance(structure, dict):
+                matrix[section] = build_admin_matrix_recursive(structure)
             else:
                 matrix[section] = True
         return matrix
@@ -819,51 +832,83 @@ def get_users_by_project(project_id):
 
 def get_user_permissions_by_project(user_id, project_id):
     """
-    Get all permissions for a user within a specific project
+    Get all permissions for a user within a specific project.
+    Returns nested structure matching the permission hierarchy.
     
     Args:
         user_id: ID of the user
         project_id: ID of the project
         
     Returns:
-        Dict of permissions with structure: {section: {subsection: {permission_type: is_granted}}}
+        Nested dict structure: {section: {subsection: {permission_type: bool}}}
+        or {section: {permission_type: bool}} for non-nested sections
     """
     user = User.query.get(user_id)
     if not user:
         return {}
     
     if _is_admin_mode(user):
-        from k9.utils.permission_registry import PERMISSION_REGISTRY
-        permissions = {}
-        for section_key, section_data in PERMISSION_REGISTRY.items():
-            permissions[section_key] = {}
-            def extract_perms(data, path=""):
-                result = {}
-                if "permissions" in data:
-                    for perm_key, perm_data in data["permissions"].items():
-                        result[perm_key] = {
-                            "granted": True,
-                            "permission_type": perm_data["permission_type"].value if hasattr(perm_data["permission_type"], 'value') else str(perm_data["permission_type"])
-                        }
-                return result
-            permissions[section_key] = extract_perms(section_data)
-        return permissions
+        # Admin has all permissions - return full matrix with proper action-level nesting
+        def build_admin_matrix(structure):
+            """Recursively build admin matrix preserving action-level dicts"""
+            result = {}
+            for key, value in structure.items():
+                if isinstance(value, dict):
+                    # Check if ALL values are strings (permission descriptions)
+                    all_strings = all(isinstance(v, str) for v in value.values())
+                    if all_strings:
+                        # This is an action-level dict - create dict with each permission = True
+                        result[key] = {perm_key: True for perm_key in value.keys()}
+                    else:
+                        # Nested structure - recurse
+                        result[key] = build_admin_matrix(value)
+                elif isinstance(value, str):
+                    # Simple permission with description - set to True
+                    result[key] = True
+            return result
+        
+        matrix = {}
+        for section, structure in PERMISSION_STRUCTURE.items():
+            if isinstance(structure, dict):
+                matrix[section] = build_admin_matrix(structure)
+        return matrix
     
+    # Query permissions for this project (including global permissions)
     db_permissions = SubPermission.query.filter_by(
         user_id=user_id,
-        project_id=project_id
+        is_granted=True
+    ).filter(
+        (SubPermission.project_id == project_id) | (SubPermission.project_id.is_(None))
     ).all()
     
+    # Build nested structure
     permissions = {}
     for perm in db_permissions:
-        if perm.section not in permissions:
-            permissions[perm.section] = {}
+        section = perm.section
+        subsection = perm.subsection
+        perm_type = perm.permission_type.value.lower()
         
-        key = f"{perm.subsection}.{perm.permission_type.value}" if perm.subsection else perm.permission_type.value
-        permissions[perm.section][key] = {
-            "granted": perm.is_granted,
-            "permission_type": perm.permission_type.value
-        }
+        if section not in permissions:
+            permissions[section] = {}
+        
+        if not subsection or subsection == "":
+            # Simple section permission
+            permissions[section][perm_type] = True
+        else:
+            # Nested subsection permission
+            parts = subsection.split('.')
+            current = permissions[section]
+            
+            # Navigate/create nested structure
+            for part in parts:
+                if part not in current:
+                    current[part] = {}
+                if not isinstance(current[part], dict):
+                    current[part] = {}
+                current = current[part]
+            
+            # Set the permission at the leaf
+            current[perm_type] = True
     
     return permissions
 
@@ -886,26 +931,34 @@ def initialize_default_permissions(user):
         return True
     
     try:
-        # Check if user already has permissions initialized
-        existing_perms = SubPermission.query.filter_by(user_id=user.id).first()
-        if existing_perms:
-            return True
+        # Get existing permissions to avoid duplicates
+        existing_perms = SubPermission.query.filter_by(user_id=user.id).all()
+        existing_keys = {
+            (p.section, p.subsection or "", p.permission_type): p.is_granted
+            for p in existing_perms
+        }
         
-        # Create default PM permissions in database
+        # Track permissions to add
+        permissions_to_add = []
+        
+        # Create default PM permissions in database (only if not already present)
         for section, permissions in PM_DEFAULT_PERMISSIONS.items():
             if isinstance(permissions, list):
                 for perm in permissions:
                     perm_type = getattr(PermissionType, perm.upper(), None)
                     if perm_type:
-                        new_perm = SubPermission(
-                            user_id=user.id,
-                            section=section,
-                            subsection="",
-                            permission_type=perm_type,
-                            project_id=None,
-                            is_granted=True
-                        )
-                        db.session.add(new_perm)
+                        key = (section, "", perm_type)
+                        # Only add if not already present (or if revoked, leave it revoked)
+                        if key not in existing_keys:
+                            new_perm = SubPermission(
+                                user_id=user.id,
+                                section=section,
+                                subsection="",
+                                permission_type=perm_type,
+                                project_id=None,
+                                is_granted=True
+                            )
+                            permissions_to_add.append(new_perm)
             elif isinstance(permissions, dict):
                 def add_nested_perms(section_name, perms_dict, path=""):
                     for key, value in perms_dict.items():
@@ -914,34 +967,44 @@ def initialize_default_permissions(user):
                                 perm_type = getattr(PermissionType, perm.upper(), None)
                                 if perm_type:
                                     subsection = f"{path}.{key}" if path else key
-                                    new_perm = SubPermission(
-                                        user_id=user.id,
-                                        section=section_name,
-                                        subsection=subsection,
-                                        permission_type=perm_type,
-                                        project_id=None,
-                                        is_granted=True
-                                    )
-                                    db.session.add(new_perm)
+                                    perm_key = (section_name, subsection, perm_type)
+                                    # Only add if not already present
+                                    if perm_key not in existing_keys:
+                                        new_perm = SubPermission(
+                                            user_id=user.id,
+                                            section=section_name,
+                                            subsection=subsection,
+                                            permission_type=perm_type,
+                                            project_id=None,
+                                            is_granted=True
+                                        )
+                                        permissions_to_add.append(new_perm)
                         elif isinstance(value, dict):
                             new_path = f"{path}.{key}" if path else key
                             add_nested_perms(section_name, value, new_path)
                         elif isinstance(value, bool) and value:
                             perm_type = getattr(PermissionType, key.upper(), None)
                             if perm_type:
-                                new_perm = SubPermission(
-                                    user_id=user.id,
-                                    section=section_name,
-                                    subsection=path,
-                                    permission_type=perm_type,
-                                    project_id=None,
-                                    is_granted=True
-                                )
-                                db.session.add(new_perm)
+                                perm_key = (section_name, path, perm_type)
+                                # Only add if not already present
+                                if perm_key not in existing_keys:
+                                    new_perm = SubPermission(
+                                        user_id=user.id,
+                                        section=section_name,
+                                        subsection=path,
+                                        permission_type=perm_type,
+                                        project_id=None,
+                                        is_granted=True
+                                    )
+                                    permissions_to_add.append(new_perm)
                 
                 add_nested_perms(section, permissions)
         
-        db.session.commit()
+        # Add all new permissions in one batch
+        if permissions_to_add:
+            db.session.add_all(permissions_to_add)
+            db.session.commit()
+        
         return True
     except Exception as e:
         db.session.rollback()
@@ -950,71 +1013,96 @@ def initialize_default_permissions(user):
 
 def export_permissions_matrix(users, project_id=None):
     """
-    Export permissions matrix to CSV format.
+    Export permissions matrix to CSV format with proper handling of nested structures.
     
     Args:
         users: List of User objects to export permissions for
         project_id: Optional project ID to filter permissions
         
     Returns:
-        String containing CSV data
+        String containing CSV data with flattened permission columns
     """
     import csv
     from io import StringIO
     
+    if not users:
+        return ""
+    
     output = StringIO()
     writer = csv.writer(output)
     
-    # Write header
+    # Build comprehensive column list from PERMISSION_STRUCTURE
     header = ['User ID', 'Username', 'Role']
-    sections_set = set()
+    permission_columns = []
     
-    # Collect all sections and subsections
-    for user in users:
-        matrix = get_user_permissions_matrix(user.id, project_id)
-        for section in matrix.keys():
-            sections_set.add(section)
+    def flatten_permissions(section, structure, path=""):
+        """Recursively flatten permission structure to column names"""
+        columns = []
+        if isinstance(structure, dict):
+            for key, value in structure.items():
+                if isinstance(value, dict):
+                    # Check if this is a permission dict (has permission keys) or subsection dict
+                    has_perm_keys = any(k in ['view', 'create', 'edit', 'delete', 'export', 'record', 'reports', 'assign', 'approve'] for k in value.keys())
+                    if has_perm_keys:
+                        # This level has permissions
+                        for perm_key in value.keys():
+                            new_path = f"{path}.{key}" if path else key
+                            columns.append((section, new_path, perm_key))
+                    else:
+                        # Nested subsection - recurse
+                        new_path = f"{path}.{key}" if path else key
+                        columns.extend(flatten_permissions(section, value, new_path))
+                elif isinstance(value, str):
+                    # Simple permission with description
+                    columns.append((section, path, key))
+        return columns
     
-    sections_list = sorted(list(sections_set))
+    # Collect all permission columns from structure
+    for section, structure in PERMISSION_STRUCTURE.items():
+        permission_columns.extend(flatten_permissions(section, structure))
     
-    for section in sections_list:
-        subsections = PERMISSION_STRUCTURE.get(section, {})
-        if isinstance(subsections, dict):
-            for subsection, perms in subsections.items():
-                if isinstance(perms, dict):
-                    for perm in perms.keys():
-                        header.append(f"{section}.{subsection}.{perm}")
-                else:
-                    header.append(f"{section}.{subsection}")
+    # Add column headers
+    for section, subsection, perm in permission_columns:
+        if subsection:
+            header.append(f"{section}.{subsection}.{perm}")
         else:
-            header.append(section)
+            header.append(f"{section}.{perm}")
     
     writer.writerow(header)
     
     # Write user permissions
     for user in users:
-        row = [user.id, user.username, user.role.value if hasattr(user.role, 'value') else str(user.role)]
+        row = [
+            str(user.id),
+            user.username,
+            user.role.value if hasattr(user.role, 'value') else str(user.role)
+        ]
+        
         matrix = get_user_permissions_matrix(user.id, project_id)
         
-        for section in sections_list:
-            subsections = PERMISSION_STRUCTURE.get(section, {})
-            if isinstance(subsections, dict):
-                for subsection, perms in subsections.items():
-                    if isinstance(perms, dict):
-                        for perm in perms.keys():
-                            value = False
-                            if section in matrix and isinstance(matrix[section], dict):
-                                if subsection in matrix[section] and isinstance(matrix[section][subsection], dict):
-                                    value = matrix[section][subsection].get(perm, False)
-                            row.append('Yes' if value else 'No')
-                    else:
-                        value = False
-                        if section in matrix and isinstance(matrix[section], dict):
-                            value = matrix[section].get(subsection, False)
-                        row.append('Yes' if value else 'No')
-            else:
-                value = matrix.get(section, False)
-                row.append('Yes' if value else 'No')
+        # Extract values for each column
+        for section, subsection, perm in permission_columns:
+            value = False
+            
+            if section in matrix:
+                if not subsection or subsection == "":
+                    # Top-level permission
+                    if isinstance(matrix[section], dict):
+                        value = bool(matrix[section].get(perm, False))
+                else:
+                    # Navigate nested structure
+                    current = matrix[section]
+                    for part in subsection.split('.'):
+                        if isinstance(current, dict) and part in current:
+                            current = current[part]
+                        else:
+                            current = None
+                            break
+                    
+                    if isinstance(current, dict):
+                        value = bool(current.get(perm, False))
+            
+            row.append('Yes' if value else 'No')
         
         writer.writerow(row)
     
@@ -1092,7 +1180,7 @@ def check_project_access(user, project_id):
     A user has access if:
     - They are GENERAL_ADMIN
     - They are the project manager
-    - They have any permissions set for this project
+    - They have any GRANTED permissions for this project (respects revocations)
     - They are assigned to the project via employee assignments
     
     Args:
@@ -1118,14 +1206,16 @@ def check_project_access(user, project_id):
     if project.manager_id == user.id:
         return True
     
-    # Check if user has any permissions for this project
-    project_perms = SubPermission.query.filter_by(
+    # Check if user has any GRANTED permissions for this project or globally
+    # This properly respects revocations (is_granted=True required)
+    has_granted_perms = SubPermission.query.filter_by(
         user_id=user.id,
-        project_id=project_id,
         is_granted=True
-    ).first()
+    ).filter(
+        (SubPermission.project_id == project_id) | (SubPermission.project_id.is_(None))
+    ).first() is not None
     
-    if project_perms:
+    if has_granted_perms:
         return True
     
     # Check if user is assigned to project via employee
@@ -1133,22 +1223,28 @@ def check_project_access(user, project_id):
         from k9.models.models import project_employee_assignment, ProjectAssignment
         
         # Check project_employee_assignment table
-        assignment = db.session.query(project_employee_assignment).filter_by(
-            project_id=project_id,
-            employee_id=user.employee_id
-        ).first()
+        try:
+            assignment = db.session.query(project_employee_assignment).filter(
+                project_employee_assignment.c.project_id == project_id,
+                project_employee_assignment.c.employee_id == user.employee_id
+            ).first()
+            
+            if assignment:
+                return True
+        except Exception as e:
+            current_app.logger.error(f"Error checking project_employee_assignment: {e}")
         
-        if assignment:
-            return True
-        
-        # Check ProjectAssignment table
-        proj_assignment = ProjectAssignment.query.filter_by(
-            project_id=project_id,
-            employee_id=user.employee_id,
-            is_active=True
-        ).first()
-        
-        if proj_assignment:
-            return True
+        # Check ProjectAssignment table  
+        try:
+            proj_assignment = ProjectAssignment.query.filter_by(
+                project_id=project_id,
+                employee_id=user.employee_id,
+                is_active=True
+            ).first()
+            
+            if proj_assignment:
+                return True
+        except Exception as e:
+            current_app.logger.error(f"Error checking ProjectAssignment: {e}")
     
     return False
