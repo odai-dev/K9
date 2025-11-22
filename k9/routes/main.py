@@ -24,7 +24,7 @@ from k9.models.models import (Dog, Employee, TrainingSession, VeterinaryVisit, P
                    Shift)
 from k9.utils.utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
 from k9.utils.permission_decorators import require_sub_permission, admin_or_pm_required
-from k9.utils.permission_utils import has_permission
+from k9.utils.permission_utils import has_permission, _is_admin_mode
 from k9.utils.validators import validate_yemen_phone
 from k9.utils.template_utils import get_base_template, is_pm_view
 from k9.utils.pm_scoping import get_scoped_dogs, get_scoped_employees, get_scoped_projects, is_pm, is_admin
@@ -230,22 +230,13 @@ def dogs_view(dog_id):
         flash('معرف الكلب غير صحيح', 'error')
         return redirect(url_for('main.dogs_list'))
     
-    # Check permissions
-    if current_user.role == UserRole.PROJECT_MANAGER:
-        # For Project Managers, check if dog is assigned to their project
-        from k9.routes.pm_routes import get_pm_project, get_project_dog_ids
-        project = get_pm_project()
-        if project:
-            dog_ids = get_project_dog_ids(project.id)
-            if dog.id not in dog_ids:
-                flash('غير مسموح لك بعرض بيانات هذا الكلب', 'error')
-                return redirect(url_for('pm.my_dogs'))
-        else:
+    # Check permissions - use permission-aware helper
+    if not _is_admin_mode(current_user):
+        accessible_dogs = get_user_accessible_dogs(current_user)
+        accessible_dog_ids = [d.id for d in accessible_dogs] if accessible_dogs else []
+        if dog.id not in accessible_dog_ids:
             flash('غير مسموح لك بعرض بيانات هذا الكلب', 'error')
-            return redirect(url_for('main.index'))
-    elif not is_admin(current_user):
-        flash('غير مسموح لك بعرض بيانات هذا الكلب', 'error')
-        return redirect(url_for('main.index'))
+            return redirect(url_for('pm.my_dogs') if is_pm(current_user) else url_for('main.index'))
     
     # Get related data
     training_sessions = TrainingSession.query.filter_by(dog_id=dog.id).order_by(TrainingSession.created_at.desc()).all()
@@ -368,10 +359,9 @@ def dogs_edit(dog_id):
 def employees_list():
     if not has_permission(current_user, "employees.management.view"):
         return redirect("/unauthorized")
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        employees = Employee.query.order_by(Employee.name).all()
-    else:
-        employees = Employee.query.filter_by(assigned_to_user_id=current_user.id).order_by(Employee.name).all()
+    # Use permission-aware helper instead of role check
+    employees = get_user_accessible_employees(current_user)
+    employees.sort(key=lambda x: x.name or '')
     
     return render_template('employees/list.html', employees=employees)
 
@@ -397,7 +387,8 @@ def employees_add():
                 return render_template('employees/add.html', roles=EmployeeRole)
             
             # Prepare employee data first (before any I/O)
-            assigned_to_user_id = current_user.id if current_user.role == UserRole.PROJECT_MANAGER else None
+            # Use permission-aware helper - assign to user if NOT in admin mode
+            assigned_to_user_id = current_user.id if not _is_admin_mode(current_user) else None
             role_mapping = {
                 'HANDLER': EmployeeRole.HANDLER,
                 'TRAINER': EmployeeRole.TRAINER,
@@ -748,15 +739,16 @@ def veterinary_add():
 def production_list():
     if not has_permission(current_user, "production.general.view"):
         return redirect("/unauthorized")
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        cycles = ProductionCycle.query.order_by(ProductionCycle.created_at.desc()).all()
-        all_dogs = Dog.query.all()
-    else:
-        assigned_dog_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
+    # Use permission-aware helper instead of role check
+    all_dogs = get_user_accessible_dogs(current_user)
+    assigned_dog_ids = [d.id for d in all_dogs] if all_dogs else []
+    
+    if assigned_dog_ids:
         cycles = ProductionCycle.query.filter(
             db.or_(ProductionCycle.female_id.in_(assigned_dog_ids), ProductionCycle.male_id.in_(assigned_dog_ids))
         ).order_by(ProductionCycle.created_at.desc()).all()
-        all_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id).all()
+    else:
+        cycles = []
     
     # Calculate production statistics
     stats = {
@@ -808,10 +800,9 @@ def production_add():
             flash(f'حدث خطأ أثناء تسجيل دورة التربية: {str(e)}', 'error')
     
     # Get available dogs for the form - separate males and females
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        all_dogs = Dog.query.filter_by(current_status=DogStatus.ACTIVE).all()
-    else:
-        all_dogs = Dog.query.filter_by(assigned_to_user_id=current_user.id, current_status=DogStatus.ACTIVE).all()
+    # Use permission-aware helper instead of role check
+    accessible_dogs = get_user_accessible_dogs(current_user)
+    all_dogs = [d for d in accessible_dogs if d.current_status == DogStatus.ACTIVE]
     
     females = [dog for dog in all_dogs if dog.gender == DogGender.FEMALE]
     males = [dog for dog in all_dogs if dog.gender == DogGender.MALE]
@@ -1436,18 +1427,16 @@ def puppies_view(id):
 @main_bp.route('/production/puppy-training')
 @login_required
 def puppy_training_list():
-    # Get puppy training sessions
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        # Get all training sessions
-        sessions = PuppyTraining.query.order_by(PuppyTraining.session_date.desc()).all()
-    else:
-        # Get sessions for accessible dogs only
-        assigned_dogs = get_user_accessible_dogs(current_user)
-        assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
-        
+    # Get puppy training sessions - use permission-aware helper
+    assigned_dogs = get_user_accessible_dogs(current_user)
+    assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
+    
+    if assigned_dog_ids:
         sessions = PuppyTraining.query.join(PuppyRecord).join(DeliveryRecord).join(PregnancyRecord).filter(
             PregnancyRecord.dog_id.in_(assigned_dog_ids)
         ).order_by(PuppyTraining.session_date.desc()).all()
+    else:
+        sessions = []
     
     return render_template('production/puppy_training_list.html', sessions=sessions)
 
@@ -1497,26 +1486,22 @@ def puppy_training_add():
         flash('تم تسجيل تدريب الجرو بنجاح', 'success')
         return redirect(url_for('main.puppy_training_list'))
     
-    # Get puppies and trainers for puppy training
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        # Get all available puppies (alive and healthy)
-        puppies = PuppyRecord.query.filter(
-            PuppyRecord.alive_at_birth == True,
-            PuppyRecord.current_status.notin_(['متوفي', 'مريض', 'غير صالح'])
-        ).order_by(PuppyRecord.created_at.desc()).all()
-        trainers = Employee.query.filter_by(role=EmployeeRole.TRAINER, is_active=True).all()
-    else:
-        # Get puppies from accessible dogs only
-        assigned_dogs = get_user_accessible_dogs(current_user)
-        assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
-        
+    # Get puppies and trainers for puppy training - use permission-aware helpers
+    assigned_dogs = get_user_accessible_dogs(current_user)
+    assigned_dog_ids = [d.id for d in assigned_dogs] if assigned_dogs else []
+    
+    if assigned_dog_ids:
         puppies = PuppyRecord.query.join(DeliveryRecord).join(PregnancyRecord).filter(
             PregnancyRecord.dog_id.in_(assigned_dog_ids),
             PuppyRecord.alive_at_birth == True,
             PuppyRecord.current_status.notin_(['متوفي', 'مريض', 'غير صالح'])
         ).order_by(PuppyRecord.created_at.desc()).all()
-        
-        trainers = Employee.query.filter_by(assigned_to_user_id=current_user.id, role=EmployeeRole.TRAINER, is_active=True).all()
+    else:
+        puppies = []
+    
+    # Get accessible trainers
+    accessible_employees = get_user_accessible_employees(current_user)
+    trainers = [e for e in accessible_employees if e.role == EmployeeRole.TRAINER and e.is_active]
     
     # Training categories for dropdown
     categories = [
@@ -1534,15 +1519,9 @@ def puppy_training_add():
 @login_required
 @admin_or_pm_required
 def projects():
-    if current_user.role == UserRole.GENERAL_ADMIN:
-        projects = Project.query.order_by(Project.created_at.desc()).all()
-    else:
-        # PROJECT_MANAGER users - get projects where they are assigned as project manager via Employee relationship
-        employee = current_user.employee
-        if employee:
-            projects = Project.query.filter_by(project_manager_id=employee.id).order_by(Project.created_at.desc()).all()
-        else:
-            projects = []
+    # Use permission-aware helper instead of role check
+    projects = get_user_assigned_projects(current_user)
+    projects.sort(key=lambda x: x.created_at, reverse=True)
     
     # Add assignment counts to each project
     for project in projects:

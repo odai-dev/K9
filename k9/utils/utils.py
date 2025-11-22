@@ -15,6 +15,7 @@ import uuid
 import arabic_reshaper
 from bidi.algorithm import get_display
 import re
+from k9.utils.permission_utils import _is_admin_mode
 
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx'}
 
@@ -365,9 +366,8 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
     # Collect data based on report_type
     if report_type == 'dogs':
         story.append(Paragraph(shape_mixed("تقرير الكلاب"), title_style))
-        # Fetch dogs accessible by the current user
-        dogs = Dog.query.all() if user.role.value == 'GENERAL_ADMIN' \
-            else Dog.query.filter_by(assigned_to_user_id=user.id).all()
+        # Fetch dogs accessible by the current user using permission-aware helper
+        dogs = get_user_accessible_dogs(user)
         # Apply filters
         status_filter = filters.get('status')
         gender_filter = filters.get('gender')
@@ -395,10 +395,14 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
         if start_date and end_date:
             sessions = sessions.filter(TrainingSession.session_date >= start_date,
                                        TrainingSession.session_date <= end_date)
-        # Restrict to assigned dogs for project managers
-        if user.role.value != 'GENERAL_ADMIN':
-            assigned_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=user.id).all()]
-            sessions = sessions.filter(TrainingSession.dog_id.in_(assigned_ids))
+        # Restrict to accessible dogs using permission-aware helper
+        if not _is_admin_mode(user):
+            accessible_dogs = get_user_accessible_dogs(user)
+            accessible_dog_ids = [d.id for d in accessible_dogs]
+            if accessible_dog_ids:
+                sessions = sessions.filter(TrainingSession.dog_id.in_(accessible_dog_ids))
+            else:
+                sessions = sessions.filter(TrainingSession.id.in_([]))  # No accessible dogs, return empty
         # Filter by category
         category_filter = filters.get('category')
         if category_filter:
@@ -411,9 +415,14 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
         if start_date and end_date:
             visits = visits.filter(VeterinaryVisit.visit_date >= start_date,
                                    VeterinaryVisit.visit_date <= end_date)
-        if user.role.value != 'GENERAL_ADMIN':
-            assigned_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=user.id).all()]
-            visits = visits.filter(VeterinaryVisit.dog_id.in_(assigned_ids))
+        # Restrict to accessible dogs using permission-aware helper
+        if not _is_admin_mode(user):
+            accessible_dogs = get_user_accessible_dogs(user)
+            accessible_dog_ids = [d.id for d in accessible_dogs]
+            if accessible_dog_ids:
+                visits = visits.filter(VeterinaryVisit.dog_id.in_(accessible_dog_ids))
+            else:
+                visits = visits.filter(VeterinaryVisit.id.in_([]))  # No accessible dogs, return empty
         visit_type_filter = filters.get('visit_type')
         if visit_type_filter:
             visits = visits.filter(VeterinaryVisit.visit_type == visit_type_filter)
@@ -559,9 +568,8 @@ def generate_excel_report(report_type, start_date, end_date, user, filters=None)
         # Headers
         headers = ['رقم', 'اسم الكلب', 'الكود', 'السلالة', 'الجنس', 'الحالة', 'الموقع', 'العمر']
         
-        # Fetch dogs accessible by the current user
-        dogs = Dog.query.all() if user.role.value == 'GENERAL_ADMIN' \
-            else Dog.query.filter_by(assigned_to_user_id=user.id).all()
+        # Fetch dogs accessible by the current user using permission-aware helper
+        dogs = get_user_accessible_dogs(user)
         
         # Apply filters
         status_filter = filters.get('status')
@@ -684,10 +692,14 @@ def generate_excel_report(report_type, start_date, end_date, user, filters=None)
         if start_date and end_date:
             sessions = sessions.filter(TrainingSession.session_date >= start_date,
                                        TrainingSession.session_date <= end_date)
-        # Restrict to assigned dogs for project managers
-        if user.role.value != 'GENERAL_ADMIN':
-            assigned_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=user.id).all()]
-            sessions = sessions.filter(TrainingSession.dog_id.in_(assigned_ids))
+        # Restrict to accessible dogs using permission-aware helper
+        if not _is_admin_mode(user):
+            accessible_dogs = get_user_accessible_dogs(user)
+            accessible_dog_ids = [d.id for d in accessible_dogs]
+            if accessible_dog_ids:
+                sessions = sessions.filter(TrainingSession.dog_id.in_(accessible_dog_ids))
+            else:
+                sessions = sessions.filter(TrainingSession.id.in_([]))  # No accessible dogs, return empty
         # Filter by category
         category_filter = filters.get('category')
         if category_filter:

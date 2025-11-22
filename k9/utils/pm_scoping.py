@@ -103,7 +103,12 @@ def get_scoped_dogs(user=None):
     """
     Get dogs accessible to user
     - GENERAL_ADMIN: All dogs
-    - PROJECT_MANAGER: Only dogs assigned to their project
+    - PROJECT_MANAGER: Dogs assigned to their project OR directly assigned to user
+    
+    Checks THREE assignment methods:
+    1. ProjectDog table (old project-dog assignment)
+    2. ProjectAssignment table (NEW unified assignment)
+    3. assigned_to_user_id field (direct user assignment)
     """
     if user is None:
         user = current_user
@@ -114,19 +119,35 @@ def get_scoped_dogs(user=None):
     if is_pm(user):
         project = get_pm_project(user)
         if not project:
-            return []
+            # Fallback to direct assignments only
+            directly_assigned = Dog.query.filter_by(assigned_to_user_id=user.id).all()
+            return list(set(directly_assigned))
         
-        # Get dog IDs from ProjectDog table
-        project_dogs = ProjectDog.query.filter_by(
+        # Method 1: ProjectDog table (old project-dog assignment)
+        project_dogs_old = ProjectDog.query.filter_by(
             project_id=project.id,
             is_active=True
         ).all()
-        dog_ids = [pd.dog_id for pd in project_dogs]
+        dog_ids_old = [pd.dog_id for pd in project_dogs_old]
         
-        if not dog_ids:
-            return []
+        # Method 2: ProjectAssignment table (NEW unified assignment - CRITICAL!)
+        project_dogs_new = ProjectAssignment.query.filter_by(
+            project_id=project.id,
+            is_active=True
+        ).filter(
+            ProjectAssignment.dog_id.isnot(None)
+        ).all()
+        dog_ids_new = [pa.dog_id for pa in project_dogs_new]
         
-        return Dog.query.filter(Dog.id.in_(dog_ids)).all()
+        # Method 3: Direct user assignment
+        directly_assigned = Dog.query.filter_by(assigned_to_user_id=user.id).all()
+        
+        # Merge all dog IDs from project assignments and query
+        all_dog_ids = list(set(dog_ids_old + dog_ids_new))
+        project_dogs = Dog.query.filter(Dog.id.in_(all_dog_ids)).all() if all_dog_ids else []
+        
+        # Combine with direct assignments and deduplicate
+        return list(set(project_dogs + directly_assigned))
     
     return []
 
@@ -135,7 +156,12 @@ def get_scoped_dog_ids(user=None):
     """
     Get dog IDs accessible to user
     - GENERAL_ADMIN: All dog IDs
-    - PROJECT_MANAGER: Only dog IDs assigned to their project
+    - PROJECT_MANAGER: Dog IDs assigned to their project OR directly assigned to user
+    
+    Checks THREE assignment methods:
+    1. ProjectDog table (old project-dog assignment)
+    2. ProjectAssignment table (NEW unified assignment)
+    3. assigned_to_user_id field (direct user assignment)
     """
     if user is None:
         user = current_user
@@ -144,16 +170,34 @@ def get_scoped_dog_ids(user=None):
         return [dog.id for dog in Dog.query.all()]
     
     if is_pm(user):
-        project = get_pm_project(user)
-        if not project:
-            return []
+        dog_ids_set = set()
         
-        # Get dog IDs from ProjectDog table
-        project_dogs = ProjectDog.query.filter_by(
-            project_id=project.id,
-            is_active=True
-        ).all()
-        return [pd.dog_id for pd in project_dogs]
+        project = get_pm_project(user)
+        if project:
+            # Method 1: ProjectDog table (old project-dog assignment)
+            project_dogs_old = ProjectDog.query.filter_by(
+                project_id=project.id,
+                is_active=True
+            ).all()
+            for pd in project_dogs_old:
+                dog_ids_set.add(pd.dog_id)
+            
+            # Method 2: ProjectAssignment table (NEW unified assignment - CRITICAL!)
+            project_dogs_new = ProjectAssignment.query.filter_by(
+                project_id=project.id,
+                is_active=True
+            ).filter(
+                ProjectAssignment.dog_id.isnot(None)
+            ).all()
+            for pa in project_dogs_new:
+                dog_ids_set.add(pa.dog_id)
+        
+        # Method 3: Direct user assignment
+        directly_assigned_dogs = Dog.query.filter_by(assigned_to_user_id=user.id).all()
+        for dog in directly_assigned_dogs:
+            dog_ids_set.add(dog.id)
+        
+        return list(dog_ids_set)
     
     return []
 
@@ -181,7 +225,7 @@ def get_scoped_employees(user=None):
     """
     Get employees accessible to user
     - GENERAL_ADMIN: All employees
-    - PROJECT_MANAGER: Only employees assigned to their project
+    - PROJECT_MANAGER: Employees assigned to their project OR directly assigned to user
     """
     if user is None:
         user = current_user
@@ -190,29 +234,34 @@ def get_scoped_employees(user=None):
         return Employee.query.all()
     
     if is_pm(user):
+        employee_ids_set = set()
+        
+        # Method 1: Get employees assigned to project via ProjectAssignment model
         project = get_pm_project(user)
-        if not project:
-            return []
+        if project:
+            from app import db
+            
+            # Query active employee assignments for this project
+            employee_assignments = ProjectAssignment.query.filter_by(
+                project_id=project.id,
+                is_active=True
+            ).filter(
+                ProjectAssignment.employee_id.isnot(None)
+            ).all()
+            
+            for assignment in employee_assignments:
+                employee_ids_set.add(assignment.employee_id)
         
-        # Get employees assigned to this project via ProjectAssignment model
-        from app import db
+        # Method 2: Get employees directly assigned to user (legacy direct assignments)
+        directly_assigned_employees = Employee.query.filter_by(assigned_to_user_id=user.id).all()
+        for employee in directly_assigned_employees:
+            employee_ids_set.add(employee.id)
         
-        # Query active employee assignments for this project
-        employee_assignments = ProjectAssignment.query.filter_by(
-            project_id=project.id,
-            is_active=True
-        ).filter(
-            ProjectAssignment.employee_id.isnot(None)
-        ).all()
+        # Fetch all unique employees
+        if employee_ids_set:
+            return Employee.query.filter(Employee.id.in_(employee_ids_set)).all()
         
-        employee_ids = [assignment.employee_id for assignment in employee_assignments]
-        
-        if not employee_ids:
-            return []
-        
-        # Return the actual Employee objects
-        employees = Employee.query.filter(Employee.id.in_(employee_ids)).all()
-        return employees
+        return []
     
     return []
 
