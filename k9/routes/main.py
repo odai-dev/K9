@@ -51,24 +51,29 @@ def unauthorized():
 @login_required
 def dashboard():
     from flask import session
+    from k9.utils.permission_utils import get_sections_for_user, _is_admin_mode
     
-    # HANDLER users should use their own dashboard
-    if current_user.role == UserRole.HANDLER:
-        return redirect(url_for('handler.dashboard'))
+    # GENERAL_ADMIN in admin mode gets admin dashboard
+    if _is_admin_mode(current_user):
+        return redirect(url_for('admin.dashboard'))
     
-    # GENERAL_ADMIN in PM mode should use PM dashboard
+    # GENERAL_ADMIN in PM mode gets PM dashboard
     if current_user.role == UserRole.GENERAL_ADMIN:
         admin_mode = session.get('admin_mode', 'general_admin')
         if admin_mode == 'project_manager':
             return redirect(url_for('pm.dashboard'))
-        else:
-            return redirect(url_for('admin.dashboard'))
     
-    # PROJECT_MANAGER users should use their own dashboard
-    if current_user.role == UserRole.PROJECT_MANAGER:
+    # Check if user has any operational permissions
+    user_sections = get_sections_for_user(current_user)
+    
+    # Users WITH permissions get PM dashboard (PROJECT_MANAGER or any user with granted permissions)
+    if user_sections:
         return redirect(url_for('pm.dashboard'))
     
-    # Get dashboard statistics (fallback for other roles)
+    # Users WITHOUT permissions get handler dashboard (HANDLER or users without permissions)
+    return redirect(url_for('handler.dashboard'))
+    
+    # Fallback statistics (this code is now unreachable but kept for safety)
     stats = {}
     
     if current_user.role == UserRole.GENERAL_ADMIN:
@@ -127,10 +132,6 @@ def dogs_list():
 def dogs_add():
     if not has_permission(current_user, "dogs.management.create"):
         return redirect("/unauthorized")
-    # Only GENERAL_ADMIN can add dogs, not PROJECT_MANAGER
-    if current_user.role == UserRole.PROJECT_MANAGER:
-        flash('غير مسموح لك بإضافة كلاب. هذه الصلاحية للمسؤول العام فقط.', 'error')
-        return redirect(url_for('pm.my_dogs'))
     
     # Get potential parents for dropdowns
     potential_parents = get_user_accessible_dogs(current_user)
