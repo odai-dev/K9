@@ -5,7 +5,7 @@ Account Management Routes - For granting system access to employees
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from k9.models.models import User, UserRole, Employee, EmployeeRole, ProjectAssignment, Project
-from k9.utils.permission_decorators import admin_required
+from k9.utils.permission_decorators import admin_required, require_permission
 from k9.utils.permission_utils import has_permission
 from k9.utils.default_permissions import create_base_permissions_for_user
 from werkzeug.security import generate_password_hash
@@ -193,12 +193,9 @@ def api_generate_password():
 
 @account_mgmt_bp.route('/api/search-employees', methods=['GET'])
 @login_required
-@admin_required
+@require_permission('employees.view')
 def api_search_employees():
     """Search employees without accounts"""
-    if not has_permission(current_user, "account_management.api.access"):
-        return jsonify({'error': 'Unauthorized'}), 403
-    
     search_term = request.args.get('q', '')
     
     query = Employee.query.filter(

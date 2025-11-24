@@ -6,7 +6,7 @@ from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
 from k9.models.models import Project, Employee, Dog, EmployeeRole
 from app import db
-from k9.utils.permission_decorators import require_sub_permission
+from k9.utils.permission_decorators import require_sub_permission, require_permission
 from k9.utils.permission_utils import has_permission
 
 bp = Blueprint('trainer_daily_data_api', __name__)
@@ -43,12 +43,10 @@ def get_projects():
 
 
 @bp.route('/api/employees')
-@login_required  
+@login_required
+@require_permission('employees.view')
 def get_employees():
     """Get list of employees (trainers) for dropdown"""
-    if not has_permission(current_user, "api.employees.access"):
-        return jsonify({'error': 'Unauthorized'}), 403
-    
     try:
         # Filter by role if provided
         role_filter = None
