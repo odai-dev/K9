@@ -7,20 +7,16 @@ from flask_login import login_required, current_user
 from datetime import datetime, time
 from app import db
 from k9.models.models import Shift
-from k9.utils.permission_decorators import admin_or_pm_required
-from k9.utils.permission_utils import has_permission
+from k9.utils.permission_decorators import require_permission
 
 shift_bp = Blueprint('shift', __name__, url_prefix='/supervisor/shifts')
 
 
 @shift_bp.route('/')
 @login_required
-@admin_or_pm_required
+@require_permission('attendance.view')
 def index():
     """عرض جميع الورديات"""
-    if not has_permission(current_user, "shifts.management.view"):
-        return redirect("/unauthorized")
-    
     shifts = Shift.query.filter_by(is_active=True).order_by(Shift.start_time).all()
     return render_template('shifts/index.html',
                          page_title='إدارة الورديات',
@@ -29,12 +25,9 @@ def index():
 
 @shift_bp.route('/create', methods=['GET', 'POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('attendance.create')
 def create():
     """إنشاء وردية جديدة"""
-    if not has_permission(current_user, "shifts.management.create"):
-        return redirect("/unauthorized")
-    
     if request.method == 'POST':
         try:
             name = request.form.get('name')
@@ -99,12 +92,9 @@ def create():
 
 @shift_bp.route('/<shift_id>/edit', methods=['GET', 'POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('attendance.edit')
 def edit(shift_id):
     """تعديل وردية"""
-    if not has_permission(current_user, "shifts.management.edit"):
-        return redirect("/unauthorized")
-    
     shift = Shift.query.get_or_404(shift_id)
     
     if request.method == 'POST':
@@ -172,12 +162,9 @@ def edit(shift_id):
 
 @shift_bp.route('/<shift_id>/delete', methods=['POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('attendance.edit')
 def delete(shift_id):
     """تعطيل وردية (soft delete)"""
-    if not has_permission(current_user, "shifts.management.delete"):
-        return redirect("/unauthorized")
-    
     try:
         shift = Shift.query.get_or_404(shift_id)
         
@@ -216,12 +203,9 @@ def delete(shift_id):
 
 @shift_bp.route('/api/active')
 @login_required
-@admin_or_pm_required
+@require_permission('attendance.view')
 def api_active_shifts():
     """API لجلب الورديات النشطة (للاستخدام في النماذج)"""
-    if not has_permission(current_user, "shifts.api.access"):
-        return jsonify({'error': 'Unauthorized'}), 403
-    
     shifts = Shift.query.filter_by(is_active=True).order_by(Shift.start_time).all()
     
     shifts_data = []
