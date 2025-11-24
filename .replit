@@ -1,4 +1,4 @@
-modules = ["python-3.11", "web", "nodejs-20", "bash"]
+modules = ["python-3.11", "web", "nodejs-20", "bash", "postgresql-16"]
 run = "run"
 
 [nix]
@@ -36,6 +36,10 @@ waitForPort = 5000
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 36655
+externalPort = 3003
 
 [[ports]]
 localPort = 37377

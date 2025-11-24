@@ -4,8 +4,7 @@ Task Management Routes
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from k9.utils.permission_decorators import admin_or_pm_required, handler_required
-from k9.utils.permission_utils import has_permission
+from k9.utils.permission_decorators import require_permission, handler_required
 from k9.services.task_service import TaskService
 from k9.models.models_handler_daily import Task, TaskStatus, TaskPriority
 from k9.models.models import User, UserRole
@@ -20,12 +19,9 @@ task_bp = Blueprint('tasks', __name__, url_prefix='/tasks')
 
 @task_bp.route('/admin')
 @login_required
-@admin_or_pm_required
+@require_permission('tasks.view')
 def admin_index():
     """قائمة المهام للمشرف"""
-    if not has_permission(current_user, "tasks.admin.view"):
-        return redirect("/unauthorized")
-    
     # Get filter parameters
     status_filter = request.args.get('status')
     assigned_to_filter = request.args.get('assigned_to')
@@ -67,7 +63,7 @@ def admin_index():
 
 @task_bp.route('/admin/create', methods=['GET', 'POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('tasks.view')
 def admin_create():
     """إنشاء مهمة جديدة"""
     if not has_permission(current_user, "tasks.admin.create"):
@@ -132,7 +128,7 @@ def admin_create():
 
 @task_bp.route('/admin/<task_id>')
 @login_required
-@admin_or_pm_required
+@require_permission('tasks.view')
 def admin_view(task_id):
     """عرض تفاصيل المهمة"""
     task = TaskService.get_task(task_id)
@@ -149,7 +145,7 @@ def admin_view(task_id):
 
 @task_bp.route('/admin/<task_id>/edit', methods=['GET', 'POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('tasks.view')
 def admin_edit(task_id):
     """تعديل مهمة"""
     if not has_permission(current_user, "tasks.admin.edit"):
@@ -206,7 +202,7 @@ def admin_edit(task_id):
 
 @task_bp.route('/admin/<task_id>/delete', methods=['POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('tasks.view')
 def admin_delete(task_id):
     """حذف مهمة"""
     if not has_permission(current_user, "tasks.admin.delete"):
