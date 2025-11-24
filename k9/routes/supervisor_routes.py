@@ -9,8 +9,7 @@ from sqlalchemy.orm import joinedload
 from k9.services.handler_service import DailyScheduleService
 from k9.models.models_handler_daily import DailySchedule, DailyScheduleItem, ScheduleStatus
 from k9.models.models import UserRole, User, Dog, Project, Shift
-from k9.utils.permission_decorators import admin_or_pm_required
-from k9.utils.permission_utils import has_permission
+from k9.utils.permission_decorators import require_permission
 from k9.utils.utils import validate_required_project_id, get_project_id_for_user
 from app import db
 
@@ -20,12 +19,9 @@ supervisor_bp = Blueprint('supervisor', __name__, url_prefix='/supervisor')
 
 @supervisor_bp.route('/schedules')
 @login_required
-@admin_or_pm_required
+@require_permission('attendance.view')
 def schedules_index():
     """قائمة الجداول اليومية"""
-    if not has_permission(current_user, "supervisor.schedules.view"):
-        return redirect("/unauthorized")
-    
     page = request.args.get('page', 1, type=int)
     per_page = 20
     
@@ -75,7 +71,7 @@ def schedules_index():
 
 @supervisor_bp.route('/schedules/create', methods=['GET', 'POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('attendance.create')
 def schedule_create():
     """إنشاء جدول يومي جديد"""
     if request.method == 'POST':
@@ -181,7 +177,7 @@ def schedule_create():
 
 @supervisor_bp.route('/schedules/<schedule_id>')
 @login_required
-@admin_or_pm_required
+@require_permission('attendance.view')
 def schedule_view(schedule_id):
     """عرض الجدول اليومي"""
     schedule = DailySchedule.query.get_or_404(schedule_id)
@@ -199,7 +195,7 @@ def schedule_view(schedule_id):
 
 @supervisor_bp.route('/schedules/<schedule_id>/lock', methods=['POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('attendance.edit')
 def schedule_lock(schedule_id):
     """قفل الجدول اليومي"""
     schedule = DailySchedule.query.get_or_404(schedule_id)
@@ -218,7 +214,7 @@ def schedule_lock(schedule_id):
 
 @supervisor_bp.route('/schedules/<schedule_id>/unlock', methods=['POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('attendance.edit')
 def schedule_unlock(schedule_id):
     """إلغاء قفل الجدول اليومي"""
     schedule = DailySchedule.query.get_or_404(schedule_id)
@@ -237,7 +233,7 @@ def schedule_unlock(schedule_id):
 
 @supervisor_bp.route('/schedules/<schedule_id>/delete', methods=['POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('attendance.edit')
 def schedule_delete(schedule_id):
     """حذف الجدول اليومي"""
     schedule = DailySchedule.query.get_or_404(schedule_id)
@@ -270,7 +266,7 @@ def schedule_delete(schedule_id):
 
 @supervisor_bp.route('/schedules/item/<item_id>/replace-handler', methods=['POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('attendance.edit')
 def replace_handler(item_id):
     """استبدال سائس في عنصر من الجدول"""
     item = DailyScheduleItem.query.get_or_404(item_id)

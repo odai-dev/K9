@@ -8,8 +8,7 @@ from datetime import date, datetime, timedelta
 from k9.services.handler_service import DailyScheduleService, NotificationService
 from k9.models.models_handler_daily import DailySchedule, DailyScheduleItem
 from k9.models.models import Employee, Dog, Shift, Project, User
-from k9.utils.permission_decorators import admin_or_pm_required
-from k9.utils.permission_utils import has_permission
+from k9.utils.permission_decorators import require_permission
 from k9.utils.utils import validate_required_project_id, get_project_id_for_user
 from app import db
 
@@ -19,12 +18,9 @@ schedule_bp = Blueprint('schedule', __name__, url_prefix='/schedule')
 
 @schedule_bp.route('/')
 @login_required
-@admin_or_pm_required
+@require_permission('attendance.view')
 def index():
     """عرض جميع الجداول"""
-    if not has_permission(current_user, "schedule.daily.view"):
-        return redirect("/unauthorized")
-    
     # Get date range from query params
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
@@ -52,12 +48,9 @@ def index():
 
 @schedule_bp.route('/create', methods=['GET', 'POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('attendance.create')
 def create():
     """إنشاء جدول يومي جديد"""
-    if not has_permission(current_user, "schedule.daily.create"):
-        return redirect("/unauthorized")
-    
     if request.method == 'POST':
         schedule_date = datetime.strptime(request.form.get('date'), '%Y-%m-%d').date()
         notes = request.form.get('notes')
@@ -96,12 +89,9 @@ def create():
 
 @schedule_bp.route('/<schedule_id>/edit', methods=['GET', 'POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('attendance.edit')
 def edit(schedule_id):
     """تعديل الجدول اليومي"""
-    if not has_permission(current_user, "schedule.daily.edit"):
-        return redirect("/unauthorized")
-    
     schedule = DailySchedule.query.get_or_404(schedule_id)
     
     # Check if locked
@@ -183,7 +173,7 @@ def edit(schedule_id):
 
 @schedule_bp.route('/<schedule_id>')
 @login_required
-@admin_or_pm_required
+@require_permission('attendance.view')
 def view(schedule_id):
     """عرض الجدول اليومي"""
     schedule = DailySchedule.query.get_or_404(schedule_id)
@@ -195,12 +185,9 @@ def view(schedule_id):
 
 @schedule_bp.route('/<schedule_id>/item/<item_id>/delete', methods=['POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('attendance.edit')
 def delete_item(schedule_id, item_id):
     """حذف عنصر من الجدول"""
-    if not has_permission(current_user, "schedule.daily.delete"):
-        return redirect("/unauthorized")
-    
     schedule = DailySchedule.query.get_or_404(schedule_id)
     
     if schedule.status.value == 'LOCKED':
