@@ -1778,3 +1778,105 @@ def disconnect_cloud_provider(provider):
             'message': f'فشل قطع الاتصال بـ {provider}',
             'errors': [str(e)]
         }), 500
+
+
+# ============================================================================
+# NEW PERMISSION SYSTEM ROUTES (Step 3)
+# ============================================================================
+
+@admin_bp.route('/permissions-new')
+@login_required
+def permissions_management_new():
+    """New permission management interface"""
+    from k9.models.permissions_new import Permission
+    from k9.models.models import User
+    
+    users = User.query.filter_by(active=True).order_by(User.full_name).all()
+    return render_template('admin/permissions_new.html', users=users)
+
+@admin_bp.route('/permissions-new/api/users')
+@login_required
+def get_users_for_permissions():
+    """Get all active users"""
+    from k9.models.models import User
+    
+    users = User.query.filter_by(active=True).order_by(User.full_name).all()
+    return jsonify({
+        'users': [
+            {
+                'id': str(u.id),
+                'username': u.username,
+                'full_name': u.full_name,
+                'role': u.role.value
+            }
+            for u in users
+        ]
+    })
+
+@admin_bp.route('/permissions-new/api/user/<user_id>/permissions')
+@login_required
+def get_user_permissions_new(user_id):
+    """Get all permissions for a user"""
+    from k9.utils.permissions_new import get_user_permission_keys
+    
+    perm_keys = get_user_permission_keys(user_id)
+    return jsonify({
+        'user_id': user_id,
+        'permissions': list(perm_keys)
+    })
+
+@admin_bp.route('/permissions-new/api/grant', methods=['POST'])
+@login_required
+def grant_permission_api():
+    """Grant a permission to a user"""
+    from k9.utils.permissions_new import grant_permission
+    
+    data = request.get_json()
+    user_id = data.get('user_id')
+    permission_key = data.get('permission_key')
+    
+    success = grant_permission(user_id, permission_key, current_user.id)
+    
+    if success:
+        return jsonify({'success': True, 'message': 'تم منح الصلاحية بنجاح'})
+    else:
+        return jsonify({'success': False, 'error': 'فشل في منح الصلاحية'}), 400
+
+@admin_bp.route('/permissions-new/api/revoke', methods=['POST'])
+@login_required
+def revoke_permission_api():
+    """Revoke a permission from a user"""
+    from k9.utils.permissions_new import revoke_permission
+    
+    data = request.get_json()
+    user_id = data.get('user_id')
+    permission_key = data.get('permission_key')
+    
+    success = revoke_permission(user_id, permission_key, current_user.id)
+    
+    if success:
+        return jsonify({'success': True, 'message': 'تم إلغاء الصلاحية بنجاح'})
+    else:
+        return jsonify({'success': False, 'error': 'فشل في إلغاء الصلاحية'}), 400
+
+@admin_bp.route('/permissions-new/api/permissions-catalog')
+@login_required
+def get_permissions_catalog():
+    """Get all permissions grouped by category"""
+    from k9.utils.permissions_new import get_all_permissions_grouped
+    
+    grouped = get_all_permissions_grouped()
+    
+    result = {}
+    for category, perms in grouped.items():
+        result[category] = [
+            {
+                'id': str(p.id),
+                'key': p.key,
+                'name': p.name,
+                'description': p.description
+            }
+            for p in perms
+        ]
+    
+    return jsonify({'catalog': result})
