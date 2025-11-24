@@ -25,6 +25,7 @@ from k9.models.models import (Dog, Employee, TrainingSession, VeterinaryVisit, P
 from k9.utils.utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
 from k9.utils.permission_decorators import require_sub_permission, admin_or_pm_required
 from k9.utils.permission_utils import has_permission, _is_admin_mode
+from k9.utils.permissions_new import require_permission
 from k9.utils.validators import validate_yemen_phone
 from k9.utils.template_utils import get_base_template, is_pm_view
 from k9.utils.pm_scoping import get_scoped_dogs, get_scoped_employees, get_scoped_projects, is_pm, is_admin
@@ -115,10 +116,8 @@ def dashboard():
 # Dog management routes
 @main_bp.route('/dogs')
 @login_required
-@admin_or_pm_required
+@require_permission('view_dogs')
 def dogs_list():
-    if not has_permission(current_user, "dogs.management.view"):
-        return redirect("/unauthorized")
     from datetime import date
     # Use permission-based access for both roles
     dogs = get_user_accessible_dogs(current_user)
@@ -128,11 +127,8 @@ def dogs_list():
 
 @main_bp.route('/dogs/add', methods=['GET', 'POST'])
 @login_required
-@admin_or_pm_required  
+@require_permission('add_dog')
 def dogs_add():
-    if not has_permission(current_user, "dogs.management.create"):
-        return redirect("/unauthorized")
-    
     # Get potential parents for dropdowns
     potential_parents = get_user_accessible_dogs(current_user)
     
@@ -221,7 +217,7 @@ def dogs_add():
 
 @main_bp.route('/dogs/<dog_id>')
 @login_required
-@admin_or_pm_required
+@require_permission('view_dog_details')
 def dogs_view(dog_id):
     try:
         dog_id = dog_id
@@ -251,10 +247,8 @@ def dogs_view(dog_id):
 
 @main_bp.route('/dogs/<dog_id>/edit', methods=['GET', 'POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('edit_dog')
 def dogs_edit(dog_id):
-    if not has_permission(current_user, "dogs.management.edit"):
-        return redirect("/unauthorized")
     try:
         dog_id = dog_id
         dog = Dog.query.get_or_404(dog_id)
@@ -656,10 +650,8 @@ def training_add():
 # Veterinary routes
 @main_bp.route('/veterinary')
 @login_required
-@admin_or_pm_required
+@require_permission('view_vet_reports')
 def veterinary_list():
-    if not has_permission(current_user, "veterinary.visits.view"):
-        return redirect("/unauthorized")
     # Get scoped dogs using PM scoping utility
     scoped_dogs = get_scoped_dogs()
     dog_ids = [d.id for d in scoped_dogs] if scoped_dogs else []
@@ -676,10 +668,8 @@ def veterinary_list():
 
 @main_bp.route('/veterinary/add', methods=['GET', 'POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('create_vet_report')
 def veterinary_add():
-    if not has_permission(current_user, "veterinary.visits.create"):
-        return redirect("/unauthorized")
     if request.method == 'POST':
         try:
             from k9.utils.utils import auto_link_dog_activity_to_project
