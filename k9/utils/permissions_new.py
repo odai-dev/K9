@@ -1,0 +1,330 @@
+"""
+New Simple Permission System Utilities
+Clean, predictable, and stable permission checking and management.
+"""
+from functools import wraps
+from flask import session, abort, redirect, url_for, flash, request, has_request_context
+from flask_login import current_user
+
+
+def load_user_permissions(user_id):
+    """
+    Load all permission keys for a user into the session.
+    Called during login to cache permissions for fast checking.
+    
+    Args:
+        user_id: The user's ID
+        
+    Returns:
+        Set of permission keys (strings)
+    """
+    from k9.models.permissions_new import UserPermission, Permission
+    
+    # Query all permissions granted to this user
+    user_perms = UserPermission.query.filter_by(user_id=user_id).all()
+    
+    # Extract permission keys
+    permission_keys = set()
+    for up in user_perms:
+        if up.permission:
+            permission_keys.add(up.permission.key)
+    
+    # Store in session for fast access
+    session['user_permissions'] = list(permission_keys)
+    session.modified = True
+    
+    return permission_keys
+
+
+def get_user_permissions():
+    """
+    Get current user's permissions from session.
+    
+    Returns:
+        Set of permission keys (strings)
+    """
+    if not current_user.is_authenticated:
+        return set()
+    
+    # Load from session
+    perms = session.get('user_permissions', [])
+    return set(perms)
+
+
+def has_permission(permission_key):
+    """
+    Check if current user has a specific permission.
+    
+    Args:
+        permission_key: The permission key to check (e.g., 'view_dogs')
+        
+    Returns:
+        True if user has the permission, False otherwise
+    """
+    if not current_user.is_authenticated:
+        return False
+    
+    user_perms = get_user_permissions()
+    return permission_key in user_perms
+
+
+def has_any_permission(*permission_keys):
+    """
+    Check if current user has ANY of the specified permissions.
+    
+    Args:
+        *permission_keys: Variable number of permission keys
+        
+    Returns:
+        True if user has at least one permission, False otherwise
+    """
+    if not current_user.is_authenticated:
+        return False
+    
+    user_perms = get_user_permissions()
+    return any(key in user_perms for key in permission_keys)
+
+
+def has_all_permissions(*permission_keys):
+    """
+    Check if current user has ALL of the specified permissions.
+    
+    Args:
+        *permission_keys: Variable number of permission keys
+        
+    Returns:
+        True if user has all permissions, False otherwise
+    """
+    if not current_user.is_authenticated:
+        return False
+    
+    user_perms = get_user_permissions()
+    return all(key in user_perms for key in permission_keys)
+
+
+def require_permission(permission_key):
+    """
+    Decorator to enforce permission on a route.
+    If user doesn't have the permission, redirect to dashboard with error.
+    
+    Args:
+        permission_key: The permission key required for this route
+        
+    Usage:
+        @app.route('/dogs')
+        @require_permission('view_dogs')
+        def view_dogs():
+            ...
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return redirect(url_for('auth.login'))
+            
+            if not has_permission(permission_key):
+                flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
+                return redirect(url_for('main.dashboard'))
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+
+def require_any_permission(*permission_keys):
+    """
+    Decorator to enforce that user has ANY of the specified permissions.
+    
+    Args:
+        *permission_keys: Variable number of permission keys
+        
+    Usage:
+        @app.route('/reports')
+        @require_any_permission('view_training_reports', 'view_vet_reports')
+        def view_reports():
+            ...
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return redirect(url_for('auth.login'))
+            
+            if not has_any_permission(*permission_keys):
+                flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
+                return redirect(url_for('main.dashboard'))
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+
+def require_all_permissions(*permission_keys):
+    """
+    Decorator to enforce that user has ALL of the specified permissions.
+    
+    Args:
+        *permission_keys: Variable number of permission keys
+        
+    Usage:
+        @app.route('/advanced-settings')
+        @require_all_permissions('view_settings', 'edit_settings')
+        def advanced_settings():
+            ...
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return redirect(url_for('auth.login'))
+            
+            if not has_all_permissions(*permission_keys):
+                flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
+                return redirect(url_for('main.dashboard'))
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+
+def grant_permission(user_id, permission_key, granted_by_user_id=None):
+    """
+    Grant a permission to a user.
+    
+    Args:
+        user_id: User to grant permission to
+        permission_key: Permission key to grant
+        granted_by_user_id: User granting the permission (for audit)
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    from app import db
+    from k9.models.permissions_new import Permission, UserPermission, PermissionChangeLog
+    
+    # Find the permission
+    permission = Permission.query.filter_by(key=permission_key).first()
+    if not permission:
+        return False
+    
+    # Check if already granted
+    existing = UserPermission.query.filter_by(
+        user_id=user_id,
+        permission_id=permission.id
+    ).first()
+    
+    if existing:
+        return True  # Already granted
+    
+    # Create grant
+    user_perm = UserPermission(
+        user_id=user_id,
+        permission_id=permission.id,
+        granted_by_user_id=granted_by_user_id
+    )
+    db.session.add(user_perm)
+    
+    # Log the change
+    log = PermissionChangeLog(
+        user_id=user_id,
+        permission_id=permission.id,
+        action='granted',
+        changed_by_user_id=granted_by_user_id,
+        ip_address=request.remote_addr if has_request_context() else None
+    )
+    db.session.add(log)
+    
+    db.session.commit()
+    
+    # Reload permissions if this user is currently logged in
+    if current_user.is_authenticated and str(current_user.id) == str(user_id):
+        load_user_permissions(user_id)
+    
+    return True
+
+
+def revoke_permission(user_id, permission_key, revoked_by_user_id=None):
+    """
+    Revoke a permission from a user.
+    
+    Args:
+        user_id: User to revoke permission from
+        permission_key: Permission key to revoke
+        revoked_by_user_id: User revoking the permission (for audit)
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    from app import db
+    from k9.models.permissions_new import Permission, UserPermission, PermissionChangeLog
+    
+    # Find the permission
+    permission = Permission.query.filter_by(key=permission_key).first()
+    if not permission:
+        return False
+    
+    # Find the grant
+    user_perm = UserPermission.query.filter_by(
+        user_id=user_id,
+        permission_id=permission.id
+    ).first()
+    
+    if not user_perm:
+        return True  # Already revoked
+    
+    # Remove grant
+    db.session.delete(user_perm)
+    
+    # Log the change
+    log = PermissionChangeLog(
+        user_id=user_id,
+        permission_id=permission.id,
+        action='revoked',
+        changed_by_user_id=revoked_by_user_id,
+        ip_address=request.remote_addr if has_request_context() else None
+    )
+    db.session.add(log)
+    
+    db.session.commit()
+    
+    # Reload permissions if this user is currently logged in
+    if current_user.is_authenticated and str(current_user.id) == str(user_id):
+        load_user_permissions(user_id)
+    
+    return True
+
+
+def get_all_permissions_grouped():
+    """
+    Get all permissions in the system, grouped by category.
+    
+    Returns:
+        Dict of {category: [permissions]}
+    """
+    from k9.models.permissions_new import Permission
+    
+    all_perms = Permission.query.order_by(Permission.category, Permission.name).all()
+    
+    grouped = {}
+    for perm in all_perms:
+        if perm.category not in grouped:
+            grouped[perm.category] = []
+        grouped[perm.category].append(perm)
+    
+    return grouped
+
+
+def get_user_permission_keys(user_id):
+    """
+    Get all permission keys for a specific user (from database, not session).
+    
+    Args:
+        user_id: The user's ID
+        
+    Returns:
+        Set of permission keys
+    """
+    from k9.models.permissions_new import UserPermission
+    
+    user_perms = UserPermission.query.filter_by(user_id=user_id).all()
+    return {up.permission.key for up in user_perms if up.permission}
