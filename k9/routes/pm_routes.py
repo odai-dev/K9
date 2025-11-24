@@ -18,6 +18,7 @@ from k9.models.models import (
 from k9.models.models_handler_daily import HandlerReport, ShiftReport, ReportStatus, DailySchedule
 from k9.services.access_audit_service import log_page_access, log_project_access
 from k9.utils.permission_utils import has_permission
+from k9.utils.permissions_new import require_permission
 
 pm_bp = Blueprint('pm', __name__, url_prefix='/pm')
 
@@ -464,11 +465,9 @@ def my_team():
 @pm_bp.route('/my-dogs')
 @login_required
 @require_pm_project
+@require_permission('view_dogs')
 def my_dogs():
     """View dogs assigned to PM's project"""
-    if not has_permission(current_user, "pm.dogs.view"):
-        return redirect("/unauthorized")
-    
     project, needs_selection = get_active_project()
     if needs_selection:
         projects = Project.query.filter_by(is_active=True).order_by(Project.name).all()
