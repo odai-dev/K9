@@ -349,10 +349,8 @@ def dogs_edit(dog_id):
 # Employee management routes
 @main_bp.route('/employees')
 @login_required
-@admin_or_pm_required
+@require_permission('employees.view')
 def employees_list():
-    if not has_permission(current_user, "employees.management.view"):
-        return redirect("/unauthorized")
     # Use permission-aware helper instead of role check
     employees = get_user_accessible_employees(current_user)
     employees.sort(key=lambda x: x.name or '')
@@ -361,10 +359,8 @@ def employees_list():
 
 @main_bp.route('/employees/add', methods=['GET', 'POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('employees.create')
 def employees_add():
-    if not has_permission(current_user, "employees.management.create"):
-        return redirect("/unauthorized")
     if request.method == 'POST':
         try:
             # Validate phone number format
@@ -545,10 +541,8 @@ def employees_add():
 
 @main_bp.route('/employees/<employee_id>/edit', methods=['GET', 'POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('employees.edit')
 def employees_edit(employee_id):
-    if not has_permission(current_user, "employees.management.edit"):
-        return redirect("/unauthorized")
     try:
         employee_id = employee_id
         employee = Employee.query.get_or_404(employee_id)
@@ -601,10 +595,8 @@ def employees_edit(employee_id):
 
 @main_bp.route('/employees/<employee_id>/delete', methods=['POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('employees.delete')
 def employees_delete(employee_id):
-    if not has_permission(current_user, "employees.management.delete"):
-        return redirect("/unauthorized")
     try:
         employee = Employee.query.get_or_404(employee_id)
     except ValueError:
@@ -3387,12 +3379,9 @@ def toggle_user_status(user_id):
 # EMPLOYEE-USER ACCOUNT LINKING SYSTEM
 @main_bp.route('/admin/employee-user-links')
 @login_required
+@require_permission('employees.edit')
 def employee_user_links():
     """Manage links between employees and user accounts"""
-    if not is_admin(current_user):
-        flash('ليس لديك صلاحية للوصول إلى إدارة الربط', 'error')
-        return redirect(url_for('main.dashboard'))
-    
     # Get all employees with their linked user accounts
     employees = Employee.query.order_by(Employee.name).all()
     
@@ -3418,11 +3407,9 @@ def employee_user_links():
 
 @main_bp.route('/admin/employee-user-links/link', methods=['POST'])
 @login_required
+@require_permission('employees.edit')
 def link_employee_to_user():
     """Link an employee to a user account"""
-    if not is_admin(current_user):
-        return jsonify({'success': False, 'error': 'ليس لديك صلاحية لربط الحسابات'}), 403
-    
     try:
         employee_id = request.form.get('employee_id')
         user_id = request.form.get('user_id')
@@ -3463,11 +3450,9 @@ def link_employee_to_user():
 
 @main_bp.route('/admin/employee-user-links/unlink', methods=['POST'])
 @login_required
+@require_permission('employees.edit')
 def unlink_employee_from_user():
     """Unlink an employee from a user account"""
-    if not is_admin(current_user):
-        return jsonify({'success': False, 'error': 'ليس لديك صلاحية لفك الربط'}), 403
-    
     try:
         employee_id = request.form.get('employee_id')
         
