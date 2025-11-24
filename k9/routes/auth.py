@@ -109,29 +109,9 @@ def login():
         # Clear pending session
         session.pop('pending_user_id', None)
         
-        # Load user permissions into session
-        from k9.models.models import SubPermission
-        user_permissions = SubPermission.query.filter_by(
-            user_id=user.id,
-            is_granted=True
-        ).all()
-        
-        # Store permissions as list of permission keys
-        permission_keys = []
-        for perm in user_permissions:
-            # Format: "section.subsection.permission_type" or "section.permission_type" if no subsection
-            if perm.subsection:
-                perm_key = f"{perm.section}.{perm.subsection}.{perm.permission_type.value}"
-            else:
-                perm_key = f"{perm.section}.{perm.permission_type.value}"
-            
-            # Add project context if applicable
-            if perm.project_id:
-                perm_key = f"{perm_key}@{perm.project_id}"
-            
-            permission_keys.append(perm_key)
-        
-        session['user_permissions'] = permission_keys
+        # Load user permissions into session using NEW permission system
+        from k9.utils.permissions_new import load_user_permissions
+        load_user_permissions(user.id)
         
         # Log successful login
         log_audit(user.id, 'LOGIN', 'User', str(user.id), {'username': username})

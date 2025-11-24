@@ -138,11 +138,13 @@ with app.app_context():
     # Make sure to import the models here or their tables won't be created
     import k9.models.models  # noqa: F401
     import k9.models.models_handler_daily  # noqa: F401
+    import k9.models.permissions_new  # noqa: F401
 
     # Bootstrap database on fresh import - creates all tables
     # For production, use migrations instead
     try:
         db.create_all()
+        print("✓ Database tables created successfully")
     except Exception as e:
         print(f"Warning: Could not create tables: {e}")
     
