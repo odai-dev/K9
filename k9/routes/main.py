@@ -4361,23 +4361,13 @@ def search():
 
 @main_bp.route('/projects/<project_id>/locations')
 @login_required
-@admin_or_pm_required
+@require_permission('projects.view')
 def project_locations(project_id):
     """View all locations for a project"""
     try:
         project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
-        return redirect(url_for('main.projects'))
-    
-    # Check permissions
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
     # Get all locations for this project
@@ -4390,23 +4380,13 @@ def project_locations(project_id):
 
 @main_bp.route('/projects/<project_id>/locations/add', methods=['GET', 'POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('projects.edit')
 def project_location_add(project_id):
     """Add a new location to a project"""
     try:
         project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
-        return redirect(url_for('main.projects'))
-    
-    # Check permissions
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بإضافة مواقع لهذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
     if request.method == 'POST':
@@ -4441,7 +4421,7 @@ def project_location_add(project_id):
 
 @main_bp.route('/projects/<project_id>/locations/<location_id>/edit', methods=['GET', 'POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('projects.edit')
 def project_location_edit(project_id, location_id):
     """Edit a project location"""
     try:
@@ -4455,16 +4435,6 @@ def project_location_edit(project_id, location_id):
     if location.project_id != project.id:
         flash('الموقع غير تابع لهذا المشروع', 'error')
         return redirect(url_for('main.project_locations', project_id=project.id))
-    
-    # Check permissions
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بتعديل مواقع هذا المشروع', 'error')
-        return redirect(url_for('main.projects'))
     
     if request.method == 'POST':
         try:
@@ -4496,7 +4466,7 @@ def project_location_edit(project_id, location_id):
 
 @main_bp.route('/projects/<project_id>/locations/<location_id>/delete', methods=['POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('projects.edit')
 def project_location_delete(project_id, location_id):
     """Delete a project location"""
     try:
@@ -4510,16 +4480,6 @@ def project_location_delete(project_id, location_id):
     if location.project_id != project.id:
         flash('الموقع غير تابع لهذا المشروع', 'error')
         return redirect(url_for('main.project_locations', project_id=project.id))
-    
-    # Check permissions
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بحذف مواقع هذا المشروع', 'error')
-        return redirect(url_for('main.projects'))
     
     try:
         location_name = location.name
@@ -4540,22 +4500,13 @@ def project_location_delete(project_id, location_id):
 
 @main_bp.route('/projects/<project_id>/shifts', methods=['GET', 'POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('projects.view')
 def project_shifts(project_id):
     """View and manage system-wide shifts (shifts are shared across all projects)"""
     try:
         project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف غير صحيح', 'error')
-        return redirect(url_for('main.projects'))
-    
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
     if request.method == 'POST':
@@ -4609,7 +4560,7 @@ def project_shifts(project_id):
 
 @main_bp.route('/projects/<project_id>/shifts/<shift_id>', methods=['GET'])
 @login_required
-@admin_or_pm_required
+@require_permission('projects.view')
 def shift_assignments(project_id, shift_id):
     """View shift details and redirect to daily scheduling"""
     try:
@@ -4617,15 +4568,6 @@ def shift_assignments(project_id, shift_id):
         shift = Shift.query.get_or_404(shift_id)
     except ValueError:
         flash('معرف غير صحيح', 'error')
-        return redirect(url_for('main.projects'))
-    
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
     from k9.models.models_handler_daily import DailyScheduleItem, DailySchedule
@@ -4658,12 +4600,9 @@ def shift_assignments(project_id, shift_id):
 
 @main_bp.route('/projects/<project_id>/shifts/<shift_id>/toggle', methods=['POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('projects.edit')
 def toggle_shift(project_id, shift_id):
     """Toggle shift active status (admin only)"""
-    if current_user.role != UserRole.GENERAL_ADMIN:
-        flash('فقط المسؤول العام يمكنه تعطيل/تفعيل الورديات', 'error')
-        return redirect(url_for('main.project_shifts', project_id=project_id))
     
     try:
         project = Project.query.get_or_404(project_id)
