@@ -1499,7 +1499,7 @@ def puppy_training_add():
 # Project routes (without attendance/assignment functionality)
 @main_bp.route('/projects')
 @login_required
-@admin_or_pm_required
+@require_permission('projects.view')
 def projects():
     # Use permission-aware helper instead of role check
     projects = get_user_assigned_projects(current_user)
@@ -1544,7 +1544,7 @@ def projects():
 
 @main_bp.route('/projects/add', methods=['GET', 'POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('projects.create')
 def project_add():
     if request.method == 'POST':
         try:
@@ -1635,23 +1635,13 @@ def project_add():
 
 @main_bp.route('/projects/<project_id>/edit', methods=['GET', 'POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('projects.edit')
 def project_edit(project_id):
     """Edit project details"""
     try:
         project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
-        return redirect(url_for('main.projects'))
-    
-    # Check permissions
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بتعديل هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
     if request.method == 'POST':
@@ -1723,24 +1713,13 @@ def project_edit(project_id):
 # Project Dashboard Route (without attendance statistics)
 @main_bp.route('/projects/<project_id>/dashboard')
 @login_required
-@admin_or_pm_required
+@require_permission('projects.view')
 def project_dashboard(project_id):
     try:
         project_id = project_id
         project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
-        return redirect(url_for('main.projects'))
-    
-    # Check permissions
-    # Check project access - for project managers, check if they have an employee profile linked to this project
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
     # Get dashboard statistics with new assignment system
@@ -1813,24 +1792,13 @@ def project_dashboard(project_id):
 # Project Status Management
 @main_bp.route('/projects/<project_id>/status', methods=['POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('projects.edit')
 def project_status_change(project_id):
     try:
         project_id = project_id
         project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
-        return redirect(url_for('main.projects'))
-    
-    # Check permissions
-    # Check project access - for project managers, check if they have an employee profile linked to this project
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بتعديل حالة هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
     new_status = request.form.get('status')
@@ -1873,18 +1841,13 @@ def project_status_change(project_id):
 # Project Delete Route
 @main_bp.route('/projects/<project_id>/delete', methods=['POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('projects.delete')
 def project_delete(project_id):
     try:
         project_id = project_id
         project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
-        return redirect(url_for('main.projects'))
-    
-    # Check permissions - Only GENERAL_ADMIN can delete projects
-    if not is_admin(current_user):
-        flash('غير مسموح لك بحذف المشاريع', 'error')
         return redirect(url_for('main.projects'))
     
     # Check if project is in PLANNED status only
@@ -1926,24 +1889,13 @@ def project_delete(project_id):
 # Project Dog Management
 @main_bp.route('/projects/<project_id>/dogs/add', methods=['POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('projects.edit')
 def project_dog_add(project_id):
     try:
         project_id = project_id
         project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
-        return redirect(url_for('main.projects'))
-    
-    # Check permissions
-    # Check project access - for project managers, check if they have an employee profile linked to this project
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بإضافة كلاب لهذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
     dog_id = request.form.get('dog_id')
@@ -1969,7 +1921,7 @@ def project_dog_add(project_id):
 # Project Manager Update Route
 @main_bp.route('/projects/<project_id>/manager/update', methods=['POST'])
 @login_required
-@admin_or_pm_required
+@require_permission('projects.edit')
 def project_manager_update(project_id):
     try:
         project_id = project_id
@@ -1977,11 +1929,6 @@ def project_manager_update(project_id):
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
         return redirect(url_for('main.projects'))
-    
-    # Check permissions
-    if not is_admin(current_user):
-        flash('غير مسموح لك بتعديل مدير المشروع', 'error')
-        return redirect(url_for('main.project_dashboard', project_id=project_id))
     
     project_manager_id = request.form.get('project_manager_id')
     
@@ -2030,24 +1977,13 @@ def project_manager_update(project_id):
 # Project Assignments Management
 @main_bp.route('/projects/<project_id>/assignments')
 @login_required
-@admin_or_pm_required
+@require_permission('projects.view')
 def project_assignments(project_id):
     try:
         project_id = project_id
         project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
-        return redirect(url_for('main.projects'))
-    
-    # Check permissions
-    # Check project access - for project managers, check if they have an employee profile linked to this project
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
     # Get current assignments
@@ -2085,26 +2021,15 @@ def project_assignments(project_id):
                          available_employees=available_employees,
                          project_managers=project_managers)
 
-@admin_or_pm_required
 @main_bp.route('/projects/<project_id>/assignments/add', methods=['POST'])
 @login_required
+@require_permission('projects.edit')
 def project_assignment_add(project_id):
     try:
         project_id = project_id
         project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
-        return redirect(url_for('main.projects'))
-    
-    # Check permissions
-    # Check project access - for project managers, check if they have an employee profile linked to this project
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بإضافة تعيينات لهذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
     assignment_type = request.form.get('assignment_type')
@@ -2204,6 +2129,7 @@ def project_assignment_add(project_id):
 
 @main_bp.route('/projects/<project_id>/assignments/<assignment_id>/remove', methods=['POST'])
 @login_required
+@require_permission('projects.edit')
 def project_assignment_remove(project_id, assignment_id):
     try:
         project_id = project_id
@@ -2212,17 +2138,6 @@ def project_assignment_remove(project_id, assignment_id):
         assignment = ProjectAssignment.query.get_or_404(assignment_id)
     except ValueError:
         flash('معرف غير صحيح', 'error')
-        return redirect(url_for('main.projects'))
-    
-    # Check permissions
-    # Check project access - for project managers, check if they have an employee profile linked to this project
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بإزالة التعيينات من هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
     try:
@@ -2241,6 +2156,7 @@ def project_assignment_remove(project_id, assignment_id):
 
 @main_bp.route('/projects/<project_id>/assignments/<assignment_id>/edit', methods=['POST'])
 @login_required
+@require_permission('projects.edit')
 def project_assignment_edit(project_id, assignment_id):
     try:
         project_id = project_id
@@ -2249,17 +2165,6 @@ def project_assignment_edit(project_id, assignment_id):
         assignment = ProjectAssignment.query.get_or_404(assignment_id)
     except ValueError:
         flash('معرف غير صحيح', 'error')
-        return redirect(url_for('main.projects'))
-    
-    # Check permissions
-    # Check project access - for project managers, check if they have an employee profile linked to this project
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بتعديل التعيينات في هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
     try:
@@ -2278,6 +2183,7 @@ def project_assignment_edit(project_id, assignment_id):
 # Enhanced Projects Section - Incidents
 @main_bp.route('/projects/<project_id>/incidents')
 @login_required
+@require_permission('projects.view')
 def project_incidents(project_id):
     try:
         project_id = project_id
@@ -2286,40 +2192,19 @@ def project_incidents(project_id):
         flash('معرف المشروع غير صحيح', 'error')
         return redirect(url_for('main.projects'))
     
-    # Check permissions
-    # Check project access - for project managers, check if they have an employee profile linked to this project
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
-        return redirect(url_for('main.projects'))
-    
     incidents = Incident.query.filter_by(project_id=project.id).order_by(Incident.incident_date.desc()).all()
     
     return render_template('projects/incidents.html', project=project, incidents=incidents)
 
 @main_bp.route('/projects/<project_id>/incidents/add', methods=['GET', 'POST'])
 @login_required
+@require_permission('projects.edit')
 def project_incident_add(project_id):
     try:
         project_id = project_id
         project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
-        return redirect(url_for('main.projects'))
-    
-    # Check permissions
-    # Check project access - for project managers, check if they have an employee profile linked to this project
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
     if request.method == 'POST':
@@ -2353,21 +2238,12 @@ def project_incident_add(project_id):
 
 @main_bp.route('/projects/<project_id>/incidents/resolve')
 @login_required
+@require_permission('projects.edit')
 def project_resolve_incident(project_id):
     try:
         project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
-        return redirect(url_for('main.projects'))
-    
-    # Check permissions
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
     incident_id = request.args.get('incident_id')
@@ -2398,6 +2274,7 @@ def project_resolve_incident(project_id):
 # Enhanced Projects Section - Suspicions
 @main_bp.route('/projects/<project_id>/suspicions')
 @login_required
+@require_permission('projects.view')
 def project_suspicions(project_id):
     try:
         project_id = project_id
@@ -2406,40 +2283,19 @@ def project_suspicions(project_id):
         flash('معرف المشروع غير صحيح', 'error')
         return redirect(url_for('main.projects'))
     
-    # Check permissions
-    # Check project access - for project managers, check if they have an employee profile linked to this project
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
-        return redirect(url_for('main.projects'))
-    
     suspicions = Suspicion.query.filter_by(project_id=project.id).order_by(Suspicion.discovery_date.desc()).all()
     
     return render_template('projects/suspicions.html', project=project, suspicions=suspicions)
 
 @main_bp.route('/projects/<project_id>/suspicions/add', methods=['GET', 'POST'])
 @login_required
+@require_permission('projects.edit')
 def project_suspicion_add(project_id):
     try:
         project_id = project_id
         project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
-        return redirect(url_for('main.projects'))
-    
-    # Check permissions
-    # Check project access - for project managers, check if they have an employee profile linked to this project
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
     if request.method == 'POST':
@@ -2475,6 +2331,7 @@ def project_suspicion_add(project_id):
 # Enhanced Projects Section - Evaluations
 @main_bp.route('/projects/<project_id>/evaluations')
 @login_required
+@require_permission('projects.view')
 def project_evaluations(project_id):
     try:
         project_id = project_id
@@ -2483,40 +2340,19 @@ def project_evaluations(project_id):
         flash('معرف المشروع غير صحيح', 'error')
         return redirect(url_for('main.projects'))
     
-    # Check permissions
-    # Check project access - for project managers, check if they have an employee profile linked to this project
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
-        return redirect(url_for('main.projects'))
-    
     evaluations = PerformanceEvaluation.query.filter_by(project_id=project.id).order_by(PerformanceEvaluation.evaluation_date.desc()).all()
     
     return render_template('projects/evaluations.html', project=project, evaluations=evaluations)
 
 @main_bp.route('/projects/<project_id>/evaluations/add', methods=['GET', 'POST'])
 @login_required
+@require_permission('projects.edit')
 def project_evaluation_add(project_id):
     try:
         project_id = project_id
         project = Project.query.get_or_404(project_id)
     except ValueError:
         flash('معرف المشروع غير صحيح', 'error')
-        return redirect(url_for('main.projects'))
-    
-    # Check permissions
-    # Check project access - for project managers, check if they have an employee profile linked to this project
-    has_access = current_user.role == UserRole.GENERAL_ADMIN
-    if not has_access and current_user.role == UserRole.PROJECT_MANAGER:
-        employee = current_user.employee
-        has_access = employee and project.project_manager_id == employee.id
-    
-    if not has_access:
-        flash('غير مسموح لك بالوصول إلى هذا المشروع', 'error')
         return redirect(url_for('main.projects'))
     
     if request.method == 'POST':
