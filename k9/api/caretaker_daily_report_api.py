@@ -11,7 +11,7 @@ from flask_login import login_required, current_user
 from sqlalchemy import and_, func, case
 from sqlalchemy.orm import selectinload, joinedload
 
-from k9.utils.permission_utils import has_permission
+from k9.utils.permission_decorators import require_permission
 from k9.reporting.range_utils import (
     resolve_range, get_aggregation_strategy, 
     parse_date_string, format_date_range_for_display,
@@ -44,12 +44,9 @@ def get_cleaning_status_display(status):
 
 @bp.route('/unified')
 @login_required
+@require_permission("reports.breeding.caretaker_daily.view")
 def caretaker_daily_unified_data():
     """Unified caretaker daily report data with range selector and smart aggregation"""
-    
-    # Check unified permission
-    if not has_permission(current_user, "reports.breeding.caretaker_daily.view"):
-        return jsonify({'error': 'ليس لديك صلاحية لعرض تقارير الرعاية اليومية'}), 403
     
     # Get parameters
     range_type = request.args.get('range_type', 'daily')
@@ -242,12 +239,9 @@ def caretaker_daily_unified_data():
 
 @bp.route('/unified/export.pdf')
 @login_required
+@require_permission("reports.breeding.caretaker_daily.export")
 def caretaker_daily_unified_export_pdf():
     """Export unified caretaker daily report as PDF with proper naming"""
-    
-    # Check export permission
-    if not has_permission(current_user, "reports.breeding.caretaker_daily.export"):
-        return jsonify({'error': 'ليس لديك صلاحية لتصدير تقارير الرعاية اليومية'}), 403
     
     # Get parameters (same as data endpoint)
     range_type = request.args.get('range_type', 'daily')
