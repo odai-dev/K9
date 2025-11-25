@@ -11,8 +11,7 @@ from flask_login import login_required, current_user
 from sqlalchemy import and_, func, case
 from sqlalchemy.orm import selectinload, joinedload
 
-from k9.utils.permission_decorators import require_sub_permission
-from k9.utils.permission_utils import has_permission
+from k9.utils.permission_decorators import require_permission
 from k9.reporting.range_utils import (
     resolve_range, get_aggregation_strategy, 
     parse_date_string, format_date_range_for_display,
@@ -68,7 +67,7 @@ def get_bcs_numeric(bcs_enum):
 
 @bp.route('/daily')
 @login_required
-@require_sub_permission("Reports", "Feeding Daily", PermissionType.VIEW)
+@require_permission("reports.breeding.feeding.view")
 def feeding_daily_data():
     """Get daily feeding report data with KPIs and rows"""
     project_id = request.args.get('project_id')
@@ -265,7 +264,7 @@ def feeding_daily_data():
 
 @bp.route('/weekly')
 @login_required
-@require_sub_permission("Reports", "Feeding Weekly", PermissionType.VIEW) 
+@require_permission("reports.breeding.feeding.view")
 def feeding_weekly_data():
     """Get weekly feeding report data aggregated by dog"""
     project_id = request.args.get('project_id')
@@ -437,12 +436,9 @@ def feeding_weekly_data():
 
 @bp.route('/daily/export.pdf')
 @login_required
-@require_sub_permission("Reports", "Feeding Daily", PermissionType.EXPORT)
+@require_permission("reports.breeding.feeding.export")
 def export_daily_pdf():
     """Export daily feeding report as PDF"""
-    if not has_permission(current_user, "reports.breeding.feeding.daily.export"):
-        return jsonify({'error': 'Unauthorized'}), 403
-    
     # Get the same data as daily endpoint
     project_id = request.args.get('project_id')
     date_str = request.args.get('date')
@@ -551,7 +547,7 @@ def export_daily_pdf():
 
 @bp.route('/weekly/export.pdf')
 @login_required
-@require_sub_permission("Reports", "Feeding Weekly", PermissionType.EXPORT)
+@require_permission("reports.breeding.feeding.export")
 def export_weekly_pdf():
     """Export weekly feeding report as PDF"""
     # Get the same data as weekly endpoint
@@ -794,12 +790,9 @@ def _generate_feeding_pdf(title: str, data: dict, output_path: str):
 
 @bp.route('/unified')
 @login_required
+@require_permission("reports.breeding.feeding.view")
 def feeding_unified_data():
     """Unified feeding report data with range selector and smart aggregation"""
-    
-    # Check unified permission
-    if not has_permission(current_user, "reports.breeding.feeding.unified.view"):
-        return jsonify({'error': 'Unauthorized'}), 403
     
     # Get parameters
     range_type = request.args.get('range_type', 'daily')
@@ -1130,12 +1123,9 @@ def feeding_unified_data():
 
 @bp.route('/unified/export.pdf')
 @login_required
+@require_permission("reports.breeding.feeding.export")
 def feeding_unified_export_pdf():
     """Export unified feeding report as PDF with proper naming"""
-    
-    # Check export permission
-    if not has_permission(current_user, "reports.breeding.feeding.unified.export"):
-        return jsonify({'error': 'Unauthorized'}), 403
     
     # Get parameters (same as data endpoint)
     range_type = request.args.get('range_type', 'daily')

@@ -10,7 +10,6 @@ import logging
 from k9.services.pm_daily_services import get_pm_daily
 from k9.utils.pm_daily_exporters import export_pm_daily_pdf
 from k9.utils.permission_decorators import require_permission
-from k9.utils.permission_utils import has_permission
 from k9.models.models import Project
 
 # Create blueprint
@@ -21,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 @bp.route('/run/pm-daily', methods=['POST'])
 @login_required
-@require_permission('reports:attendance:pm_daily:view')
+@require_permission("reports.attendance.pm_daily.view")
 def run_pm_daily():
     """
     Run PM Daily Report and return JSON data
@@ -70,7 +69,7 @@ def run_pm_daily():
 
 @bp.route('/export/pdf/pm-daily', methods=['POST'])
 @login_required
-@require_permission('reports:attendance:pm_daily:export')
+@require_permission("reports.attendance.pm_daily.export")
 def export_pm_daily_pdf_api():
     """
     Export PM Daily Report to PDF

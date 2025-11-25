@@ -11,8 +11,7 @@ from flask_login import login_required, current_user
 from sqlalchemy import and_, func, case
 from sqlalchemy.orm import selectinload, joinedload
 
-from k9.utils.permission_decorators import require_sub_permission
-from k9.utils.permission_utils import has_permission
+from k9.utils.permission_decorators import require_permission
 from k9.reporting.range_utils import (
     resolve_range, get_aggregation_strategy, 
     parse_date_string, format_date_range_for_display,
@@ -83,7 +82,7 @@ def get_max_severity(severities):
 
 @bp.route('/daily')
 @login_required
-@require_sub_permission("Reports", "Checkup Daily", PermissionType.VIEW)
+@require_permission("reports.breeding.checkup.view")
 def checkup_daily_data():
     """Get daily checkup report data with KPIs and rows"""
     project_id = request.args.get('project_id')
@@ -237,7 +236,7 @@ def checkup_daily_data():
 
 @bp.route('/weekly')
 @login_required
-@require_sub_permission("Reports", "Checkup Weekly", PermissionType.VIEW)
+@require_permission("reports.breeding.checkup.view")
 def checkup_weekly_data():
     """Get weekly checkup report data aggregated by dog"""
     project_id = request.args.get('project_id')
@@ -417,12 +416,9 @@ def checkup_weekly_data():
 
 @bp.route('/daily/export.pdf')
 @login_required
-@require_sub_permission("Reports", "Checkup Daily", PermissionType.EXPORT)
+@require_permission("reports.breeding.checkup.export")
 def export_checkup_daily_pdf():
     """Export daily checkup report as PDF"""
-    if not has_permission(current_user, "reports.breeding.checkup.daily.export"):
-        return jsonify({'error': 'Unauthorized'}), 403
-    
     project_id = request.args.get('project_id')
     date_str = request.args.get('date')
     dog_id = request.args.get('dog_id')
@@ -663,7 +659,7 @@ def export_checkup_daily_pdf():
 
 @bp.route('/weekly/export.pdf')
 @login_required
-@require_sub_permission("Reports", "Checkup Weekly", PermissionType.EXPORT)
+@require_permission("reports.breeding.checkup.export")
 def export_checkup_weekly_pdf():
     """Export weekly checkup report as PDF"""
     project_id = request.args.get('project_id')
@@ -779,12 +775,9 @@ def export_checkup_weekly_pdf():
 
 @bp.route('/unified')
 @login_required
+@require_permission("reports.breeding.checkup.view")
 def checkup_unified_data():
     """Unified checkup report data with range selector and smart aggregation"""
-    
-    # Check unified permission
-    if not has_permission(current_user, "reports.breeding.checkup.unified.view"):
-        return jsonify({'error': 'Unauthorized'}), 403
     
     # Get parameters
     range_type = request.args.get('range_type', 'daily')
@@ -1086,12 +1079,9 @@ def checkup_unified_data():
 
 @bp.route('/unified/export.pdf')
 @login_required
+@require_permission("reports.breeding.checkup.export")
 def checkup_unified_export_pdf():
     """Export unified checkup report as PDF with proper naming"""
-    
-    # Check export permission
-    if not has_permission(current_user, "reports.breeding.checkup.unified.export"):
-        return jsonify({'error': 'Unauthorized'}), 403
     
     # Get parameters (same as data endpoint)
     range_type = request.args.get('range_type', 'daily')

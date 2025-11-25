@@ -11,7 +11,7 @@ from flask_login import login_required, current_user
 from sqlalchemy import and_, func, case, or_
 from sqlalchemy.orm import selectinload, joinedload
 
-from k9.utils.permission_utils import has_permission
+from k9.utils.permission_decorators import require_permission
 from k9.reporting.range_utils import (
     resolve_range, get_aggregation_strategy, 
     parse_date_string, format_date_range_for_display,
@@ -102,12 +102,9 @@ def get_project_scope_filter(user, project_id):
 
 @bp.route('/')
 @login_required
+@require_permission("reports.veterinary.view")
 def veterinary_data():
     """Get unified veterinary report data with range selector"""
-    
-    # Check permission
-    if not has_permission(current_user, "reports.veterinary.view"):
-        return jsonify({'error': 'ليس لديك صلاحية لعرض التقارير البيطرية'}), 403
     
     # Get and validate parameters
     range_type = request.args.get('range_type', 'daily')
@@ -280,12 +277,9 @@ def veterinary_data():
 
 @bp.route('/export.pdf')
 @login_required
+@require_permission("reports.veterinary.export")
 def export_pdf():
     """Export veterinary report as Arabic RTL PDF"""
-    
-    # Check permission
-    if not has_permission(current_user, "reports.veterinary.export"):
-        return jsonify({'error': 'ليس لديك صلاحية لتصدير التقارير البيطرية'}), 403
     
     # Get the same data as the main endpoint
     try:
