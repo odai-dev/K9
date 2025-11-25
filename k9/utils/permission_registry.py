@@ -304,6 +304,18 @@ PERMISSION_REGISTRY = {
                 "routes": ["/tasks/new", "/tasks/create"],
                 "permission_type": PermissionType.CREATE
             },
+            "edit": {
+                "name_ar": "تعديل المهام",
+                "name_en": "Edit tasks",
+                "routes": ["/tasks/<id>/edit"],
+                "permission_type": PermissionType.EDIT
+            },
+            "delete": {
+                "name_ar": "حذف المهام",
+                "name_en": "Delete tasks",
+                "routes": ["/tasks/<id>/delete"],
+                "permission_type": PermissionType.DELETE
+            },
             "assign": {
                 "name_ar": "تعيين مهمة لموظف",
                 "name_en": "Assign task to employee",
