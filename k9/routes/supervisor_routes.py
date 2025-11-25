@@ -9,7 +9,7 @@ from sqlalchemy.orm import joinedload
 from k9.services.handler_service import DailyScheduleService
 from k9.models.models_handler_daily import DailySchedule, DailyScheduleItem, ScheduleStatus
 from k9.models.models import UserRole, User, Dog, Project, Shift
-from k9.utils.permission_decorators import require_permission
+from k9.utils.permission_decorators import require_permission, admin_or_pm_required
 from k9.utils.utils import validate_required_project_id, get_project_id_for_user
 from app import db
 
