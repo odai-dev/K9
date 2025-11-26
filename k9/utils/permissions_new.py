@@ -3,8 +3,24 @@ New Simple Permission System Utilities
 Clean, predictable, and stable permission checking and management.
 """
 from functools import wraps
-from flask import session, abort, redirect, url_for, flash, request, has_request_context
+from flask import session, abort, redirect, url_for, flash, request, has_request_context, jsonify
 from flask_login import current_user
+
+
+def _is_admin_mode(user):
+    """
+    Check if user is GENERAL_ADMIN in general admin mode.
+    GENERAL_ADMIN in admin mode has ALL permissions automatically.
+    """
+    if not user or not hasattr(user, 'role'):
+        return False
+    
+    from k9.models.models import UserRole
+    if user.role != UserRole.GENERAL_ADMIN:
+        return False
+    
+    admin_mode = session.get('admin_mode', 'general_admin')
+    return admin_mode == 'general_admin'
 
 
 def load_user_permissions(user_id):
@@ -51,52 +67,76 @@ def get_user_permissions():
     return set(perms)
 
 
-def has_permission(permission_key):
+def has_permission(permission_key, user=None):
     """
     Check if current user has a specific permission.
     
     Args:
-        permission_key: The permission key to check (e.g., 'view_dogs')
+        permission_key: The permission key to check (e.g., 'dogs.view')
+        user: Optional user object (defaults to current_user)
         
     Returns:
         True if user has the permission, False otherwise
     """
-    if not current_user.is_authenticated:
+    if user is None:
+        user = current_user
+    
+    if not user or not hasattr(user, 'is_authenticated') or not user.is_authenticated:
         return False
+    
+    # GENERAL_ADMIN in admin mode has ALL permissions
+    if _is_admin_mode(user):
+        return True
     
     user_perms = get_user_permissions()
     return permission_key in user_perms
 
 
-def has_any_permission(*permission_keys):
+def has_any_permission(*permission_keys, user=None):
     """
     Check if current user has ANY of the specified permissions.
     
     Args:
         *permission_keys: Variable number of permission keys
+        user: Optional user object (defaults to current_user)
         
     Returns:
         True if user has at least one permission, False otherwise
     """
-    if not current_user.is_authenticated:
+    if user is None:
+        user = current_user
+    
+    if not user or not hasattr(user, 'is_authenticated') or not user.is_authenticated:
         return False
+    
+    # GENERAL_ADMIN in admin mode has ALL permissions
+    if _is_admin_mode(user):
+        return True
     
     user_perms = get_user_permissions()
     return any(key in user_perms for key in permission_keys)
 
 
-def has_all_permissions(*permission_keys):
+def has_all_permissions(*permission_keys, user=None):
     """
     Check if current user has ALL of the specified permissions.
     
     Args:
         *permission_keys: Variable number of permission keys
+        user: Optional user object (defaults to current_user)
         
     Returns:
         True if user has all permissions, False otherwise
     """
-    if not current_user.is_authenticated:
+    if user is None:
+        user = current_user
+    
+    if not user or not hasattr(user, 'is_authenticated') or not user.is_authenticated:
         return False
+    
+    # GENERAL_ADMIN in admin mode has ALL permissions
+    if _is_admin_mode(user):
+        return True
     
     user_perms = get_user_permissions()
     return all(key in user_perms for key in permission_keys)
@@ -106,23 +146,31 @@ def require_permission(permission_key):
     """
     Decorator to enforce permission on a route.
     If user doesn't have the permission, redirect to dashboard with error.
+    Handles both regular requests and AJAX/API requests.
     
     Args:
-        permission_key: The permission key required for this route
+        permission_key: The permission key required for this route (e.g., 'dogs.view')
         
     Usage:
         @app.route('/dogs')
-        @require_permission('view_dogs')
+        @require_permission('dogs.view')
         def view_dogs():
             ...
     """
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
+            # Check if this is an AJAX/JSON request
+            is_ajax = request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+            
             if not current_user.is_authenticated:
+                if is_ajax:
+                    return jsonify({'success': False, 'error': 'يرجى تسجيل الدخول'}), 401
                 return redirect(url_for('auth.login'))
             
             if not has_permission(permission_key):
+                if is_ajax:
+                    return jsonify({'success': False, 'error': 'ليس لديك صلاحية للوصول إلى هذه الصفحة'}), 403
                 flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
                 return redirect(url_for('main.dashboard'))
             
@@ -140,17 +188,23 @@ def require_any_permission(*permission_keys):
         
     Usage:
         @app.route('/reports')
-        @require_any_permission('view_training_reports', 'view_vet_reports')
+        @require_any_permission('reports.training.view', 'reports.veterinary.view')
         def view_reports():
             ...
     """
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
+            is_ajax = request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+            
             if not current_user.is_authenticated:
+                if is_ajax:
+                    return jsonify({'success': False, 'error': 'يرجى تسجيل الدخول'}), 401
                 return redirect(url_for('auth.login'))
             
             if not has_any_permission(*permission_keys):
+                if is_ajax:
+                    return jsonify({'success': False, 'error': 'ليس لديك صلاحية للوصول إلى هذه الصفحة'}), 403
                 flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
                 return redirect(url_for('main.dashboard'))
             
@@ -168,23 +222,67 @@ def require_all_permissions(*permission_keys):
         
     Usage:
         @app.route('/advanced-settings')
-        @require_all_permissions('view_settings', 'edit_settings')
+        @require_all_permissions('admin.settings', 'admin.permissions.edit')
         def advanced_settings():
             ...
     """
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
+            is_ajax = request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+            
             if not current_user.is_authenticated:
+                if is_ajax:
+                    return jsonify({'success': False, 'error': 'يرجى تسجيل الدخول'}), 401
                 return redirect(url_for('auth.login'))
             
             if not has_all_permissions(*permission_keys):
+                if is_ajax:
+                    return jsonify({'success': False, 'error': 'ليس لديك صلاحية للوصول إلى هذه الصفحة'}), 403
                 flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
                 return redirect(url_for('main.dashboard'))
             
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+
+
+def admin_required(f):
+    """
+    Decorator to restrict access to GENERAL_ADMIN in admin mode only.
+    Also allows access if user has admin.permissions.view or admin.permissions.edit.
+    
+    Usage:
+        @app.route('/admin/settings')
+        @admin_required
+        def admin_settings():
+            ...
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        is_ajax = request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
+        if not current_user.is_authenticated:
+            if is_ajax:
+                return jsonify({'success': False, 'error': 'يرجى تسجيل الدخول'}), 401
+            flash('يرجى تسجيل الدخول للوصول إلى هذه الصفحة', 'warning')
+            return redirect(url_for('auth.login'))
+        
+        # GENERAL_ADMIN in admin mode always has access
+        if _is_admin_mode(current_user):
+            return f(*args, **kwargs)
+        
+        # Check if user has admin permissions
+        if has_permission('admin.permissions.view') or has_permission('admin.permissions.edit'):
+            return f(*args, **kwargs)
+        
+        # Access denied
+        if is_ajax:
+            return jsonify({'success': False, 'error': 'هذه الصفحة مخصصة للمدير العام فقط'}), 403
+        flash('هذه الصفحة مخصصة للمدير العام فقط', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    return decorated_function
 
 
 def grant_permission(user_id, permission_key, granted_by_user_id=None):
