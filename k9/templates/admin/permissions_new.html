@@ -236,24 +236,32 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadPermissionsCatalog() {
         try {
             const response = await fetch('/admin/permissions-new/api/permissions-catalog');
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `HTTP ${response.status}`);
+            }
             const data = await response.json();
             permissionsCatalog = data.catalog;
         } catch (error) {
             console.error('Error loading permissions catalog:', error);
-            showError('فشل تحميل قائمة الصلاحيات');
+            showError('فشل تحميل قائمة الصلاحيات: ' + error.message);
         }
     }
 
     async function loadUserPermissions(userId) {
         try {
             const response = await fetch(`/admin/permissions-new/api/user/${userId}/permissions`);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `HTTP ${response.status}`);
+            }
             const data = await response.json();
             userPermissions = new Set(data.permissions);
             renderPermissions();
             updateStats();
         } catch (error) {
             console.error('Error loading user permissions:', error);
-            showError('فشل تحميل صلاحيات المستخدم');
+            showError('فشل تحميل صلاحيات المستخدم: ' + error.message);
         }
     }
 
@@ -362,18 +370,28 @@ document.addEventListener('DOMContentLoaded', function() {
         toggle.disabled = true;
 
         try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            if (!csrfToken) {
+                throw new Error('CSRF token not found');
+            }
+            
             const endpoint = isGranted ? '/admin/permissions-new/api/grant' : '/admin/permissions-new/api/revoke';
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    'X-CSRFToken': csrfToken
                 },
                 body: JSON.stringify({
                     user_id: selectedUserId,
                     permission_key: permKey
                 })
             });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `خطأ في الخادم (${response.status})`);
+            }
 
             const data = await response.json();
             
@@ -392,7 +410,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error toggling permission:', error);
             toggle.checked = !isGranted;
-            showError('حدث خطأ أثناء تحديث الصلاحية');
+            showError(error.message || 'حدث خطأ أثناء تحديث الصلاحية');
         } finally {
             toggle.disabled = false;
         }
