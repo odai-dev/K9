@@ -11,7 +11,7 @@ from flask_login import login_required, current_user
 from sqlalchemy import and_, func, case
 from sqlalchemy.orm import selectinload, joinedload
 
-from k9.utils.permission_decorators import require_permission
+from k9.utils.permissions_new import require_permission
 from k9.reporting.range_utils import (
     resolve_range, get_aggregation_strategy, 
     parse_date_string, format_date_range_for_display,

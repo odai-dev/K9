@@ -24,7 +24,7 @@ from k9.models.models import (Dog, Employee, TrainingSession, VeterinaryVisit, P
                    Shift)
 from k9.utils.utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
 from k9.utils.permissions_new import require_permission
-from k9.utils.permission_decorators import admin_or_pm_required
+from k9.utils.permissions_new import admin_or_pm_required
 from k9.utils.permissions_new import has_permission, _is_admin_mode, require_permission
 from k9.utils.permissions_new import has_permission
 from k9.utils.validators import validate_yemen_phone

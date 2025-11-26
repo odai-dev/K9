@@ -11,7 +11,7 @@ from k9.models.models import (CleaningLog, Project, Dog, Employee, User, UserRol
 from k9.utils.utils import get_user_assigned_projects, get_user_accessible_dogs, log_audit, validate_required_project_id, get_project_id_for_user
 from datetime import datetime, date, time, timedelta
 from sqlalchemy import func, and_, or_
-from k9.utils.permission_decorators import require_permission
+from k9.utils.permissions_new import require_permission
 import json
 import re
 

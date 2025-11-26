@@ -7,7 +7,7 @@ from flask import Blueprint, render_template, request, current_app
 from flask_login import login_required, current_user
 from datetime import date
 
-from k9.utils.permission_decorators import require_permission
+from k9.utils.permissions_new import require_permission
 from k9.models.models import Project, UserRole, ProjectStatus
 from k9.utils.utils import get_user_permissions
 
