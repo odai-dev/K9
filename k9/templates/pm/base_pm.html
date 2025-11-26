@@ -45,7 +45,7 @@
                         </a>
                     </li>
                     
-                    {% if has_permission(current_user, 'dogs.view') %}
+                    {% if has_permission('dogs.view') %}
                     <li class="nav-item">
                         <a class="nav-link px-3 py-2 rounded-pill {% if request.endpoint == 'pm.my_dogs' %}active bg-white bg-opacity-25{% endif %}" href="{{ url_for('pm.my_dogs') }}">
                             <i class="fas fa-dog me-1"></i>الكلاب
@@ -53,7 +53,7 @@
                     </li>
                     {% endif %}
                     
-                    {% if has_permission(current_user, 'employees.view') %}
+                    {% if has_permission('employees.view') %}
                     <li class="nav-item">
                         <a class="nav-link px-3 py-2 rounded-pill {% if request.endpoint == 'pm.my_team' %}active bg-white bg-opacity-25{% endif %}" href="{{ url_for('pm.my_team') }}">
                             <i class="fas fa-users me-1"></i>الفريق
@@ -74,7 +74,7 @@
                     </li>
                     {% endif %}
                     
-                    {% if has_permission(current_user, 'veterinary.view') %}
+                    {% if has_permission('veterinary.view') %}
                     <!-- Veterinary Module -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="vetDropdown" role="button" data-bs-toggle="dropdown">
@@ -93,20 +93,20 @@
                             <i class="fas fa-paw me-1"></i>التربية
                         </a>
                         <ul class="dropdown-menu shadow">
-                            {% if has_permission(current_user, 'reports.breeding.feeding.view') %}
+                            {% if has_permission('reports.breeding.feeding.view') %}
                             <li><a class="dropdown-item" href="{{ url_for('unified_feeding_reports_ui.feeding') }}"><i class="fas fa-bone me-2"></i>التغذية</a></li>
                             {% endif %}
-                            {% if has_permission(current_user, 'reports.breeding.checkup.view') %}
+                            {% if has_permission('reports.breeding.checkup.view') %}
                             <li><a class="dropdown-item" href="{{ url_for('unified_checkup_reports_ui.checkup') }}"><i class="fas fa-heartbeat me-2"></i>الفحص اليومي</a></li>
                             {% endif %}
-                            {% if has_permission(current_user, 'reports.breeding.caretaker_daily.view') %}
+                            {% if has_permission('reports.breeding.caretaker_daily.view') %}
                             <li><a class="dropdown-item" href="{{ url_for('caretaker_daily_reports_ui.caretaker_daily') }}"><i class="fas fa-clipboard-list me-2"></i>تقارير المربي</a></li>
                             {% endif %}
                         </ul>
                     </li>
                     {% endif %}
                     
-                    {% if has_permission(current_user, 'production.view') %}
+                    {% if has_permission('production.view') %}
                     <!-- Production Module -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill" href="#" id="productionDropdown" role="button" data-bs-toggle="dropdown">
@@ -135,7 +135,7 @@
                             {% endif %}
                         </a>
                         <ul class="dropdown-menu shadow">
-                            {% if has_permission(current_user, 'handler_reports.view') %}
+                            {% if has_permission('handler_reports.view') %}
                             <li>
                                 <a class="dropdown-item" href="{{ url_for('tasks.admin_index') }}">
                                     <i class="fas fa-tasks me-2"></i>إرسال المهام
@@ -169,7 +169,7 @@
                                     {% endif %}
                                 </a>
                             </li>
-                            {% if has_permission(current_user, 'admin.permissions.view') %}
+                            {% if has_permission('admin.permissions.view') %}
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <a class="dropdown-item" href="{{ url_for('admin.comprehensive_permissions') }}">

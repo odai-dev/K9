@@ -10,7 +10,7 @@
                 <p class="text-muted">سجلات العناية والنظافة للكلاب</p>
             </div>
             <div>
-                {% if has_permission(current_user, 'breeding.grooming.create') %}
+                {% if has_permission('breeding.grooming.create') %}
                 <a href="{{ url_for('main.breeding_grooming_new') }}" class="btn btn-primary">
                     <i class="fas fa-plus"></i> إضافة عناية جديدة
                 </a>
@@ -286,7 +286,7 @@ function updateTable(items) {
             <td>${item.cleanliness_score ? `<span class="badge bg-warning">${item.cleanliness_score}</span>` : '-'}</td>
             <td>
                 <div class="btn-group btn-group-sm">
-                    {% if has_permission(current_user, 'breeding.grooming.edit') %}
+                    {% if has_permission('breeding.grooming.edit') %}
                     <a href="/breeding/grooming/${item.id}/edit" class="btn btn-outline-primary btn-sm" title="تعديل">
                         <i class="fas fa-edit"></i>
                     </a>

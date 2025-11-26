@@ -21,7 +21,7 @@
                     </nav>
                 </div>
                 <div>
-                    {% if has_permission(current_user, 'breeding.feeding.create') %}
+                    {% if has_permission('breeding.feeding.create') %}
                     <a href="{{ url_for('main.breeding_feeding_new') }}" class="btn btn-success">
                         <i class="fas fa-plus me-2"></i>إضافة سجل تغذية
                     </a>

@@ -1,0 +1,171 @@
+We have now reached a critical state in the permission system of this K9 Operations app.
+
+You already implemented a NEW permission system (`k9/models/permissions_new.py` + `k9/utils/permissions_new.py`), with:
+- Permission, UserPermission, PermissionChangeLog models
+- load_user_permissions(), get_user_permissions(), has_permission(), require_permission()
+- Session-based caching of permission keys
+
+However, the app is currently in a HYBRID/INCOMPLETE state:
+- Some routes use the new decorators
+- Some routes and APIs still use the old permission_utils / SubPermission system
+- Many templates and routes still call has_permission() with the OLD signature
+- The admin “comprehensive permissions” UI does not reliably reflect which permissions are actually active in the new system
+- Some users still see “you are not allowed to access this page” even after being granted permissions
+
+I want you to FULLY FINISH and CLEAN UP the permission system according to this plan:
+
+---------------------------------------------------
+PHASE 1 — FIX has_permission USAGE EVERYWHERE
+---------------------------------------------------
+1) Search the entire codebase (Python + Jinja templates) for:
+   - has_permission(current_user, ...
+   - has_permission(user, ...
+   - any call where the first argument is NOT a permission key string.
+
+2) The NEW canonical signature MUST be:
+   has_permission(permission_key: str, user=None)
+
+   So in all templates and routes:
+   - Change calls from: has_permission(current_user, 'something.key')
+   - To this form:      has_permission('something.key')
+   (or has_permission('something.key', current_user) ONLY if absolutely necessary)
+
+3) After this, NO place in the codebase should call has_permission with
+   current_user as the first argument. The FIRST argument must ALWAYS
+   be the permission key string.
+
+4) Re-run and re-check the main navigation templates:
+   - base.html
+   - dashboard.html
+   - all PM / handler / supervisor / trainer / vet / breeding / production templates
+   Make sure that every Jinja permission check uses:
+   {% if has_permission('some.permission.key') %} ... {% endif %}
+
+5) Verify behaviour:
+   - Create a test user
+   - Grant them a small set of permissions via the new system
+   - Log in and confirm that menus, pages, and buttons appear/disappear
+     correctly based on the new permission keys.
+
+---------------------------------------------------
+PHASE 2 — UNIFY BACKEND PERMISSION CHECKS
+---------------------------------------------------
+1) For ALL backend routes and APIs, enforce the new system consistently.
+   That means:
+   - Use @require_permission('permission.key') where a single permission is required
+   - Use require_any_permission(...) only when explicitly needed.
+
+2) Search all routes for usage of:
+   - from k9.utils.permission_utils import has_permission
+   - PermissionType.*
+   - SubPermission
+   - legacy_has_permission
+   - legacy wrappers / decorators
+
+   Replace these with the new pattern:
+   - from k9.utils.permissions_new import has_permission, require_permission
+   - Then decorate each sensitive route with @require_permission('<correct_key>').
+
+3) Make sure all critical modules are covered, including:
+   - main routes
+   - dogs
+   - employees
+   - projects
+   - schedules (daily scheduling)
+   - reports (all types)
+   - tasks
+   - handlers
+   - supervisors
+   - trainers
+   - veterinary
+   - breeding / production
+   - admin tools
+   - all API endpoints under k9/api
+
+4) For any route that currently only does role-based protection
+   (e.g. checking user.role == GENERAL_ADMIN or PROJECT_MANAGER),
+   keep role logic if needed BUT ALSO apply the new permission system.
+   The new system must be the single source of truth for feature access.
+
+---------------------------------------------------
+PHASE 3 — CLEAN UP OLD PERMISSION SYSTEM
+---------------------------------------------------
+1) Identify all remaining dependencies on the old system:
+   - SubPermission model
+   - PermissionType enum
+   - k9/utils/permission_utils.py
+   - k9/utils/permission_decorators.py
+   - k9/utils/permission_registry.py
+   - k9/utils/default_permissions.py
+   - any SubPermission-based seeding or tests that are still wired into runtime
+
+2) For ALL runtime code (routes, APIs, utils, templates), remove usage of:
+   - SubPermission
+   - PermissionType
+   - permission_utils
+   - permission_registry
+   - default_permissions
+
+   Replace them with:
+   - Permission
+   - UserPermission
+   - PermissionChangeLog (for logging)
+   - permissions_new.has_permission / require_permission
+
+3) It is OK if some old-test files still reference the old system
+   as long as they are not used at runtime. But if they are still
+   blocking or confusing the app, rewrite or disable them.
+
+4) Make sure that the admin “comprehensive permissions” UI now works WITH
+   the new Permission / UserPermission tables exclusively and no longer
+   relies on SubPermission or the old registry.
+
+---------------------------------------------------
+PHASE 4 — ADMIN PERMISSIONS UI MUST REFLECT REALITY
+---------------------------------------------------
+1) The admin permissions screen(s) must:
+   - List all users
+   - Show their currently granted permission keys
+   - Let the GENERAL_ADMIN toggle each permission ON/OFF per user
+   - Save these changes into UserPermission records correctly
+   - Immediately reflect in session on next login
+
+2) When I:
+   - Log in as GENERAL_ADMIN
+   - Open the comprehensive permissions page
+   - Select a specific user
+   - Enable some permissions
+   - Save
+   - Log out and log in as that user
+
+   I must see:
+   - Only the screens & menu items that correspond to the granted permission keys
+   - No access to anything else
+   - No “you are not allowed” screens for features that I *do* have permission for.
+
+3) If needed, create a small development-only debug view that shows:
+   - The current session['user_permissions']
+   - The list of Permission keys assigned to the logged-in user
+
+   This will help verify that UserPermission → session → has_permission → UI
+   is all working correctly end-to-end.
+
+---------------------------------------------------
+VERY IMPORTANT RULES
+---------------------------------------------------
+- Do NOT re-introduce any new “third” permission system.
+- Do NOT leave hybrid logic: after this pass, there must be ONE unified system:
+  * Permission / UserPermission / PermissionChangeLog models
+  * permissions_new.py helpers
+  * @require_permission decorators
+  * Jinja has_permission('key') checks
+- Ensure that all broken links, 403 views, and "you are not allowed" pages
+  are truly based on missing permissions, not on mis-wired checks.
+
+When you are done:
+- Summarize exactly what you changed
+- Confirm that:
+  * The old system is no longer used at runtime
+  * All templates use has_permission('key') correctly
+  * All sensitive routes use @require_permission('key')
+  * The admin permissions page correctly drives what each user can access

@@ -48,7 +48,7 @@
                     <h5 class="mb-0">
                         <i class="fas fa-list me-2"></i>سجل الحوادث
                     </h5>
-                    {% if has_permission(current_user, 'projects.incidents.create') %}
+                    {% if has_permission('projects.incidents.create') %}
                     <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#addIncidentModal">
                         <i class="fas fa-plus me-2"></i>تسجيل حادث جديد
                     </button>

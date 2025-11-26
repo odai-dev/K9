@@ -10,7 +10,7 @@
                 <i class="fas fa-file-alt me-2"></i>
                 تقاريري
             </h1>
-            {% if has_permission(current_user, 'handlers.reports.create') %}
+            {% if has_permission('handlers.reports.create') %}
             <a href="{{ url_for('handler.new_report') }}" class="btn btn-primary">
                 <i class="fas fa-plus me-2"></i>
                 تقرير جديد
