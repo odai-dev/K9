@@ -287,8 +287,8 @@ def admin_required(f):
 
 def admin_or_pm_required(f):
     """
-    Require GENERAL_ADMIN (in admin mode) or user with any PM-level permissions.
-    This checks permissions rather than just roles.
+    Require GENERAL_ADMIN (in admin mode) or user with PM-level permissions.
+    PM-level permissions include projects, dogs, employees, reports, schedules, etc.
     
     Usage:
         @app.route('/supervisor')
@@ -296,6 +296,23 @@ def admin_or_pm_required(f):
         def supervisor_page():
             ...
     """
+    # PM-level permission prefixes that indicate project manager access
+    PM_PERMISSION_PREFIXES = (
+        'projects.',
+        'dogs.',
+        'employees.',
+        'reports.',
+        'schedules.',
+        'shifts.',
+        'attendance.',
+        'training.',
+        'veterinary.',
+        'breeding.',
+        'supervisor.',
+        'pm.',
+        'admin.',
+    )
+    
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
@@ -306,9 +323,13 @@ def admin_or_pm_required(f):
         if _is_admin_mode(current_user):
             return f(*args, **kwargs)
         
-        # Check if user has ANY permissions (indicating PM-level access)
+        # Check if user has any PM-level permission
         user_perms = get_user_permissions()
-        if user_perms:
+        has_pm_permission = any(
+            perm.startswith(prefix) for perm in user_perms for prefix in PM_PERMISSION_PREFIXES
+        )
+        
+        if has_pm_permission:
             return f(*args, **kwargs)
         
         flash('غير مصرح لك بالوصول إلى هذه الصفحة', 'danger')
