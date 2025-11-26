@@ -7,12 +7,12 @@ from flask import Blueprint, render_template, request, jsonify, flash, redirect,
 from flask_login import login_required, current_user, logout_user, login_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from app import csrf
-from k9.utils.permission_decorators import admin_required, require_admin_permission
+from k9.utils.permissions_new import admin_required, has_permission, require_admin_permission
 from k9.utils.permission_utils import (
     PERMISSION_STRUCTURE, get_user_permissions_matrix, update_permission, 
     bulk_update_permissions, get_project_managers, get_all_projects,
     initialize_default_permissions, export_permissions_matrix,
-    get_users_by_project, get_user_permissions_by_project, has_permission
+    get_users_by_project, get_user_permissions_by_project
 )
 from k9.utils.default_permissions import is_base_permission
 from k9.utils.security_utils import PasswordValidator, SecurityHelper
@@ -40,7 +40,7 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 @admin_required
 def dashboard():
     """Main admin dashboard with system overview and navigation"""
-    if not has_permission(current_user, "admin.dashboard.view"):
+    if not has_permission("admin.dashboard.view"):
         return redirect("/unauthorized")
     
     from k9.models.models import User, Project, SubPermission, PermissionAuditLog, Dog, Employee, TrainingSession, VeterinaryVisit
@@ -757,7 +757,7 @@ def admin_profile():
 @admin_required
 def backup_management():
     """Backup management page"""
-    if not has_permission(current_user, "admin.backup.manage"):
+    if not has_permission("admin.backup.manage"):
         return redirect("/unauthorized")
     
     from k9.models.models import BackupSettings
@@ -1086,7 +1086,7 @@ def google_drive_connect():
 @admin_required
 def google_drive_callback():
     """Handle Google Drive OAuth callback"""
-    if not has_permission(current_user, "admin.google_drive.manage"):
+    if not has_permission("admin.google_drive.manage"):
         return redirect("/unauthorized")
     
     from k9.utils.google_drive_manager import GoogleDriveManager
@@ -1254,7 +1254,7 @@ def google_drive_status():
 @login_required
 def notifications():
     """صفحة الإشعارات للأدمن ومسؤولي المشاريع"""
-    if not has_permission(current_user, "admin.notifications.view"):
+    if not has_permission("admin.notifications.view"):
         return redirect("/unauthorized")
     
     from k9.models.models_handler_daily import Notification
@@ -1316,7 +1316,7 @@ def mark_all_notifications_read():
 @admin_required
 def get_unread_count():
     """API: الحصول على عدد الإشعارات غير المقروءة"""
-    if not has_permission(current_user, "admin.general.access"):
+    if not has_permission("admin.general.access"):
         return redirect("/unauthorized")
     
     from k9.services.handler_service import NotificationService
@@ -1397,7 +1397,7 @@ def admin_reject_report(report_type, report_id):
 @admin_required
 def get_pending_reports_count():
     """API: الحصول على عدد التقارير بانتظار المراجعة"""
-    if not has_permission(current_user, "admin.reports.view_pending"):
+    if not has_permission("admin.reports.view_pending"):
         return redirect("/unauthorized")
     
     from k9.services.report_review_service import ReportReviewService

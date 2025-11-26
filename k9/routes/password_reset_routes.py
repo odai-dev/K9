@@ -5,7 +5,7 @@ from k9.models.models import User
 from k9.models.password_reset import PasswordResetToken
 from k9.utils.security_utils import PasswordValidator, SecurityHelper
 from k9.utils.email_service import EmailService
-from k9.utils.permission_utils import has_permission
+from k9.utils.permissions_new import has_permission
 from werkzeug.security import generate_password_hash
 from datetime import datetime
 
@@ -177,7 +177,7 @@ def reset_password(token):
 @password_reset_bp.route('/cleanup-tokens')
 def cleanup_expired_tokens():
     """Clean up expired tokens (admin only)."""
-    if not has_permission(current_user, "password_reset.reset.access"):
+    if not has_permission("password_reset.reset.access"):
         return redirect("/unauthorized")
     
     # This would typically be called by a cron job

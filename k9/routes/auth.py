@@ -6,7 +6,7 @@ from k9.models.models import User, UserRole, AuditLog
 from k9.utils.utils import log_audit
 from k9.utils.security_utils import PasswordValidator, AccountLockoutManager, MFAManager, SecurityHelper
 from k9.utils.validators import validate_yemen_phone
-from k9.utils.permission_utils import has_permission
+from k9.utils.permissions_new import has_permission, load_user_permissions
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 
@@ -248,7 +248,7 @@ def setup():
 @auth_bp.route('/select-mode', methods=['GET', 'POST'])
 @login_required
 def select_mode():
-    if not has_permission(current_user, "auth.mode.switch"):
+    if not has_permission("auth.mode.switch"):
         return redirect("/unauthorized")
     
     """Allow GENERAL_ADMIN users to select their working mode"""
@@ -340,7 +340,7 @@ def switch_mode():
 @auth_bp.route('/create_manager', methods=['GET', 'POST'])
 @login_required
 def create_manager():
-    if not has_permission(current_user, "auth.create_manager.access"):
+    if not has_permission("auth.create_manager.access"):
         return redirect("/unauthorized")
     
     # Only general admins can create project managers

@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
 from app import db, csrf
 from k9.utils.security_utils import MFAManager, SecurityHelper, PasswordValidator
-from k9.utils.permission_utils import has_permission
+from k9.utils.permissions_new import has_permission
 from datetime import datetime
 
 mfa_bp = Blueprint('mfa', __name__, url_prefix='/mfa')
@@ -13,7 +13,7 @@ mfa_bp = Blueprint('mfa', __name__, url_prefix='/mfa')
 @csrf.exempt
 def setup():
     """MFA setup page."""
-    if not has_permission(current_user, "mfa.setup.access"):
+    if not has_permission("mfa.setup.access"):
         return redirect("/unauthorized")
     
     if current_user.mfa_enabled:
@@ -83,7 +83,7 @@ def setup():
 @login_required
 def status():
     """MFA status and management page."""
-    if not has_permission(current_user, "mfa.status.view"):
+    if not has_permission("mfa.status.view"):
         return redirect("/unauthorized")
     
     return render_template('auth/mfa_status.html')
@@ -93,7 +93,7 @@ def status():
 @csrf.exempt
 def disable():
     """Disable MFA."""
-    if not has_permission(current_user, "mfa.disable.access"):
+    if not has_permission("mfa.disable.access"):
         return redirect("/unauthorized")
     
     if not current_user.mfa_enabled:
@@ -127,7 +127,7 @@ def disable():
 @csrf.exempt
 def regenerate_backup_codes():
     """Regenerate backup codes."""
-    if not has_permission(current_user, "mfa.backup_codes.regenerate"):
+    if not has_permission("mfa.backup_codes.regenerate"):
         return redirect("/unauthorized")
     
     if not current_user.mfa_enabled:
@@ -160,7 +160,7 @@ def regenerate_backup_codes():
 @csrf.exempt
 def change_password():
     """Change password with complexity validation."""
-    if not has_permission(current_user, "mfa.password.change"):
+    if not has_permission("mfa.password.change"):
         return redirect("/unauthorized")
     
     if request.method == 'POST':

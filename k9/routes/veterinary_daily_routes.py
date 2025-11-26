@@ -4,7 +4,7 @@ Veterinary daily report UI routes
 from flask import Blueprint, render_template, request, redirect
 from flask_login import login_required, current_user
 
-from k9.utils.permission_utils import has_permission
+from k9.utils.permissions_new import has_permission
 from k9.models.models import Project
 
 bp = Blueprint('veterinary_daily_ui', __name__)
@@ -16,7 +16,7 @@ def daily_report():
     """
     Veterinary daily report page
     """
-    if not has_permission(current_user, "general.access"):
+    if not has_permission("general.access"):
         return redirect("/unauthorized")
     
     # Get available projects based on user role
