@@ -464,7 +464,7 @@ def my_team():
 @pm_bp.route('/my-dogs')
 @login_required
 @require_pm_project
-@require_permission('view_dogs')
+@require_permission('dogs.view')
 def my_dogs():
     """View dogs assigned to PM's project"""
     project, needs_selection = get_active_project()
