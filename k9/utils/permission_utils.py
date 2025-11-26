@@ -1,5 +1,20 @@
 """
 Permission management utilities for K9 Operations Management System
+
+[DEPRECATED] This module contains the legacy SubPermission-based permission system.
+For new code, use k9.utils.permissions_new instead, which provides:
+- Session-cached permission checking (faster)
+- Simple key-based permissions (e.g., "dogs.view", "admin.permissions.edit")
+- 89 granular permission keys across 23 categories
+- GENERAL_ADMIN bypass when in admin mode
+- Bilingual support (Arabic/English)
+
+This legacy module is retained for backward compatibility with existing code
+that uses SubPermission model and the old has_permission(user, category, ...) format.
+
+Migration guide:
+- OLD: has_permission(current_user, "dogs", "general", PermissionType.VIEW)
+- NEW: from k9.utils.permissions_new import has_permission; has_permission("dogs.view")
 """
 
 from functools import wraps

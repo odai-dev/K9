@@ -78,6 +78,16 @@ Preferred communication style: Simple, everyday language.
   - **PM Scoping Critical Fix**: Updated `get_scoped_dogs` and `get_scoped_employees` in `k9/utils/pm_scoping.py` to support ALL three assignment methods: ProjectDog table (legacy), ProjectAssignment table (current), and assigned_to_user_id field (direct) - ensures complete data visibility for PROJECT_MANAGER users
   - **Template Permission Enforcement**: Removed all hard-coded role checks from UI templates - `unauthorized.html` now uses `is_admin()` and `get_sections_for_user()` for dashboard redirects; `handler/profile.html` displays role badge based on permissions instead of `current_user.role.value`; all navigation already uses `has_permission()` checks ensuring UI visibility matches granted permissions
   - **Impact**: Users with granted permissions can now access data and UI elements immediately upon permission assignment, without role restrictions bypassing the permission system. UI dynamically shows/hides features based solely on permissions - no permissions = minimal handler interface, partial permissions = only assigned features, full permissions = complete interface
+- **New Permission System Rebuild (Nov 26, 2025)**:
+  - **Architecture**: Complete rebuild from ground up replacing legacy SubPermission system with session-cached Permission/UserPermission system
+  - **Permission Model**: 89 granular permission keys across 23 categories (admin, users, dogs, projects, assignments, shifts, attendance, training, veterinary, breeding, reports, schedules, supervisor, handler, caretaker, security, audit, notifications, dashboard, cleaning, feeding, health, deworming)
+  - **Session Caching**: Permissions loaded into session on login for fast permission checks; GENERAL_ADMIN users in admin mode bypass permission checks entirely
+  - **Unified Decorators**: `require_permission` and `require_admin_permission` in `k9/utils/permissions_new.py` with AJAX-aware responses (JSON for fetch, redirect for browser)
+  - **Bilingual Support**: Arabic (name_ar) and English (name_en) permission names stored in Permission model
+  - **Admin UI**: New permission management interface at `/admin/permissions-new` with user list, permission catalog grouped by category, toggle switches for grant/revoke, bulk category operations, and real-time stats
+  - **Audit Trail**: PermissionChangeLog model tracks all permission grants/revokes with timestamps, actor, and IP address
+  - **Backward Compatibility**: Legacy `permission_utils.py` retained for existing code; new imports from `permissions_new.py`
+  - **Key Files**: `k9/utils/permissions_new.py` (core logic), `k9/models/permissions_new.py` (models), `scripts/seed_permissions.py` (seeds 89 permissions), `k9/templates/admin/permissions_new.html` (admin UI)
 
 ## External Dependencies
 
