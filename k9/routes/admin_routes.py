@@ -1786,6 +1786,7 @@ def disconnect_cloud_provider(provider):
 
 @admin_bp.route('/permissions-new')
 @login_required
+@require_admin_permission('admin.permissions.view')
 def permissions_management_new():
     """New permission management interface"""
     from k9.models.permissions_new import Permission
@@ -1796,6 +1797,7 @@ def permissions_management_new():
 
 @admin_bp.route('/permissions-new/api/users')
 @login_required
+@require_admin_permission('admin.permissions.view')
 def get_users_for_permissions():
     """Get all active users"""
     from k9.models.models import User
@@ -1815,6 +1817,7 @@ def get_users_for_permissions():
 
 @admin_bp.route('/permissions-new/api/user/<user_id>/permissions')
 @login_required
+@require_admin_permission('admin.permissions.view')
 def get_user_permissions_new(user_id):
     """Get all permissions for a user"""
     from k9.utils.permissions_new import get_user_permission_keys
@@ -1827,6 +1830,7 @@ def get_user_permissions_new(user_id):
 
 @admin_bp.route('/permissions-new/api/grant', methods=['POST'])
 @login_required
+@require_admin_permission('admin.permissions.edit')
 def grant_permission_api():
     """Grant a permission to a user"""
     from k9.utils.permissions_new import grant_permission
@@ -1844,6 +1848,7 @@ def grant_permission_api():
 
 @admin_bp.route('/permissions-new/api/revoke', methods=['POST'])
 @login_required
+@require_admin_permission('admin.permissions.edit')
 def revoke_permission_api():
     """Revoke a permission from a user"""
     from k9.utils.permissions_new import revoke_permission
@@ -1861,6 +1866,7 @@ def revoke_permission_api():
 
 @admin_bp.route('/permissions-new/api/permissions-catalog')
 @login_required
+@require_admin_permission('admin.permissions.view')
 def get_permissions_catalog():
     """Get all permissions grouped by category"""
     from k9.utils.permissions_new import get_all_permissions_grouped

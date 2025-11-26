@@ -1,0 +1,456 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}إدارة الصلاحيات - النظام الجديد{% endblock %}
+
+{% block admin_header_title %}إدارة الصلاحيات{% endblock %}
+
+{% block admin_breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('admin.admin_panel') }}">لوحة الإدارة</a></li>
+<li class="breadcrumb-item active">إدارة الصلاحيات</li>
+{% endblock %}
+
+{% block extra_css %}
+{{ super() }}
+<style>
+.permission-card {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+.permission-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+.user-selector {
+    max-height: 400px;
+    overflow-y: auto;
+}
+.user-item {
+    cursor: pointer;
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    transition: all 0.2s ease;
+}
+.user-item:hover {
+    background-color: #f8f9fa;
+}
+.user-item.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+[data-theme="dark"] .user-item:hover {
+    background-color: #2d2d2d;
+}
+[data-theme="dark"] .user-item.active {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+.category-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 8px 8px 0 0;
+    font-weight: 600;
+}
+[data-theme="dark"] .category-header {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+.permission-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+}
+[data-theme="dark"] .permission-item {
+    border-bottom-color: #333;
+}
+.permission-item:last-child {
+    border-bottom: none;
+}
+.permission-name {
+    font-weight: 500;
+}
+.permission-desc {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+.permission-toggle {
+    width: 50px;
+    height: 26px;
+}
+.loading-spinner {
+    display: none;
+}
+.loading-spinner.show {
+    display: inline-block;
+}
+.stats-badge {
+    font-size: 0.9rem;
+    padding: 8px 16px;
+    border-radius: 25px;
+}
+.filter-input {
+    border-radius: 25px;
+    padding: 10px 20px;
+}
+.category-section {
+    margin-bottom: 20px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.category-body {
+    background: white;
+}
+[data-theme="dark"] .category-body {
+    background: #1a1a1a;
+}
+.select-all-btn {
+    font-size: 0.8rem;
+    padding: 4px 12px;
+    border-radius: 15px;
+}
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-3 mb-4">
+            <div class="card permission-card">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-users me-2"></i>
+                    المستخدمون
+                </div>
+                <div class="card-body p-0">
+                    <div class="p-3">
+                        <input type="text" class="form-control filter-input" id="userFilter" 
+                               placeholder="بحث عن مستخدم...">
+                    </div>
+                    <div class="user-selector" id="userList">
+                        {% for user in users %}
+                        <div class="user-item" data-user-id="{{ user.id }}" data-user-name="{{ user.full_name }}" data-user-role="{{ user.role.value }}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ user.full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ user.username }}</small>
+                                </div>
+                                <span class="badge bg-{{ 'danger' if user.role.value == 'GENERAL_ADMIN' else 'primary' if user.role.value == 'PROJECT_MANAGER' else 'info' }}">
+                                    {% if user.role.value == 'GENERAL_ADMIN' %}مدير عام{% elif user.role.value == 'PROJECT_MANAGER' %}مدير مشروع{% elif user.role.value == 'SUPERVISOR' %}مشرف{% elif user.role.value == 'HANDLER' %}متعامل{% elif user.role.value == 'VETERINARIAN' %}طبيب بيطري{% elif user.role.value == 'CARETAKER' %}مربي{% else %}{{ user.role.value }}{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+            <div id="noUserSelected" class="text-center py-5">
+                <i class="fas fa-hand-pointer fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">اختر مستخدماً لعرض صلاحياته</h4>
+                <p class="text-muted">انقر على مستخدم من القائمة لعرض وتعديل صلاحياته</p>
+            </div>
+            
+            <div id="permissionsPanel" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="mb-0">
+                            <i class="fas fa-user-shield me-2"></i>
+                            صلاحيات: <span id="selectedUserName" class="text-primary"></span>
+                        </h4>
+                        <small class="text-muted">الدور: <span id="selectedUserRole"></span></small>
+                    </div>
+                    <div>
+                        <span class="badge stats-badge bg-success me-2">
+                            <i class="fas fa-check me-1"></i>
+                            <span id="grantedCount">0</span> ممنوحة
+                        </span>
+                        <span class="badge stats-badge bg-secondary">
+                            <i class="fas fa-ban me-1"></i>
+                            <span id="notGrantedCount">0</span> غير ممنوحة
+                        </span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <input type="text" class="form-control filter-input" id="permissionFilter" 
+                           placeholder="بحث في الصلاحيات...">
+                </div>
+
+                <div id="permissionsContainer">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">جاري التحميل...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="successToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-success text-white">
+            <i class="fas fa-check-circle me-2"></i>
+            <strong class="me-auto">نجاح</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="successToastMessage"></div>
+    </div>
+    
+    <div id="errorToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-danger text-white">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <strong class="me-auto">خطأ</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="errorToastMessage"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let selectedUserId = null;
+    let permissionsCatalog = null;
+    let userPermissions = new Set();
+
+    const successToast = new bootstrap.Toast(document.getElementById('successToast'));
+    const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
+
+    function showSuccess(message) {
+        document.getElementById('successToastMessage').textContent = message;
+        successToast.show();
+    }
+
+    function showError(message) {
+        document.getElementById('errorToastMessage').textContent = message;
+        errorToast.show();
+    }
+
+    async function loadPermissionsCatalog() {
+        try {
+            const response = await fetch('/admin/permissions-new/api/permissions-catalog');
+            const data = await response.json();
+            permissionsCatalog = data.catalog;
+        } catch (error) {
+            console.error('Error loading permissions catalog:', error);
+            showError('فشل تحميل قائمة الصلاحيات');
+        }
+    }
+
+    async function loadUserPermissions(userId) {
+        try {
+            const response = await fetch(`/admin/permissions-new/api/user/${userId}/permissions`);
+            const data = await response.json();
+            userPermissions = new Set(data.permissions);
+            renderPermissions();
+            updateStats();
+        } catch (error) {
+            console.error('Error loading user permissions:', error);
+            showError('فشل تحميل صلاحيات المستخدم');
+        }
+    }
+
+    function updateStats() {
+        const granted = userPermissions.size;
+        let total = 0;
+        if (permissionsCatalog) {
+            Object.values(permissionsCatalog).forEach(perms => {
+                total += perms.length;
+            });
+        }
+        document.getElementById('grantedCount').textContent = granted;
+        document.getElementById('notGrantedCount').textContent = total - granted;
+    }
+
+    function renderPermissions() {
+        if (!permissionsCatalog) return;
+
+        const container = document.getElementById('permissionsContainer');
+        const filterText = document.getElementById('permissionFilter').value.toLowerCase();
+        
+        let html = '';
+        const categoryNames = {
+            'admin': 'الإدارة',
+            'users': 'المستخدمون',
+            'dogs': 'الكلاب',
+            'projects': 'المشاريع',
+            'assignments': 'التعيينات',
+            'shifts': 'الورديات',
+            'attendance': 'الحضور والانصراف',
+            'training': 'التدريب',
+            'veterinary': 'البيطرة',
+            'breeding': 'التربية',
+            'reports': 'التقارير',
+            'schedules': 'الجداول',
+            'supervisor': 'المشرفين',
+            'handler': 'المتعاملين',
+            'caretaker': 'المربين',
+            'security': 'الأمان',
+            'audit': 'سجل التدقيق',
+            'notifications': 'الإشعارات',
+            'dashboard': 'لوحة القيادة',
+            'cleaning': 'النظافة',
+            'feeding': 'التغذية',
+            'health': 'الصحة',
+            'deworming': 'التطعيم'
+        };
+
+        for (const [category, perms] of Object.entries(permissionsCatalog)) {
+            const filteredPerms = perms.filter(p => 
+                p.key.toLowerCase().includes(filterText) ||
+                p.name.toLowerCase().includes(filterText) ||
+                (p.description && p.description.toLowerCase().includes(filterText))
+            );
+            
+            if (filteredPerms.length === 0) continue;
+
+            const categoryDisplayName = categoryNames[category] || category;
+            const allGranted = filteredPerms.every(p => userPermissions.has(p.key));
+            
+            html += `
+                <div class="category-section" data-category="${category}">
+                    <div class="category-header d-flex justify-content-between align-items-center">
+                        <span>
+                            <i class="fas fa-folder me-2"></i>
+                            ${categoryDisplayName}
+                            <span class="badge bg-light text-dark ms-2">${filteredPerms.length}</span>
+                        </span>
+                        <button class="btn btn-sm ${allGranted ? 'btn-light' : 'btn-outline-light'} select-all-btn" 
+                                onclick="toggleCategory('${category}', ${!allGranted})">
+                            ${allGranted ? '<i class="fas fa-times me-1"></i> إلغاء الكل' : '<i class="fas fa-check me-1"></i> تحديد الكل'}
+                        </button>
+                    </div>
+                    <div class="category-body">
+            `;
+
+            for (const perm of filteredPerms) {
+                const isGranted = userPermissions.has(perm.key);
+                html += `
+                    <div class="permission-item" data-key="${perm.key}">
+                        <div>
+                            <div class="permission-name">${perm.name}</div>
+                            <div class="permission-desc">${perm.description || perm.key}</div>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input permission-toggle" type="checkbox" 
+                                   id="perm_${perm.key.replace(/\./g, '_')}"
+                                   data-perm-key="${perm.key}"
+                                   ${isGranted ? 'checked' : ''}
+                                   onchange="togglePermission('${perm.key}', this.checked)">
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += '</div></div>';
+        }
+
+        container.innerHTML = html || '<div class="text-center py-5 text-muted">لا توجد صلاحيات مطابقة للبحث</div>';
+    }
+
+    window.togglePermission = async function(permKey, isGranted) {
+        if (!selectedUserId) return;
+
+        const toggle = document.querySelector(`[data-perm-key="${permKey}"]`);
+        toggle.disabled = true;
+
+        try {
+            const endpoint = isGranted ? '/admin/permissions-new/api/grant' : '/admin/permissions-new/api/revoke';
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                },
+                body: JSON.stringify({
+                    user_id: selectedUserId,
+                    permission_key: permKey
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                if (isGranted) {
+                    userPermissions.add(permKey);
+                } else {
+                    userPermissions.delete(permKey);
+                }
+                updateStats();
+                showSuccess(data.message);
+            } else {
+                toggle.checked = !isGranted;
+                showError(data.error || 'فشل في تحديث الصلاحية');
+            }
+        } catch (error) {
+            console.error('Error toggling permission:', error);
+            toggle.checked = !isGranted;
+            showError('حدث خطأ أثناء تحديث الصلاحية');
+        } finally {
+            toggle.disabled = false;
+        }
+    };
+
+    window.toggleCategory = async function(category, grant) {
+        if (!selectedUserId || !permissionsCatalog) return;
+
+        const perms = permissionsCatalog[category];
+        if (!perms) return;
+
+        for (const perm of perms) {
+            const currentlyGranted = userPermissions.has(perm.key);
+            if (currentlyGranted !== grant) {
+                await togglePermission(perm.key, grant);
+            }
+        }
+        renderPermissions();
+    };
+
+    document.getElementById('userFilter').addEventListener('input', function() {
+        const filter = this.value.toLowerCase();
+        document.querySelectorAll('.user-item').forEach(item => {
+            const name = item.dataset.userName.toLowerCase();
+            item.style.display = name.includes(filter) ? '' : 'none';
+        });
+    });
+
+    document.getElementById('permissionFilter').addEventListener('input', function() {
+        renderPermissions();
+    });
+
+    document.querySelectorAll('.user-item').forEach(item => {
+        item.addEventListener('click', function() {
+            document.querySelectorAll('.user-item').forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+            
+            selectedUserId = this.dataset.userId;
+            document.getElementById('selectedUserName').textContent = this.dataset.userName;
+            
+            const roleMap = {
+                'GENERAL_ADMIN': 'مدير عام',
+                'PROJECT_MANAGER': 'مدير مشروع',
+                'SUPERVISOR': 'مشرف',
+                'HANDLER': 'متعامل',
+                'VETERINARIAN': 'طبيب بيطري',
+                'CARETAKER': 'مربي'
+            };
+            document.getElementById('selectedUserRole').textContent = roleMap[this.dataset.userRole] || this.dataset.userRole;
+            
+            document.getElementById('noUserSelected').style.display = 'none';
+            document.getElementById('permissionsPanel').style.display = 'block';
+            
+            loadUserPermissions(selectedUserId);
+        });
+    });
+
+    loadPermissionsCatalog();
+});
+</script>
+{% endblock %}
