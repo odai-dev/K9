@@ -168,9 +168,160 @@ with app.app_context():
     # Register template functions
     from k9.utils.utils import get_user_permissions
     from k9.utils.pm_scoping import is_admin
-    from k9.utils.permissions_new import has_permission, has_any_permission, has_all_permissions, _is_admin_mode
+    from k9.utils.permissions_new import has_permission as _has_permission_new, has_any_permission, has_all_permissions, _is_admin_mode
     from k9.utils.permission_utils import get_sections_for_user  # Keep for backwards compatibility
     from datetime import date, datetime
+    
+    # Permission key mapping: old format -> new format
+    PERMISSION_KEY_MAP = {
+        # Dogs
+        'dogs.management.view': 'dogs.view',
+        'dogs.management.create': 'dogs.create',
+        'dogs.management.edit': 'dogs.edit',
+        'dogs.management.delete': 'dogs.delete',
+        'dogs.assignment.manage': 'dogs.assign',
+        # Employees
+        'employees.management.view': 'employees.view',
+        'employees.management.create': 'employees.create',
+        'employees.management.edit': 'employees.edit',
+        'employees.management.delete': 'employees.delete',
+        'employees.assignment.manage': 'employees.assign',
+        # Projects
+        'projects.management.view': 'projects.view',
+        'projects.management.create': 'projects.create',
+        'projects.management.edit': 'projects.edit',
+        'projects.management.delete': 'projects.delete',
+        # Training
+        'training.view_sessions.view': 'training.view',
+        'training.manage_sessions.create': 'training.create',
+        'training.manage_sessions.edit': 'training.edit',
+        'training.manage_sessions.delete': 'training.delete',
+        'training.reports.view': 'training.reports',
+        # Veterinary
+        'veterinary.visits.view': 'veterinary.view',
+        'veterinary.visits.create': 'veterinary.create',
+        'veterinary.visits.edit': 'veterinary.edit',
+        'veterinary.visits.delete': 'veterinary.delete',
+        'veterinary.history.view': 'veterinary.history',
+        # Breeding
+        'breeding.feeding.view': 'breeding.feeding',
+        'breeding.checkup.view': 'breeding.checkup',
+        'breeding.excretion.view': 'breeding.excretion',
+        'breeding.grooming.view': 'breeding.grooming',
+        'breeding.deworming.view': 'breeding.deworming',
+        'breeding.cleaning.view': 'breeding.cleaning',
+        # Production
+        'production.breeding.view': 'production.view',
+        'production.breeding.manage': 'production.manage',
+        'production.puppies.view': 'production.puppies',
+        'production.puppies.manage': 'production.manage_puppies',
+        'production.statistics.view': 'production.statistics',
+        # Shifts
+        'shifts.management.view': 'shifts.view',
+        'shifts.management.create': 'shifts.create',
+        'shifts.management.edit': 'shifts.edit',
+        'shifts.management.delete': 'shifts.delete',
+        # Schedule
+        'schedule.management.view': 'schedule.view',
+        'schedule.management.create': 'schedule.create',
+        'schedule.management.edit': 'schedule.edit',
+        'schedule.management.delete': 'schedule.delete',
+        'schedule.management.export': 'schedule.export',
+        # Tasks
+        'tasks.management.view': 'tasks.view',
+        'tasks.management.create': 'tasks.create',
+        'tasks.management.edit': 'tasks.edit',
+        'tasks.management.delete': 'tasks.delete',
+        'tasks.assignment.manage': 'tasks.assign',
+        'tasks.completion.manage': 'tasks.complete',
+        # Incidents
+        'incidents.management.view': 'incidents.view',
+        'incidents.management.create': 'incidents.create',
+        'incidents.management.edit': 'incidents.edit',
+        'incidents.management.delete': 'incidents.delete',
+        # Reports
+        'reports.attendance.view': 'reports.attendance.view',
+        'reports.attendance.export': 'reports.attendance.export',
+        'reports.training.view': 'reports.training.view',
+        'reports.training.export': 'reports.training.export',
+        'reports.veterinary.unified.view': 'reports.veterinary.view',
+        'reports.veterinary.unified.export': 'reports.veterinary.export',
+        'reports.breeding.feeding.unified.view': 'reports.breeding.feeding.view',
+        'reports.breeding.feeding.unified.export': 'reports.breeding.feeding.export',
+        'reports.breeding.checkup.unified.view': 'reports.breeding.checkup.view',
+        'reports.breeding.checkup.unified.export': 'reports.breeding.checkup.export',
+        'reports.caretaker_daily.view': 'reports.caretaker.view',
+        'reports.caretaker_daily.export': 'reports.caretaker.export',
+        'reports.general.view': 'reports.general.view',
+        # Admin
+        'admin.panel.access': 'admin.access',
+        'admin.users.view': 'admin.users.view',
+        'admin.users.manage': 'admin.users.manage',
+        'admin.permissions.view': 'admin.permissions.view',
+        'admin.permissions.manage': 'admin.permissions.manage',
+        'admin.backup.manage': 'admin.backup',
+        # Handler reports
+        'handler.daily_report.view': 'handler_reports.view',
+        'handler.daily_report.create': 'handler_reports.create',
+        'handler.daily_report.edit': 'handler_reports.edit',
+        'handler.daily_report.review': 'handler_reports.review',
+        # Supervisor
+        'supervisor.dashboard.view': 'supervisor.dashboard',
+        'supervisor.reports.review': 'supervisor.review',
+        'supervisor.team.manage': 'supervisor.team',
+        # PM
+        'pm.dashboard.view': 'pm.dashboard',
+        'pm.reports.review': 'pm.review',
+        'pm.team.manage': 'pm.team',
+        'pm.project.manage': 'pm.project',
+        'pm.approval.final': 'pm.approve',
+        # Accounts
+        'accounts.view': 'accounts.view',
+        'accounts.create': 'accounts.create',
+        'accounts.edit': 'accounts.edit',
+        'accounts.delete': 'accounts.delete',
+        # Notifications
+        'notifications.view': 'notifications.view',
+        'notifications.manage': 'notifications.manage',
+    }
+    
+    def has_permission(first_arg, second_arg=None):
+        """
+        Template-compatible permission check wrapper.
+        Handles both old format: has_permission(user, 'old.key')
+        And new format: has_permission('new.key')
+        
+        GENERAL_ADMIN in admin mode always returns True.
+        """
+        from flask_login import current_user
+        from k9.models.models import UserRole
+        from flask import session
+        
+        # Determine which format is being used
+        if second_arg is not None:
+            # Old format: has_permission(user, key)
+            user = first_arg
+            permission_key = second_arg
+        else:
+            # New format: has_permission(key)
+            user = current_user
+            permission_key = first_arg
+        
+        # Check if user is authenticated
+        if not user or not hasattr(user, 'is_authenticated') or not user.is_authenticated:
+            return False
+        
+        # GENERAL_ADMIN in admin mode has ALL permissions
+        if hasattr(user, 'role') and user.role == UserRole.GENERAL_ADMIN:
+            admin_mode = session.get('admin_mode', 'general_admin')
+            if admin_mode == 'general_admin':
+                return True
+        
+        # Map old key to new key if needed
+        mapped_key = PERMISSION_KEY_MAP.get(permission_key, permission_key)
+        
+        # Check permission using new system
+        return _has_permission_new(mapped_key, user)
     
     def get_notification_link(notification):
         """Generate direct link for notification based on related_type and related_id"""
