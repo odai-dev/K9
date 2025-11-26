@@ -1,0 +1,191 @@
+I want you to fully rebuild the permission system of this application from the ground up.  
+Not fix. Not patch. Not repair.  
+A full replacement of the entire permission subsystem with a new, modern, clean, reliable architecture.
+
+Below is the full scope of what the new permission system must achieve.  
+You must understand it as a whole system-level design and treat it as the new architecture of this app.
+
+====================================================
+            🔥 GOAL OF THE NEW SYSTEM
+====================================================
+
+The permission system must:
+
+1) Control access to every route, page, screen, action, and feature in the app.
+2) Work the same way for all user types (Admin / Project Manager / Handler / Supervisor / Trainer / Vet / etc).
+3) Have ONE unified permission model that the backend and the UI both use.
+4) Load user permissions at login and store them in the session for fast access.
+5) Provide a clean admin UI to toggle permissions for any user.
+6) Make the UI show/hide content dynamically based on permissions.
+7) Replace completely the old, broken, inconsistent permission system.
+
+====================================================
+             🔥 NEW ARCHITECTURE OVERVIEW
+====================================================
+
+A) Database Models:
+---------------------
+Permission
+UserPermission
+PermissionChangeLog
+
+B) Structure:
+---------------------
+Permission: storing permission keys (e.g., "view_dogs", "edit_projects", etc.)
+UserPermission: storing which user has which permission
+PermissionChangeLog: logs all updates for auditing
+
+C) Helpers/Utilities:
+---------------------
+has_permission(user, key)
+has_any_permission(user, [keys])
+@require_permission(key)
+load_user_permissions(user)
+
+D) Where permissions apply:
+---------------------
+- ALL backend routes
+- ALL API endpoints
+- ALL navigation menus
+- ALL UI pages and templates
+- ALL actions (edit, delete, create)
+- ALL sections of the system
+
+====================================================
+             🔥 FULL IMPLEMENTATION SCOPE
+====================================================
+
+===========================================
+PHASE 1 — Foundation Setup
+===========================================
+
+1. Create new models (Permission, UserPermission, PermissionChangeLog).
+2. Import them into ORM initialization.
+3. Create database tables.
+4. Build load_user_permissions() and store permissions in session.
+5. Seed all permission keys (~80+) covering:
+   - Dogs
+   - Employees
+   - Handlers
+   - Supervisors
+   - Trainers
+   - Projects
+   - Schedules
+   - Reports
+   - Tasks
+   - Files
+   - Settings
+   - System Administration
+6. Remove all references to the old permission system BUT keep files for now.
+
+===========================================
+PHASE 2 — Backend Route Conversion
+===========================================
+
+Convert routes section-by-section.  
+For every section:
+
+- Remove old logic
+- Add @require_permission("permission_key")
+- Use correct permission keys
+- Ensure “Forbidden” is clean and consistent
+- Use only the new system
+
+Update routes for:
+
+1. Main/general routes
+2. Dogs section
+3. Employees section
+4. Projects section
+5. Schedules section
+6. Reports section
+7. Tasks section
+8. Handlers section
+9. Supervisors section
+10. Trainers section
+11. Vets section
+12. Breeding section
+13. Daily logs
+14. Project Manager tools
+15. Admin tools
+16. Monitoring routes
+17. Attachment/file routes
+18. Medical section
+19. Operations section
+20. All remaining API endpoints
+
+Each route becomes:
+
+@require_permission("specific_permission_key")
+def route():
+    ...
+
+===========================================
+PHASE 3 — Templates & UI Permissions
+===========================================
+
+Update 30+ templates:
+
+- Base navigation
+- Sidebar menus
+- Dashboard widgets
+- Feature screens
+- Buttons (edit/delete/create)
+- Tables with dynamic features
+- Admin pages
+- PM pages
+- Handler dashboards
+
+Every UI element that should be protected must be wrapped:
+
+{% if has_permission("key") %}
+   ...
+{% endif %}
+
+OR using the new permission context passed to templates.
+
+===========================================
+PHASE 4 — Remove Old System
+===========================================
+
+Once new system is running:
+
+- Delete permission_utils.py
+- Delete permission_decorators.py
+- Delete permission_registry.py
+- Delete default_permissions.py
+- Delete old models like SubPermission
+- Drop old tables
+- Clean imports everywhere
+- Remove legacy logic blocks
+
+===========================================
+PHASE 5 — Testing, Validation, Hardening
+===========================================
+
+1. Test full login permission loading.
+2. Create test users:
+   - Zero permissions
+   - Partial permissions
+   - Full permissions
+3. Ensure UI updates correctly.
+4. Ensure backend denies/accepts correctly.
+5. Verify all routes behave as expected.
+6. Run stress test across all modules.
+7. Validate forbidden pages never leak.
+8. Validate admin permission changes take effect instantly.
+9. Validate no old system references exist.
+
+====================================================
+           🔥 FINAL RESULT EXPECTATION
+====================================================
+
+A fully modern, unified, powerful permission system that:
+
+- Controls everything
+- Has no bugs
+- Has clean architecture
+- Is easy to extend
+- Works across backend + UI
+- Replaces 100% of the old system
+- Is stable for production deployment

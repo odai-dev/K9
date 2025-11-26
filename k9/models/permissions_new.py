@@ -15,8 +15,12 @@ class Permission(db.Model):
     id = db.Column(get_uuid_column(), primary_key=True, default=default_uuid)
     key = db.Column(db.String(100), unique=True, nullable=False, index=True)
     name = db.Column(db.String(200), nullable=False)
+    name_ar = db.Column(db.String(200), nullable=True)
+    name_en = db.Column(db.String(200), nullable=True)
     description = db.Column(db.Text)
     category = db.Column(db.String(50), nullable=False, index=True)
+    sort_order = db.Column(db.Integer, default=0, nullable=False)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
