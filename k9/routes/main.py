@@ -118,7 +118,7 @@ def dashboard():
 # Dog management routes
 @main_bp.route('/dogs')
 @login_required
-@require_permission('view_dogs')
+@require_permission('dogs.view')
 def dogs_list():
     from datetime import date
     # Use permission-based access for both roles
@@ -129,7 +129,7 @@ def dogs_list():
 
 @main_bp.route('/dogs/add', methods=['GET', 'POST'])
 @login_required
-@require_permission('add_dog')
+@require_permission('dogs.add')
 def dogs_add():
     # Get potential parents for dropdowns
     potential_parents = get_user_accessible_dogs(current_user)
@@ -219,7 +219,7 @@ def dogs_add():
 
 @main_bp.route('/dogs/<dog_id>')
 @login_required
-@require_permission('view_dog_details')
+@require_permission('dogs.view')
 def dogs_view(dog_id):
     try:
         dog_id = dog_id
@@ -249,7 +249,7 @@ def dogs_view(dog_id):
 
 @main_bp.route('/dogs/<dog_id>/edit', methods=['GET', 'POST'])
 @login_required
-@require_permission('edit_dog')
+@require_permission('dogs.edit')
 def dogs_edit(dog_id):
     try:
         dog_id = dog_id
@@ -644,7 +644,7 @@ def training_add():
 # Veterinary routes
 @main_bp.route('/veterinary')
 @login_required
-@require_permission('view_vet_reports')
+@require_permission('veterinary.view')
 def veterinary_list():
     # Get scoped dogs using PM scoping utility
     scoped_dogs = get_scoped_dogs()
@@ -662,7 +662,7 @@ def veterinary_list():
 
 @main_bp.route('/veterinary/add', methods=['GET', 'POST'])
 @login_required
-@require_permission('create_vet_report')
+@require_permission('veterinary.create')
 def veterinary_add():
     if request.method == 'POST':
         try:
