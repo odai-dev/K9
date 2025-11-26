@@ -168,7 +168,8 @@ with app.app_context():
     # Register template functions
     from k9.utils.utils import get_user_permissions
     from k9.utils.pm_scoping import is_admin
-    from k9.utils.permission_utils import has_permission, has_any_permission, has_all_permissions, get_sections_for_user
+    from k9.utils.permissions_new import has_permission, has_any_permission, has_all_permissions, _is_admin_mode
+    from k9.utils.permission_utils import get_sections_for_user  # Keep for backwards compatibility
     from datetime import date, datetime
     
     def get_notification_link(notification):
@@ -272,6 +273,7 @@ with app.app_context():
         get_pending_reports_count=get_pending_reports_count,
         get_pm_pending_count=get_pm_pending_count,
         is_admin=is_admin,
+        is_admin_mode=_is_admin_mode,
         has_permission=has_permission,
         has_any_permission=has_any_permission,
         has_all_permissions=has_all_permissions,
