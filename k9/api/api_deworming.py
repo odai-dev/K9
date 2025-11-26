@@ -7,14 +7,14 @@ from flask_login import login_required, current_user
 from sqlalchemy import and_
 from datetime import datetime
 from k9.models.models import db, DewormingLog, Project, Dog, Employee, UserRole
-from k9.utils.permission_decorators import require_sub_permission
+from k9.utils.permissions_new import require_permission
 from k9.utils.utils import get_user_assigned_projects
 
 bp = Blueprint('api_deworming', __name__)
 
 @bp.route('/api/breeding/deworming', methods=['POST'])
 @login_required
-@require_sub_permission('Breeding', 'جرعة الديدان', 'CREATE')
+@require_permission('breeding.deworming')
 def create_deworming_log():
     """Create new deworming log"""
     try:
@@ -117,7 +117,7 @@ def create_deworming_log():
 
 @bp.route('/api/breeding/deworming/<log_id>', methods=['PUT'])
 @login_required
-@require_sub_permission('Breeding', 'جرعة الديدان', 'EDIT')
+@require_permission('breeding.deworming')
 def update_deworming_log(log_id):
     """Update existing deworming log"""
     try:
@@ -193,7 +193,7 @@ def update_deworming_log(log_id):
 
 @bp.route('/api/breeding/deworming/<log_id>', methods=['DELETE'])
 @login_required
-@require_sub_permission('Breeding', 'جرعة الديدان', 'DELETE')
+@require_permission('breeding.deworming')
 def delete_deworming_log(log_id):
     """Delete deworming log"""
     try:
@@ -219,7 +219,7 @@ def delete_deworming_log(log_id):
 
 @bp.route('/api/breeding/deworming/list', methods=['GET'])
 @login_required
-@require_sub_permission('Breeding', 'جرعة الديدان', 'VIEW')
+@require_permission('breeding.deworming')
 def api_deworming_list():
     """Get paginated list of deworming logs with KPIs"""
     try:

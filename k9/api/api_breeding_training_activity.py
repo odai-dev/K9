@@ -11,14 +11,14 @@ from k9.models.models import (
     db, BreedingTrainingActivity, Project, Dog, Employee, UserRole, 
     TrainingCategory, SocializationType, BallWorkType
 )
-from k9.utils.permission_decorators import require_sub_permission
+from k9.utils.permissions_new import require_permission
 from k9.utils.utils import get_user_assigned_projects
 
 bp = Blueprint('api_breeding_training_activity', __name__)
 
 @bp.route('/api/breeding/training-activity', methods=['POST'])
 @login_required
-@require_sub_permission('Breeding', 'تدريب — أنشطة يومية', 'CREATE')
+@require_permission('training.create')
 def create_training_activity():
     """Create new breeding training activity"""
     try:
@@ -164,7 +164,7 @@ def create_training_activity():
 
 @bp.route('/api/breeding/training-activity/list')
 @login_required
-@require_sub_permission('Breeding', 'تدريب — أنشطة يومية', 'VIEW')
+@require_permission('training.view')
 def list_training_activities():
     """List training activities with filters and KPIs"""
     try:
@@ -374,7 +374,7 @@ def list_training_activities():
 
 @bp.route('/api/breeding/training-activity/<activity_id>')
 @login_required
-@require_sub_permission('Breeding', 'تدريب — أنشطة يومية', 'VIEW')
+@require_permission('training.view')
 def get_training_activity(activity_id):
     """Get single training activity by ID"""
     try:
@@ -428,7 +428,7 @@ def get_training_activity(activity_id):
 
 @bp.route('/api/breeding/training-activity/<activity_id>', methods=['PUT'])
 @login_required
-@require_sub_permission('Breeding', 'تدريب — أنشطة يومية', 'EDIT')
+@require_permission('training.edit')
 def update_training_activity(activity_id):
     """Update existing training activity"""
     try:
@@ -528,7 +528,7 @@ def update_training_activity(activity_id):
 
 @bp.route('/api/breeding/training-activity/<activity_id>', methods=['DELETE'])
 @login_required
-@require_sub_permission('Breeding', 'تدريب — أنشطة يومية', 'DELETE')
+@require_permission('training.delete')
 def delete_training_activity(activity_id):
     """Delete training activity"""
     try:

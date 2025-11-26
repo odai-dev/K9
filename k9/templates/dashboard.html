@@ -14,7 +14,7 @@
 
 <!-- Statistics Cards -->
 <div class="row mb-4">
-    {% if has_permission(current_user, 'dogs.management.view') %}
+    {% if has_permission('dogs.management.view') %}
     <div class="col-md-3 col-sm-6 mb-3">
         <div class="stats-card bg-primary">
             <div class="stats-content">
@@ -30,7 +30,7 @@
     </div>
     {% endif %}
     
-    {% if has_permission(current_user, 'dogs.management.view') %}
+    {% if has_permission('dogs.management.view') %}
     <div class="col-md-3 col-sm-6 mb-3">
         <div class="stats-card bg-success">
             <div class="stats-content">
@@ -46,7 +46,7 @@
     </div>
     {% endif %}
     
-    {% if has_permission(current_user, 'employees.management.view') %}
+    {% if has_permission('employees.management.view') %}
     <div class="col-md-3 col-sm-6 mb-3">
         <div class="stats-card bg-info">
             <div class="stats-content">
@@ -62,7 +62,7 @@
     </div>
     {% endif %}
     
-    {% if has_permission(current_user, 'projects.management.view') %}
+    {% if has_permission('projects.management.view') %}
     <div class="col-md-3 col-sm-6 mb-3">
         <div class="stats-card bg-warning">
             <div class="stats-content">
@@ -81,7 +81,7 @@
 
 <!-- Recent Activities -->
 <div class="row">
-    {% if has_permission(current_user, 'training.view_sessions.view') %}
+    {% if has_permission('training.view_sessions.view') %}
     <div class="col-md-6">
         <div class="activity-card">
             <div class="card-header">
@@ -116,7 +116,7 @@
     </div>
     {% endif %}
     
-    {% if has_permission(current_user, 'veterinary.visits.view') %}
+    {% if has_permission('veterinary.visits.view') %}
     <div class="col-md-6">
         <div class="activity-card">
             <div class="card-header">
@@ -166,7 +166,7 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    {% if has_permission(current_user, 'dogs.management.create') %}
+                    {% if has_permission('dogs.management.create') %}
                     <div class="col-md-3 col-sm-6 mb-3">
                         <a href="{{ url_for('main.dogs_add') }}" class="quick-action-btn">
                             <i class="fas fa-plus-circle"></i>
@@ -175,7 +175,7 @@
                     </div>
                     {% endif %}
                     
-                    {% if has_permission(current_user, 'training.add_session.create') %}
+                    {% if has_permission('training.add_session.create') %}
                     <div class="col-md-3 col-sm-6 mb-3">
                         <a href="{{ url_for('main.training_add') }}" class="quick-action-btn">
                             <i class="fas fa-dumbbell"></i>
@@ -184,7 +184,7 @@
                     </div>
                     {% endif %}
                     
-                    {% if has_permission(current_user, 'veterinary.visits.create') %}
+                    {% if has_permission('veterinary.visits.create') %}
                     <div class="col-md-3 col-sm-6 mb-3">
                         <a href="{{ url_for('main.veterinary_add') }}" class="quick-action-btn">
                             <i class="fas fa-stethoscope"></i>
@@ -193,7 +193,7 @@
                     </div>
                     {% endif %}
                     
-                    {% if has_permission(current_user, 'reports.general.view') %}
+                    {% if has_permission('reports.general.view') %}
                     <div class="col-md-3 col-sm-6 mb-3">
                         <a href="{{ url_for('main.reports_index') }}" class="quick-action-btn">
                             <i class="fas fa-chart-bar"></i>

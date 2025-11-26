@@ -9,7 +9,7 @@ from k9.models.models import (
     GroomingLog, GroomingYesNo, GroomingCleanlinessScore
 )
 from k9.utils.utils import get_user_permissions, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
-from k9.utils.permission_decorators import require_sub_permission
+from k9.utils.permissions_new import require_permission
 import uuid
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -24,7 +24,7 @@ def health_check():
 # BREEDING FEEDING LOG API ENDPOINTS
 # =============================================
 
-from k9.utils.permission_utils import has_permission
+from k9.utils.permissions_new import has_permission
 from k9.utils.utils import get_user_assigned_projects, get_user_accessible_dogs, validate_required_project_id, get_project_id_for_user
 from sqlalchemy.orm import joinedload
 from sqlalchemy import and_, func
@@ -35,7 +35,7 @@ import json
 def feeding_log_list():
     """Get feeding log entries with filters and pagination"""
     # Check permissions
-    if not has_permission(current_user, "Breeding", "التغذية - السجل اليومي", "VIEW"):
+    if not has_permission("breeding.feeding"):
         return jsonify({'error': 'غير مصرح لك بعرض سجلات التغذية'}), 403
     
     try:
@@ -154,7 +154,7 @@ def feeding_log_list():
 def feeding_log_create():
     """Create new feeding log entry"""
     # Check permissions
-    if not has_permission(current_user, "Breeding", "التغذية - السجل اليومي", "CREATE"):
+    if not has_permission("breeding.feeding"):
         return jsonify({'error': 'غير مصرح لك بإنشاء سجلات التغذية'}), 403
     
     try:
@@ -284,7 +284,7 @@ def feeding_log_create():
 def feeding_log_update(log_id):
     """Update feeding log entry"""
     # Check permissions
-    if not has_permission(current_user, "Breeding", "التغذية - السجل اليومي", "EDIT"):
+    if not has_permission("breeding.feeding"):
         return jsonify({'error': 'غير مصرح لك بتعديل سجلات التغذية'}), 403
     
     try:
@@ -323,7 +323,7 @@ def feeding_log_update(log_id):
 def feeding_log_delete(log_id):
     """Delete feeding log entry"""
     # Check permissions
-    if not has_permission(current_user, "Breeding", "التغذية - السجل اليومي", "DELETE"):
+    if not has_permission("breeding.feeding"):
         return jsonify({'error': 'غير مصرح لك بحذف سجلات التغذية'}), 403
     
     try:
@@ -354,7 +354,7 @@ def feeding_log_delete(log_id):
 # Daily Checkup API Routes
 @api_bp.route('/breeding/checkup/list')
 @login_required
-@require_sub_permission('Breeding', 'الفحص الظاهري اليومي', PermissionType.VIEW)
+@require_permission('breeding.checkup')
 def api_checkup_list():
     """API endpoint to list daily checkup records with filters and pagination"""
     try:
@@ -475,7 +475,7 @@ def api_checkup_list():
 
 @api_bp.route('/breeding/checkup', methods=['POST'])
 @login_required
-@require_sub_permission('Breeding', 'الفحص الظاهري اليومي', PermissionType.CREATE)
+@require_permission('breeding.checkup')
 def api_checkup_create():
     """API endpoint to create a new daily checkup record"""
     try:
@@ -551,7 +551,7 @@ def api_checkup_create():
 
 @api_bp.route('/breeding/checkup/<id>', methods=['PUT'])
 @login_required
-@require_sub_permission('Breeding', 'الفحص الظاهري اليومي', PermissionType.EDIT)
+@require_permission('breeding.checkup')
 def api_checkup_update(id):
     """API endpoint to update a daily checkup record"""
     try:
@@ -613,7 +613,7 @@ def api_checkup_update(id):
 
 @api_bp.route('/breeding/checkup/<id>', methods=['DELETE'])
 @login_required
-@require_sub_permission('Breeding', 'الفحص الظاهري اليومي', PermissionType.DELETE)
+@require_permission('breeding.checkup')
 def api_checkup_delete(id):
     """API endpoint to delete a daily checkup record"""
     try:
@@ -642,7 +642,7 @@ def api_checkup_delete(id):
 # Excretion API Routes - DISABLED: Handled by api_excretion.py instead
 # @api_bp.route('/breeding/excretion/list', methods=['GET'])
 # @login_required
-# @require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.VIEW)
+# @require_permission('breeding.excretion')
 # def excretion_list():
     """Get excretion log entries with filters and pagination"""
     try:
@@ -771,7 +771,7 @@ def api_checkup_delete(id):
 
 @api_bp.route('/breeding/excretion', methods=['POST'])
 @login_required
-@require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.CREATE)
+@require_permission('breeding.excretion')
 def excretion_create():
     """Create new excretion log entry"""
     try:
@@ -868,7 +868,7 @@ def excretion_create():
 
 @api_bp.route('/breeding/excretion/<id>', methods=['PUT'])
 @login_required
-@require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.EDIT)
+@require_permission('breeding.excretion')
 def excretion_update(id):
     """Update excretion log entry"""
     try:
@@ -951,7 +951,7 @@ def excretion_update(id):
 
 @api_bp.route('/breeding/excretion/<id>', methods=['DELETE'])
 @login_required
-@require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.DELETE)
+@require_permission('breeding.excretion')
 def excretion_delete(id):
     """Delete excretion log entry"""
     try:
@@ -984,7 +984,7 @@ def excretion_delete(id):
 
 @api_bp.route('/breeding/grooming/list', methods=['GET'])
 @login_required
-@require_sub_permission('Breeding', 'العناية (الاستحمام)', PermissionType.VIEW)
+@require_permission('breeding.grooming')
 def grooming_list():
     """Get paginated list of grooming logs with KPIs"""
     try:
@@ -1096,7 +1096,7 @@ def grooming_list():
 
 @api_bp.route('/breeding/grooming', methods=['POST'])
 @login_required
-@require_sub_permission('Breeding', 'العناية (الاستحمام)', PermissionType.CREATE)
+@require_permission('breeding.grooming')
 def grooming_create():
     """Create new grooming log entry"""
     try:
@@ -1193,7 +1193,7 @@ def grooming_create():
 
 @api_bp.route('/breeding/grooming/<id>', methods=['PUT'])
 @login_required
-@require_sub_permission('Breeding', 'العناية (الاستحمام)', PermissionType.EDIT)
+@require_permission('breeding.grooming')
 def grooming_update(id):
     """Update existing grooming log entry"""
     try:
@@ -1263,7 +1263,7 @@ def grooming_update(id):
 
 @api_bp.route('/breeding/grooming/<id>', methods=['DELETE'])
 @login_required
-@require_sub_permission('Breeding', 'العناية (الاستحمام)', PermissionType.DELETE)
+@require_permission('breeding.grooming')
 def grooming_delete(id):
     """Delete grooming log entry"""
     try:

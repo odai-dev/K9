@@ -7,7 +7,7 @@ from datetime import datetime, date
 import os
 
 from k9.utils.permission_decorators import admin_required
-from k9.utils.permission_utils import has_permission
+from k9.utils.permissions_new import has_permission
 from k9.services.veterinary_daily_services import get_vet_daily, get_available_vets, get_available_dogs
 from k9.utils.veterinary_daily_exporters import export_vet_daily_pdf
 
@@ -68,7 +68,7 @@ def export_daily_pdf():
     Export veterinary daily report as PDF
     """
     # Check permission
-    if not has_permission(current_user, "api.general.access"):
+    if not has_permission("reports.veterinary.view"):
         return jsonify({"error": "Unauthorized"}), 403
         
     try:
@@ -127,7 +127,7 @@ def export_daily_pdf():
 @admin_required
 def get_vets():
     """Get available veterinarians"""
-    if not has_permission(current_user, "api.employees.access"):
+    if not has_permission("employees.view"):
         return jsonify({'error': 'Unauthorized'}), 403
     
     try:
@@ -143,7 +143,7 @@ def get_vets():
 @admin_required
 def get_dogs():
     """Get available dogs"""
-    if not has_permission(current_user, "api.dogs.access"):
+    if not has_permission("dogs.view"):
         return jsonify({'error': 'Unauthorized'}), 403
     
     try:

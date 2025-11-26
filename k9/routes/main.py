@@ -23,9 +23,10 @@ from k9.models.models import (Dog, Employee, TrainingSession, VeterinaryVisit, P
                    # Shift models
                    Shift)
 from k9.utils.utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
-from k9.utils.permission_decorators import require_sub_permission, admin_or_pm_required
+from k9.utils.permissions_new import require_permission
+from k9.utils.permission_decorators import admin_or_pm_required
 from k9.utils.permissions_new import has_permission, _is_admin_mode, require_permission
-from k9.utils.permission_utils import has_permission as legacy_has_permission
+from k9.utils.permissions_new import has_permission
 from k9.utils.validators import validate_yemen_phone
 from k9.utils.template_utils import get_base_template, is_pm_view
 from k9.utils.pm_scoping import get_scoped_dogs, get_scoped_employees, get_scoped_projects, is_pm, is_admin
@@ -3388,7 +3389,7 @@ def breeding_feeding_log_edit(log_id):
 # Daily Checkup Routes (Breeding Module)
 @main_bp.route('/breeding/checkup')
 @login_required
-@require_sub_permission('Breeding', 'الفحص الظاهري اليومي', PermissionType.VIEW)
+@require_permission('breeding.checkup')
 def breeding_checkup():
     """List daily checkup records"""
     if not has_permission("breeding.checkup.view"):
@@ -3397,7 +3398,7 @@ def breeding_checkup():
 
 @main_bp.route('/breeding/checkup/new')
 @login_required
-@require_sub_permission('Breeding', 'الفحص الظاهري اليومي', PermissionType.CREATE)
+@require_permission('breeding.checkup')
 def breeding_checkup_new():
     """Create new daily checkup record"""
     if not has_permission("breeding.checkup.create"):
@@ -3443,7 +3444,7 @@ def breeding_checkup_new():
 
 @main_bp.route('/breeding/checkup/<id>/edit')
 @login_required
-@require_sub_permission('Breeding', 'الفحص الظاهري اليومي', PermissionType.EDIT)
+@require_permission('breeding.checkup')
 def breeding_checkup_edit(id):
     """Edit daily checkup record"""
     if not has_permission("breeding.checkup.edit"):
@@ -3500,7 +3501,7 @@ def breeding_checkup_edit(id):
 # Excretion Routes (Breeding Module)
 @main_bp.route('/breeding/excretion')
 @login_required
-@require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.VIEW)
+@require_permission('breeding.excretion')
 def breeding_excretion():
     """List excretion logs"""
     if not has_permission("breeding.excretion.view"):
@@ -3509,7 +3510,7 @@ def breeding_excretion():
 
 @main_bp.route('/breeding/excretion/new')
 @login_required
-@require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.CREATE)
+@require_permission('breeding.excretion')
 def breeding_excretion_new():
     """Create new excretion log entry"""
     if not has_permission("breeding.excretion.create"):
@@ -3549,7 +3550,7 @@ def breeding_excretion_new():
 
 @main_bp.route('/breeding/excretion/<id>/edit')
 @login_required
-@require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.EDIT)
+@require_permission('breeding.excretion')
 def breeding_excretion_edit(id):
     """Edit excretion log record"""
     if not has_permission("breeding.excretion.edit"):
@@ -3600,7 +3601,7 @@ def breeding_excretion_edit(id):
 # API Routes for Excretion - DEPRECATED: Use api_excretion.py instead
 # @main_bp.route('/api/breeding/excretion/list')
 # @login_required
-# @require_sub_permission('Breeding', 'البراز / البول / القيء', PermissionType.VIEW)
+# @require_permission('breeding.excretion')
 def api_list_excretion_deprecated():
     """API endpoint for excretion logs list"""
     try:
@@ -3728,7 +3729,7 @@ def api_list_excretion_deprecated():
 
 @main_bp.route('/breeding/grooming')
 @login_required 
-@require_sub_permission('Breeding', 'العناية (الاستحمام)', PermissionType.VIEW)
+@require_permission('breeding.grooming')
 def breeding_grooming():
     """Grooming care main page"""
     if not has_permission("breeding.grooming.view"):
@@ -3764,7 +3765,7 @@ def breeding_grooming():
 
 @main_bp.route('/breeding/grooming/new')
 @login_required
-@require_sub_permission('Breeding', 'العناية (الاستحمام)', PermissionType.CREATE)
+@require_permission('breeding.grooming')
 def breeding_grooming_new():
     """Create new grooming log entry"""
     if not has_permission("breeding.grooming.create"):
@@ -3805,7 +3806,7 @@ def breeding_grooming_new():
 
 @main_bp.route('/breeding/grooming/<id>/edit')
 @login_required
-@require_sub_permission('Breeding', 'العناية (الاستحمام)', PermissionType.EDIT)
+@require_permission('breeding.grooming')
 def breeding_grooming_edit(id):
     """Edit existing grooming log entry"""
     if not has_permission("breeding.grooming.edit"):
@@ -3852,7 +3853,7 @@ def breeding_grooming_edit(id):
 # Cleaning Routes (Breeding Module)
 @main_bp.route('/breeding/cleaning')
 @login_required 
-@require_sub_permission('Breeding', 'النظافة (البيئة/القفص)', PermissionType.VIEW)
+@require_permission('breeding.cleaning')
 def cleaning_list():
     """Cleaning logs main page"""
     if not has_permission("breeding.cleaning.view"):
@@ -3872,7 +3873,7 @@ def cleaning_list():
 
 @main_bp.route('/breeding/cleaning/new')
 @login_required
-@require_sub_permission('Breeding', 'النظافة (البيئة/القفص)', PermissionType.CREATE)
+@require_permission('breeding.cleaning')
 def cleaning_new():
     """Create new cleaning log entry"""
     if not has_permission("breeding.cleaning.create"):
@@ -3894,7 +3895,7 @@ def cleaning_new():
 
 @main_bp.route('/breeding/cleaning/<id>/edit')
 @login_required
-@require_sub_permission('Breeding', 'النظافة (البيئة/القفص)', PermissionType.EDIT)
+@require_permission('breeding.cleaning')
 def cleaning_edit(id):
     """Edit existing cleaning log entry"""
     if not has_permission("breeding.cleaning.edit"):
@@ -3922,7 +3923,7 @@ def cleaning_edit(id):
 # Feeding Routes (Breeding Module)
 @main_bp.route('/breeding/feeding')
 @login_required 
-@require_sub_permission('Breeding', 'التغذية', PermissionType.VIEW)
+@require_permission('breeding.feeding')
 def breeding_feeding():
     """Feeding logs main page"""
     if not has_permission("breeding.feeding.view"):
@@ -3968,7 +3969,7 @@ def breeding_feeding():
 
 @main_bp.route('/breeding/feeding/new')
 @login_required
-@require_sub_permission('Breeding', 'التغذية', PermissionType.CREATE)
+@require_permission('breeding.feeding')
 def breeding_feeding_new():
     """Create new feeding log entry"""
     if not has_permission("breeding.feeding.create"):
@@ -4016,7 +4017,7 @@ def breeding_feeding_new():
 
 @main_bp.route('/breeding/feeding/<id>/edit')
 @login_required
-@require_sub_permission('Breeding', 'التغذية', PermissionType.EDIT)
+@require_permission('breeding.feeding')
 def breeding_feeding_edit(id):
     """Edit existing feeding log entry"""
     if not has_permission("breeding.feeding.edit"):
@@ -4182,7 +4183,7 @@ def breeding_training_activity_new():
     """Add new training activity"""
     # Check permissions using legacy SubPermission system
     from k9.models.models import PermissionType
-    if not legacy_has_permission(current_user, 'Breeding', 'تدريب — أنشطة يومية', PermissionType.CREATE):
+    if not has_permission('training.create'):
         abort(403)
         
     from k9.utils.utils import get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
@@ -4209,7 +4210,7 @@ def breeding_training_activity_edit(id):
     
     # Check permissions using legacy SubPermission system
     from k9.models.models import PermissionType
-    if not legacy_has_permission(current_user, 'Breeding', 'تدريب — أنشطة يومية', PermissionType.EDIT):
+    if not has_permission('training.edit'):
         abort(403)
     
     activity = BreedingTrainingActivity.query.get_or_404(id)
