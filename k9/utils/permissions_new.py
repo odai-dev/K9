@@ -285,6 +285,38 @@ def admin_required(f):
     return decorated_function
 
 
+def admin_or_pm_required(f):
+    """
+    Require GENERAL_ADMIN (in admin mode) or user with any PM-level permissions.
+    This checks permissions rather than just roles.
+    
+    Usage:
+        @app.route('/supervisor')
+        @admin_or_pm_required
+        def supervisor_page():
+            ...
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash('يرجى تسجيل الدخول للوصول إلى هذه الصفحة', 'warning')
+            return redirect(url_for('auth.login'))
+        
+        # GENERAL_ADMIN in general admin mode always has access
+        if _is_admin_mode(current_user):
+            return f(*args, **kwargs)
+        
+        # Check if user has ANY permissions (indicating PM-level access)
+        user_perms = get_user_permissions()
+        if user_perms:
+            return f(*args, **kwargs)
+        
+        flash('غير مصرح لك بالوصول إلى هذه الصفحة', 'danger')
+        return redirect(url_for('main.index'))
+        
+    return decorated_function
+
+
 def require_admin_permission(permission_key='admin.permissions.view'):
     """
     Decorator that allows access to GENERAL_ADMIN in admin mode OR users with specific admin permission.

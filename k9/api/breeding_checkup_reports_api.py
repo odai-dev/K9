@@ -11,14 +11,14 @@ from flask_login import login_required, current_user
 from sqlalchemy import and_, func, case
 from sqlalchemy.orm import selectinload, joinedload
 
-from k9.utils.permission_decorators import require_permission
+from k9.utils.permissions_new import require_permission
 from k9.reporting.range_utils import (
     resolve_range, get_aggregation_strategy, 
     parse_date_string, format_date_range_for_display,
     generate_export_filename, validate_range_params
 )
 from k9.models.models import (
-    DailyCheckupLog, Dog, Project, Employee, PermissionType
+    DailyCheckupLog, Dog, Project, Employee
 )
 from k9.utils.utils import get_user_projects, check_project_access
 from k9.utils.utils_pdf_rtl import register_arabic_fonts, rtl, get_arabic_font_name

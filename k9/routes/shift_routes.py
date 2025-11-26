@@ -7,7 +7,7 @@ from flask_login import login_required, current_user
 from datetime import datetime, time
 from app import db
 from k9.models.models import Shift
-from k9.utils.permission_decorators import require_permission
+from k9.utils.permissions_new import require_permission
 
 shift_bp = Blueprint('shift', __name__, url_prefix='/supervisor/shifts')
 

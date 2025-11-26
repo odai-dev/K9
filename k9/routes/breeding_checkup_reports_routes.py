@@ -6,7 +6,7 @@ Handles Arabic/RTL checkup reports under Reports → Breeding
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 from k9.utils.permissions_new import has_permission
-from k9.models.models import PermissionType, Project
+from k9.models.models import Project
 from k9.utils.utils import get_user_projects
 
 # Create blueprint

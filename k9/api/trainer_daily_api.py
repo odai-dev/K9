@@ -6,7 +6,7 @@ import os
 from datetime import datetime, date
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from k9.utils.permission_decorators import require_permission
+from k9.utils.permissions_new import require_permission
 from k9.services.trainer_daily_services import get_trainer_daily
 from k9.utils.trainer_daily_exporters import export_trainer_daily_pdf
 

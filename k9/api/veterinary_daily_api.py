@@ -6,7 +6,7 @@ from flask_login import login_required, current_user
 from datetime import datetime, date
 import os
 
-from k9.utils.permission_decorators import admin_required
+from k9.utils.permissions_new import admin_required
 from k9.utils.permissions_new import has_permission
 from k9.services.veterinary_daily_services import get_vet_daily, get_available_vets, get_available_dogs
 from k9.utils.veterinary_daily_exporters import export_vet_daily_pdf
