@@ -4,7 +4,7 @@ Veterinary reports UI routes - unified veterinary reports with range selector
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 
-from k9.utils.permission_utils import has_permission
+from k9.utils.permissions_new import has_permission
 from k9.utils.pm_scoping import get_scoped_projects, get_scoped_dogs
 from k9.utils.template_utils import get_base_template
 
@@ -17,7 +17,7 @@ def veterinary():
     """Unified Arabic/RTL veterinary reports page with range selector"""
     
     # Check unified permission
-    if not has_permission(current_user, "reports.veterinary.view"):
+    if not has_permission("reports.veterinary.view"):
         flash('ليس لديك صلاحية لعرض التقارير البيطرية', 'error')
         return redirect(url_for('main.dashboard'))
     

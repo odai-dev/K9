@@ -4,7 +4,7 @@ Redirects old veterinary daily/weekly routes to the new unified route
 """
 from flask import Blueprint, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from k9.utils.permission_utils import has_permission
+from k9.utils.permissions_new import has_permission
 
 bp = Blueprint('veterinary_legacy_routes', __name__)
 
@@ -13,7 +13,7 @@ bp = Blueprint('veterinary_legacy_routes', __name__)
 @login_required
 def veterinary_daily():
     """Redirect legacy daily veterinary reports to unified veterinary reports with daily range"""
-    if not has_permission(current_user, "reports.veterinary.legacy.access"):
+    if not has_permission("reports.veterinary.legacy.access"):
         return redirect("/unauthorized")
     
     # Preserve all original query parameters
@@ -29,7 +29,7 @@ def veterinary_daily():
 @login_required
 def veterinary_weekly():
     """Redirect legacy weekly veterinary reports to unified veterinary reports with weekly range"""
-    if not has_permission(current_user, "reports.veterinary.legacy.access"):
+    if not has_permission("reports.veterinary.legacy.access"):
         return redirect("/unauthorized")
     
     # Preserve all original query parameters

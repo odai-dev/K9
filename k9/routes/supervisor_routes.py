@@ -9,7 +9,8 @@ from sqlalchemy.orm import joinedload
 from k9.services.handler_service import DailyScheduleService
 from k9.models.models_handler_daily import DailySchedule, DailyScheduleItem, ScheduleStatus
 from k9.models.models import UserRole, User, Dog, Project, Shift
-from k9.utils.permission_decorators import require_permission, admin_or_pm_required
+from k9.utils.permissions_new import require_permission, has_permission
+from k9.utils.permission_decorators import admin_or_pm_required
 from k9.utils.utils import validate_required_project_id, get_project_id_for_user
 from app import db
 
@@ -329,7 +330,7 @@ def get_handlers_by_project(project_id):
 @admin_or_pm_required
 def get_dogs_by_project(project_id):
     """API: الحصول على الكلاب حسب المشروع"""
-    if not has_permission(current_user, "supervisor.general.access"):
+    if not has_permission("supervisor.general.access"):
         return redirect("/unauthorized")
     
     # Dogs are assigned to handlers, and handlers are assigned to projects
@@ -630,7 +631,7 @@ def pm_pending_reports():
 @admin_or_pm_required
 def pm_get_report(report_type, report_id):
     """Get detailed report view for PM review"""
-    if not has_permission(current_user, "supervisor.reports.view"):
+    if not has_permission("supervisor.reports.view"):
         return redirect("/unauthorized")
     
     from k9.services.report_review_service import ReportReviewService
