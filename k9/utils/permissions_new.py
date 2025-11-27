@@ -522,3 +522,72 @@ def get_user_permission_keys(user_id):
     
     user_perms = UserPermission.query.filter_by(user_id=user_id).all()
     return {up.permission.key for up in user_perms if up.permission}
+
+
+def _is_pm_mode(user):
+    """Helper to check if user should be treated as PM (regular PM or GENERAL_ADMIN in PM mode)"""
+    if not user or not hasattr(user, 'role'):
+        return False
+    from k9.models.models import UserRole
+    if user.role == UserRole.PROJECT_MANAGER:
+        return True
+    if user.role == UserRole.GENERAL_ADMIN:
+        admin_mode = session.get('admin_mode', 'general_admin')
+        return admin_mode == 'project_manager'
+    return False
+
+
+def get_sections_for_user(user=None):
+    """
+    Get list of sections/categories the user has access to based on their permissions.
+    
+    Args:
+        user: Optional user object (defaults to current_user)
+        
+    Returns:
+        List of section names the user has access to
+    """
+    if user is None:
+        user = current_user
+    
+    if not user or not hasattr(user, 'is_authenticated') or not user.is_authenticated:
+        return []
+    
+    if _is_admin_mode(user):
+        return ['admin', 'dogs', 'employees', 'projects', 'training', 'veterinary', 
+                'breeding', 'reports', 'schedules', 'shifts', 'attendance', 'handlers',
+                'supervisor', 'caretaker', 'security', 'audit', 'notifications', 'dashboard']
+    
+    user_perms = get_user_permissions()
+    sections = set()
+    for perm in user_perms:
+        if '.' in perm:
+            section = perm.split('.')[0]
+            sections.add(section)
+    
+    return list(sections)
+
+
+def get_project_managers():
+    """Get all PROJECT_MANAGER users"""
+    from k9.models.models import User, UserRole
+    return User.query.filter_by(role=UserRole.PROJECT_MANAGER, active=True).all()
+
+
+def get_all_projects():
+    """Get all projects"""
+    from k9.models.models import Project
+    return Project.query.order_by(Project.name).all()
+
+
+def get_users_by_project(project_id):
+    """Get users assigned to a specific project"""
+    from k9.models.models import User, ProjectAssignment
+    assignments = ProjectAssignment.query.filter_by(project_id=project_id).all()
+    user_ids = [a.user_id for a in assignments]
+    return User.query.filter(User.id.in_(user_ids)).all() if user_ids else []
+
+
+def get_user_permissions_by_project(user_id, project_id=None):
+    """Get permissions for a user, optionally filtered by project"""
+    return get_user_permission_keys(user_id)

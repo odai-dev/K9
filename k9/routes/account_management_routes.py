@@ -5,10 +5,26 @@ Account Management Routes - For granting system access to employees
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from k9.models.models import User, UserRole, Employee, EmployeeRole, ProjectAssignment, Project
-from k9.utils.permissions_new import admin_required, require_permission, has_permission
-from k9.utils.default_permissions import create_base_permissions_for_user
+from k9.utils.permissions_new import admin_required, require_permission, has_permission, grant_permission
 from werkzeug.security import generate_password_hash
 from app import db
+
+
+def create_base_permissions_for_user(user_id, granted_by_id=None):
+    """Create base permissions for a new user account.
+    
+    This function grants basic viewing permissions to a new user.
+    More specific permissions can be granted later through the admin interface.
+    """
+    base_permissions = [
+        'dashboard.view',
+        'handler.profile.view'
+    ]
+    
+    for perm_key in base_permissions:
+        grant_permission(str(user_id), perm_key, str(granted_by_id) if granted_by_id else None)
+
+
 from k9.utils.pm_scoping import get_pm_project, is_pm
 import secrets
 import string

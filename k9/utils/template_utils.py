@@ -2,7 +2,7 @@
 Template utilities for handling PM vs Admin views
 """
 from flask_login import current_user
-from k9.utils.permission_utils import get_sections_for_user, _is_admin_mode
+from k9.utils.permissions_new import get_sections_for_user, _is_admin_mode
 
 
 def get_base_template():
