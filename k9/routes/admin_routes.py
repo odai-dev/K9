@@ -100,7 +100,9 @@ def get_user_permissions(user_id):
 @login_required
 @require_admin_permission('admin.permissions.edit')
 def update_user_permission():
-    """Update a specific permission for a user"""
+    """Update a specific permission for a user - supports both old and new permission formats"""
+    from k9.utils.permissions_new import grant_permission, revoke_permission
+    
     try:
         data = request.get_json()
         
@@ -111,7 +113,7 @@ def update_user_permission():
         # Log incoming data for debugging
         current_app.logger.info(f"Permission update request: user_id={data.get('user_id')}, section={data.get('section')}, subsection={data.get('subsection')}, type={data.get('permission_type')}, granted={data.get('is_granted')}, project_id={data.get('project_id')}")
         
-        required_fields = ['user_id', 'section', 'subsection', 'permission_type', 'is_granted']
+        required_fields = ['user_id', 'section', 'permission_type', 'is_granted']
         if not all(field in data for field in required_fields):
             missing = [f for f in required_fields if f not in data]
             current_app.logger.error(f"Permission update failed: Missing fields: {missing}")
@@ -125,56 +127,54 @@ def update_user_permission():
         if not user:
             current_app.logger.error(f"Permission update failed: User not found: {data['user_id']}")
             return jsonify({'success': False, 'error': 'مستخدم غير موجود'}), 404
-        
-        permission_type = PermissionType(data['permission_type'])
-    except ValueError as e:
-        current_app.logger.error(f"Permission update failed: Invalid permission type: {data.get('permission_type')}, error: {e}")
-        return jsonify({'success': False, 'error': 'نوع صلاحية غير صحيح'}), 400
     except Exception as e:
         current_app.logger.error(f"Error fetching user: {e}")
         return jsonify({'success': False, 'error': 'خطأ في جلب بيانات المستخدم'}), 500
     
-    project_id = data.get('project_id')
+    section = data['section']
+    subsection = data.get('subsection', '')
+    perm_type = data['permission_type']
+    is_granted = data['is_granted']
     
-    # Get old permission value for audit
-    existing_perm = SubPermission.query.filter_by(
-        user_id=user.id,
-        section=data['section'],
-        subsection=data['subsection'],
-        permission_type=permission_type,
-        project_id=project_id
-    ).first()
-    old_value = existing_perm.is_granted if existing_perm else False
-    new_value = data['is_granted']
+    # Build the new permission key
+    # Old format: section=reports, subsection=breeding_reports, type=VIEW
+    # New format: reports.breeding.view
+    # Handle both legacy PermissionType enum values and new permission types
+    perm_type_lower = perm_type.lower() if perm_type else ''
     
-    current_app.logger.info(f"Updating permission for user {user.username}: {data['section']}.{data['subsection']}.{permission_type.value} from {old_value} to {new_value} (project_id={project_id})")
+    if subsection:
+        permission_key = f"{section}.{subsection}.{perm_type_lower}"
+    else:
+        permission_key = f"{section}.{perm_type_lower}"
     
-    success = update_permission(
-        user_id=user.id,
-        section=data['section'],
-        subsection=data['subsection'],
-        permission_type=permission_type,
-        granted=new_value,
-        updated_by=current_user.id,
-        project_id=project_id
-    )
+    # Clean up the permission key (remove double dots, normalize)
+    permission_key = permission_key.replace('..', '.').strip('.')
+    
+    current_app.logger.info(f"Built permission key: {permission_key} for user {user.username}, granted={is_granted}")
+    
+    # Use the new permission system
+    if is_granted:
+        success = grant_permission(str(user.id), permission_key, str(current_user.id))
+    else:
+        success = revoke_permission(str(user.id), permission_key, str(current_user.id))
     
     if success:
-        current_app.logger.info(f"Permission update successful for user {user.username}")
-        # Note: update_permission already creates audit log, no need to duplicate
-        # Log audit
+        current_app.logger.info(f"Permission update successful for user {user.username}: {permission_key} = {is_granted}")
         log_audit(
             user_id=current_user.id,
             action='EDIT',
-            target_type='SubPermission',
-            target_id=None,  # Fixed: Use None instead of invalid UUID string
-            description=f"Updated permission for {user.username}: {data['section']} -> {data['subsection']} ({data['permission_type']}) = {data['is_granted']}"
+            target_type='Permission',
+            target_id=None,
+            description=f"Updated permission for {user.username}: {permission_key} = {is_granted}"
         )
-        
         return jsonify({'success': True, 'message': 'تم تحديث الصلاحية بنجاح'})
     else:
-        current_app.logger.error(f"Permission update FAILED for user {user.username}: {data['section']}.{data['subsection']}.{permission_type.value}")
-        return jsonify({'success': False, 'error': 'فشل في تحديث الصلاحية'}), 500
+        # Permission key might not exist in new system - try to provide helpful message
+        current_app.logger.warning(f"Permission key not found in new system: {permission_key}")
+        return jsonify({
+            'success': False, 
+            'error': f'صلاحية غير موجودة: {permission_key}. يرجى استخدام واجهة الصلاحيات الجديدة.'
+        }), 400
 
 @admin_bp.route('/permissions/bulk-update', methods=['POST'])
 @login_required
