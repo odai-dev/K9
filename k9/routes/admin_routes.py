@@ -40,9 +40,6 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 @admin_required
 def dashboard():
     """Main admin dashboard with system overview and navigation"""
-    if not has_permission("admin.dashboard.view"):
-        return redirect("/unauthorized")
-    
     from k9.models.models import User, Project, Dog, Employee, TrainingSession, VeterinaryVisit
     from k9.models.permissions_new import Permission, UserPermission, PermissionChangeLog
     from sqlalchemy import func

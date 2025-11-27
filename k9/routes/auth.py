@@ -248,9 +248,6 @@ def setup():
 @auth_bp.route('/select-mode', methods=['GET', 'POST'])
 @login_required
 def select_mode():
-    if not has_permission("auth.mode.switch"):
-        return redirect("/unauthorized")
-    
     """Allow GENERAL_ADMIN users to select their working mode"""
     from k9.models.models import Employee
     from k9.utils.pm_scoping import get_pm_project

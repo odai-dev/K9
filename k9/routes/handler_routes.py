@@ -195,9 +195,6 @@ def parse_shift_incidents_data(form_data, shift_report, request_obj):
 @handler_required
 def dashboard():
     """لوحة تحكم السائس"""
-    if not has_permission("handlers.dashboard.view"):
-        return redirect("/unauthorized")
-    
     from k9.models.models import Project
     from k9.models.models_handler_daily import ReportStatus, ShiftReport
     from dateutil.relativedelta import relativedelta
