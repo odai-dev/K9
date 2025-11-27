@@ -141,8 +141,9 @@ class SecurityMiddleware:
         # Content Type Options
         response.headers['X-Content-Type-Options'] = 'nosniff'
         
-        # Frame Options
-        response.headers['X-Frame-Options'] = 'DENY'
+        # Frame Options - Allow Replit iframe embedding
+        # Using SAMEORIGIN for same-domain frames, CSP frame-ancestors for cross-origin
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
         
         # Referrer Policy
         response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
@@ -161,9 +162,10 @@ class SecurityMiddleware:
         
         # Additional headers
         response.headers['X-Permitted-Cross-Domain-Policies'] = 'none'
-        response.headers['Cross-Origin-Embedder-Policy'] = 'require-corp'
-        response.headers['Cross-Origin-Opener-Policy'] = 'same-origin'
-        response.headers['Cross-Origin-Resource-Policy'] = 'same-origin'
+        # Allow cross-origin embedding for Replit iframe
+        # response.headers['Cross-Origin-Embedder-Policy'] = 'require-corp'  # Disabled for Replit compatibility
+        response.headers['Cross-Origin-Opener-Policy'] = 'same-origin-allow-popups'
+        response.headers['Cross-Origin-Resource-Policy'] = 'cross-origin'
         
         # Cache control for sensitive pages
         if self._is_sensitive_page():
@@ -223,6 +225,13 @@ class SecurityMiddleware:
             ],
             'manifest-src': [
                 "'self'"
+            ],
+            'frame-ancestors': [
+                "'self'",
+                "https://*.replit.dev",
+                "https://*.replit.app",
+                "https://*.repl.co",
+                "https://replit.com"
             ]
         }
         
