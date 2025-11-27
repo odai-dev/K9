@@ -4,7 +4,7 @@ from datetime import datetime, date
 from sqlalchemy import func
 from k9.models.models import (
     db, Project, Employee, Dog, UserRole,
-    FeedingLog, PrepMethod, BodyConditionScale, DailyCheckupLog, PermissionType, DogStatus,
+    FeedingLog, PrepMethod, BodyConditionScale, DailyCheckupLog, DogStatus,
     ExcretionLog, StoolColor, StoolConsistency, StoolContent, UrineColor, VomitColor, ExcretionPlace,
     GroomingLog, GroomingYesNo, GroomingCleanlinessScore
 )

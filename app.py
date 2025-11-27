@@ -169,7 +169,7 @@ with app.app_context():
     from k9.utils.utils import get_user_permissions
     from k9.utils.pm_scoping import is_admin
     from k9.utils.permissions_new import has_permission as _has_permission_new, has_any_permission, has_all_permissions, _is_admin_mode
-    from k9.utils.permission_utils import get_sections_for_user  # Keep for backwards compatibility
+    from k9.utils.permissions_new import get_sections_for_user
     from datetime import date, datetime
     
     # Permission key mapping: old format -> new format

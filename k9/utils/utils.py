@@ -15,7 +15,7 @@ import uuid
 import arabic_reshaper
 from bidi.algorithm import get_display
 import re
-from k9.utils.permission_utils import _is_admin_mode
+from k9.utils.permissions_new import _is_admin_mode
 
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx'}
 
@@ -773,12 +773,10 @@ def generate_excel_report(report_type, start_date, end_date, user, filters=None)
 
 def get_user_permissions(user):
     """
-    Get user permissions based ONLY on SubPermission grants from database.
-    This ensures permissions are controlled by database entries, not hardcoded role logic.
-    NO ROLE-BASED CHECKS - all permissions come from SubPermission table.
+    Get user permissions based on the new Permission/UserPermission system.
+    Returns a dict of section flags for backwards compatibility with templates.
     """
-    from k9.models.models import SubPermission
-    from k9.utils.permission_utils import _is_admin_mode
+    from k9.utils.permissions_new import _is_admin_mode, get_user_permission_keys
     
     # Initialize all sections as False
     permissions = {
@@ -811,40 +809,33 @@ def get_user_permissions(user):
             'handler_reports': True
         }
     
-    # Read permissions ONLY from SubPermission table - NO ROLE CHECKS
-    # Any user (HANDLER, PROJECT_MANAGER, etc.) can have permissions granted
-    user_permissions = SubPermission.query.filter_by(
-        user_id=user.id, 
-        is_granted=True
-    ).all()
+    # Read permissions from the new UserPermission system
+    user_perm_keys = get_user_permission_keys(str(user.id))
     
-    # Map SubPermission sections to the main navigation sections
-    section_mapping = {
-        'dogs': 'dogs',
-        'employees': 'employees',
-        'training': 'training',
-        'veterinary': 'veterinary',
-        'production': 'production',
-        'projects': 'projects',
-        'attendance': 'attendance',
-        'reports': 'reports',
-        'analytics': 'reports',
-        'admin': 'admin',
-        'breeding': 'breeding',
-        'handler_reports': 'handler_reports'
-    }
-    
-    # Enable sections based on granted permissions in database
-    granted_sections = set()
-    for perm in user_permissions:
-        section_key = perm.section.lower()
-        mapped_section = section_mapping.get(section_key, section_key)
-        if mapped_section in permissions:
-            granted_sections.add(mapped_section)
-    
-    # Set permissions to True for granted sections
-    for section in granted_sections:
-        permissions[section] = True
+    # Map permission keys (e.g., "dogs.view") to section flags
+    for perm_key in user_perm_keys:
+        parts = perm_key.split('.')
+        if parts:
+            category = parts[0]
+            # Map category to section (most are direct mappings)
+            section_mapping = {
+                'dogs': 'dogs',
+                'employees': 'employees',
+                'training': 'training',
+                'veterinary': 'veterinary',
+                'production': 'production',
+                'projects': 'projects',
+                'attendance': 'attendance',
+                'reports': 'reports',
+                'admin': 'admin',
+                'breeding': 'breeding',
+                'handler': 'handler_reports',
+                'shifts': 'attendance',
+                'schedules': 'attendance'
+            }
+            mapped_section = section_mapping.get(category, category)
+            if mapped_section in permissions:
+                permissions[mapped_section] = True
     
     return permissions
 
@@ -924,29 +915,29 @@ def get_project_manager_permissions(user, project_id):
     }
 
 def get_user_assigned_projects(user):
-    """Get projects with data that PROJECT_MANAGER can access based on SubPermission"""
-    from k9.models.models import Project, UserRole, SubPermission
+    """Get projects that user can access based on role and assignments"""
+    from k9.models.models import Project, UserRole, ProjectAssignment
+    from k9.utils.permissions_new import _is_admin_mode
     
-    if user.role == UserRole.GENERAL_ADMIN:
+    # GENERAL_ADMIN in admin mode has full access
+    if _is_admin_mode(user):
         return Project.query.all()
-    elif user.role == UserRole.PROJECT_MANAGER:
-        # Get projects where this user is assigned as manager
-        assigned_projects = Project.query.filter_by(manager_id=user.id).all()
-        
-        # Also get projects from SubPermission grants
-        project_permissions = SubPermission.query.filter_by(
-            user_id=user.id, 
-            section="Projects",
-            is_granted=True
-        ).filter(SubPermission.project_id.isnot(None)).all()
-        
-        # Add projects from permission grants
-        permission_project_ids = [p.project_id for p in project_permissions]
-        permission_projects = Project.query.filter(Project.id.in_(permission_project_ids)).all() if permission_project_ids else []
-        
-        # Combine and deduplicate
-        all_projects = list(set(assigned_projects + permission_projects))
-        return all_projects
+    
+    # Get projects via direct assignment or manager role
+    project_ids = set()
+    
+    # Projects where user is the manager
+    managed_projects = Project.query.filter_by(manager_id=user.id).all()
+    for p in managed_projects:
+        project_ids.add(p.id)
+    
+    # Projects via ProjectAssignment
+    assignments = ProjectAssignment.query.filter_by(user_id=user.id, is_active=True).all()
+    for a in assignments:
+        project_ids.add(a.project_id)
+    
+    if project_ids:
+        return Project.query.filter(Project.id.in_(project_ids)).all()
     
     return []
 

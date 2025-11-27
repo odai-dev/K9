@@ -13,7 +13,7 @@ from k9.models.models import (Dog, Employee, TrainingSession, VeterinaryVisit, P
                    # Production models
                    HeatCycle, MatingRecord, MatingResult, PregnancyRecord, DeliveryRecord, PuppyRecord, PuppyTraining,
                    # Breeding models
-                   FeedingLog, PrepMethod, BodyConditionScale, DailyCheckupLog, PermissionType,
+                   FeedingLog, PrepMethod, BodyConditionScale, DailyCheckupLog,
                    # Excretion models
                    ExcretionLog, StoolColor, StoolConsistency, StoolContent, UrineColor, VomitColor, ExcretionPlace,
                    # Grooming models
@@ -23,10 +23,10 @@ from k9.models.models import (Dog, Employee, TrainingSession, VeterinaryVisit, P
                    # Shift models
                    Shift)
 from k9.utils.utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
-from k9.utils.permissions_new import require_permission
-from k9.utils.permissions_new import admin_or_pm_required
-from k9.utils.permissions_new import has_permission, _is_admin_mode, require_permission
-from k9.utils.permissions_new import has_permission
+from k9.utils.permissions_new import (
+    admin_or_pm_required, has_permission, _is_admin_mode, require_permission, 
+    get_sections_for_user
+)
 from k9.utils.validators import validate_yemen_phone
 from k9.utils.template_utils import get_base_template, is_pm_view
 from k9.utils.pm_scoping import get_scoped_dogs, get_scoped_employees, get_scoped_projects, is_pm, is_admin
@@ -53,8 +53,7 @@ def unauthorized():
 @login_required
 def dashboard():
     from flask import session
-    from k9.utils.permission_utils import get_sections_for_user
-    # _is_admin_mode is imported at module level from permissions_new
+    # get_sections_for_user and _is_admin_mode imported at module level from permissions_new
     
     # GENERAL_ADMIN in admin mode gets admin dashboard
     if _is_admin_mode(current_user):
@@ -93,7 +92,6 @@ def dashboard():
         recent_vet_visits = VeterinaryVisit.query.order_by(VeterinaryVisit.created_at.desc()).limit(3).all()
         
     else:  # PROJECT_MANAGER - Use permission-based access
-        # Get data through SubPermission system
         assigned_projects = get_user_assigned_projects(current_user)
         assigned_dogs = get_user_accessible_dogs(current_user)
         assigned_employees = get_user_accessible_employees(current_user)
@@ -2962,8 +2960,8 @@ def get_user_permissions_api(user_id):
         project_id = request.args.get('project_id')
         project_id = project_id if project_id and project_id.strip() else None
         
-        from k9.utils.permission_utils import get_user_permissions_for_project
-        permissions = get_user_permissions_for_project(user_id, project_id)
+        from k9.utils.permissions_new import get_user_permission_keys
+        permissions = list(get_user_permission_keys(user_id))
         
         return jsonify({
             'success': True,
@@ -2998,26 +2996,21 @@ def update_user_permissions_api():
         if not target_user:
             return jsonify({'error': 'User not found'}), 404
         
-        from k9.utils.permission_utils import update_permission
-        from k9.models.models import PermissionType
+        from k9.utils.permissions_new import grant_permission, revoke_permission
         
         update_count = 0
         
-        # Update each permission
-        for section, subsections in permissions.items():
-            for subsection, perm_types in subsections.items():
-                for perm_type_str, is_granted in perm_types.items():
-                    try:
-                        perm_type = PermissionType(perm_type_str)
-                        success = update_permission(
-                            current_user, target_user, section, subsection, 
-                            perm_type, project_id, is_granted
-                        )
-                        if success:
-                            update_count += 1
-                    except ValueError:
-                        # Invalid permission type, skip
-                        continue
+        # Update each permission using the new system
+        for permission_key, is_granted in permissions.items():
+            try:
+                if is_granted:
+                    success = grant_permission(str(target_user.id), permission_key, str(current_user.id))
+                else:
+                    success = revoke_permission(str(target_user.id), permission_key, str(current_user.id))
+                if success:
+                    update_count += 1
+            except Exception:
+                continue
         
         return jsonify({
             'success': True,
@@ -3329,7 +3322,6 @@ def unlink_employee_from_user():
 # BREEDING SECTION ROUTES (Arabic RTL)
 # =============================================
 
-from k9.utils.permission_utils import has_permission
 from sqlalchemy.orm import joinedload
 
 @main_bp.route('/breeding/feeding/log')
@@ -4181,8 +4173,6 @@ def breeding_training_activity():
 @login_required
 def breeding_training_activity_new():
     """Add new training activity"""
-    # Check permissions using legacy SubPermission system
-    from k9.models.models import PermissionType
     if not has_permission('training.create'):
         abort(403)
         
@@ -4208,8 +4198,6 @@ def breeding_training_activity_edit(id):
     """Edit training activity"""
     from k9.models.models import BreedingTrainingActivity, Employee, EmployeeRole
     
-    # Check permissions using legacy SubPermission system
-    from k9.models.models import PermissionType
     if not has_permission('training.edit'):
         abort(403)
     

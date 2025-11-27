@@ -7,16 +7,16 @@ from flask import Blueprint, render_template, request, jsonify, flash, redirect,
 from flask_login import login_required, current_user, logout_user, login_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from app import csrf
-from k9.utils.permissions_new import admin_required, has_permission, require_admin_permission
-from k9.utils.permission_utils import (
-    PERMISSION_STRUCTURE, get_user_permissions_matrix, update_permission, 
-    bulk_update_permissions, get_project_managers, get_all_projects,
-    initialize_default_permissions, export_permissions_matrix,
-    get_users_by_project, get_user_permissions_by_project
+from k9.utils.permissions_new import (
+    admin_required, has_permission, require_admin_permission,
+    get_project_managers, get_all_projects,
+    get_users_by_project, get_user_permissions_by_project,
+    grant_permission, revoke_permission, get_user_permission_keys,
+    get_all_permissions_grouped
 )
-from k9.utils.default_permissions import is_base_permission
 from k9.utils.security_utils import PasswordValidator, SecurityHelper
-from k9.models.models import User, Project, SubPermission, PermissionAuditLog, PermissionType, UserRole
+from k9.models.models import User, Project, UserRole
+from k9.models.permissions_new import Permission, UserPermission, PermissionChangeLog
 from k9.models.models_handler_daily import HandlerReport, ShiftReport
 from app import db
 from k9.utils.utils import log_audit
@@ -43,7 +43,8 @@ def dashboard():
     if not has_permission("admin.dashboard.view"):
         return redirect("/unauthorized")
     
-    from k9.models.models import User, Project, SubPermission, PermissionAuditLog, Dog, Employee, TrainingSession, VeterinaryVisit
+    from k9.models.models import User, Project, Dog, Employee, TrainingSession, VeterinaryVisit
+    from k9.models.permissions_new import Permission, UserPermission, PermissionChangeLog
     from sqlalchemy import func
     
     # System statistics
@@ -53,12 +54,12 @@ def dashboard():
         'total_projects': Project.query.count(),
         'total_dogs': Dog.query.count(),
         'total_employees': Employee.query.count(),
-        'total_permissions': SubPermission.query.count(),
-        'granted_permissions': SubPermission.query.filter_by(is_granted=True).count(),
+        'total_permissions': UserPermission.query.count(),
+        'granted_permissions': UserPermission.query.count(),
     }
     
-    # Recent activities
-    recent_permission_changes = PermissionAuditLog.query.order_by(PermissionAuditLog.created_at.desc()).limit(5).all()
+    # Recent activities - use new PermissionChangeLog
+    recent_permission_changes = PermissionChangeLog.query.order_by(PermissionChangeLog.changed_at.desc()).limit(5).all()
     recent_training = TrainingSession.query.order_by(TrainingSession.created_at.desc()).limit(5).all()
     recent_vet_visits = VeterinaryVisit.query.order_by(VeterinaryVisit.created_at.desc()).limit(5).all()
     
@@ -76,24 +77,22 @@ def dashboard():
 
 # Old permissions_dashboard route removed - now using /permissions/comprehensive
 
-@admin_bp.route('/permissions/user/<int:user_id>')
+@admin_bp.route('/permissions/user/<user_id>')
 @login_required
 @require_admin_permission('admin.permissions.view')
 def get_user_permissions(user_id):
-    """Get permissions matrix for a specific user"""
+    """Get permissions for a specific user"""
     user = User.query.get_or_404(user_id)
-    project_id = request.args.get('project_id')
     
-    matrix = get_user_permissions_matrix(user.id, project_id=project_id)
+    permissions = list(get_user_permission_keys(str(user.id)))
     
     return jsonify({
         'user': {
-            'id': user.id,
+            'id': str(user.id),
             'username': user.username,
             'full_name': user.full_name
         },
-        'project_id': project_id,
-        'permissions': matrix
+        'permissions': permissions
     })
 
 @admin_bp.route('/permissions/update', methods=['POST'])
@@ -137,9 +136,8 @@ def update_user_permission():
     is_granted = data['is_granted']
     
     # Build the new permission key
-    # Old format: section=reports, subsection=breeding_reports, type=VIEW
-    # New format: reports.breeding.view
-    # Handle both legacy PermissionType enum values and new permission types
+    # Converts old format (section=reports, subsection=breeding_reports, type=VIEW)
+    # to new format (reports.breeding.view)
     perm_type_lower = perm_type.lower() if perm_type else ''
     
     if subsection:
@@ -180,11 +178,10 @@ def update_user_permission():
 @login_required
 @require_admin_permission('admin.permissions.edit')
 def bulk_update_user_permissions():
-    """Bulk update permissions for a section"""
-    
+    """Bulk update permissions for a category"""
     data = request.get_json()
     
-    required_fields = ['user_id', 'section', 'is_granted']
+    required_fields = ['user_id', 'category', 'is_granted']
     if not all(field in data for field in required_fields):
         return jsonify({'error': 'بيانات ناقصة'}), 400
     
@@ -192,51 +189,32 @@ def bulk_update_user_permissions():
     if not user:
         return jsonify({'error': 'مستخدم غير صحيح'}), 400
     
-    project_id = data.get('project_id')
+    category = data['category']
+    is_granted = data['is_granted']
     
-    # Build permissions data for bulk update
-    permissions_data = {
-        'section': data['section'],
-        'is_granted': data['is_granted'],
-        'project_id': project_id
-    }
+    # Get all permissions in this category
+    permissions = Permission.query.filter_by(category=category).all()
+    count = 0
     
-    count = bulk_update_permissions(
-        user_id=user.id,
-        permissions_data=permissions_data,
-        updated_by=current_user.id,
-        project_id=project_id
+    for perm in permissions:
+        if is_granted:
+            if grant_permission(str(user.id), perm.key, str(current_user.id)):
+                count += 1
+        else:
+            if revoke_permission(str(user.id), perm.key, str(current_user.id)):
+                count += 1
+    
+    log_audit(
+        user_id=current_user.id,
+        action='EDIT',
+        target_type='Permission',
+        target_id=None,
+        description=f"Bulk updated {count} permissions for {user.username} in category {category} = {is_granted}"
     )
     
-    if count > 0:
-        # Create audit log entry for bulk update
-        audit_log = PermissionAuditLog()
-        audit_log.changed_by_user_id = current_user.id
-        audit_log.target_user_id = user.id
-        audit_log.section = data['section']
-        audit_log.subsection = 'bulk_update'
-        audit_log.permission_type = PermissionType.VIEW  # Generic for bulk operation
-        audit_log.project_id = project_id
-        audit_log.old_value = False
-        audit_log.new_value = data['is_granted']
-        audit_log.ip_address = request.remote_addr
-        audit_log.user_agent = request.headers.get('User-Agent', '')
-        db.session.add(audit_log)
-        db.session.commit()
-        # Log audit
-        log_audit(
-            user_id=current_user.id,
-            action='EDIT',
-            target_type='SubPermission',
-            target_id=None,  # Fixed: Use None instead of invalid UUID string
-            description=f"Bulk updated {count} permissions for {user.username} in section {data['section']} = {data['is_granted']}"
-        )
-        
-        return jsonify({'success': True, 'message': f'تم تحديث {count} صلاحية بنجاح', 'count': count})
-    else:
-        return jsonify({'error': 'فشل في التحديث المجمع'}), 500
+    return jsonify({'success': True, 'message': f'تم تحديث {count} صلاحية بنجاح', 'count': count})
 
-@admin_bp.route('/permissions/initialize/<int:user_id>', methods=['POST'])
+@admin_bp.route('/permissions/initialize/<user_id>', methods=['POST'])
 @login_required
 @require_admin_permission('admin.permissions.edit')
 def initialize_user_permissions(user_id):
@@ -246,15 +224,23 @@ def initialize_user_permissions(user_id):
     if user.role != UserRole.PROJECT_MANAGER:
         return jsonify({'error': 'يمكن تهيئة صلاحيات مديري المشاريع فقط'}), 400
     
-    initialize_default_permissions(user)
+    # Grant default PM permissions
+    default_pm_permissions = [
+        'projects.view', 'dogs.view', 'employees.view', 'schedules.view',
+        'shifts.view', 'attendance.view', 'reports.view'
+    ]
     
-    # Log audit
+    count = 0
+    for perm_key in default_pm_permissions:
+        if grant_permission(str(user.id), perm_key, str(current_user.id)):
+            count += 1
+    
     log_audit(
         user_id=current_user.id,
         action='CREATE',
-        target_type='SubPermission',
-        target_id=None,  # Fixed: Use None instead of invalid UUID string
-        description=f"Initialized default permissions for {user.username}"
+        target_type='Permission',
+        target_id=None,
+        description=f"Initialized {count} default permissions for {user.username}"
     )
     
     return jsonify({'success': True, 'message': 'تم تهيئة الصلاحيات الافتراضية بنجاح'})
@@ -327,47 +313,27 @@ def get_project_users(project_id):
 def get_permissions_matrix(user_id, project_id):
     """Get complete permissions matrix for a user in a project"""
     try:
-        from k9.utils.permission_registry import PERMISSION_REGISTRY, get_all_permissions_flat
-        
         user = User.query.get_or_404(user_id)
         project = Project.query.get_or_404(project_id)
         
-        all_permissions = get_all_permissions_flat()
+        # Get all permissions grouped by category
+        grouped_perms = get_all_permissions_grouped()
         
-        existing_permissions = SubPermission.query.filter_by(
-            user_id=user_id,
-            project_id=project_id
-        ).all()
-        
-        perm_dict = {}
-        for perm in existing_permissions:
-            key = f"{perm.section}.{perm.subsection}.{perm.permission_type.value}"
-            perm_dict[key] = perm.is_granted
+        # Get user's granted permissions
+        user_perms = get_user_permission_keys(str(user.id))
         
         permissions_data = []
-        for perm in all_permissions:
-            subsection_key = perm['subsection'] if perm['subsection'] else ''
-            perm_type_value = perm['permission_type'].value if hasattr(perm['permission_type'], 'value') else str(perm['permission_type'])
-            key = f"{perm['section']}.{subsection_key}.{perm_type_value}"
-            
-            # Check if this is a base permission for the user's role
-            is_base = is_base_permission(
-                user, 
-                perm['section'], 
-                perm['subsection'], 
-                perm['permission_type']
-            )
-            
-            permissions_data.append({
-                'section': perm['section'],
-                'subsection': subsection_key,
-                'permission_key': perm['permission_key'],
-                'permission_type': perm_type_value,
-                'name_ar': perm['name_ar'],
-                'name_en': perm['name_en'],
-                'is_granted': perm_dict.get(key, False),
-                'is_base_permission': is_base  # Flag to indicate if this is a base permission
-            })
+        for category, perms in grouped_perms.items():
+            for perm in perms:
+                permissions_data.append({
+                    'category': category,
+                    'key': perm.key,
+                    'name': perm.name,
+                    'name_ar': perm.name_ar,
+                    'name_en': perm.name_en,
+                    'description': perm.description,
+                    'is_granted': perm.key in user_perms
+                })
         
         return jsonify({
             'user': {
@@ -395,78 +361,72 @@ def permissions_audit_log():
     per_page = 50
     
     # Filter parameters
-    target_user_id = request.args.get('target_user_id', type=int)
-    section = request.args.get('section')
+    target_user_id = request.args.get('target_user_id')
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     
-    query = PermissionAuditLog.query.order_by(PermissionAuditLog.created_at.desc())
+    query = PermissionChangeLog.query.order_by(PermissionChangeLog.changed_at.desc())
     
     if target_user_id:
-        query = query.filter(PermissionAuditLog.target_user_id == target_user_id)
-    
-    if section:
-        query = query.filter(PermissionAuditLog.section == section)
+        query = query.filter(PermissionChangeLog.user_id == target_user_id)
     
     if start_date:
-        query = query.filter(PermissionAuditLog.created_at >= start_date)
+        query = query.filter(PermissionChangeLog.changed_at >= start_date)
     
     if end_date:
-        query = query.filter(PermissionAuditLog.created_at <= end_date)
+        query = query.filter(PermissionChangeLog.changed_at <= end_date)
     
     audit_logs = query.paginate(page=page, per_page=per_page, error_out=False)
     
     project_managers = get_project_managers()
+    categories = [cat for cat in get_all_permissions_grouped().keys()]
     
     return render_template('admin/permissions_audit.html',
                          audit_logs=audit_logs,
                          project_managers=project_managers,
-                         permission_structure=PERMISSION_STRUCTURE,
+                         categories=categories,
                          filters={
                              'target_user_id': target_user_id,
-                             'section': section,
                              'start_date': start_date,
                              'end_date': end_date
                          })
 
-@admin_bp.route('/permissions/export/<int:user_id>')
+@admin_bp.route('/permissions/export/<user_id>')
 @login_required
 @require_admin_permission('admin.permissions.view')
 def export_user_permissions_json(user_id):
     """Export user permissions as JSON"""
     user = User.query.get_or_404(user_id)
-    project_id = request.args.get('project_id')
     
-    if user.role != UserRole.PROJECT_MANAGER:
-        return jsonify({'error': 'يمكن تصدير صلاحيات مديري المشاريع فقط'}), 400
+    permissions = list(get_user_permission_keys(str(user.id)))
+    permissions_data = {
+        'user': {
+            'id': str(user.id),
+            'username': user.username,
+            'full_name': user.full_name
+        },
+        'permissions': permissions
+    }
     
-    permissions_data = export_permissions_matrix([user], project_id=project_id)
-    
-    # Log audit
     log_audit(
         user_id=current_user.id,
         action='EXPORT',
-        target_type='SubPermission',
-        target_id=None,  # Fixed: Use None instead of invalid UUID string
-        description=f"Exported permissions matrix for {user.username}"
+        target_type='Permission',
+        target_id=None,
+        description=f"Exported permissions for {user.username}"
     )
     
     return jsonify(permissions_data)
 
-@admin_bp.route('/permissions/export-pdf/<int:user_id>')
+@admin_bp.route('/permissions/export-pdf/<user_id>')
 @login_required
 @require_admin_permission('admin.permissions.view')
 def export_user_permissions_pdf(user_id):
     """Export user permissions as PDF"""
     user = User.query.get_or_404(user_id)
-    project_id = request.args.get('project_id')
     
-    if user.role != UserRole.PROJECT_MANAGER:
-        flash('يمكن تصدير صلاحيات مديري المشاريع فقط', 'error')
-        return redirect(url_for('admin.comprehensive_permissions'))
-    
-    # Get permissions matrix
-    matrix = get_user_permissions_matrix(user.id, project_id=project_id)
+    # Get user's permissions
+    permissions = list(get_user_permission_keys(str(user.id)))
     
     # Create PDF
     filename = f"permissions_{user.username}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
@@ -488,21 +448,25 @@ def export_user_permissions_pdf(user_id):
     )
     
     # Title
-    project_info = f" - مشروع {project_id}" if project_id else " - جميع المشاريع"
-    title = Paragraph(f"مصفوفة الصلاحيات - {user.full_name}{project_info}", title_style)
+    title = Paragraph(f"صلاحيات المستخدم - {user.full_name}", title_style)
     story.append(title)
     story.append(Spacer(1, 20))
     
-    # Create table data
-    data = [['القسم', 'القسم الفرعي', 'عرض', 'إنشاء', 'تعديل', 'حذف', 'تصدير', 'تعيين', 'اعتماد']]
+    # Create table data - simple list of permissions
+    data = [['الفئة', 'الصلاحية']]
     
-    for section, subsections in matrix.items():
-        for subsection, permissions in subsections.items():
-            row = [section, subsection]
-            for perm_type in ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'EXPORT', 'ASSIGN', 'APPROVE']:
-                status = '✓' if permissions.get(perm_type, False) else '✗'
-                row.append(status)
-            data.append(row)
+    # Group permissions by category
+    grouped = {}
+    for perm_key in permissions:
+        parts = perm_key.split('.')
+        category = parts[0] if parts else 'other'
+        if category not in grouped:
+            grouped[category] = []
+        grouped[category].append(perm_key)
+    
+    for category, perm_keys in grouped.items():
+        for perm_key in perm_keys:
+            data.append([category, perm_key])
     
     # Create table
     table = Table(data, repeatRows=1)
@@ -527,8 +491,8 @@ def export_user_permissions_pdf(user_id):
     log_audit(
         user_id=current_user.id,
         action='EXPORT',
-        target_type='SubPermission',
-        target_id=None,  # Fixed: Use None instead of invalid UUID string
+        target_type='Permission',
+        target_id=None,
         description=f"Exported permissions PDF for {user.username}"
     )
     
@@ -539,65 +503,72 @@ def export_user_permissions_pdf(user_id):
 @require_admin_permission('admin.permissions.view')
 def export_all_permissions_excel():
     """Export all permissions to Excel for compliance tracking"""
-    from k9.utils.excel_exporter import create_permissions_report_excel, save_excel_to_bytes
+    from openpyxl import Workbook
     
-    # Get all permissions
-    permissions = SubPermission.query.join(User).all()
+    # Get all user permissions
+    users = User.query.filter_by(active=True).all()
     
-    # Create Excel workbook
-    wb = create_permissions_report_excel(permissions)
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Permissions"
     
-    # Convert to bytes
-    excel_bytes = save_excel_to_bytes(wb)
+    # Headers
+    ws.append(['User', 'Username', 'Role', 'Permissions'])
     
-    # Log audit
+    for user in users:
+        perms = list(get_user_permission_keys(str(user.id)))
+        ws.append([user.full_name, user.username, user.role.value, ', '.join(perms)])
+    
+    # Save to bytes
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
     log_audit(
         user_id=current_user.id,
         action='EXPORT',
-        target_type='SubPermission',
-        target_id=None,  # Fixed: Use None instead of invalid UUID string
-        description="Exported all permissions to Excel for compliance"
+        target_type='Permission',
+        target_id=None,
+        description="Exported all permissions to Excel"
     )
     
     return send_file(
-        io.BytesIO(excel_bytes),
+        output,
         as_attachment=True,
         download_name=f"all_permissions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
-@admin_bp.route('/permissions/preview/<int:user_id>')
+@admin_bp.route('/permissions/preview/<user_id>')
 @login_required
 @require_admin_permission('admin.permissions.view')
 def preview_pm_view(user_id):
-    """Preview what a PROJECT_MANAGER user can see (for testing)"""
+    """Preview what a user can see based on their permissions"""
     user = User.query.get_or_404(user_id)
-    project_id = request.args.get('project_id')
-    
-    if user.role != UserRole.PROJECT_MANAGER:
-        flash('يمكن معاينة عرض مديري المشاريع فقط', 'error')
-        return redirect(url_for('admin.comprehensive_permissions'))
     
     # Get user's permissions
-    matrix = get_user_permissions_matrix(user.id, project_id=project_id)
+    permissions = list(get_user_permission_keys(str(user.id)))
     
-    # Calculate summary statistics
-    total_permissions = 0
-    granted_permissions = 0
-    
-    for section, subsections in matrix.items():
-        for subsection, permissions in subsections.items():
-            for perm_type, is_granted in permissions.items():
-                total_permissions += 1
-                if is_granted:
-                    granted_permissions += 1
+    # Get all permissions for comparison
+    all_perms = Permission.query.all()
+    total_permissions = len(all_perms)
+    granted_permissions = len(permissions)
     
     coverage_percentage = (granted_permissions / total_permissions * 100) if total_permissions > 0 else 0
     
+    # Group by category
+    grouped = {}
+    for perm_key in permissions:
+        parts = perm_key.split('.')
+        category = parts[0] if parts else 'other'
+        if category not in grouped:
+            grouped[category] = []
+        grouped[category].append(perm_key)
+    
     return render_template('admin/permissions_preview.html',
                          target_user=user,
-                         project_id=project_id,
-                         permissions_matrix=matrix,
+                         permissions=permissions,
+                         permissions_grouped=grouped,
                          coverage_percentage=round(coverage_percentage, 1),
                          granted_permissions=granted_permissions,
                          total_permissions=total_permissions)
@@ -609,18 +580,18 @@ def admin_profile():
     """Admin profile management with password change functionality"""
     
     # Get system stats for display (needed for all renders)
-    from k9.models.models import User, Project, SubPermission, Dog, Employee
+    from k9.models.models import User, Project, Dog, Employee
     stats = {
         'total_users': User.query.count(),
         'total_project_managers': User.query.filter_by(role=UserRole.PROJECT_MANAGER).count(),
         'total_projects': Project.query.count(),
         'total_dogs': Dog.query.count(),
         'total_employees': Employee.query.count(),
-        'granted_permissions': SubPermission.query.filter_by(is_granted=True).count(),
+        'granted_permissions': UserPermission.query.count(),
     }
     
     # Get recent admin activities (recent permission changes)
-    recent_activities = PermissionAuditLog.query.filter_by(changed_by_user_id=current_user.id).order_by(PermissionAuditLog.created_at.desc()).limit(5).all()
+    recent_activities = PermissionChangeLog.query.filter_by(changed_by_id=str(current_user.id)).order_by(PermissionChangeLog.changed_at.desc()).limit(5).all()
     
     if request.method == 'POST':
         action = request.form.get('action')
