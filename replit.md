@@ -28,7 +28,7 @@ Preferred communication style: Simple, everyday language.
 - **Core Management**: Tracks K9 lifecycle, employee information, training records, veterinary care, and breeding production.
 - **Project Operations**: Manages project lifecycle, resource allocation, incident logging, performance evaluations, and project locations.
 - **Attendance System**: Comprehensive tracking with shift management, scheduling, project-specific recording, and Arabic RTL PDF export, using an advanced Unified Matrix Attendance System.
-- **Ultra-Granular Permission System**: Provides `GENERAL_ADMIN` users with fine-grained control over user access at a subsection level, featuring 79 distinct permission combinations, audit logging, and an intuitive admin dashboard. Migrated from role-based to permission-first access control with roles acting as permission templates.
+- **Ultra-Granular Permission System**: Provides `GENERAL_ADMIN` users with fine-grained control over user access, featuring 89 distinct permission keys across 23 categories, audit logging via PermissionChangeLog, and an intuitive admin dashboard at `/admin/permissions-new`. Fully migrated from legacy SubPermission system to clean Permission/UserPermission architecture.
 - **Comprehensive Permissions UI**: A three-step workflow (Select Project → Select User → Manage Permissions) for `GENERAL_ADMIN` users to manage permissions, with full metadata registry and real-time toggling.
 - **Excel Export System**: Comprehensive XLSX export functionality for reports with Arabic RTL support.
 - **Modern Reporting Hub**: Centralized dashboard with dynamic statistics, categorized report organization, and integrated chart visualization.
@@ -86,8 +86,9 @@ Preferred communication style: Simple, everyday language.
   - **Bilingual Support**: Arabic (name_ar) and English (name_en) permission names stored in Permission model
   - **Admin UI**: New permission management interface at `/admin/permissions-new` with user list, permission catalog grouped by category, toggle switches for grant/revoke, bulk category operations, and real-time stats
   - **Audit Trail**: PermissionChangeLog model tracks all permission grants/revokes with timestamps, actor, and IP address
-  - **Legacy Cleanup (Nov 27, 2025)**: Removed deprecated files (permission_utils.py, permission_decorators.py, permission_registry.py, default_permissions.py); migrated all imports to permissions_new.py; updated admin_routes.py, main.py, utils.py, api_routes.py to use new models (Permission, UserPermission, PermissionChangeLog)
+  - **Legacy Cleanup (Nov 27, 2025)**: Removed deprecated files (permission_utils.py, permission_decorators.py, permission_registry.py, default_permissions.py); removed old models (SubPermission, PermissionType, PermissionAuditLog) from models.py; migrated all imports to permissions_new.py; updated admin_routes.py, main.py, utils.py, api_routes.py to use new models; fixed template permission signatures (has_any_permission) in pm/base_pm.html
   - **Key Files**: `k9/utils/permissions_new.py` (core logic, decorators, helper functions), `k9/models/permissions_new.py` (models), `scripts/seed_permissions.py` (seeds 89 permissions), `k9/templates/admin/permissions_new.html` (admin UI)
+  - **Migration Status**: COMPLETE - The old permission system has been fully removed and all code now uses the new Permission/UserPermission system exclusively
 
 ## External Dependencies
 
