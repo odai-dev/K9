@@ -207,9 +207,6 @@ def dashboard():
     
     GENERAL_ADMIN in general_admin mode can view any project by passing project_id parameter
     """
-    if not has_permission("pm.dashboard.view"):
-        return redirect("/unauthorized")
-    
     # Get active project using helper function
     project, needs_selection = get_active_project()
     
