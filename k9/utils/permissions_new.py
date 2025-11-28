@@ -581,11 +581,28 @@ def get_all_projects():
 
 
 def get_users_by_project(project_id):
-    """Get users assigned to a specific project"""
+    """Get users assigned to a specific project via their employee records"""
     from k9.models.models import User, ProjectAssignment
-    assignments = ProjectAssignment.query.filter_by(project_id=project_id).all()
-    user_ids = [a.user_id for a in assignments]
-    return User.query.filter(User.id.in_(user_ids)).all() if user_ids else []
+    
+    # ProjectAssignment links employees (not users) to projects
+    # User.employee_id links users to employees
+    # So we need to: get employee_ids from assignments -> find users with those employee_ids
+    
+    assignments = ProjectAssignment.query.filter_by(
+        project_id=project_id, 
+        is_active=True
+    ).filter(ProjectAssignment.employee_id.isnot(None)).all()
+    
+    employee_ids = [a.employee_id for a in assignments if a.employee_id]
+    
+    if not employee_ids:
+        return []
+    
+    # Find users linked to these employees
+    return User.query.filter(
+        User.employee_id.in_(employee_ids),
+        User.active == True
+    ).all()
 
 
 def get_user_permissions_by_project(user_id, project_id=None):
