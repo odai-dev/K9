@@ -50,9 +50,16 @@ class SecurityMiddleware:
         """Enforce that GENERAL_ADMIN users with pending mode selection go to select-mode page."""
         from flask import session, redirect, url_for
         from flask_login import current_user
+        from k9.models.models import UserRole
         
         # Skip if user is not authenticated
         if not current_user.is_authenticated:
+            return None
+        
+        # CRITICAL FIX: Only enforce for GENERAL_ADMIN users
+        # If user is not GENERAL_ADMIN, clear any stale pending_mode_selection flag
+        if current_user.role != UserRole.GENERAL_ADMIN:
+            session.pop('pending_mode_selection', None)
             return None
         
         # Skip if no pending mode selection
