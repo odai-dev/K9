@@ -52,21 +52,29 @@ def unauthorized():
 @main_bp.route('/dashboard')
 @login_required
 def dashboard():
-    from flask import session
+    from flask import session, current_app
     # get_sections_for_user and _is_admin_mode imported at module level from permissions_new
+    
+    # DEBUG: Log dashboard access
+    current_app.logger.info(f"Dashboard accessed by user: {current_user.username}, role: {current_user.role}")
+    current_app.logger.info(f"Session data: pending_mode_selection={session.get('pending_mode_selection')}, admin_mode={session.get('admin_mode')}")
     
     # CRITICAL: Handle pending mode selection for GENERAL_ADMIN users ONLY
     # This replaces the middleware enforcement to prevent redirect loops
     if current_user.role == UserRole.GENERAL_ADMIN and session.get('pending_mode_selection'):
+        current_app.logger.info("Redirecting GENERAL_ADMIN to select_mode (pending_mode_selection=True)")
         return redirect(url_for('auth.select_mode'))
     
     # For non-admin users, ensure any stale pending_mode_selection is cleared
     if current_user.role != UserRole.GENERAL_ADMIN:
+        if session.get('pending_mode_selection') or session.get('pending_user_id'):
+            current_app.logger.info(f"Clearing stale session flags for non-admin user: {current_user.username}")
         session.pop('pending_mode_selection', None)
         session.pop('pending_user_id', None)
     
     # GENERAL_ADMIN in admin mode gets admin dashboard
     if _is_admin_mode(current_user):
+        current_app.logger.info("Redirecting to admin dashboard (_is_admin_mode=True)")
         return redirect(url_for('admin.dashboard'))
     
     # GENERAL_ADMIN in PM mode gets PM dashboard
