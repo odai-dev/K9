@@ -56,9 +56,19 @@ class SecurityMiddleware:
         if not session.get('pending_mode_selection'):
             return
         
-        # Allow access to the select-mode page itself and related auth endpoints
-        exempt_endpoints = ['auth.select_mode', 'auth.logout', 'static']
+        # Skip if endpoint is None (can happen during some requests)
+        if request.endpoint is None:
+            return
+        
+        # Allow access to select-mode page and auth-related endpoints
+        # Check both endpoint name and URL path for safety
+        exempt_endpoints = ['auth.select_mode', 'auth.logout', 'auth.login', 'static', 'main.index']
+        exempt_paths = ['/auth/select-mode', '/auth/logout', '/auth/login', '/static', '/']
+        
         if request.endpoint in exempt_endpoints:
+            return
+        
+        if any(request.path.startswith(path) for path in exempt_paths):
             return
         
         # Redirect to select-mode if user has pending selection
