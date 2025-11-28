@@ -131,3 +131,150 @@ function createPieChart(canvasId, labels, data) {
     
     return new Chart(ctx, createRTLChartConfig(config));
 }
+
+// ChartUtils object for unified chart management
+const ChartUtils = {
+    // Load chart data from API
+    async loadChartData(url) {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                return { success: false, error: 'Failed to fetch data' };
+            }
+            const data = await response.json();
+            return { success: true, data: data };
+        } catch (error) {
+            console.error('Error loading chart data:', error);
+            return { success: false, error: error.message };
+        }
+    },
+    
+    // Show empty chart message
+    showChartEmpty(containerId, message = 'لا توجد بيانات') {
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = `
+                <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted py-4">
+                    <i class="fas fa-chart-pie fa-3x mb-3 opacity-50"></i>
+                    <p class="mb-0">${message}</p>
+                </div>
+            `;
+        }
+    },
+    
+    // Show chart error message
+    showChartError(containerId, message = 'حدث خطأ في تحميل البيانات') {
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = `
+                <div class="d-flex flex-column align-items-center justify-content-center h-100 text-danger py-4">
+                    <i class="fas fa-exclamation-triangle fa-3x mb-3 opacity-50"></i>
+                    <p class="mb-0">${message}</p>
+                </div>
+            `;
+        }
+    },
+    
+    // Create pie/doughnut chart
+    createPieChart(canvasId, labels, data, colors = null, type = 'pie') {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return null;
+        
+        const config = {
+            type: type,
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors || generateColorPalette(data.length),
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                ...defaultChartOptions,
+                cutout: type === 'doughnut' ? '60%' : 0,
+                plugins: {
+                    ...defaultChartOptions.plugins,
+                    legend: {
+                        ...defaultChartOptions.plugins.legend,
+                        position: 'bottom'
+                    }
+                }
+            }
+        };
+        
+        return new Chart(ctx, createRTLChartConfig(config));
+    },
+    
+    // Create bar chart
+    createBarChart(canvasId, labels, data, label = 'البيانات', color = '#667eea') {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return null;
+        
+        const config = {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: label,
+                    data: data,
+                    backgroundColor: color,
+                    borderWidth: 0,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                ...defaultChartOptions,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        };
+        
+        return new Chart(ctx, createRTLChartConfig(config));
+    },
+    
+    // Create trend/line chart
+    createTrendChart(canvasId, labels, data, label = 'البيانات', color = '#667eea') {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return null;
+        
+        const config = {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: label,
+                    data: data,
+                    borderColor: color,
+                    backgroundColor: color + '20',
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 4,
+                    pointBackgroundColor: color,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                ...defaultChartOptions,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        };
+        
+        return new Chart(ctx, createRTLChartConfig(config));
+    }
+};
