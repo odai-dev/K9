@@ -36,7 +36,10 @@ class SecurityMiddleware:
             abort(413)  # Request Entity Too Large
         
         # Enforce admin mode selection for GENERAL_ADMIN users
-        self._enforce_admin_mode_selection()
+        # If a redirect response is returned, short-circuit the request
+        redirect_response = self._enforce_admin_mode_selection()
+        if redirect_response is not None:
+            return redirect_response
         
         # Set security context
         g.request_start_time = datetime.utcnow()
@@ -50,30 +53,36 @@ class SecurityMiddleware:
         
         # Skip if user is not authenticated
         if not current_user.is_authenticated:
-            return
+            return None
         
         # Skip if no pending mode selection
         if not session.get('pending_mode_selection'):
-            return
+            return None
         
         # Skip if endpoint is None (can happen during some requests)
         if request.endpoint is None:
-            return
+            return None
         
         # Allow access to select-mode page and auth-related endpoints
         # Check both endpoint name and URL path for safety
         exempt_endpoints = ['auth.select_mode', 'auth.logout', 'auth.login', 'static', 'main.index']
-        exempt_paths = ['/auth/select-mode', '/auth/logout', '/auth/login', '/static', '/']
+        exempt_paths = ['/auth/select-mode', '/auth/logout', '/auth/login', '/static/', '/']
         
         if request.endpoint in exempt_endpoints:
-            return
+            return None
         
-        if any(request.path.startswith(path) for path in exempt_paths):
-            return
+        # Check if current path is exempt (but not just any path starting with /)
+        current_path = request.path
+        for exempt_path in exempt_paths:
+            if exempt_path == '/':
+                if current_path == '/':
+                    return None
+            elif current_path.startswith(exempt_path):
+                return None
         
         # Redirect to select-mode if user has pending selection
-        from werkzeug.exceptions import HTTPException
-        raise HTTPException(response=redirect(url_for('auth.select_mode')))
+        # Return redirect response to short-circuit the request
+        return redirect(url_for('auth.select_mode'))
     
     def after_request(self, response):
         """Execute after each request."""
