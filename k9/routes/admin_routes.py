@@ -337,13 +337,32 @@ def get_permissions_matrix(user_id, project_id):
         permissions_data = []
         for category, perms in grouped_perms.items():
             for perm in perms:
+                # Parse the permission key to extract section, subsection, and permission_type
+                # Format: section.action or section.subsection.action
+                key_parts = perm.key.split('.')
+                if len(key_parts) >= 3:
+                    section = key_parts[0]
+                    subsection = key_parts[1]
+                    permission_type = key_parts[2].upper()
+                elif len(key_parts) == 2:
+                    section = key_parts[0]
+                    subsection = ''
+                    permission_type = key_parts[1].upper()
+                else:
+                    section = perm.key
+                    subsection = ''
+                    permission_type = 'VIEW'
+                
                 permissions_data.append({
                     'category': category,
                     'key': perm.key,
-                    'name': perm.name,
-                    'name_ar': perm.name_ar,
-                    'name_en': perm.name_en,
-                    'description': perm.description,
+                    'section': section,
+                    'subsection': subsection,
+                    'permission_type': permission_type,
+                    'name': perm.name or perm.key,
+                    'name_ar': perm.name_ar or perm.name or perm.key,
+                    'name_en': perm.name_en or perm.name or perm.key,
+                    'description': perm.description or '',
                     'is_granted': perm.key in user_perms
                 })
         
