@@ -15,7 +15,7 @@ from k9.utils.permissions_new import (
     get_all_permissions_grouped
 )
 from k9.utils.security_utils import PasswordValidator, SecurityHelper
-from k9.models.models import User, Project, UserRole
+from k9.models.models import User, Project, UserRole, ProjectAssignment
 from k9.models.permissions_new import Permission, UserPermission, PermissionChangeLog
 from k9.models.models_handler_daily import HandlerReport, ShiftReport
 from app import db
@@ -256,13 +256,28 @@ def get_projects_list():
     """Get list of all projects for permissions management"""
     projects = Project.query.all()
     
-    projects_data = [{
-        'id': str(project.id),
-        'name': project.name,
-        'code': project.code,
-        'status': project.status.value if hasattr(project.status, 'value') else str(project.status),
-        'employees_count': len(project.assigned_employees) if project.assigned_employees else 0
-    } for project in projects]
+    projects_data = []
+    for project in projects:
+        # Count employees from ProjectAssignment table (the current way of assigning)
+        employee_count = ProjectAssignment.query.filter(
+            ProjectAssignment.project_id == project.id,
+            ProjectAssignment.is_active == True,
+            ProjectAssignment.employee_id.isnot(None)
+        ).count()
+        
+        # Also include employees from legacy assigned_employees relationship
+        legacy_count = len(project.assigned_employees) if project.assigned_employees else 0
+        
+        # Total unique employees (in case some are in both)
+        total_employees = employee_count + legacy_count
+        
+        projects_data.append({
+            'id': str(project.id),
+            'name': project.name,
+            'code': project.code,
+            'status': project.status.value if hasattr(project.status, 'value') else str(project.status),
+            'employees_count': total_employees
+        })
     
     return jsonify({'projects': projects_data})
 
