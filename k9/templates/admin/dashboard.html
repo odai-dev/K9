@@ -453,8 +453,8 @@
                                     <i class="fas fa-user-edit"></i>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <div class="fw-medium">{{ change.admin_user.full_name if change.admin_user else 'نظام' }}</div>
-                                    <small class="text-muted">{{ change.description[:50] }}...</small>
+                                    <div class="fw-medium">{{ change.changed_by.full_name if change.changed_by else 'نظام' }}</div>
+                                    <small class="text-muted">{{ 'منح' if change.action == 'granted' else 'إلغاء' }} {{ change.permission.key if change.permission else 'صلاحية' }}</small>
                                     <div class="small text-muted">{{ change.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
                                 </div>
                             </div>
