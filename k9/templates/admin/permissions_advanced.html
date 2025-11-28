@@ -1,0 +1,1479 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}مركز إدارة الصلاحيات المتقدم{% endblock %}
+
+{% block admin_header_title %}مركز إدارة الصلاحيات المتقدم{% endblock %}
+
+{% block admin_breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('admin.admin_panel') }}">لوحة الإدارة</a></li>
+<li class="breadcrumb-item active">إدارة الصلاحيات المتقدمة</li>
+{% endblock %}
+
+{% block extra_css %}
+{{ super() }}
+<style>
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    --danger-gradient: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+    --info-gradient: linear-gradient(135deg, #2196F3 0%, #21CBF3 100%);
+    --card-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    --card-hover-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+[data-theme="dark"] {
+    --card-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    --card-hover-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+
+.permissions-container {
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.step-indicator {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.step-indicator::before {
+    content: '';
+    position: absolute;
+    top: 25px;
+    left: 25%;
+    right: 25%;
+    height: 3px;
+    background: #e9ecef;
+    z-index: 0;
+}
+
+[data-theme="dark"] .step-indicator::before {
+    background: #333;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    max-width: 200px;
+}
+
+.step-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #6c757d;
+    transition: all 0.3s ease;
+    border: 3px solid transparent;
+}
+
+.step.active .step-circle {
+    background: var(--primary-gradient);
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.step.completed .step-circle {
+    background: var(--success-gradient);
+    color: white;
+}
+
+.step-label {
+    margin-top: 10px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #6c757d;
+    text-align: center;
+}
+
+.step.active .step-label,
+.step.completed .step-label {
+    color: #333;
+}
+
+[data-theme="dark"] .step.active .step-label,
+[data-theme="dark"] .step.completed .step-label {
+    color: #fff;
+}
+
+.panel-card {
+    border: none;
+    border-radius: 20px;
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.panel-card:hover {
+    box-shadow: var(--card-hover-shadow);
+}
+
+.panel-header {
+    background: var(--primary-gradient);
+    color: white;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.panel-header h5 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.panel-body {
+    padding: 0;
+}
+
+.search-box {
+    position: relative;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #eee;
+}
+
+[data-theme="dark"] .search-box {
+    background: #1a1a1a;
+    border-bottom-color: #333;
+}
+
+.search-box input {
+    border-radius: 25px;
+    padding: 12px 20px 12px 45px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.search-box input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-box .search-icon {
+    position: absolute;
+    left: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+}
+
+.list-container {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.list-item {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+[data-theme="dark"] .list-item {
+    border-bottom-color: #333;
+}
+
+.list-item:hover {
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.list-item.selected {
+    background: rgba(102, 126, 234, 0.1);
+    border-right: 4px solid #667eea;
+}
+
+.list-item-content h6 {
+    margin: 0 0 5px 0;
+    font-weight: 600;
+}
+
+.list-item-content small {
+    color: #6c757d;
+}
+
+.list-item-badge {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.status-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.template-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.template-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.25rem;
+    border: 2px solid #e9ecef;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+[data-theme="dark"] .template-card {
+    background: #1a1a1a;
+    border-color: #333;
+}
+
+.template-card:hover {
+    border-color: #667eea;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+}
+
+.template-card.selected {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.template-card .icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 1.5rem;
+}
+
+.template-card.full-access .icon {
+    background: var(--danger-gradient);
+    color: white;
+}
+
+.template-card.pm-access .icon {
+    background: var(--primary-gradient);
+    color: white;
+}
+
+.template-card.view-only .icon {
+    background: var(--info-gradient);
+    color: white;
+}
+
+.template-card.handler-access .icon {
+    background: var(--success-gradient);
+    color: white;
+}
+
+.template-card.custom .icon {
+    background: #6c757d;
+    color: white;
+}
+
+.template-card h6 {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.template-card small {
+    color: #6c757d;
+}
+
+.permissions-matrix {
+    padding: 1rem;
+}
+
+.category-accordion {
+    margin-bottom: 1rem;
+}
+
+.category-header-accordion {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+[data-theme="dark"] .category-header-accordion {
+    background: #1a1a1a;
+}
+
+.category-header-accordion:hover {
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.category-header-accordion.active {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.category-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.category-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-gradient);
+    color: white;
+}
+
+.category-name {
+    font-weight: 600;
+    margin: 0;
+}
+
+.category-count {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.category-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.category-progress {
+    width: 100px;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.category-progress-bar {
+    height: 100%;
+    background: var(--success-gradient);
+    transition: width 0.3s ease;
+}
+
+.bulk-toggle {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.bulk-toggle.grant-all {
+    background: var(--success-gradient);
+    color: white;
+}
+
+.bulk-toggle.revoke-all {
+    background: var(--danger-gradient);
+    color: white;
+}
+
+.permissions-list {
+    padding: 0.5rem 0 0.5rem 1.5rem;
+    display: none;
+}
+
+.permissions-list.show {
+    display: block;
+}
+
+.permission-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: white;
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .permission-row {
+    background: #1a1a1a;
+}
+
+.permission-row:hover {
+    background: #f8f9fa;
+}
+
+[data-theme="dark"] .permission-row:hover {
+    background: #2a2a2a;
+}
+
+.permission-info h6 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.permission-info small {
+    color: #6c757d;
+    font-size: 0.8rem;
+}
+
+.permission-toggle {
+    position: relative;
+    width: 56px;
+    height: 28px;
+}
+
+.permission-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+    border-radius: 28px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+input:checked + .toggle-slider {
+    background: var(--success-gradient);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(28px);
+}
+
+.saving-indicator {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    color: #667eea;
+    font-size: 0.85rem;
+}
+
+.saving-indicator.show {
+    display: flex;
+}
+
+.stats-panel {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    position: sticky;
+    top: 20px;
+}
+
+[data-theme="dark"] .stats-panel {
+    background: #1a1a1a;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-card {
+    text-align: center;
+    padding: 1rem;
+    border-radius: 12px;
+    background: #f8f9fa;
+}
+
+[data-theme="dark"] .stat-card {
+    background: #2a2a2a;
+}
+
+.stat-card .number {
+    font-size: 2rem;
+    font-weight: 700;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-card.granted .number {
+    background: var(--success-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-card .label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.action-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.action-btn.primary {
+    background: var(--primary-gradient);
+    color: white;
+}
+
+.action-btn.success {
+    background: var(--success-gradient);
+    color: white;
+}
+
+.action-btn.danger {
+    background: var(--danger-gradient);
+    color: white;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h5 {
+    margin-bottom: 0.5rem;
+}
+
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 9999;
+}
+
+.custom-toast {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    transform: translateX(-120%);
+    transition: transform 0.3s ease;
+}
+
+.custom-toast.show {
+    transform: translateX(0);
+}
+
+.custom-toast.success {
+    border-right: 4px solid #38ef7d;
+}
+
+.custom-toast.error {
+    border-right: 4px solid #f45c43;
+}
+
+.custom-toast .toast-icon {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.custom-toast.success .toast-icon {
+    background: var(--success-gradient);
+}
+
+.custom-toast.error .toast-icon {
+    background: var(--danger-gradient);
+}
+
+@media (max-width: 992px) {
+    .step-indicator::before {
+        left: 15%;
+        right: 15%;
+    }
+    
+    .stats-panel {
+        position: static;
+        margin-top: 1.5rem;
+    }
+    
+    .template-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 576px) {
+    .step-label {
+        font-size: 0.75rem;
+    }
+    
+    .step-circle {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .template-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .category-actions {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .category-progress {
+        width: 60px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="permissions-container">
+    <div class="step-indicator">
+        <div class="step completed" id="step1">
+            <div class="step-circle">
+                <i class="fas fa-building"></i>
+            </div>
+            <span class="step-label">اختيار المشروع</span>
+        </div>
+        <div class="step" id="step2">
+            <div class="step-circle">
+                <i class="fas fa-user"></i>
+            </div>
+            <span class="step-label">اختيار المستخدم</span>
+        </div>
+        <div class="step" id="step3">
+            <div class="step-circle">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <span class="step-label">إدارة الصلاحيات</span>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="panel-card" id="projectsPanel">
+                <div class="panel-header">
+                    <h5><i class="fas fa-building me-2"></i>المشاريع</h5>
+                    <span class="badge bg-light text-dark" id="projectsCount">0</span>
+                </div>
+                <div class="panel-body">
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" class="form-control" id="projectSearch" placeholder="بحث عن مشروع...">
+                    </div>
+                    <div class="list-container" id="projectsList">
+                        <div class="empty-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <h5>جاري التحميل...</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-4">
+            <div class="panel-card" id="usersPanel">
+                <div class="panel-header">
+                    <h5><i class="fas fa-users me-2"></i>المستخدمون</h5>
+                    <span class="badge bg-light text-dark" id="usersCount">0</span>
+                </div>
+                <div class="panel-body">
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" class="form-control" id="userSearch" placeholder="بحث عن مستخدم...">
+                    </div>
+                    <div class="list-container" id="usersList">
+                        <div class="empty-state">
+                            <i class="fas fa-hand-pointer"></i>
+                            <h5>اختر مشروعاً أولاً</h5>
+                            <p>حدد مشروعاً من القائمة لعرض المستخدمين</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-4">
+            <div class="stats-panel" id="statsPanel" style="display: none;">
+                <h5 class="mb-3"><i class="fas fa-chart-pie me-2"></i>إحصائيات الصلاحيات</h5>
+                <div class="stats-grid">
+                    <div class="stat-card granted">
+                        <div class="number" id="grantedStat">0</div>
+                        <div class="label">ممنوحة</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number" id="totalStat">0</div>
+                        <div class="label">إجمالي</div>
+                    </div>
+                </div>
+                <div class="saving-indicator" id="savingIndicator">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                    <span>جاري الحفظ...</span>
+                </div>
+                <div class="action-buttons">
+                    <button class="action-btn success" id="applyTemplateBtn" data-bs-toggle="modal" data-bs-target="#templateModal">
+                        <i class="fas fa-magic"></i>
+                        تطبيق قالب صلاحيات
+                    </button>
+                    <button class="action-btn primary" id="viewAuditBtn">
+                        <i class="fas fa-history"></i>
+                        سجل التغييرات
+                    </button>
+                    <button class="action-btn danger" id="revokeAllBtn">
+                        <i class="fas fa-ban"></i>
+                        إلغاء جميع الصلاحيات
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" id="permissionsSection" style="display: none;">
+        <div class="col-12">
+            <div class="panel-card">
+                <div class="panel-header">
+                    <div>
+                        <h5><i class="fas fa-shield-alt me-2"></i>مصفوفة الصلاحيات</h5>
+                        <small id="permissionsUserInfo"></small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <input type="text" class="form-control" id="permissionSearch" placeholder="بحث في الصلاحيات..." style="width: 250px; border-radius: 25px;">
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="permissions-matrix" id="permissionsMatrix">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="templateModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-header" style="background: var(--primary-gradient); color: white; border: none;">
+                <h5 class="modal-title"><i class="fas fa-magic me-2"></i>قوالب الصلاحيات</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted mb-4">اختر قالباً لتطبيقه على المستخدم المحدد. سيتم استبدال جميع الصلاحيات الحالية.</p>
+                <div class="template-cards">
+                    <div class="template-card full-access" data-template="full_access">
+                        <div class="icon"><i class="fas fa-crown"></i></div>
+                        <h6>صلاحيات كاملة</h6>
+                        <small>جميع الصلاحيات (89)</small>
+                    </div>
+                    <div class="template-card pm-access" data-template="pm_access">
+                        <div class="icon"><i class="fas fa-user-tie"></i></div>
+                        <h6>مدير مشروع</h6>
+                        <small>صلاحيات إدارة المشروع</small>
+                    </div>
+                    <div class="template-card view-only" data-template="view_only">
+                        <div class="icon"><i class="fas fa-eye"></i></div>
+                        <h6>عرض فقط</h6>
+                        <small>صلاحيات المشاهدة</small>
+                    </div>
+                    <div class="template-card handler-access" data-template="handler_access">
+                        <div class="icon"><i class="fas fa-dog"></i></div>
+                        <h6>سائس</h6>
+                        <small>صلاحيات السائس الأساسية</small>
+                    </div>
+                    <div class="template-card custom" data-template="custom">
+                        <div class="icon"><i class="fas fa-sliders-h"></i></div>
+                        <h6>مخصص</h6>
+                        <small>اختيار يدوي</small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="applyTemplateConfirm" disabled>
+                    <i class="fas fa-check me-2"></i>تطبيق القالب
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="auditModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius: 20px; overflow: hidden;">
+            <div class="modal-header" style="background: var(--primary-gradient); color: white; border: none;">
+                <h5 class="modal-title"><i class="fas fa-history me-2"></i>سجل التغييرات</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0" id="auditLogContent">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let selectedProjectId = null;
+    let selectedUserId = null;
+    let selectedUserName = '';
+    let permissionsCatalog = null;
+    let userPermissions = new Set();
+    let selectedTemplate = null;
+
+    const categoryIcons = {
+        'admin': 'fa-cog',
+        'users': 'fa-users',
+        'dogs': 'fa-dog',
+        'projects': 'fa-building',
+        'assignments': 'fa-tasks',
+        'shifts': 'fa-clock',
+        'attendance': 'fa-calendar-check',
+        'training': 'fa-graduation-cap',
+        'veterinary': 'fa-stethoscope',
+        'breeding': 'fa-heart',
+        'reports': 'fa-file-alt',
+        'schedules': 'fa-calendar',
+        'supervisor': 'fa-user-shield',
+        'handler': 'fa-user',
+        'caretaker': 'fa-hand-holding-heart',
+        'security': 'fa-lock',
+        'audit': 'fa-history',
+        'notifications': 'fa-bell',
+        'dashboard': 'fa-tachometer-alt',
+        'cleaning': 'fa-broom',
+        'feeding': 'fa-utensils',
+        'health': 'fa-heartbeat',
+        'deworming': 'fa-syringe'
+    };
+
+    const categoryNames = {
+        'admin': 'الإدارة',
+        'users': 'المستخدمون',
+        'dogs': 'الكلاب',
+        'projects': 'المشاريع',
+        'assignments': 'التعيينات',
+        'shifts': 'الورديات',
+        'attendance': 'الحضور والانصراف',
+        'training': 'التدريب',
+        'veterinary': 'البيطرة',
+        'breeding': 'التربية',
+        'reports': 'التقارير',
+        'schedules': 'الجداول',
+        'supervisor': 'المشرفين',
+        'handler': 'المتعاملين',
+        'caretaker': 'المربين',
+        'security': 'الأمان',
+        'audit': 'سجل التدقيق',
+        'notifications': 'الإشعارات',
+        'dashboard': 'لوحة القيادة',
+        'cleaning': 'النظافة',
+        'feeding': 'التغذية',
+        'health': 'الصحة',
+        'deworming': 'التطعيم'
+    };
+
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `custom-toast ${type}`;
+        toast.innerHTML = `
+            <div class="toast-icon">
+                <i class="fas ${type === 'success' ? 'fa-check' : 'fa-times'}"></i>
+            </div>
+            <span>${message}</span>
+        `;
+        container.appendChild(toast);
+        
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    function updateSteps(currentStep) {
+        document.querySelectorAll('.step').forEach((step, index) => {
+            step.classList.remove('active', 'completed');
+            if (index + 1 < currentStep) {
+                step.classList.add('completed');
+            } else if (index + 1 === currentStep) {
+                step.classList.add('active');
+            }
+        });
+    }
+
+    async function loadProjects() {
+        try {
+            const response = await fetch('/admin/permissions/projects');
+            if (!response.ok) throw new Error('Failed to load projects');
+            const data = await response.json();
+            
+            const container = document.getElementById('projectsList');
+            document.getElementById('projectsCount').textContent = data.projects.length;
+            
+            if (data.projects.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-folder-open"></i>
+                        <h5>لا توجد مشاريع</h5>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = data.projects.map(project => `
+                <div class="list-item" data-project-id="${project.id}">
+                    <div class="list-item-content">
+                        <h6>${project.name}</h6>
+                        <small>${project.code || ''} - ${project.employees_count} موظف</small>
+                    </div>
+                    <div class="list-item-badge">
+                        <span class="status-badge bg-${project.status === 'ACTIVE' ? 'success' : 'secondary'}">
+                            ${project.status === 'ACTIVE' ? 'نشط' : 'غير نشط'}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.querySelectorAll('.list-item').forEach(item => {
+                item.addEventListener('click', () => selectProject(item.dataset.projectId));
+            });
+            
+        } catch (error) {
+            console.error('Error loading projects:', error);
+            showToast('فشل تحميل المشاريع', 'error');
+        }
+    }
+
+    async function selectProject(projectId) {
+        selectedProjectId = projectId;
+        selectedUserId = null;
+        
+        document.querySelectorAll('#projectsList .list-item').forEach(item => {
+            item.classList.toggle('selected', item.dataset.projectId === projectId);
+        });
+        
+        updateSteps(2);
+        document.getElementById('permissionsSection').style.display = 'none';
+        document.getElementById('statsPanel').style.display = 'none';
+        
+        await loadUsers(projectId);
+    }
+
+    async function loadUsers(projectId) {
+        const container = document.getElementById('usersList');
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-spinner fa-spin"></i>
+                <h5>جاري التحميل...</h5>
+            </div>
+        `;
+        
+        try {
+            const response = await fetch(`/admin/permissions/users/${projectId}`);
+            if (!response.ok) throw new Error('Failed to load users');
+            const data = await response.json();
+            
+            document.getElementById('usersCount').textContent = data.users.length;
+            
+            if (data.users.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-users"></i>
+                        <h5>لا يوجد مستخدمون</h5>
+                        <p>لم يتم العثور على مستخدمين لهذا المشروع</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const roleLabels = {
+                'GENERAL_ADMIN': 'مدير عام',
+                'PROJECT_MANAGER': 'مدير مشروع',
+                'SUPERVISOR': 'مشرف',
+                'HANDLER': 'سائس',
+                'VETERINARIAN': 'طبيب بيطري',
+                'CARETAKER': 'مربي'
+            };
+            
+            const roleColors = {
+                'GENERAL_ADMIN': 'danger',
+                'PROJECT_MANAGER': 'primary',
+                'SUPERVISOR': 'warning',
+                'HANDLER': 'info',
+                'VETERINARIAN': 'success',
+                'CARETAKER': 'secondary'
+            };
+            
+            container.innerHTML = data.users.map(user => `
+                <div class="list-item ${user.is_assigned ? '' : 'opacity-75'}" data-user-id="${user.id}" data-user-name="${user.full_name}">
+                    <div class="list-item-content">
+                        <h6>${user.full_name}</h6>
+                        <small>${user.username} - ${user.employee_id || ''}</small>
+                    </div>
+                    <div class="list-item-badge">
+                        ${user.is_assigned ? '<i class="fas fa-check-circle text-success me-2" title="معين للمشروع"></i>' : ''}
+                        <span class="status-badge bg-${roleColors[user.role] || 'secondary'}">
+                            ${roleLabels[user.role] || user.role}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.querySelectorAll('.list-item').forEach(item => {
+                item.addEventListener('click', () => selectUser(item.dataset.userId, item.dataset.userName));
+            });
+            
+        } catch (error) {
+            console.error('Error loading users:', error);
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-triangle text-danger"></i>
+                    <h5>فشل تحميل المستخدمين</h5>
+                    <p>${error.message}</p>
+                </div>
+            `;
+            showToast('فشل تحميل المستخدمين', 'error');
+        }
+    }
+
+    async function selectUser(userId, userName) {
+        selectedUserId = userId;
+        selectedUserName = userName;
+        
+        document.querySelectorAll('#usersList .list-item').forEach(item => {
+            item.classList.toggle('selected', item.dataset.userId === userId);
+        });
+        
+        updateSteps(3);
+        document.getElementById('statsPanel').style.display = 'block';
+        document.getElementById('permissionsSection').style.display = 'block';
+        document.getElementById('permissionsUserInfo').textContent = `المستخدم: ${userName}`;
+        
+        await loadPermissionsCatalog();
+        await loadUserPermissions(userId);
+    }
+
+    async function loadPermissionsCatalog() {
+        if (permissionsCatalog) return;
+        
+        try {
+            const response = await fetch('/admin/permissions-new/api/permissions-catalog');
+            if (!response.ok) throw new Error('Failed to load catalog');
+            const data = await response.json();
+            permissionsCatalog = data.catalog;
+        } catch (error) {
+            console.error('Error loading catalog:', error);
+            showToast('فشل تحميل قائمة الصلاحيات', 'error');
+        }
+    }
+
+    async function loadUserPermissions(userId) {
+        try {
+            const response = await fetch(`/admin/permissions-new/api/user/${userId}/permissions`);
+            if (!response.ok) throw new Error('Failed to load permissions');
+            const data = await response.json();
+            userPermissions = new Set(data.permissions);
+            renderPermissions();
+            updateStats();
+        } catch (error) {
+            console.error('Error loading permissions:', error);
+            showToast('فشل تحميل صلاحيات المستخدم', 'error');
+        }
+    }
+
+    function updateStats() {
+        const granted = userPermissions.size;
+        let total = 0;
+        if (permissionsCatalog) {
+            Object.values(permissionsCatalog).forEach(perms => total += perms.length);
+        }
+        document.getElementById('grantedStat').textContent = granted;
+        document.getElementById('totalStat').textContent = total;
+    }
+
+    function renderPermissions() {
+        if (!permissionsCatalog) return;
+        
+        const container = document.getElementById('permissionsMatrix');
+        const filterText = document.getElementById('permissionSearch').value.toLowerCase();
+        
+        let html = '';
+        
+        for (const [category, perms] of Object.entries(permissionsCatalog)) {
+            const filteredPerms = perms.filter(p => 
+                p.key.toLowerCase().includes(filterText) ||
+                p.name.toLowerCase().includes(filterText) ||
+                (p.name_ar && p.name_ar.toLowerCase().includes(filterText))
+            );
+            
+            if (filteredPerms.length === 0) continue;
+            
+            const grantedInCategory = filteredPerms.filter(p => userPermissions.has(p.key)).length;
+            const progressPercent = (grantedInCategory / filteredPerms.length) * 100;
+            const allGranted = grantedInCategory === filteredPerms.length;
+            
+            html += `
+                <div class="category-accordion" data-category="${category}">
+                    <div class="category-header-accordion" onclick="toggleCategory('${category}')">
+                        <div class="category-info">
+                            <div class="category-icon">
+                                <i class="fas ${categoryIcons[category] || 'fa-folder'}"></i>
+                            </div>
+                            <div>
+                                <div class="category-name">${categoryNames[category] || category}</div>
+                                <div class="category-count">${grantedInCategory} من ${filteredPerms.length}</div>
+                            </div>
+                        </div>
+                        <div class="category-actions">
+                            <div class="category-progress">
+                                <div class="category-progress-bar" style="width: ${progressPercent}%"></div>
+                            </div>
+                            <button class="bulk-toggle ${allGranted ? 'revoke-all' : 'grant-all'}" 
+                                    onclick="event.stopPropagation(); bulkToggleCategory('${category}', ${!allGranted})">
+                                ${allGranted ? '<i class="fas fa-times"></i> إلغاء الكل' : '<i class="fas fa-check"></i> تحديد الكل'}
+                            </button>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                    <div class="permissions-list" id="perms-${category}">
+            `;
+            
+            for (const perm of filteredPerms) {
+                const isGranted = userPermissions.has(perm.key);
+                html += `
+                    <div class="permission-row" data-key="${perm.key}">
+                        <div class="permission-info">
+                            <h6>${perm.name_ar || perm.name}</h6>
+                            <small>${perm.key}</small>
+                        </div>
+                        <label class="permission-toggle">
+                            <input type="checkbox" ${isGranted ? 'checked' : ''} 
+                                   onchange="togglePermission('${perm.key}', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                `;
+            }
+            
+            html += '</div></div>';
+        }
+        
+        container.innerHTML = html;
+    }
+
+    window.toggleCategory = function(category) {
+        const list = document.getElementById(`perms-${category}`);
+        const header = list.previousElementSibling;
+        list.classList.toggle('show');
+        header.classList.toggle('active');
+    };
+
+    window.bulkToggleCategory = async function(category, grant) {
+        if (!permissionsCatalog || !selectedUserId) return;
+        
+        const perms = permissionsCatalog[category];
+        if (!perms) return;
+        
+        document.getElementById('savingIndicator').classList.add('show');
+        
+        try {
+            for (const perm of perms) {
+                if (grant && !userPermissions.has(perm.key)) {
+                    await updatePermission(perm.key, true);
+                    userPermissions.add(perm.key);
+                } else if (!grant && userPermissions.has(perm.key)) {
+                    await updatePermission(perm.key, false);
+                    userPermissions.delete(perm.key);
+                }
+            }
+            
+            renderPermissions();
+            updateStats();
+            showToast(grant ? 'تم منح جميع صلاحيات الفئة' : 'تم إلغاء جميع صلاحيات الفئة');
+        } catch (error) {
+            showToast('حدث خطأ أثناء تحديث الصلاحيات', 'error');
+        } finally {
+            document.getElementById('savingIndicator').classList.remove('show');
+        }
+    };
+
+    window.togglePermission = async function(key, granted) {
+        document.getElementById('savingIndicator').classList.add('show');
+        
+        try {
+            await updatePermission(key, granted);
+            
+            if (granted) {
+                userPermissions.add(key);
+            } else {
+                userPermissions.delete(key);
+            }
+            
+            updateStats();
+            renderPermissions();
+        } catch (error) {
+            showToast('فشل تحديث الصلاحية', 'error');
+            const checkbox = document.querySelector(`[data-key="${key}"] input`);
+            if (checkbox) checkbox.checked = !granted;
+        } finally {
+            document.getElementById('savingIndicator').classList.remove('show');
+        }
+    };
+
+    async function updatePermission(key, granted) {
+        const response = await fetch('/admin/permissions-new/api/toggle-permission', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            },
+            body: JSON.stringify({
+                user_id: selectedUserId,
+                permission_key: key,
+                granted: granted
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to update permission');
+        }
+        
+        return response.json();
+    }
+
+    document.querySelectorAll('.template-card').forEach(card => {
+        card.addEventListener('click', function() {
+            document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedTemplate = this.dataset.template;
+            document.getElementById('applyTemplateConfirm').disabled = false;
+        });
+    });
+
+    document.getElementById('applyTemplateConfirm').addEventListener('click', async function() {
+        if (!selectedTemplate || !selectedUserId) return;
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById('templateModal'));
+        modal.hide();
+        
+        document.getElementById('savingIndicator').classList.add('show');
+        
+        try {
+            const response = await fetch('/admin/permissions-new/api/apply-template', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                },
+                body: JSON.stringify({
+                    user_id: selectedUserId,
+                    template: selectedTemplate
+                })
+            });
+            
+            if (!response.ok) throw new Error('Failed to apply template');
+            
+            await loadUserPermissions(selectedUserId);
+            showToast('تم تطبيق القالب بنجاح');
+        } catch (error) {
+            showToast('فشل تطبيق القالب', 'error');
+        } finally {
+            document.getElementById('savingIndicator').classList.remove('show');
+        }
+    });
+
+    document.getElementById('viewAuditBtn').addEventListener('click', async function() {
+        if (!selectedUserId) return;
+        
+        const modal = new bootstrap.Modal(document.getElementById('auditModal'));
+        modal.show();
+        
+        const content = document.getElementById('auditLogContent');
+        content.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div></div>';
+        
+        try {
+            const response = await fetch(`/admin/permissions-new/api/user/${selectedUserId}/audit`);
+            if (!response.ok) throw new Error('Failed to load audit log');
+            const data = await response.json();
+            
+            if (data.logs.length === 0) {
+                content.innerHTML = `
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-history fa-3x mb-3"></i>
+                        <h5>لا توجد سجلات</h5>
+                    </div>
+                `;
+                return;
+            }
+            
+            content.innerHTML = `
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>الصلاحية</th>
+                                <th>الإجراء</th>
+                                <th>بواسطة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.logs.map(log => `
+                                <tr>
+                                    <td><small>${new Date(log.timestamp).toLocaleString('ar-SA')}</small></td>
+                                    <td><code>${log.permission_key}</code></td>
+                                    <td>
+                                        <span class="badge bg-${log.action === 'granted' ? 'success' : 'danger'}">
+                                            ${log.action === 'granted' ? 'منح' : 'إلغاء'}
+                                        </span>
+                                    </td>
+                                    <td>${log.actor_name || 'النظام'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } catch (error) {
+            content.innerHTML = `
+                <div class="text-center py-5 text-danger">
+                    <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                    <h5>فشل تحميل السجلات</h5>
+                </div>
+            `;
+        }
+    });
+
+    document.getElementById('revokeAllBtn').addEventListener('click', async function() {
+        if (!selectedUserId) return;
+        if (!confirm('هل أنت متأكد من إلغاء جميع الصلاحيات؟ هذا الإجراء لا يمكن التراجع عنه.')) return;
+        
+        document.getElementById('savingIndicator').classList.add('show');
+        
+        try {
+            const response = await fetch('/admin/permissions-new/api/revoke-all', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                },
+                body: JSON.stringify({ user_id: selectedUserId })
+            });
+            
+            if (!response.ok) throw new Error('Failed to revoke permissions');
+            
+            userPermissions.clear();
+            renderPermissions();
+            updateStats();
+            showToast('تم إلغاء جميع الصلاحيات');
+        } catch (error) {
+            showToast('فشل إلغاء الصلاحيات', 'error');
+        } finally {
+            document.getElementById('savingIndicator').classList.remove('show');
+        }
+    });
+
+    document.getElementById('projectSearch').addEventListener('input', function() {
+        const filter = this.value.toLowerCase();
+        document.querySelectorAll('#projectsList .list-item').forEach(item => {
+            const text = item.textContent.toLowerCase();
+            item.style.display = text.includes(filter) ? '' : 'none';
+        });
+    });
+
+    document.getElementById('userSearch').addEventListener('input', function() {
+        const filter = this.value.toLowerCase();
+        document.querySelectorAll('#usersList .list-item').forEach(item => {
+            const text = item.textContent.toLowerCase();
+            item.style.display = text.includes(filter) ? '' : 'none';
+        });
+    });
+
+    document.getElementById('permissionSearch').addEventListener('input', function() {
+        renderPermissions();
+    });
+
+    loadProjects();
+    updateSteps(1);
+});
+</script>
+{% endblock %}

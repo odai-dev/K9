@@ -1863,9 +1863,185 @@ def get_permissions_catalog():
                 'id': str(p.id),
                 'key': p.key,
                 'name': p.name,
+                'name_ar': p.name_ar,
+                'name_en': p.name_en,
                 'description': p.description
             }
             for p in perms
         ]
     
     return jsonify({'catalog': result})
+
+
+@admin_bp.route('/permissions-advanced')
+@login_required
+@require_admin_permission('admin.permissions.view')
+def permissions_management_advanced():
+    """Advanced permission management interface with project-user-permissions workflow"""
+    return render_template('admin/permissions_advanced.html')
+
+
+@admin_bp.route('/permissions-new/api/toggle-permission', methods=['POST'])
+@login_required
+@require_admin_permission('admin.permissions.edit')
+def toggle_permission_api():
+    """Toggle a permission for a user (grant or revoke)"""
+    from k9.utils.permissions_new import grant_permission, revoke_permission
+    
+    data = request.get_json()
+    user_id = data.get('user_id')
+    permission_key = data.get('permission_key')
+    granted = data.get('granted', False)
+    
+    if granted:
+        success = grant_permission(user_id, permission_key, current_user.id)
+    else:
+        success = revoke_permission(user_id, permission_key, current_user.id)
+    
+    if success:
+        return jsonify({'success': True})
+    else:
+        return jsonify({'success': False, 'error': 'Failed to update permission'}), 400
+
+
+@admin_bp.route('/permissions-new/api/apply-template', methods=['POST'])
+@login_required
+@require_admin_permission('admin.permissions.edit')
+def apply_permission_template():
+    """Apply a permission template to a user with proper transaction handling"""
+    from k9.utils.permissions_new import grant_permission, revoke_permission, get_user_permission_keys
+    from k9.models.permissions_new import Permission, UserPermission
+    from app import db
+    
+    data = request.get_json()
+    user_id = data.get('user_id')
+    template = data.get('template')
+    
+    if not user_id or not template:
+        return jsonify({'error': 'Missing user_id or template'}), 400
+    
+    try:
+        all_perms = Permission.query.all()
+        valid_perm_keys = {p.key for p in all_perms}
+        
+        template_permissions = []
+        
+        if template == 'full_access':
+            template_permissions = [p.key for p in all_perms]
+        
+        elif template == 'pm_access':
+            pm_categories = ['dogs', 'projects', 'assignments', 'shifts', 'attendance', 
+                            'training', 'reports', 'schedules', 'handler', 'dashboard', 'notifications']
+            template_permissions = [p.key for p in all_perms if p.key.split('.')[0] in pm_categories]
+        
+        elif template == 'view_only':
+            template_permissions = [p.key for p in all_perms if '.view' in p.key]
+        
+        elif template == 'handler_access':
+            handler_categories = ['handler', 'reports', 'schedules', 'notifications', 'dashboard']
+            template_permissions = [p.key for p in all_perms 
+                                   if p.key.split('.')[0] in handler_categories 
+                                   and ('.view' in p.key or '.create' in p.key)]
+        
+        elif template == 'custom':
+            return jsonify({'success': True, 'granted_count': 0, 'message': 'Custom template - no changes made'})
+        
+        if not template_permissions:
+            return jsonify({'error': 'No permissions defined for this template'}), 400
+        
+        UserPermission.query.filter_by(user_id=user_id).delete()
+        
+        perm_lookup = {p.key: p for p in all_perms}
+        for perm_key in template_permissions:
+            if perm_key in perm_lookup:
+                perm = perm_lookup[perm_key]
+                new_up = UserPermission(
+                    user_id=user_id,
+                    permission_id=perm.id
+                )
+                db.session.add(new_up)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'granted_count': len(template_permissions)
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error applying template: {e}")
+        return jsonify({'error': f'Failed to apply template: {str(e)}'}), 500
+
+
+@admin_bp.route('/permissions-new/api/revoke-all', methods=['POST'])
+@login_required
+@require_admin_permission('admin.permissions.edit')
+def revoke_all_permissions():
+    """Revoke all permissions from a user with transaction handling"""
+    from k9.models.permissions_new import UserPermission
+    from app import db
+    
+    data = request.get_json()
+    user_id = data.get('user_id')
+    
+    if not user_id:
+        return jsonify({'error': 'Missing user_id'}), 400
+    
+    try:
+        count = UserPermission.query.filter_by(user_id=user_id).count()
+        UserPermission.query.filter_by(user_id=user_id).delete()
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'revoked_count': count
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error revoking all permissions: {e}")
+        return jsonify({'error': f'Failed to revoke permissions: {str(e)}'}), 500
+
+
+@admin_bp.route('/permissions-new/api/user/<user_id>/audit')
+@login_required
+@require_admin_permission('admin.permissions.view')
+def get_user_permission_audit(user_id):
+    """Get permission change audit log for a user with pagination"""
+    from k9.models.permissions_new import PermissionChangeLog
+    from k9.models.models import User
+    
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    per_page = min(per_page, 100)
+    
+    query = PermissionChangeLog.query.filter_by(
+        user_id=user_id
+    ).order_by(PermissionChangeLog.timestamp.desc())
+    
+    total = query.count()
+    logs = query.offset((page - 1) * per_page).limit(per_page).all()
+    
+    actor_ids = {log.actor_id for log in logs if log.actor_id}
+    actors = {u.id: u for u in User.query.filter(User.id.in_(actor_ids)).all()} if actor_ids else {}
+    
+    result = []
+    for log in logs:
+        actor = actors.get(log.actor_id) if log.actor_id else None
+        result.append({
+            'timestamp': log.timestamp.isoformat() if log.timestamp else None,
+            'permission_key': log.permission_key,
+            'action': log.action,
+            'actor_name': actor.full_name if actor else 'النظام',
+            'ip_address': log.ip_address
+        })
+    
+    return jsonify({
+        'logs': result,
+        'pagination': {
+            'page': page,
+            'per_page': per_page,
+            'total': total,
+            'pages': (total + per_page - 1) // per_page
+        }
+    })
