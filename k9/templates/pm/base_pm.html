@@ -149,10 +149,10 @@
                     </li>
                     {% endif %}
                     
-                    <!-- Incidents Module -->
+                    <!-- Incidents Module - Access via PM Project page -->
                     {% if has_any_permission('incidents.view', 'incidents.create', 'incidents.edit') %}
                     <li class="nav-item">
-                        <a class="nav-link px-3 py-2 rounded-pill {% if 'incidents' in request.endpoint|default('') %}active bg-white bg-opacity-25{% endif %}" href="{{ url_for('main.incidents_list') }}">
+                        <a class="nav-link px-3 py-2 rounded-pill {% if 'incidents' in request.endpoint|default('') %}active bg-white bg-opacity-25{% endif %}" href="{{ url_for('pm.project') }}">
                             <i class="fas fa-exclamation-triangle me-1"></i>الحوادث
                         </a>
                     </li>
