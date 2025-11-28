@@ -143,6 +143,10 @@ def login():
 @login_required
 def logout():
     log_audit(current_user.id, 'LOGOUT', 'User', str(current_user.id), {'username': current_user.username})
+    # Clear all session data including pending mode selection
+    session.pop('pending_mode_selection', None)
+    session.pop('admin_mode', None)
+    session.pop('pending_user_id', None)
     logout_user()
     flash('تم تسجيل الخروج بنجاح', 'success')
     return redirect(url_for('main.index'))
