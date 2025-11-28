@@ -81,17 +81,30 @@ def dashboard():
     if current_user.role == UserRole.GENERAL_ADMIN:
         admin_mode = session.get('admin_mode', 'general_admin')
         if admin_mode == 'project_manager':
+            current_app.logger.info("Redirecting GENERAL_ADMIN in PM mode to pm.dashboard")
             return redirect(url_for('pm.dashboard'))
     
-    # Check if user has any operational permissions
-    user_sections = get_sections_for_user(current_user)
-    
-    # Users WITH permissions get PM dashboard (PROJECT_MANAGER or any user with granted permissions)
-    if user_sections:
+    # PROJECT_MANAGER users ALWAYS go to PM dashboard (prevents redirect loop with handler)
+    if current_user.role == UserRole.PROJECT_MANAGER:
+        current_app.logger.info("Redirecting PROJECT_MANAGER to pm.dashboard")
         return redirect(url_for('pm.dashboard'))
     
-    # Users WITHOUT permissions get handler dashboard (HANDLER or users without permissions)
-    return redirect(url_for('handler.dashboard'))
+    # Check if user has any operational permissions (for other roles like HANDLER)
+    user_sections = get_sections_for_user(current_user)
+    
+    # Users WITH permissions get PM dashboard
+    if user_sections:
+        current_app.logger.info(f"Redirecting user with sections to pm.dashboard: {user_sections}")
+        return redirect(url_for('pm.dashboard'))
+    
+    # HANDLER users (and only HANDLER users) go to handler dashboard
+    if current_user.role == UserRole.HANDLER:
+        current_app.logger.info("Redirecting HANDLER to handler.dashboard")
+        return redirect(url_for('handler.dashboard'))
+    
+    # Fallback for any other role - go to PM dashboard to avoid redirect loops
+    current_app.logger.info(f"Fallback redirect to pm.dashboard for role: {current_user.role}")
+    return redirect(url_for('pm.dashboard'))
     
     # Fallback statistics (this code is now unreachable but kept for safety)
     stats = {}
