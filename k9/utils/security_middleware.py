@@ -35,11 +35,10 @@ class SecurityMiddleware:
         if self._is_request_too_large():
             abort(413)  # Request Entity Too Large
         
-        # Enforce admin mode selection for GENERAL_ADMIN users
-        # If a redirect response is returned, short-circuit the request
-        redirect_response = self._enforce_admin_mode_selection()
-        if redirect_response is not None:
-            return redirect_response
+        # DISABLED: Admin mode selection enforcement moved to dashboard route only
+        # This prevents redirect loops for non-admin users
+        # The select-mode redirect is now handled in main.dashboard route
+        pass
         
         # Set security context
         g.request_start_time = datetime.utcnow()
@@ -57,9 +56,13 @@ class SecurityMiddleware:
             return None
         
         # CRITICAL FIX: Only enforce for GENERAL_ADMIN users
-        # If user is not GENERAL_ADMIN, clear any stale pending_mode_selection flag
-        if current_user.role != UserRole.GENERAL_ADMIN:
+        # If user is not GENERAL_ADMIN, clear any stale pending_mode_selection flag and return immediately
+        if not hasattr(current_user, 'role') or current_user.role != UserRole.GENERAL_ADMIN:
+            # Force clear ALL admin-related session flags for non-admin users
             session.pop('pending_mode_selection', None)
+            session.pop('pending_user_id', None)
+            # Log for debugging
+            current_app.logger.debug(f"Non-admin user {current_user.username}, cleared pending_mode_selection")
             return None
         
         # Skip if no pending mode selection

@@ -55,6 +55,16 @@ def dashboard():
     from flask import session
     # get_sections_for_user and _is_admin_mode imported at module level from permissions_new
     
+    # CRITICAL: Handle pending mode selection for GENERAL_ADMIN users ONLY
+    # This replaces the middleware enforcement to prevent redirect loops
+    if current_user.role == UserRole.GENERAL_ADMIN and session.get('pending_mode_selection'):
+        return redirect(url_for('auth.select_mode'))
+    
+    # For non-admin users, ensure any stale pending_mode_selection is cleared
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        session.pop('pending_mode_selection', None)
+        session.pop('pending_user_id', None)
+    
     # GENERAL_ADMIN in admin mode gets admin dashboard
     if _is_admin_mode(current_user):
         return redirect(url_for('admin.dashboard'))
