@@ -338,20 +338,25 @@ def get_permissions_matrix(user_id, project_id):
         for category, perms in grouped_perms.items():
             for perm in perms:
                 # Parse the permission key to extract section, subsection, and permission_type
-                # Format: section.action or section.subsection.action
+                # Format examples:
+                # - dogs.view -> section=dogs, subsection='', type=VIEW
+                # - admin.permissions.edit -> section=admin, subsection=permissions, type=EDIT
+                # - reports.breeding.checkup.view -> section=reports, subsection=breeding.checkup, type=VIEW
                 key_parts = perm.key.split('.')
+                
+                # The last part is always the permission type (view, edit, create, delete, export, etc.)
+                permission_type = key_parts[-1].upper() if key_parts else 'VIEW'
+                
                 if len(key_parts) >= 3:
                     section = key_parts[0]
-                    subsection = key_parts[1]
-                    permission_type = key_parts[2].upper()
+                    # Subsection is everything between first and last part
+                    subsection = '.'.join(key_parts[1:-1])
                 elif len(key_parts) == 2:
                     section = key_parts[0]
                     subsection = ''
-                    permission_type = key_parts[1].upper()
                 else:
                     section = perm.key
                     subsection = ''
-                    permission_type = 'VIEW'
                 
                 permissions_data.append({
                     'category': category,
