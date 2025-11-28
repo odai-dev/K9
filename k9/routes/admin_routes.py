@@ -56,7 +56,7 @@ def dashboard():
     }
     
     # Recent activities - use new PermissionChangeLog
-    recent_permission_changes = PermissionChangeLog.query.order_by(PermissionChangeLog.changed_at.desc()).limit(5).all()
+    recent_permission_changes = PermissionChangeLog.query.order_by(PermissionChangeLog.created_at.desc()).limit(5).all()
     recent_training = TrainingSession.query.order_by(TrainingSession.created_at.desc()).limit(5).all()
     recent_vet_visits = VeterinaryVisit.query.order_by(VeterinaryVisit.created_at.desc()).limit(5).all()
     
@@ -362,16 +362,16 @@ def permissions_audit_log():
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     
-    query = PermissionChangeLog.query.order_by(PermissionChangeLog.changed_at.desc())
+    query = PermissionChangeLog.query.order_by(PermissionChangeLog.created_at.desc())
     
     if target_user_id:
         query = query.filter(PermissionChangeLog.user_id == target_user_id)
     
     if start_date:
-        query = query.filter(PermissionChangeLog.changed_at >= start_date)
+        query = query.filter(PermissionChangeLog.created_at >= start_date)
     
     if end_date:
-        query = query.filter(PermissionChangeLog.changed_at <= end_date)
+        query = query.filter(PermissionChangeLog.created_at <= end_date)
     
     audit_logs = query.paginate(page=page, per_page=per_page, error_out=False)
     
@@ -588,7 +588,7 @@ def admin_profile():
     }
     
     # Get recent admin activities (recent permission changes)
-    recent_activities = PermissionChangeLog.query.filter_by(changed_by_id=str(current_user.id)).order_by(PermissionChangeLog.changed_at.desc()).limit(5).all()
+    recent_activities = PermissionChangeLog.query.filter_by(changed_by_user_id=str(current_user.id)).order_by(PermissionChangeLog.created_at.desc()).limit(5).all()
     
     if request.method == 'POST':
         action = request.form.get('action')
