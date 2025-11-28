@@ -764,7 +764,7 @@ def admin_profile():
 @admin_required
 def backup_management():
     """Backup management page"""
-    if not has_permission("admin.backup.manage"):
+    if not has_permission("admin.backup"):
         return redirect("/unauthorized")
     
     from k9.models.models import BackupSettings
