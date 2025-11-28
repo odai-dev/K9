@@ -89,7 +89,7 @@
                             <li><a class="dropdown-item" href="{{ url_for('main.training_list') }}"><i class="fas fa-dumbbell me-2"></i>جلسات التدريب</a></li>
                             {% endif %}
                             {% if has_permission('reports.training.view') %}
-                            <li><a class="dropdown-item" href="{{ url_for('training_reports.index') }}"><i class="fas fa-file-alt me-2"></i>تقارير التدريب</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('reports_training_trainer_daily_ui.trainer_daily') }}"><i class="fas fa-file-alt me-2"></i>تقارير التدريب</a></li>
                             {% endif %}
                         </ul>
                     </li>
