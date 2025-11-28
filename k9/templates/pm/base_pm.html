@@ -123,7 +123,7 @@
                     </li>
                     {% endif %}
                     
-                    {% if has_any_permission('handler_reports.view', 'admin.permissions.view') %}
+                    {% if has_any_permission('handler_reports.view', 'admin.permissions.view', 'admin.backup') %}
                     <!-- Administration Module -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill position-relative" href="#" id="administrationDropdown" role="button" data-bs-toggle="dropdown">
@@ -174,6 +174,13 @@
                             <li>
                                 <a class="dropdown-item" href="{{ url_for('admin.comprehensive_permissions') }}">
                                     <i class="fas fa-key me-2"></i>إدارة الصلاحيات
+                                </a>
+                            </li>
+                            {% endif %}
+                            {% if has_permission('admin.backup') %}
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('admin.backup_management') }}">
+                                    <i class="fas fa-database me-2"></i>النسخ الاحتياطية
                                 </a>
                             </li>
                             {% endif %}

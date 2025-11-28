@@ -249,8 +249,12 @@ def require_all_permissions(*permission_keys):
 
 def admin_required(f):
     """
-    Decorator to restrict access to GENERAL_ADMIN in admin mode only.
-    Also allows access if user has admin.permissions.view or admin.permissions.edit.
+    Decorator to restrict access to GENERAL_ADMIN in admin mode OR users with admin.* permissions.
+    This allows non-admin users to access admin pages if they've been granted specific admin permissions.
+    
+    The decorator allows access if:
+    1. User is GENERAL_ADMIN in admin mode
+    2. User has ANY permission starting with 'admin.' (e.g., admin.backup.manage, admin.permissions.view, etc.)
     
     Usage:
         @app.route('/admin/settings')
@@ -272,14 +276,17 @@ def admin_required(f):
         if _is_admin_mode(current_user):
             return f(*args, **kwargs)
         
-        # Check if user has admin permissions
-        if has_permission('admin.permissions.view') or has_permission('admin.permissions.edit'):
+        # Check if user has ANY admin.* permissions (permission-based access)
+        user_perms = get_user_permission_keys(str(current_user.id))
+        has_any_admin_permission = any(perm.startswith('admin.') for perm in user_perms)
+        
+        if has_any_admin_permission:
             return f(*args, **kwargs)
         
         # Access denied
         if is_ajax:
-            return jsonify({'success': False, 'error': 'هذه الصفحة مخصصة للمدير العام فقط'}), 403
-        flash('هذه الصفحة مخصصة للمدير العام فقط', 'error')
+            return jsonify({'success': False, 'error': 'ليس لديك صلاحية للوصول إلى هذه الصفحة'}), 403
+        flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
         return redirect(url_for('main.dashboard'))
     
     return decorated_function
