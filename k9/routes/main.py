@@ -1589,7 +1589,20 @@ def project_add():
                 # Find the employee profile for project manager
                 employee = Employee.query.get(manager_id)
                 current_app.logger.error(f"Employee found: {employee}")
-                if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
+                
+                # Check if employee is a valid project manager:
+                # Either has EmployeeRole.PROJECT_MANAGER OR is linked to a User with UserRole.PROJECT_MANAGER
+                is_valid_pm = False
+                if employee:
+                    if employee.role == EmployeeRole.PROJECT_MANAGER:
+                        is_valid_pm = True
+                    else:
+                        # Check if linked to a User with PROJECT_MANAGER role
+                        pm_user = User.query.filter_by(employee_id=employee.id, role=UserRole.PROJECT_MANAGER).first()
+                        if pm_user:
+                            is_valid_pm = True
+                
+                if is_valid_pm:
                     # Validate one-project-per-manager constraint
                     can_assign, error_msg = validate_project_manager_assignment(employee.id, project)
                     if not can_assign:
@@ -1618,14 +1631,30 @@ def project_add():
     
     # Get available data for the form
     if current_user.role == UserRole.GENERAL_ADMIN:
-        # Get only project managers who are NOT assigned to any active/planned projects
+        # Get employees who are linked to Users with PROJECT_MANAGER role
+        # OR employees with EmployeeRole.PROJECT_MANAGER
+        # AND are NOT already assigned to any active/planned projects
         subquery = db.session.query(Project.project_manager_id).filter(
-            Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED])
+            Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED]),
+            Project.project_manager_id.isnot(None)
         ).subquery()
         
+        # Find employees linked to users with PROJECT_MANAGER role
+        pm_user_employees = db.session.query(User.employee_id).filter(
+            User.role == UserRole.PROJECT_MANAGER,
+            User.employee_id.isnot(None)
+        ).subquery()
+        
+        # Get employees that are either:
+        # 1. Linked to a User with PROJECT_MANAGER role, OR
+        # 2. Have EmployeeRole.PROJECT_MANAGER
+        # AND are active AND not already assigned to active/planned projects
         managers = Employee.query.filter(
-            Employee.role == EmployeeRole.PROJECT_MANAGER,
             Employee.is_active == True,
+            db.or_(
+                Employee.id.in_(db.session.query(pm_user_employees.c.employee_id)),
+                Employee.role == EmployeeRole.PROJECT_MANAGER
+            ),
             ~Employee.id.in_(db.session.query(subquery.c.project_manager_id))
         ).all()
     else:
@@ -1662,7 +1691,18 @@ def project_edit(project_id):
                 manager_id = request.form.get('manager_id')
                 if manager_id:
                     employee = Employee.query.get(manager_id)
-                    if employee and employee.role == EmployeeRole.PROJECT_MANAGER:
+                    # Check if employee is a valid project manager
+                    is_valid_pm = False
+                    if employee:
+                        if employee.role == EmployeeRole.PROJECT_MANAGER:
+                            is_valid_pm = True
+                        else:
+                            # Check if linked to a User with PROJECT_MANAGER role
+                            pm_user = User.query.filter_by(employee_id=employee.id, role=UserRole.PROJECT_MANAGER).first()
+                            if pm_user:
+                                is_valid_pm = True
+                    
+                    if is_valid_pm:
                         # Validate one-project-per-manager constraint
                         can_assign, error_msg = validate_project_manager_assignment(employee.id, project)
                         if not can_assign:
@@ -1693,16 +1733,30 @@ def project_edit(project_id):
         # OR the current project manager
         subquery = db.session.query(Project.project_manager_id).filter(
             Project.status.in_([ProjectStatus.ACTIVE, ProjectStatus.PLANNED]),
-            Project.id != project.id  # Exclude current project
+            Project.id != project.id,  # Exclude current project
+            Project.project_manager_id.isnot(None)
         ).subquery()
         
+        # Find employees linked to users with PROJECT_MANAGER role
+        pm_user_employees = db.session.query(User.employee_id).filter(
+            User.role == UserRole.PROJECT_MANAGER,
+            User.employee_id.isnot(None)
+        ).subquery()
+        
+        # Get employees that are either:
+        # 1. Linked to a User with PROJECT_MANAGER role, OR
+        # 2. Have EmployeeRole.PROJECT_MANAGER
+        # AND are active AND not already assigned to active/planned projects
         managers = Employee.query.filter(
-            Employee.role == EmployeeRole.PROJECT_MANAGER,
             Employee.is_active == True,
+            db.or_(
+                Employee.id.in_(db.session.query(pm_user_employees.c.employee_id)),
+                Employee.role == EmployeeRole.PROJECT_MANAGER
+            ),
             ~Employee.id.in_(db.session.query(subquery.c.project_manager_id))
         ).all()
         
-        # Add current project manager if exists
+        # Add current project manager if exists and not in list
         if project.project_manager and project.project_manager not in managers:
             managers.insert(0, project.project_manager)
     else:
