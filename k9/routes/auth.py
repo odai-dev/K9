@@ -106,8 +106,11 @@ def login():
         user.last_login = datetime.utcnow()
         db.session.commit()
         
-        # Clear pending session
+        # Clear ALL stale session data from previous logins
+        # This prevents redirect loops when different user types login
         session.pop('pending_user_id', None)
+        session.pop('pending_mode_selection', None)
+        session.pop('admin_mode', None)
         
         # Load user permissions into session using NEW permission system
         from k9.utils.permissions_new import load_user_permissions
