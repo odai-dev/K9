@@ -265,6 +265,7 @@
                             <li><h6 class="dropdown-header">{{ current_user.full_name or current_user.username }}</h6></li>
                             <li><span class="dropdown-item-text small text-muted">مدير المشروع</span></li>
                             <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.user_permissions_dashboard') }}"><i class="fas fa-shield-alt me-2"></i>صلاحياتي</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('mfa.change_password') }}"><i class="fas fa-key me-2"></i>تغيير كلمة المرور</a></li>
                             {% if current_user.mfa_enabled %}
                             <li><a class="dropdown-item" href="{{ url_for('mfa.status') }}"><i class="fas fa-shield-alt me-2"></i>إدارة MFA</a></li>

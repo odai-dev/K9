@@ -1,0 +1,430 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة التحكم - {{ current_user.username }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.user-header {
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.user-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+}
+
+.permission-category-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.permission-category-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.category-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.category-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    margin-left: 1rem;
+}
+
+.category-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0;
+}
+
+.category-count {
+    background: #edf2f7;
+    color: #4a5568;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.permission-list {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.permission-item {
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background-color 0.15s ease;
+}
+
+.permission-item:last-child {
+    border-bottom: none;
+}
+
+.permission-item:hover {
+    background-color: #f8fafc;
+}
+
+.permission-info {
+    display: flex;
+    align-items: center;
+}
+
+.permission-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    margin-left: 0.75rem;
+}
+
+.permission-name {
+    font-weight: 500;
+    color: #2d3748;
+    font-size: 0.95rem;
+}
+
+.permission-key {
+    font-size: 0.75rem;
+    color: #a0aec0;
+    font-family: monospace;
+    direction: ltr;
+}
+
+.permission-action {
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.permission-action:hover {
+    transform: scale(1.02);
+}
+
+.btn-access {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+}
+
+.btn-access:hover {
+    color: white;
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+}
+
+.stats-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    flex: 1;
+    min-width: 150px;
+    background: white;
+    border-radius: 12px;
+    padding: 1.25rem;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a365d;
+}
+
+.stat-label {
+    color: #718096;
+    font-size: 0.9rem;
+}
+
+.quick-access-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.quick-access-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    text-decoration: none;
+    color: #2d3748;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.quick-access-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    border-color: #1a365d;
+    color: #1a365d;
+}
+
+.quick-access-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.quick-access-title {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.no-permissions {
+    text-align: center;
+    padding: 3rem;
+    color: #718096;
+}
+
+.no-permissions i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.category-dogs { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+.category-employees { background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); color: white; }
+.category-training { background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%); color: white; }
+.category-veterinary { background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); color: white; }
+.category-breeding { background: linear-gradient(135deg, #ed64a6 0%, #d53f8c 100%); color: white; }
+.category-production { background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%); color: white; }
+.category-reports { background: linear-gradient(135deg, #38b2ac 0%, #319795 100%); color: white; }
+.category-admin { background: linear-gradient(135deg, #fc8181 0%, #f56565 100%); color: white; }
+.category-pm { background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%); color: white; }
+.category-schedule { background: linear-gradient(135deg, #63b3ed 0%, #4299e1 100%); color: white; }
+.category-incidents { background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%); color: white; }
+.category-tasks { background: linear-gradient(135deg, #68d391 0%, #48bb78 100%); color: white; }
+.category-notifications { background: linear-gradient(135deg, #fbb6ce 0%, #ed64a6 100%); color: white; }
+.category-accounts { background: linear-gradient(135deg, #b794f4 0%, #9f7aea 100%); color: white; }
+.category-projects { background: linear-gradient(135deg, #90cdf4 0%, #63b3ed 100%); color: white; }
+.category-shifts { background: linear-gradient(135deg, #fbd38d 0%, #f6ad55 100%); color: white; }
+.category-handler_reports { background: linear-gradient(135deg, #81e6d9 0%, #4fd1c5 100%); color: white; }
+.category-supervisor { background: linear-gradient(135deg, #c6f6d5 0%, #9ae6b4 100%); color: #2d3748; }
+
+.icon-view { background: #e6fffa; color: #38b2ac; }
+.icon-create { background: #c6f6d5; color: #38a169; }
+.icon-edit { background: #fef3c7; color: #d69e2e; }
+.icon-delete { background: #fed7d7; color: #e53e3e; }
+.icon-export { background: #e9d8fd; color: #805ad5; }
+.icon-approve { background: #bee3f8; color: #3182ce; }
+.icon-assign { background: #feebc8; color: #dd6b20; }
+.icon-submit { background: #c6f6d5; color: #48bb78; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="user-header">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+            <div class="col">
+                <h2 class="mb-1">مرحباً، {{ current_user.username }}</h2>
+                <p class="mb-0 opacity-75">
+                    <i class="fas fa-shield-alt me-1"></i>
+                    لديك {{ user_permissions|length }} صلاحية في {{ categories|length }} فئة
+                </p>
+            </div>
+            <div class="col-auto">
+                <a href="{{ url_for('main.index') }}" class="btn btn-light">
+                    <i class="fas fa-home me-1"></i>الصفحة الرئيسية
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-number">{{ user_permissions|length }}</div>
+            <div class="stat-label">إجمالي الصلاحيات</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ categories|length }}</div>
+            <div class="stat-label">الفئات</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ view_count }}</div>
+            <div class="stat-label">صلاحيات العرض</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ edit_count }}</div>
+            <div class="stat-label">صلاحيات التعديل</div>
+        </div>
+    </div>
+
+    {% if quick_access %}
+    <h4 class="mb-3"><i class="fas fa-bolt me-2 text-warning"></i>الوصول السريع</h4>
+    <div class="quick-access-grid">
+        {% for item in quick_access %}
+        <a href="{{ item.url }}" class="quick-access-card">
+            <div class="quick-access-icon {{ item.color }}">
+                <i class="{{ item.icon }}"></i>
+            </div>
+            <div class="quick-access-title">{{ item.title }}</div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <h4 class="mb-3"><i class="fas fa-key me-2 text-primary"></i>الصلاحيات حسب الفئة</h4>
+    
+    {% if permissions_by_category %}
+    <div class="row">
+        {% for category, permissions in permissions_by_category.items() %}
+        <div class="col-lg-6 col-xl-4">
+            <div class="permission-category-card">
+                <div class="category-header">
+                    <div class="d-flex align-items-center">
+                        <div class="category-icon category-{{ category.split('.')[0] }}">
+                            {% if 'dogs' in category %}
+                            <i class="fas fa-dog"></i>
+                            {% elif 'employees' in category %}
+                            <i class="fas fa-users"></i>
+                            {% elif 'training' in category %}
+                            <i class="fas fa-graduation-cap"></i>
+                            {% elif 'veterinary' in category %}
+                            <i class="fas fa-stethoscope"></i>
+                            {% elif 'breeding' in category %}
+                            <i class="fas fa-paw"></i>
+                            {% elif 'production' in category %}
+                            <i class="fas fa-baby"></i>
+                            {% elif 'admin' in category %}
+                            <i class="fas fa-user-shield"></i>
+                            {% elif 'pm' in category %}
+                            <i class="fas fa-project-diagram"></i>
+                            {% elif 'schedule' in category %}
+                            <i class="fas fa-calendar-alt"></i>
+                            {% elif 'incidents' in category %}
+                            <i class="fas fa-exclamation-triangle"></i>
+                            {% elif 'tasks' in category %}
+                            <i class="fas fa-tasks"></i>
+                            {% elif 'notifications' in category %}
+                            <i class="fas fa-bell"></i>
+                            {% elif 'accounts' in category %}
+                            <i class="fas fa-user-cog"></i>
+                            {% elif 'projects' in category %}
+                            <i class="fas fa-building"></i>
+                            {% elif 'shifts' in category %}
+                            <i class="fas fa-clock"></i>
+                            {% elif 'handler' in category %}
+                            <i class="fas fa-file-alt"></i>
+                            {% elif 'supervisor' in category %}
+                            <i class="fas fa-user-tie"></i>
+                            {% elif 'caretaker' in category %}
+                            <i class="fas fa-hand-holding-heart"></i>
+                            {% elif 'attendance' in category %}
+                            <i class="fas fa-clipboard-check"></i>
+                            {% elif 'reports' in category %}
+                            <i class="fas fa-chart-bar"></i>
+                            {% else %}
+                            <i class="fas fa-key"></i>
+                            {% endif %}
+                        </div>
+                        <h5 class="category-title">{{ category_names.get(category, category) }}</h5>
+                    </div>
+                    <span class="category-count">{{ permissions|length }}</span>
+                </div>
+                <ul class="permission-list">
+                    {% for perm in permissions %}
+                    <li class="permission-item">
+                        <div class="permission-info">
+                            <div class="permission-icon 
+                                {% if 'view' in perm.key %}icon-view
+                                {% elif 'create' in perm.key %}icon-create
+                                {% elif 'edit' in perm.key %}icon-edit
+                                {% elif 'delete' in perm.key %}icon-delete
+                                {% elif 'export' in perm.key %}icon-export
+                                {% elif 'approve' in perm.key %}icon-approve
+                                {% elif 'assign' in perm.key %}icon-assign
+                                {% elif 'submit' in perm.key %}icon-submit
+                                {% else %}icon-view{% endif %}">
+                                {% if 'view' in perm.key %}
+                                <i class="fas fa-eye"></i>
+                                {% elif 'create' in perm.key %}
+                                <i class="fas fa-plus"></i>
+                                {% elif 'edit' in perm.key %}
+                                <i class="fas fa-edit"></i>
+                                {% elif 'delete' in perm.key %}
+                                <i class="fas fa-trash"></i>
+                                {% elif 'export' in perm.key %}
+                                <i class="fas fa-file-export"></i>
+                                {% elif 'approve' in perm.key %}
+                                <i class="fas fa-check-circle"></i>
+                                {% elif 'assign' in perm.key %}
+                                <i class="fas fa-user-plus"></i>
+                                {% elif 'submit' in perm.key %}
+                                <i class="fas fa-paper-plane"></i>
+                                {% else %}
+                                <i class="fas fa-key"></i>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <div class="permission-name">{{ perm.name_ar }}</div>
+                                <div class="permission-key">{{ perm.key }}</div>
+                            </div>
+                        </div>
+                        {% if perm.url %}
+                        <a href="{{ perm.url }}" class="permission-action btn-access">
+                            <i class="fas fa-external-link-alt me-1"></i>الوصول
+                        </a>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-permissions">
+        <i class="fas fa-lock"></i>
+        <h4>لا توجد صلاحيات</h4>
+        <p>لم يتم تعيين أي صلاحيات لحسابك بعد. يرجى التواصل مع المدير العام.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
