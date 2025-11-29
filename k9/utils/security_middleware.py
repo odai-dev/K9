@@ -35,15 +35,42 @@ class SecurityMiddleware:
         if self._is_request_too_large():
             abort(413)  # Request Entity Too Large
         
-        # DISABLED: Admin mode selection enforcement moved to dashboard route only
-        # This prevents redirect loops for non-admin users
-        # The select-mode redirect is now handled in main.dashboard route
-        pass
+        # CRITICAL: Clean up stale session data to prevent redirect loops
+        # This runs on EVERY request to ensure sessions are always clean
+        self._cleanup_stale_session()
         
         # Set security context
         g.request_start_time = datetime.utcnow()
         g.client_ip = self._get_client_ip()
         g.user_agent = request.headers.get('User-Agent', '')
+    
+    def _cleanup_stale_session(self):
+        """Clean up stale session data to prevent redirect loops.
+        
+        This is called on EVERY request to ensure sessions are always clean,
+        regardless of how they got into a bad state (old cookies, server restart, etc).
+        """
+        from flask import session
+        from flask_login import current_user
+        from k9.models.models import UserRole
+        
+        # Skip cleanup for non-authenticated users
+        if not current_user.is_authenticated:
+            # Clear any session flags that require authentication
+            if session.get('pending_mode_selection') or session.get('pending_user_id') or session.get('admin_mode'):
+                session.pop('pending_mode_selection', None)
+                session.pop('pending_user_id', None)
+                session.pop('admin_mode', None)
+            return
+        
+        # For non-GENERAL_ADMIN users, ALWAYS clear admin-related session flags
+        # These flags are ONLY for GENERAL_ADMIN users
+        if not hasattr(current_user, 'role') or current_user.role != UserRole.GENERAL_ADMIN:
+            if session.get('pending_mode_selection') or session.get('admin_mode'):
+                current_app.logger.info(f"Clearing stale admin session flags for non-admin user: {current_user.username}")
+                session.pop('pending_mode_selection', None)
+                session.pop('pending_user_id', None)
+                session.pop('admin_mode', None)
     
     def _enforce_admin_mode_selection(self):
         """Enforce that GENERAL_ADMIN users with pending mode selection go to select-mode page."""
