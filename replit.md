@@ -13,6 +13,7 @@ Preferred communication style: Simple, everyday language.
 - **Styling**: Custom CSS optimized for RTL layouts and comprehensive dark mode support with toggle.
 - **Fonts**: Google Fonts, specifically Noto Sans Arabic, for appropriate Arabic text rendering.
 - **Responsiveness**: Mobile-first design approach ensuring full responsiveness across all device types.
+- **Unified Header Design**: Modern gradient hero headers with quick navigation bars across all user roles (Admin, PM, Handler), featuring animated buttons, user dropdowns, and consistent design language.
 
 ### Technical Implementations
 - **Backend Framework**: Flask (Python) utilizing a modular Blueprint structure.
