@@ -79,34 +79,102 @@ def get_dogs():
         return jsonify({'error': 'Unauthorized'}), 403
     
     try:
+        from k9.models.models import project_dog_assignment, ProjectAssignment, DogStatus, User, UserRole
+        
         # Get optional project_id parameter
         project_id = request.args.get('project_id')
         
         if project_id:
-            # Filter dogs by specific project
-            from k9.models.models import project_dog_assignment
-            dogs = db.session.query(Dog).join(
+            # Filter dogs by specific project using multiple methods
+            all_dogs_set = {}
+            
+            # Method 1: Dogs assigned via ProjectAssignment model (recommended)
+            project_assignments = ProjectAssignment.query.filter_by(
+                project_id=project_id,
+                is_active=True
+            ).filter(
+                ProjectAssignment.dog_id.isnot(None)
+            ).all()
+            assignment_dog_ids = [pa.dog_id for pa in project_assignments]
+            if assignment_dog_ids:
+                for dog in Dog.query.filter(Dog.id.in_(assignment_dog_ids)).all():
+                    if dog.current_status in [DogStatus.ACTIVE, DogStatus.TRAINING]:
+                        all_dogs_set[str(dog.id)] = dog
+            
+            # Method 2: Dogs assigned via legacy many-to-many relationship
+            legacy_dogs = db.session.query(Dog).join(
                 project_dog_assignment
             ).filter(
-                Dog.current_status.in_(['ACTIVE', 'TRAINING']),
                 project_dog_assignment.c.project_id == project_id
             ).all()
+            for dog in legacy_dogs:
+                if dog.current_status in [DogStatus.ACTIVE, DogStatus.TRAINING]:
+                    all_dogs_set[str(dog.id)] = dog
+            
+            # Method 3: Dogs assigned to handlers who are in this project
+            handlers_in_project = User.query.filter_by(
+                role=UserRole.HANDLER,
+                project_id=project_id
+            ).all()
+            handler_ids = [h.id for h in handlers_in_project]
+            if handler_ids:
+                handler_dogs = Dog.query.filter(
+                    Dog.assigned_to_user_id.in_(handler_ids)
+                ).all()
+                for dog in handler_dogs:
+                    if dog.current_status in [DogStatus.ACTIVE, DogStatus.TRAINING]:
+                        all_dogs_set[str(dog.id)] = dog
+            
+            # Method 4: Include unassigned dogs as available options
+            unassigned_dogs = Dog.query.filter(
+                Dog.assigned_to_user_id.is_(None)
+            ).all()
+            for dog in unassigned_dogs:
+                if dog.current_status in [DogStatus.ACTIVE, DogStatus.TRAINING]:
+                    all_dogs_set[str(dog.id)] = dog
+            
+            dogs = list(all_dogs_set.values())
         else:
             # No project filter - apply role-based filtering
             if current_user.role.value == "GENERAL_ADMIN":
                 dogs = db.session.query(Dog).filter(
-                    Dog.current_status.in_(['ACTIVE', 'TRAINING'])
+                    Dog.current_status.in_([DogStatus.ACTIVE, DogStatus.TRAINING])
                 ).all()
             else:
-                # PROJECT_MANAGER - get dogs assigned to their projects
-                from k9.models.models import project_dog_assignment
-                dogs = db.session.query(Dog).join(
-                    project_dog_assignment
-                ).join(Project).filter(
-                    Dog.current_status.in_(['ACTIVE', 'TRAINING']),
-                    Project.manager_id == current_user.id
-                ).all()
+                # PROJECT_MANAGER - get dogs assigned to their projects via multiple methods
+                all_dogs_set = {}
+                
+                # Get PM's project IDs
+                pm_projects = Project.query.filter_by(manager_id=current_user.id).all()
+                pm_project_ids = [p.id for p in pm_projects]
+                
+                if pm_project_ids:
+                    # Method 1: Via ProjectAssignment
+                    for proj_id in pm_project_ids:
+                        project_assignments = ProjectAssignment.query.filter_by(
+                            project_id=proj_id,
+                            is_active=True
+                        ).filter(
+                            ProjectAssignment.dog_id.isnot(None)
+                        ).all()
+                        for pa in project_assignments:
+                            dog = Dog.query.get(pa.dog_id)
+                            if dog and dog.current_status in [DogStatus.ACTIVE, DogStatus.TRAINING]:
+                                all_dogs_set[str(dog.id)] = dog
+                    
+                    # Method 2: Via legacy many-to-many
+                    legacy_dogs = db.session.query(Dog).join(
+                        project_dog_assignment
+                    ).filter(
+                        project_dog_assignment.c.project_id.in_(pm_project_ids)
+                    ).all()
+                    for dog in legacy_dogs:
+                        if dog.current_status in [DogStatus.ACTIVE, DogStatus.TRAINING]:
+                            all_dogs_set[str(dog.id)] = dog
+                
+                dogs = list(all_dogs_set.values())
         
+        # Return array directly for backwards compatibility with JS files
         return jsonify([{
             'id': str(dog.id),
             'name': dog.name,
@@ -114,6 +182,8 @@ def get_dogs():
         } for dog in dogs])
         
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/dogs/accessible')
@@ -122,39 +192,85 @@ def get_dogs():
 def get_accessible_dogs():
     """Get list of accessible dogs and projects for breeding forms"""
     try:
+        from k9.models.models import project_dog_assignment, ProjectAssignment, DogStatus, User, UserRole
+        
         # GENERAL_ADMIN sees all dogs, PROJECT_MANAGER sees assigned dogs
         if current_user.role.value == "GENERAL_ADMIN":
             dogs = db.session.query(Dog).filter(
-                Dog.current_status.in_(['ACTIVE', 'TRAINING'])
+                Dog.current_status.in_([DogStatus.ACTIVE, DogStatus.TRAINING])
             ).all()
             projects = db.session.query(Project).filter(
                 Project.status.in_(['PLANNED', 'ACTIVE'])
             ).all()
         else:
-            # PROJECT_MANAGER - get dogs assigned to their projects
-            from k9.models.models import project_dog_assignment
-            dogs = db.session.query(Dog).join(
-                project_dog_assignment
-            ).join(Project).filter(
-                Dog.current_status.in_(['ACTIVE', 'TRAINING']),
-                Project.manager_id == current_user.id
-            ).all()
+            # PROJECT_MANAGER - get dogs assigned to their projects via multiple methods
+            all_dogs_set = {}
             
-            # Get assigned projects
-            projects = db.session.query(Project).filter(
-                Project.status.in_(['PLANNED', 'ACTIVE']),
-                Project.manager_id == current_user.id
-            ).all()
+            # Get PM's project IDs
+            pm_projects = Project.query.filter_by(manager_id=current_user.id).all()
+            pm_project_ids = [p.id for p in pm_projects]
+            
+            if pm_project_ids:
+                # Method 1: Via ProjectAssignment
+                for proj_id in pm_project_ids:
+                    project_assignments = ProjectAssignment.query.filter_by(
+                        project_id=proj_id,
+                        is_active=True
+                    ).filter(
+                        ProjectAssignment.dog_id.isnot(None)
+                    ).all()
+                    for pa in project_assignments:
+                        dog = Dog.query.get(pa.dog_id)
+                        if dog and dog.current_status in [DogStatus.ACTIVE, DogStatus.TRAINING]:
+                            all_dogs_set[str(dog.id)] = dog
+                
+                # Method 2: Via legacy many-to-many
+                legacy_dogs = db.session.query(Dog).join(
+                    project_dog_assignment
+                ).filter(
+                    project_dog_assignment.c.project_id.in_(pm_project_ids)
+                ).all()
+                for dog in legacy_dogs:
+                    if dog.current_status in [DogStatus.ACTIVE, DogStatus.TRAINING]:
+                        all_dogs_set[str(dog.id)] = dog
+                
+                # Method 3: Dogs assigned to handlers who are in these projects
+                for proj_id in pm_project_ids:
+                    handlers_in_project = User.query.filter_by(
+                        role=UserRole.HANDLER,
+                        project_id=proj_id
+                    ).all()
+                    handler_ids = [h.id for h in handlers_in_project]
+                    if handler_ids:
+                        handler_dogs = Dog.query.filter(
+                            Dog.assigned_to_user_id.in_(handler_ids)
+                        ).all()
+                        for dog in handler_dogs:
+                            if dog.current_status in [DogStatus.ACTIVE, DogStatus.TRAINING]:
+                                all_dogs_set[str(dog.id)] = dog
+            
+            dogs = list(all_dogs_set.values())
+            projects = pm_projects
         
-        # Get project assignments for dogs
+        # Get project assignments for dogs using both methods
         dog_projects = {}
         if dogs:
-            from k9.models.models import project_dog_assignment
-            assignments = db.session.query(project_dog_assignment).all()
-            for assignment in assignments:
+            # From ProjectAssignment
+            for dog in dogs:
+                assignments = ProjectAssignment.query.filter_by(
+                    dog_id=dog.id,
+                    is_active=True
+                ).all()
+                if assignments:
+                    dog_projects[dog.id] = [a.project_id for a in assignments]
+            
+            # From legacy many-to-many
+            legacy_assignments = db.session.query(project_dog_assignment).all()
+            for assignment in legacy_assignments:
                 if assignment.dog_id not in dog_projects:
                     dog_projects[assignment.dog_id] = []
-                dog_projects[assignment.dog_id].append(assignment.project_id)
+                if assignment.project_id not in dog_projects.get(assignment.dog_id, []):
+                    dog_projects[assignment.dog_id].append(assignment.project_id)
 
         return jsonify({
             'dogs': [{
