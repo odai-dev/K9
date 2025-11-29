@@ -1,8 +1,14 @@
-{% extends "base.html" %}
+{% extends "handler/base_handler.html" %}
 
 {% block title %}إنشاء تقرير جديد{% endblock %}
 
-{% block extra_css %}
+{% block handler_title %}إنشاء تقرير يومي{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">تقرير جديد</li>
+{% endblock %}
+
+{% block handler_extra_css %}
 <style>
 .section-card {
     border-right: 4px solid #0d6efd;
@@ -37,7 +43,7 @@
 </style>
 {% endblock %}
 
-{% block content %}
+{% block handler_content %}
 <div class="row">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">

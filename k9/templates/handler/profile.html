@@ -1,8 +1,14 @@
-{% extends "base.html" %}
+{% extends "handler/base_handler.html" %}
 
 {% block title %}الملف الشخصي{% endblock %}
 
-{% block extra_css %}
+{% block handler_title %}الملف الشخصي{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">الملف الشخصي</li>
+{% endblock %}
+
+{% block handler_extra_css %}
 <style>
 .profile-container {
     max-width: 1000px;
@@ -133,7 +139,7 @@
 </style>
 {% endblock %}
 
-{% block content %}
+{% block handler_content %}
 <div class="container-fluid py-4">
     <div class="profile-container">
         <!-- Header with Photo -->

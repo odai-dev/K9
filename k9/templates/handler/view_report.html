@@ -1,8 +1,15 @@
-{% extends "base.html" %}
+{% extends "handler/base_handler.html" %}
 
 {% block title %}عرض التقرير - {{ report.date.strftime('%Y-%m-%d') }}{% endblock %}
 
-{% block extra_css %}
+{% block handler_title %}عرض التقرير{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('handler.my_reports') }}">تقاريري</a></li>
+<li class="breadcrumb-item active">عرض</li>
+{% endblock %}
+
+{% block handler_extra_css %}
 <style>
 .section-card {
     border-right: 4px solid #0d6efd;
@@ -74,7 +81,7 @@
 </style>
 {% endblock %}
 
-{% block content %}
+{% block handler_content %}
 <div class="row print-hide">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
