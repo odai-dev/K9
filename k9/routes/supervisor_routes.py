@@ -330,30 +330,48 @@ def get_handlers_by_project(project_id):
 @admin_or_pm_required
 def get_dogs_by_project(project_id):
     """API: الحصول على الكلاب حسب المشروع"""
-    if not has_permission("supervisor.general.access"):
-        return redirect("/unauthorized")
+    from k9.models.models import project_dog_assignment, DogStatus, ProjectAssignment
     
-    # Dogs are assigned to handlers, and handlers are assigned to projects
-    # Get all handlers in this project
+    # Get dogs assigned directly to this project via many-to-many relationship
+    project = Project.query.get(project_id)
+    if not project:
+        return jsonify({'dogs': []})
+    
+    # Method 1: Dogs assigned to project via ProjectAssignment model (recommended)
+    project_assignments = ProjectAssignment.query.filter_by(
+        project_id=project_id,
+        is_active=True
+    ).filter(
+        ProjectAssignment.dog_id.isnot(None)
+    ).all()
+    assignment_dog_ids = [pa.dog_id for pa in project_assignments]
+    assignment_dogs = Dog.query.filter(Dog.id.in_(assignment_dog_ids)).all() if assignment_dog_ids else []
+    
+    # Method 2: Dogs assigned via legacy many-to-many relationship
+    project_dogs = project.assigned_dogs if hasattr(project, 'assigned_dogs') else []
+    
+    # Method 3: Dogs assigned to handlers who are in this project
     handlers_in_project = User.query.filter_by(
         role=UserRole.HANDLER,
         project_id=project_id
     ).all()
-    
-    # Get dogs assigned to these handlers
     handler_ids = [h.id for h in handlers_in_project]
-    dogs = Dog.query.filter(
-        Dog.assigned_to_user_id.in_(handler_ids),
-        Dog.current_status == 'ACTIVE'
+    handler_dogs = Dog.query.filter(
+        Dog.assigned_to_user_id.in_(handler_ids)
     ).all() if handler_ids else []
     
-    # Also include dogs not assigned to anyone (available for assignment)
+    # Method 4: Unassigned dogs (available for any project)
     unassigned_dogs = Dog.query.filter(
-        Dog.assigned_to_user_id.is_(None),
-        Dog.current_status == 'ACTIVE'
+        Dog.assigned_to_user_id.is_(None)
     ).all()
     
-    all_dogs = dogs + unassigned_dogs
+    # Combine all dogs and remove duplicates, filter for ACTIVE status
+    all_dogs_set = {}
+    for dog in assignment_dogs + list(project_dogs) + handler_dogs + unassigned_dogs:
+        if dog.current_status == DogStatus.ACTIVE:
+            all_dogs_set[str(dog.id)] = dog
+    
+    all_dogs = list(all_dogs_set.values())
     
     return jsonify({
         'dogs': [
