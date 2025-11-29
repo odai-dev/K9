@@ -49,6 +49,240 @@ def unauthorized():
     """صفحة عدم التصريح"""
     return render_template('unauthorized.html'), 403
 
+@main_bp.route('/my-permissions')
+@login_required
+def user_permissions_dashboard():
+    """لوحة تحكم صلاحيات المستخدم - تعرض جميع الصلاحيات الممنوحة"""
+    from k9.models.permissions_new import Permission, UserPermission
+    from collections import defaultdict
+    
+    user_perms = db.session.query(Permission).join(
+        UserPermission, Permission.id == UserPermission.permission_id
+    ).filter(UserPermission.user_id == current_user.id).all()
+    
+    permissions_by_category = defaultdict(list)
+    for perm in user_perms:
+        perm_url = get_permission_url(perm.key)
+        perm_data = {
+            'key': perm.key,
+            'name_ar': perm.name_ar,
+            'description': perm.description,
+            'url': perm_url
+        }
+        permissions_by_category[perm.category].append(perm_data)
+    
+    category_names = {
+        'dogs': 'الكلاب',
+        'employees': 'الموظفين',
+        'training': 'التدريب',
+        'veterinary': 'الطب البيطري',
+        'breeding': 'التربية',
+        'production': 'الإنتاج',
+        'projects': 'المشاريع',
+        'admin': 'الإدارة',
+        'pm': 'مدير المشروع',
+        'schedule': 'الجداول',
+        'shifts': 'الورديات',
+        'incidents': 'الحوادث',
+        'tasks': 'المهام',
+        'notifications': 'الإشعارات',
+        'accounts': 'الحسابات',
+        'handler_reports': 'تقارير السائسين',
+        'supervisor': 'المشرف',
+        'reports.attendance': 'تقارير الحضور',
+        'reports.breeding.feeding': 'تقارير التغذية',
+        'reports.breeding.checkup': 'تقارير الفحص',
+        'reports.caretaker': 'تقارير العناية',
+        'reports.training': 'تقارير التدريب',
+        'reports.veterinary': 'التقارير البيطرية'
+    }
+    
+    view_count = sum(1 for p in user_perms if 'view' in p.key)
+    edit_count = sum(1 for p in user_perms if 'edit' in p.key or 'create' in p.key)
+    
+    quick_access = build_quick_access_items(user_perms)
+    
+    return render_template('user/dashboard.html',
+        user_permissions=user_perms,
+        permissions_by_category=dict(permissions_by_category),
+        categories=list(permissions_by_category.keys()),
+        category_names=category_names,
+        view_count=view_count,
+        edit_count=edit_count,
+        quick_access=quick_access
+    )
+
+def get_permission_url(permission_key):
+    """تحويل مفتاح الصلاحية إلى رابط مباشر"""
+    url_mapping = {
+        'dogs.view': 'main.dogs_list',
+        'dogs.create': 'main.dogs_add',
+        'employees.view': 'main.employees_list',
+        'employees.create': 'main.employees_add',
+        'training.view': 'main.training_list',
+        'veterinary.view': 'main.veterinary_list',
+        'breeding.view': 'main.breeding_training_activity',
+        'production.view': 'main.maturity_list',
+        'projects.view': 'main.projects_list',
+        'pm.dashboard': 'pm.dashboard',
+        'pm.dogs': 'pm.my_dogs',
+        'pm.team': 'pm.my_team',
+        'pm.approvals': 'pm.pending_approvals',
+        'admin.dashboard': 'admin.dashboard',
+        'admin.permissions.view': 'admin.comprehensive_permissions',
+        'schedule.view': 'handler_daily.schedules',
+        'reports.breeding.feeding.view': 'unified_feeding_reports_ui.feeding',
+        'reports.breeding.checkup.view': 'unified_checkup_reports_ui.checkup',
+        'reports.veterinary.view': 'veterinary_reports_ui.veterinary',
+        'reports.caretaker.view': 'caretaker_daily_reports_ui.caretaker_daily',
+        'reports.training.view': 'reports_training_trainer_daily_ui.trainer_daily',
+        'handler_reports.view': 'handler_daily.my_reports',
+    }
+    
+    endpoint = url_mapping.get(permission_key)
+    if endpoint:
+        try:
+            return url_for(endpoint)
+        except Exception:
+            return None
+    return None
+
+def build_quick_access_items(permissions):
+    """بناء قائمة الوصول السريع بناء على الصلاحيات"""
+    quick_items = []
+    perm_keys = [p.key for p in permissions]
+    
+    try:
+        if any(k in perm_keys for k in ['dogs.view', 'dogs.edit', 'pm.dogs']):
+            if 'dogs.view' in perm_keys:
+                quick_items.append({
+                    'title': 'الكلاب',
+                    'icon': 'fas fa-dog',
+                    'url': url_for('main.dogs_list'),
+                    'color': 'text-primary'
+                })
+            elif 'pm.dogs' in perm_keys:
+                quick_items.append({
+                    'title': 'كلاب المشروع',
+                    'icon': 'fas fa-dog',
+                    'url': url_for('pm.my_dogs'),
+                    'color': 'text-primary'
+                })
+    except Exception:
+        pass
+    
+    try:
+        if any(k in perm_keys for k in ['employees.view', 'employees.edit', 'pm.team']):
+            if 'employees.view' in perm_keys:
+                quick_items.append({
+                    'title': 'الموظفين',
+                    'icon': 'fas fa-users',
+                    'url': url_for('main.employees_list'),
+                    'color': 'text-success'
+                })
+            elif 'pm.team' in perm_keys:
+                quick_items.append({
+                    'title': 'فريق المشروع',
+                    'icon': 'fas fa-users',
+                    'url': url_for('pm.my_team'),
+                    'color': 'text-success'
+                })
+    except Exception:
+        pass
+    
+    try:
+        if any(k in perm_keys for k in ['pm.dashboard', 'pm.project']):
+            quick_items.append({
+                'title': 'لوحة مدير المشروع',
+                'icon': 'fas fa-project-diagram',
+                'url': url_for('pm.dashboard'),
+                'color': 'text-warning'
+            })
+    except Exception:
+        pass
+    
+    try:
+        if 'training.view' in perm_keys:
+            quick_items.append({
+                'title': 'التدريب',
+                'icon': 'fas fa-graduation-cap',
+                'url': url_for('main.training_list'),
+                'color': 'text-info'
+            })
+        elif 'reports.training.view' in perm_keys:
+            quick_items.append({
+                'title': 'تقارير التدريب',
+                'icon': 'fas fa-graduation-cap',
+                'url': url_for('reports_training_trainer_daily_ui.trainer_daily'),
+                'color': 'text-info'
+            })
+    except Exception:
+        pass
+    
+    try:
+        if 'veterinary.view' in perm_keys:
+            quick_items.append({
+                'title': 'الطب البيطري',
+                'icon': 'fas fa-stethoscope',
+                'url': url_for('main.veterinary_list'),
+                'color': 'text-danger'
+            })
+        elif 'reports.veterinary.view' in perm_keys:
+            quick_items.append({
+                'title': 'التقارير البيطرية',
+                'icon': 'fas fa-stethoscope',
+                'url': url_for('veterinary_reports_ui.veterinary'),
+                'color': 'text-danger'
+            })
+    except Exception:
+        pass
+    
+    try:
+        if 'reports.breeding.feeding.view' in perm_keys:
+            quick_items.append({
+                'title': 'تقارير التغذية',
+                'icon': 'fas fa-bone',
+                'url': url_for('unified_feeding_reports_ui.feeding'),
+                'color': 'text-pink'
+            })
+    except Exception:
+        pass
+    
+    try:
+        if 'reports.breeding.checkup.view' in perm_keys:
+            quick_items.append({
+                'title': 'تقارير الفحص',
+                'icon': 'fas fa-heartbeat',
+                'url': url_for('unified_checkup_reports_ui.checkup'),
+                'color': 'text-pink'
+            })
+    except Exception:
+        pass
+    
+    try:
+        if 'reports.caretaker.view' in perm_keys:
+            quick_items.append({
+                'title': 'تقارير المربي',
+                'icon': 'fas fa-hand-holding-heart',
+                'url': url_for('caretaker_daily_reports_ui.caretaker_daily'),
+                'color': 'text-success'
+            })
+    except Exception:
+        pass
+    
+    try:
+        if 'admin.dashboard' in perm_keys:
+            quick_items.append({
+                'title': 'لوحة المدير العام',
+                'icon': 'fas fa-user-shield',
+                'url': url_for('admin.dashboard'),
+                'color': 'text-dark'
+            })
+    except Exception:
+        pass
+    
+    return quick_items
+
 @main_bp.route('/dashboard')
 @login_required
 def dashboard():
