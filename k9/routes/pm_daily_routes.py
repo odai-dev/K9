@@ -17,7 +17,7 @@ bp = Blueprint('reports_attendance_pm_daily_ui', __name__)
 
 @bp.route('/pm-daily')
 @login_required
-@require_permission('reports:attendance:pm_daily:view')
+@require_permission('reports.attendance.view')
 def pm_daily():
     """
     PM Daily Report page

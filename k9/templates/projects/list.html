@@ -8,7 +8,7 @@
         <i class="fas fa-project-diagram me-2"></i>
         المشاريع
     </h1>
-    {% if has_permission('projects.management.create') %}
+    {% if has_permission('projects.create') %}
     <a href="{{ url_for('main.project_add') }}" class="btn btn-primary">
         <i class="fas fa-plus me-2"></i>
         إضافة مشروع جديد
@@ -122,7 +122,7 @@
     <i class="fas fa-project-diagram fa-5x text-muted mb-3"></i>
     <h3 class="text-muted">لا توجد مشاريع مسجلة</h3>
     <p class="text-muted">ابدأ بإضافة مشروع جديد</p>
-    {% if has_permission('projects.management.create') %}
+    {% if has_permission('projects.create') %}
     <a href="{{ url_for('main.project_add') }}" class="btn btn-primary">
         <i class="fas fa-plus me-2"></i>
         إضافة مشروع جديد
