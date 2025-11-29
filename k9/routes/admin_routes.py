@@ -328,8 +328,45 @@ def get_permissions_matrix(user_id, project_id):
         user = User.query.get_or_404(user_id)
         project = Project.query.get_or_404(project_id)
         
+        # Define role-specific permission categories
+        ROLE_PERMISSION_CATEGORIES = {
+            UserRole.HANDLER: [
+                'handlers', 'handler_reports', 'tasks', 'notifications', 'dogs', 'training',
+                'reports.training', 'reports.veterinary'
+            ],
+            UserRole.PROJECT_MANAGER: [
+                'pm', 'dogs', 'employees', 'projects', 'training', 'veterinary',
+                'breeding', 'production', 'incidents', 'schedule', 'shifts',
+                'handler_reports', 'supervisor', 'tasks', 'notifications',
+                'reports.attendance', 'reports.training', 'reports.veterinary',
+                'reports.breeding.feeding', 'reports.breeding.checkup', 'reports.caretaker'
+            ],
+            UserRole.TRAINER: [
+                'training', 'dogs', 'reports.training', 'tasks', 'notifications'
+            ],
+            UserRole.BREEDER: [
+                'breeding', 'production', 'dogs', 'reports.breeding.feeding',
+                'reports.breeding.checkup', 'reports.caretaker', 'tasks', 'notifications'
+            ],
+            UserRole.VET: [
+                'veterinary', 'dogs', 'reports.veterinary', 'tasks', 'notifications'
+            ],
+            UserRole.GENERAL_ADMIN: None  # Admin sees all permissions
+        }
+        
+        # Get allowed categories for this user's role
+        allowed_categories = ROLE_PERMISSION_CATEGORIES.get(user.role)
+        
         # Get all permissions grouped by category
         grouped_perms = get_all_permissions_grouped()
+        
+        # Filter permissions by role if not admin
+        if allowed_categories is not None:
+            filtered_perms = {}
+            for category, perms in grouped_perms.items():
+                if category in allowed_categories:
+                    filtered_perms[category] = perms
+            grouped_perms = filtered_perms
         
         # Get user's granted permissions
         user_perms = get_user_permission_keys(str(user.id))
