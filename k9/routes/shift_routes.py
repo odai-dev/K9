@@ -14,7 +14,7 @@ shift_bp = Blueprint('shift', __name__, url_prefix='/supervisor/shifts')
 
 @shift_bp.route('/')
 @login_required
-@require_permission('attendance.view')
+@require_permission('shifts.view')
 def index():
     """عرض جميع الورديات"""
     shifts = Shift.query.filter_by(is_active=True).order_by(Shift.start_time).all()
@@ -25,7 +25,7 @@ def index():
 
 @shift_bp.route('/create', methods=['GET', 'POST'])
 @login_required
-@require_permission('attendance.create')
+@require_permission('shifts.create')
 def create():
     """إنشاء وردية جديدة"""
     if request.method == 'POST':
@@ -92,7 +92,7 @@ def create():
 
 @shift_bp.route('/<shift_id>/edit', methods=['GET', 'POST'])
 @login_required
-@require_permission('attendance.edit')
+@require_permission('shifts.edit')
 def edit(shift_id):
     """تعديل وردية"""
     shift = Shift.query.get_or_404(shift_id)
@@ -162,7 +162,7 @@ def edit(shift_id):
 
 @shift_bp.route('/<shift_id>/delete', methods=['POST'])
 @login_required
-@require_permission('attendance.edit')
+@require_permission('shifts.edit')
 def delete(shift_id):
     """تعطيل وردية (soft delete)"""
     try:
@@ -203,7 +203,7 @@ def delete(shift_id):
 
 @shift_bp.route('/api/active')
 @login_required
-@require_permission('attendance.view')
+@require_permission('shifts.view')
 def api_active_shifts():
     """API لجلب الورديات النشطة (للاستخدام في النماذج)"""
     shifts = Shift.query.filter_by(is_active=True).order_by(Shift.start_time).all()
