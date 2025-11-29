@@ -392,7 +392,7 @@ def dogs_list():
 
 @main_bp.route('/dogs/add', methods=['GET', 'POST'])
 @login_required
-@require_permission('dogs.add')
+@require_permission('dogs.create')
 def dogs_add():
     # Get potential parents for dropdowns
     potential_parents = get_user_accessible_dogs(current_user)
@@ -984,7 +984,7 @@ def veterinary_add():
 @login_required
 @admin_or_pm_required
 def production_list():
-    if not has_permission("production.general.view"):
+    if not has_permission("production.view"):
         return redirect("/unauthorized")
     # Use permission-aware helper instead of role check
     all_dogs = get_user_accessible_dogs(current_user)
@@ -1012,7 +1012,7 @@ def production_list():
 @main_bp.route('/production/add', methods=['GET', 'POST'])
 @login_required
 def production_add():
-    if not has_permission("production.general.create"):
+    if not has_permission("production.create"):
         return redirect("/unauthorized")
     if request.method == 'POST':
         try:
@@ -1061,7 +1061,7 @@ def production_add():
 @login_required
 @admin_or_pm_required
 def maturity_list():
-    if not has_permission("production.maturity.list"):
+    if not has_permission("production.view"):
         return redirect("/unauthorized")
     from k9.models.models import DogMaturity
     
@@ -1083,7 +1083,7 @@ def maturity_list():
 @login_required
 @admin_or_pm_required
 def maturity_add():
-    if not has_permission("production.maturity.create"):
+    if not has_permission("production.create"):
         return redirect("/unauthorized")
     if request.method == 'POST':
         try:
@@ -1129,7 +1129,7 @@ def maturity_add():
 @login_required
 @admin_or_pm_required
 def heat_cycles_list():
-    if not has_permission("production.heat_cycles.list"):
+    if not has_permission("production.view"):
         return redirect("/unauthorized")
     from k9.models.models import HeatCycle
     
@@ -1151,7 +1151,7 @@ def heat_cycles_list():
 @login_required
 @admin_or_pm_required
 def heat_cycles_add():
-    if not has_permission("production.heat_cycles.create"):
+    if not has_permission("production.create"):
         return redirect("/unauthorized")
     if request.method == 'POST':
         try:
@@ -1203,7 +1203,7 @@ def heat_cycles_add():
 @login_required
 @admin_or_pm_required
 def mating_list():
-    if not has_permission("production.mating.list"):
+    if not has_permission("production.view"):
         return redirect("/unauthorized")
     from k9.models.models import MatingRecord
     
@@ -1227,7 +1227,7 @@ def mating_list():
 @login_required
 @admin_or_pm_required
 def mating_add():
-    if not has_permission("production.mating.create"):
+    if not has_permission("production.create"):
         return redirect("/unauthorized")
     if request.method == 'POST':
         try:
@@ -1292,7 +1292,7 @@ def mating_add():
 @login_required
 @admin_or_pm_required
 def pregnancy_list():
-    if not has_permission("production.pregnancy.list"):
+    if not has_permission("production.view"):
         return redirect("/unauthorized")
     from k9.models.models import PregnancyRecord
     
@@ -1314,7 +1314,7 @@ def pregnancy_list():
 @login_required
 @admin_or_pm_required
 def pregnancy_add():
-    if not has_permission("production.pregnancy.create"):
+    if not has_permission("production.create"):
         return redirect("/unauthorized")
     if request.method == 'POST':
         try:
@@ -1372,7 +1372,7 @@ def pregnancy_add():
 @login_required
 @admin_or_pm_required
 def delivery_list():
-    if not has_permission("production.delivery.list"):
+    if not has_permission("production.view"):
         return redirect("/unauthorized")
     from k9.models.models import DeliveryRecord
     try:
@@ -1399,7 +1399,7 @@ def delivery_list():
 @login_required
 @admin_or_pm_required
 def delivery_add():
-    if not has_permission("production.delivery.create"):
+    if not has_permission("production.create"):
         return redirect("/unauthorized")
     if request.method == 'POST':
         try:
@@ -1476,7 +1476,7 @@ def delivery_add():
 @login_required
 @admin_or_pm_required
 def puppies_list():
-    if not has_permission("production.puppies.list"):
+    if not has_permission("production.view"):
         return redirect("/unauthorized")
     from k9.models.models import PuppyRecord, DeliveryRecord
     try:
@@ -1503,7 +1503,7 @@ def puppies_list():
 @login_required
 @admin_or_pm_required
 def puppies_add():
-    if not has_permission("production.puppies.create"):
+    if not has_permission("production.create"):
         return redirect("/unauthorized")
     if request.method == 'POST':
         try:
@@ -1572,7 +1572,7 @@ def puppies_add():
 @main_bp.route('/production/maturity/view/<id>')
 @login_required
 def maturity_view(id):
-    if not has_permission("production.maturity.view"):
+    if not has_permission("production.view"):
         return redirect("/unauthorized")
     from k9.models.models import DogMaturity
     maturity = DogMaturity.query.get_or_404(id)
@@ -1589,7 +1589,7 @@ def maturity_view(id):
 @main_bp.route('/production/heat-cycles/view/<id>')
 @login_required
 def heat_cycles_view(id):
-    if not has_permission("production.heat_cycles.view"):
+    if not has_permission("production.view"):
         return redirect("/unauthorized")
     from k9.models.models import HeatCycle
     heat_cycle = HeatCycle.query.get_or_404(id)
@@ -1606,7 +1606,7 @@ def heat_cycles_view(id):
 @main_bp.route('/production/mating/view/<id>')
 @login_required
 def mating_view(id):
-    if not has_permission("production.mating.view"):
+    if not has_permission("production.view"):
         return redirect("/unauthorized")
     from k9.models.models import MatingRecord
     mating = MatingRecord.query.get_or_404(id)
@@ -1623,7 +1623,7 @@ def mating_view(id):
 @main_bp.route('/production/pregnancy/view/<id>')
 @login_required
 def pregnancy_view(id):
-    if not has_permission("production.pregnancy.view"):
+    if not has_permission("production.view"):
         return redirect("/unauthorized")
     from k9.models.models import PregnancyRecord
     pregnancy = PregnancyRecord.query.get_or_404(id)
@@ -1640,7 +1640,7 @@ def pregnancy_view(id):
 @main_bp.route('/production/delivery/view/<id>')
 @login_required
 def delivery_view(id):
-    if not has_permission("production.delivery.view"):
+    if not has_permission("production.view"):
         return redirect("/unauthorized")
     from k9.models.models import DeliveryRecord
     delivery = DeliveryRecord.query.get_or_404(id)
@@ -1657,7 +1657,7 @@ def delivery_view(id):
 @main_bp.route('/production/puppies/view/<id>')
 @login_required
 def puppies_view(id):
-    if not has_permission("production.puppies.view"):
+    if not has_permission("production.view"):
         return redirect("/unauthorized")
     from k9.models.models import PuppyRecord
     puppy = PuppyRecord.query.get_or_404(id)
@@ -1704,7 +1704,7 @@ def puppy_training_view(id):
 @main_bp.route('/production/puppy-training/add', methods=['GET', 'POST'])
 @login_required
 def puppy_training_add():
-    if not has_permission("training.sessions.create"):
+    if not has_permission("training.create"):
         return redirect("/unauthorized")
     if request.method == 'POST':
         # Create new puppy training record
@@ -3647,7 +3647,7 @@ from sqlalchemy.orm import joinedload
 @login_required
 def breeding_feeding_log():
     """Feeding Log main page (Arabic RTL)"""
-    if not has_permission("breeding.feeding_log.view"):
+    if not has_permission("breeding.view"):
         return redirect("/unauthorized")
     
     return render_template('breeding/feeding_log.html')
@@ -3656,7 +3656,7 @@ def breeding_feeding_log():
 @login_required
 def breeding_feeding_log_new():
     """Create new feeding log entry"""
-    if not has_permission("breeding.feeding_log.create"):
+    if not has_permission("breeding.create"):
         return redirect("/unauthorized")
     
     # Get available projects and dogs for dropdowns
@@ -3671,7 +3671,7 @@ def breeding_feeding_log_new():
 @login_required
 def breeding_feeding_log_edit(log_id):
     """Edit existing feeding log entry"""
-    if not has_permission("breeding.feeding_log.edit"):
+    if not has_permission("breeding.edit"):
         return redirect("/unauthorized")
     
     # Get the log entry with eager loading
@@ -3700,19 +3700,19 @@ def breeding_feeding_log_edit(log_id):
 # Daily Checkup Routes (Breeding Module)
 @main_bp.route('/breeding/checkup')
 @login_required
-@require_permission('breeding.checkup')
+@require_permission('breeding.view')
 def breeding_checkup():
     """List daily checkup records"""
-    if not has_permission("breeding.checkup.view"):
+    if not has_permission("breeding.view"):
         return redirect("/unauthorized")
     return render_template('breeding/checkup_list.html')
 
 @main_bp.route('/breeding/checkup/new')
 @login_required
-@require_permission('breeding.checkup')
+@require_permission('breeding.view')
 def breeding_checkup_new():
     """Create new daily checkup record"""
-    if not has_permission("breeding.checkup.create"):
+    if not has_permission("breeding.create"):
         return redirect("/unauthorized")
     # Get user's accessible projects and dogs
     if current_user.role == UserRole.GENERAL_ADMIN:
@@ -3755,10 +3755,10 @@ def breeding_checkup_new():
 
 @main_bp.route('/breeding/checkup/<id>/edit')
 @login_required
-@require_permission('breeding.checkup')
+@require_permission('breeding.view')
 def breeding_checkup_edit(id):
     """Edit daily checkup record"""
-    if not has_permission("breeding.checkup.edit"):
+    if not has_permission("breeding.edit"):
         return redirect("/unauthorized")
     checkup = DailyCheckupLog.query.get_or_404(id)
     
@@ -3812,19 +3812,19 @@ def breeding_checkup_edit(id):
 # Excretion Routes (Breeding Module)
 @main_bp.route('/breeding/excretion')
 @login_required
-@require_permission('breeding.excretion')
+@require_permission('breeding.view')
 def breeding_excretion():
     """List excretion logs"""
-    if not has_permission("breeding.excretion.view"):
+    if not has_permission("breeding.view"):
         return redirect("/unauthorized")
     return render_template('breeding/excretion_list.html')
 
 @main_bp.route('/breeding/excretion/new')
 @login_required
-@require_permission('breeding.excretion')
+@require_permission('breeding.view')
 def breeding_excretion_new():
     """Create new excretion log entry"""
-    if not has_permission("breeding.excretion.create"):
+    if not has_permission("breeding.create"):
         return redirect("/unauthorized")
     # Get user's accessible projects and dogs
     if current_user.role == UserRole.GENERAL_ADMIN:
@@ -3861,10 +3861,10 @@ def breeding_excretion_new():
 
 @main_bp.route('/breeding/excretion/<id>/edit')
 @login_required
-@require_permission('breeding.excretion')
+@require_permission('breeding.view')
 def breeding_excretion_edit(id):
     """Edit excretion log record"""
-    if not has_permission("breeding.excretion.edit"):
+    if not has_permission("breeding.edit"):
         return redirect("/unauthorized")
     excretion_log = ExcretionLog.query.get_or_404(id)
     
@@ -3912,7 +3912,7 @@ def breeding_excretion_edit(id):
 # API Routes for Excretion - DEPRECATED: Use api_excretion.py instead
 # @main_bp.route('/api/breeding/excretion/list')
 # @login_required
-# @require_permission('breeding.excretion')
+# @require_permission('breeding.view')
 def api_list_excretion_deprecated():
     """API endpoint for excretion logs list"""
     try:
@@ -4040,10 +4040,10 @@ def api_list_excretion_deprecated():
 
 @main_bp.route('/breeding/grooming')
 @login_required 
-@require_permission('breeding.grooming')
+@require_permission('breeding.view')
 def breeding_grooming():
     """Grooming care main page"""
-    if not has_permission("breeding.grooming.view"):
+    if not has_permission("breeding.view"):
         return redirect("/unauthorized")
     # Get projects accessible by user
     if current_user.role == UserRole.GENERAL_ADMIN:
@@ -4076,10 +4076,10 @@ def breeding_grooming():
 
 @main_bp.route('/breeding/grooming/new')
 @login_required
-@require_permission('breeding.grooming')
+@require_permission('breeding.view')
 def breeding_grooming_new():
     """Create new grooming log entry"""
-    if not has_permission("breeding.grooming.create"):
+    if not has_permission("breeding.create"):
         return redirect("/unauthorized")
     # Get projects accessible by user  
     if current_user.role == UserRole.GENERAL_ADMIN:
@@ -4117,10 +4117,10 @@ def breeding_grooming_new():
 
 @main_bp.route('/breeding/grooming/<id>/edit')
 @login_required
-@require_permission('breeding.grooming')
+@require_permission('breeding.view')
 def breeding_grooming_edit(id):
     """Edit existing grooming log entry"""
-    if not has_permission("breeding.grooming.edit"):
+    if not has_permission("breeding.edit"):
         return redirect("/unauthorized")
     grooming_log = GroomingLog.query.get_or_404(id)
     
@@ -4164,10 +4164,10 @@ def breeding_grooming_edit(id):
 # Cleaning Routes (Breeding Module)
 @main_bp.route('/breeding/cleaning')
 @login_required 
-@require_permission('breeding.cleaning')
+@require_permission('breeding.view')
 def cleaning_list():
     """Cleaning logs main page"""
-    if not has_permission("breeding.cleaning.view"):
+    if not has_permission("breeding.view"):
         return redirect("/unauthorized")
     # Get projects accessible by user
     if current_user.role == UserRole.GENERAL_ADMIN:
@@ -4184,10 +4184,10 @@ def cleaning_list():
 
 @main_bp.route('/breeding/cleaning/new')
 @login_required
-@require_permission('breeding.cleaning')
+@require_permission('breeding.view')
 def cleaning_new():
     """Create new cleaning log entry"""
-    if not has_permission("breeding.cleaning.create"):
+    if not has_permission("breeding.create"):
         return redirect("/unauthorized")
     # Get projects accessible by user  
     if current_user.role == UserRole.GENERAL_ADMIN:
@@ -4206,10 +4206,10 @@ def cleaning_new():
 
 @main_bp.route('/breeding/cleaning/<id>/edit')
 @login_required
-@require_permission('breeding.cleaning')
+@require_permission('breeding.view')
 def cleaning_edit(id):
     """Edit existing cleaning log entry"""
-    if not has_permission("breeding.cleaning.edit"):
+    if not has_permission("breeding.edit"):
         return redirect("/unauthorized")
     cleaning_log = CleaningLog.query.get_or_404(id)
     
@@ -4234,10 +4234,10 @@ def cleaning_edit(id):
 # Feeding Routes (Breeding Module)
 @main_bp.route('/breeding/feeding')
 @login_required 
-@require_permission('breeding.feeding')
+@require_permission('breeding.view')
 def breeding_feeding():
     """Feeding logs main page"""
-    if not has_permission("breeding.feeding.view"):
+    if not has_permission("breeding.view"):
         return redirect("/unauthorized")
     # Get projects accessible by user
     if current_user.role == UserRole.GENERAL_ADMIN:
@@ -4280,10 +4280,10 @@ def breeding_feeding():
 
 @main_bp.route('/breeding/feeding/new')
 @login_required
-@require_permission('breeding.feeding')
+@require_permission('breeding.view')
 def breeding_feeding_new():
     """Create new feeding log entry"""
-    if not has_permission("breeding.feeding.create"):
+    if not has_permission("breeding.create"):
         return redirect("/unauthorized")
     # Get projects accessible by user  
     if current_user.role == UserRole.GENERAL_ADMIN:
@@ -4328,10 +4328,10 @@ def breeding_feeding_new():
 
 @main_bp.route('/breeding/feeding/<id>/edit')
 @login_required
-@require_permission('breeding.feeding')
+@require_permission('breeding.view')
 def breeding_feeding_edit(id):
     """Edit existing feeding log entry"""
-    if not has_permission("breeding.feeding.edit"):
+    if not has_permission("breeding.edit"):
         return redirect("/unauthorized")
     feeding_log = FeedingLog.query.get_or_404(id)
     

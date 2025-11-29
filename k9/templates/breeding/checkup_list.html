@@ -10,7 +10,7 @@
                 <p class="text-muted">سجلات الفحص الصحي اليومي للكلاب</p>
             </div>
             <div>
-                {% if has_permission('breeding.checkup.create') %}
+                {% if has_permission('breeding.create') %}
                 <a href="{{ url_for('main.breeding_checkup_new') }}" class="btn btn-primary">
                     <i class="fas fa-plus"></i> إضافة فحص جديد
                 </a>
@@ -305,7 +305,7 @@ function updateTable(items) {
                 <td>${item.severity ? `<span class="badge bg-${getSeverityColor(item.severity)}">${item.severity}</span>` : '-'}</td>
                 <td>
                     <div class="btn-group btn-group-sm">
-                        {% if has_permission('breeding.checkup.edit') %}
+                        {% if has_permission('breeding.edit') %}
                         <a href="/breeding/checkup/${item.id}/edit" class="btn btn-outline-primary btn-sm" title="تعديل">
                             <i class="fas fa-edit"></i>
                         </a>
