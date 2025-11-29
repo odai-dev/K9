@@ -323,18 +323,18 @@ def dashboard():
         current_app.logger.info("Redirecting PROJECT_MANAGER to pm.dashboard")
         return redirect(url_for('pm.dashboard'))
     
-    # Check if user has any operational permissions (for other roles like HANDLER)
+    # HANDLER users ALWAYS go to handler dashboard (must check before user_sections to avoid redirect loop)
+    if current_user.role == UserRole.HANDLER:
+        current_app.logger.info("Redirecting HANDLER to handler.dashboard")
+        return redirect(url_for('handler.dashboard'))
+    
+    # Check if user has any operational permissions (for other roles like TRAINER, VET, etc.)
     user_sections = get_sections_for_user(current_user)
     
     # Users WITH permissions get PM dashboard
     if user_sections:
         current_app.logger.info(f"Redirecting user with sections to pm.dashboard: {user_sections}")
         return redirect(url_for('pm.dashboard'))
-    
-    # HANDLER users (and only HANDLER users) go to handler dashboard
-    if current_user.role == UserRole.HANDLER:
-        current_app.logger.info("Redirecting HANDLER to handler.dashboard")
-        return redirect(url_for('handler.dashboard'))
     
     # Fallback for any other role - go to PM dashboard to avoid redirect loops
     current_app.logger.info(f"Fallback redirect to pm.dashboard for role: {current_user.role}")
