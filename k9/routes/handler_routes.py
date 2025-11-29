@@ -28,9 +28,13 @@ def handler_required(f):
     """Decorator to require HANDLER role"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        from flask import current_app
+        current_app.logger.info(f"handler_required check: user={current_user.username if current_user.is_authenticated else 'anonymous'}, is_authenticated={current_user.is_authenticated}, role={current_user.role if current_user.is_authenticated else 'N/A'}")
         if not current_user.is_authenticated or current_user.role != UserRole.HANDLER:
+            current_app.logger.info(f"handler_required FAILED: redirecting to main.index")
             flash('هذه الصفحة متاحة للسائسين فقط', 'danger')
             return redirect(url_for('main.index'))
+        current_app.logger.info(f"handler_required PASSED for {current_user.username}")
         return f(*args, **kwargs)
     return decorated_function
 
@@ -195,9 +199,13 @@ def parse_shift_incidents_data(form_data, shift_report, request_obj):
 @handler_required
 def dashboard():
     """لوحة تحكم السائس"""
+    from flask import current_app
     from k9.models.models import Project
     from k9.models.models_handler_daily import ReportStatus, ShiftReport
     from dateutil.relativedelta import relativedelta
+    
+    # DEBUG: Log handler dashboard access
+    current_app.logger.info(f"Handler dashboard accessed by user: {current_user.username}, role: {current_user.role}")
     
     today = date.today()
     
