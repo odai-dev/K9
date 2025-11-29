@@ -18,7 +18,7 @@ schedule_bp = Blueprint('schedule', __name__, url_prefix='/schedule')
 
 @schedule_bp.route('/')
 @login_required
-@require_permission('attendance.view')
+@require_permission('schedule.view')
 def index():
     """عرض جميع الجداول"""
     # Get date range from query params
@@ -48,7 +48,7 @@ def index():
 
 @schedule_bp.route('/create', methods=['GET', 'POST'])
 @login_required
-@require_permission('attendance.create')
+@require_permission('schedule.create')
 def create():
     """إنشاء جدول يومي جديد"""
     if request.method == 'POST':
@@ -89,7 +89,7 @@ def create():
 
 @schedule_bp.route('/<schedule_id>/edit', methods=['GET', 'POST'])
 @login_required
-@require_permission('attendance.edit')
+@require_permission('schedule.edit')
 def edit(schedule_id):
     """تعديل الجدول اليومي"""
     schedule = DailySchedule.query.get_or_404(schedule_id)
@@ -173,7 +173,7 @@ def edit(schedule_id):
 
 @schedule_bp.route('/<schedule_id>')
 @login_required
-@require_permission('attendance.view')
+@require_permission('schedule.view')
 def view(schedule_id):
     """عرض الجدول اليومي"""
     schedule = DailySchedule.query.get_or_404(schedule_id)
@@ -185,7 +185,7 @@ def view(schedule_id):
 
 @schedule_bp.route('/<schedule_id>/item/<item_id>/delete', methods=['POST'])
 @login_required
-@require_permission('attendance.edit')
+@require_permission('schedule.edit')
 def delete_item(schedule_id, item_id):
     """حذف عنصر من الجدول"""
     schedule = DailySchedule.query.get_or_404(schedule_id)

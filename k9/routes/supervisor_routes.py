@@ -20,7 +20,7 @@ supervisor_bp = Blueprint('supervisor', __name__, url_prefix='/supervisor')
 
 @supervisor_bp.route('/schedules')
 @login_required
-@require_permission('attendance.view')
+@require_permission('schedule.view')
 def schedules_index():
     """قائمة الجداول اليومية"""
     page = request.args.get('page', 1, type=int)
@@ -72,7 +72,7 @@ def schedules_index():
 
 @supervisor_bp.route('/schedules/create', methods=['GET', 'POST'])
 @login_required
-@require_permission('attendance.create')
+@require_permission('schedule.create')
 def schedule_create():
     """إنشاء جدول يومي جديد"""
     if request.method == 'POST':
@@ -178,7 +178,7 @@ def schedule_create():
 
 @supervisor_bp.route('/schedules/<schedule_id>')
 @login_required
-@require_permission('attendance.view')
+@require_permission('schedule.view')
 def schedule_view(schedule_id):
     """عرض الجدول اليومي"""
     schedule = DailySchedule.query.get_or_404(schedule_id)
@@ -196,7 +196,7 @@ def schedule_view(schedule_id):
 
 @supervisor_bp.route('/schedules/<schedule_id>/lock', methods=['POST'])
 @login_required
-@require_permission('attendance.edit')
+@require_permission('schedule.edit')
 def schedule_lock(schedule_id):
     """قفل الجدول اليومي"""
     schedule = DailySchedule.query.get_or_404(schedule_id)
@@ -215,7 +215,7 @@ def schedule_lock(schedule_id):
 
 @supervisor_bp.route('/schedules/<schedule_id>/unlock', methods=['POST'])
 @login_required
-@require_permission('attendance.edit')
+@require_permission('schedule.edit')
 def schedule_unlock(schedule_id):
     """إلغاء قفل الجدول اليومي"""
     schedule = DailySchedule.query.get_or_404(schedule_id)
@@ -234,7 +234,7 @@ def schedule_unlock(schedule_id):
 
 @supervisor_bp.route('/schedules/<schedule_id>/delete', methods=['POST'])
 @login_required
-@require_permission('attendance.edit')
+@require_permission('schedule.edit')
 def schedule_delete(schedule_id):
     """حذف الجدول اليومي"""
     schedule = DailySchedule.query.get_or_404(schedule_id)
@@ -267,7 +267,7 @@ def schedule_delete(schedule_id):
 
 @supervisor_bp.route('/schedules/item/<item_id>/replace-handler', methods=['POST'])
 @login_required
-@require_permission('attendance.edit')
+@require_permission('schedule.edit')
 def replace_handler(item_id):
     """استبدال سائس في عنصر من الجدول"""
     item = DailyScheduleItem.query.get_or_404(item_id)
