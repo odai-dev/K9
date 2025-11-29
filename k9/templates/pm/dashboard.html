@@ -2,7 +2,13 @@
 
 {% block title %}لوحة تحكم المشروع - {{ project.name }}{% endblock %}
 
-{% block content %}
+{% block pm_title %}لوحة تحكم المشروع{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">{{ project.name }}</li>
+{% endblock %}
+
+{% block pm_content %}
 <div class="container-fluid">
     <!-- Project Header -->
     <div class="row mb-4">

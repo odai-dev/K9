@@ -1,0 +1,473 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+/* Handler Header Styling - Modern Control Panel Design */
+.handler-header {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 2.5rem 0 1.5rem 0;
+    margin-bottom: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-bottom: 3px solid rgba(255,255,255,0.2);
+}
+
+[data-theme="dark"] .handler-header {
+    background: linear-gradient(135deg, #c471ed 0%, #f64f59 100%);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    border-bottom: 3px solid rgba(255,255,255,0.15);
+}
+
+.handler-header h1 {
+    margin: 0;
+    font-weight: 700;
+    font-size: 2rem;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.handler-header .breadcrumb {
+    background: transparent;
+    margin: 0.75rem 0 0 0;
+    padding: 0;
+    font-size: 0.95rem;
+}
+
+.handler-header .breadcrumb-item a {
+    color: rgba(255,255,255,0.9);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.handler-header .breadcrumb-item a:hover {
+    color: white;
+    text-decoration: underline;
+}
+
+.handler-header .breadcrumb-item.active {
+    color: white;
+    font-weight: 500;
+}
+
+.handler-header .breadcrumb-item + .breadcrumb-item::before {
+    color: rgba(255,255,255,0.7);
+}
+
+.handler-header .btn-light {
+    background: rgba(255,255,255,0.95);
+    border: 2px solid rgba(255,255,255,0.3);
+    color: #f5576c;
+    font-weight: 600;
+    padding: 0.5rem 1.25rem;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.handler-header .btn-light:hover {
+    background: white;
+    border-color: white;
+    color: #f5576c;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Handler Quick Navigation */
+.handler-quick-nav {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 1.75rem 0;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+[data-theme="dark"] .handler-quick-nav {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.handler-quick-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.875rem 1.5rem;
+    background: white;
+    border: 2px solid #e0e4e8;
+    border-radius: 12px;
+    color: #495057;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+}
+
+[data-theme="dark"] .handler-quick-nav-btn {
+    background: #2d2d2d;
+    border-color: #404040;
+    color: #e0e0e0;
+}
+
+.handler-quick-nav-btn i {
+    font-size: 1.15rem;
+    color: #f5576c;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+[data-theme="dark"] .handler-quick-nav-btn i {
+    color: #f093fb;
+}
+
+.handler-quick-nav-btn span {
+    position: relative;
+    z-index: 1;
+}
+
+.handler-quick-nav-btn:hover {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border-color: #f5576c;
+    color: white;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(245, 87, 108, 0.3);
+}
+
+[data-theme="dark"] .handler-quick-nav-btn:hover {
+    background: linear-gradient(135deg, #c471ed 0%, #f64f59 100%);
+    border-color: #c471ed;
+    box-shadow: 0 8px 16px rgba(196, 113, 237, 0.3);
+}
+
+.handler-quick-nav-btn:hover i {
+    color: white;
+    transform: scale(1.15) rotate(5deg);
+}
+
+.handler-quick-nav-btn.active {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border-color: #f5576c;
+    color: white;
+    box-shadow: 0 6px 12px rgba(245, 87, 108, 0.35);
+}
+
+[data-theme="dark"] .handler-quick-nav-btn.active {
+    background: linear-gradient(135deg, #c471ed 0%, #f64f59 100%);
+    border-color: #c471ed;
+    box-shadow: 0 6px 12px rgba(196, 113, 237, 0.35);
+}
+
+.handler-quick-nav-btn.active i {
+    color: white;
+}
+
+/* Badge styling for notification counts */
+.handler-quick-nav-btn .badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    font-size: 0.7rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 50%;
+    z-index: 2;
+}
+
+/* Handler Cards */
+.handler-card {
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: none;
+    margin-bottom: 1.5rem;
+}
+
+[data-theme="dark"] .handler-card {
+    background: #2d2d2d;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.handler-card-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    padding: 1.25rem 1.5rem;
+    border-radius: 0.75rem 0.75rem 0 0;
+    font-weight: 600;
+}
+
+[data-theme="dark"] .handler-card-header {
+    background: #1a1a1a;
+    border-bottom: 1px solid #404040;
+}
+
+.handler-card-body {
+    padding: 1.5rem;
+}
+
+/* Stats cards */
+.handler-stat-card {
+    background: white;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+[data-theme="dark"] .handler-stat-card {
+    background: #2d2d2d;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.handler-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.handler-stat-card .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.handler-stat-card .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.handler-stat-card .stat-label {
+    color: #6c757d;
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+/* Legacy Stats Cards for Dashboard */
+.stats-card {
+    padding: 20px;
+    border-radius: 12px;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+}
+
+.stats-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.stats-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.stats-info h3 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.stats-info p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.9rem;
+}
+
+/* Stats card colors */
+.stats-card.bg-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stats-card.bg-success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.stats-card.bg-warning {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.stats-card.bg-info {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.stats-card.bg-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+}
+
+.stats-card.bg-danger {
+    background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+}
+
+/* User dropdown menu in header */
+.handler-user-dropdown {
+    position: relative;
+}
+
+.handler-user-dropdown .dropdown-toggle {
+    background: rgba(255,255,255,0.2);
+    border: 2px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.handler-user-dropdown .dropdown-toggle:hover {
+    background: rgba(255,255,255,0.3);
+    border-color: rgba(255,255,255,0.5);
+}
+
+.handler-user-dropdown .dropdown-menu {
+    border: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    border-radius: 12px;
+    padding: 0.5rem 0;
+}
+
+[data-theme="dark"] .handler-user-dropdown .dropdown-menu {
+    background: #2d2d2d;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+</style>
+{% block handler_extra_css %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+<!-- Handler Header -->
+<div class="handler-header">
+    <div class="container-fluid px-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h1>
+                    <i class="fas fa-id-badge me-2"></i>
+                    {% block handler_title %}لوحة تحكم السائس{% endblock %}
+                </h1>
+                <!-- Breadcrumb -->
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item">
+                            <a href="{{ url_for('handler.dashboard') }}">
+                                <i class="fas fa-tachometer-alt me-1"></i>الرئيسية
+                            </a>
+                        </li>
+                        {% block breadcrumb %}{% endblock %}
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <!-- User dropdown in header -->
+                <div class="dropdown handler-user-dropdown">
+                    <button class="btn dropdown-toggle" type="button" id="handlerUserDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user-circle me-1"></i>{{ current_user.username }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="handlerUserDropdown">
+                        <li><h6 class="dropdown-header">{{ current_user.full_name or current_user.username }}</h6></li>
+                        <li><span class="dropdown-item-text small text-muted">سائس</span></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('main.user_permissions_dashboard') }}"><i class="fas fa-shield-alt me-2"></i>صلاحياتي</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('mfa.change_password') }}"><i class="fas fa-key me-2"></i>تغيير كلمة المرور</a></li>
+                        {% if current_user.mfa_enabled %}
+                        <li><a class="dropdown-item" href="{{ url_for('mfa.status') }}"><i class="fas fa-shield-alt me-2"></i>إدارة MFA</a></li>
+                        {% else %}
+                        <li><a class="dropdown-item" href="{{ url_for('mfa.setup') }}"><i class="fas fa-shield-alt me-2"></i>تفعيل MFA</a></li>
+                        {% endif %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>تسجيل الخروج</a></li>
+                    </ul>
+                </div>
+                {% if request.endpoint != 'handler.dashboard' %}
+                <a href="{{ url_for('handler.dashboard') }}" class="btn btn-light">
+                    <i class="fas fa-arrow-right me-2"></i>العودة للوحة التحكم
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Handler Quick Navigation -->
+<div class="handler-quick-nav">
+    <div class="container-fluid px-4">
+        <div class="d-flex flex-wrap gap-2">
+            <!-- Dashboard -->
+            <a class="handler-quick-nav-btn {{ 'active' if request.endpoint == 'handler.dashboard' }}" href="{{ url_for('handler.dashboard') }}">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>لوحة التحكم</span>
+            </a>
+            
+            <!-- My Reports -->
+            <a class="handler-quick-nav-btn {{ 'active' if request.endpoint == 'handler.my_reports' }}" href="{{ url_for('handler.my_reports') }}">
+                <i class="fas fa-file-alt"></i>
+                <span>تقاريري</span>
+            </a>
+            
+            <!-- New Shift Report -->
+            <a class="handler-quick-nav-btn {{ 'active' if request.endpoint == 'handler.select_daily_report' }}" href="{{ url_for('handler.select_daily_report') }}">
+                <i class="fas fa-plus-circle"></i>
+                <span>تقرير جديد</span>
+            </a>
+            
+            <!-- Tasks -->
+            <a class="handler-quick-nav-btn position-relative {{ 'active' if 'tasks' in request.endpoint|default('') }}" href="{{ url_for('tasks.handler_index') }}">
+                <i class="fas fa-tasks"></i>
+                <span>المهام</span>
+                {% if pending_tasks_count is defined and pending_tasks_count > 0 %}
+                <span class="badge bg-danger">{{ pending_tasks_count }}</span>
+                {% endif %}
+            </a>
+            
+            <!-- Notifications -->
+            <a class="handler-quick-nav-btn position-relative {{ 'active' if request.endpoint == 'handler.notifications' }}" href="{{ url_for('handler.notifications') }}">
+                <i class="fas fa-bell"></i>
+                <span>الإشعارات</span>
+                {% if unread_count is defined and unread_count > 0 %}
+                <span class="badge bg-danger">{{ unread_count }}</span>
+                {% endif %}
+            </a>
+            
+            <!-- Profile -->
+            <a class="handler-quick-nav-btn {{ 'active' if request.endpoint == 'handler.profile' }}" href="{{ url_for('handler.profile') }}">
+                <i class="fas fa-user-cog"></i>
+                <span>الملف الشخصي</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Handler Content -->
+<div class="container-fluid px-4">
+    {% block handler_content %}{% endblock %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const quickNavBtns = document.querySelectorAll('.handler-quick-nav-btn');
+    
+    quickNavBtns.forEach(btn => {
+        btn.addEventListener('mouseenter', function() {
+            this.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        });
+    });
+});
+</script>
+{% block handler_extra_js %}{% endblock %}
+{% endblock %}
