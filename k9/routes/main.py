@@ -2502,7 +2502,7 @@ def project_assignment_edit(project_id, assignment_id):
 # Enhanced Projects Section - Incidents
 @main_bp.route('/projects/<project_id>/incidents')
 @login_required
-@require_permission('projects.view')
+@require_permission('incidents.view')
 def project_incidents(project_id):
     try:
         project_id = project_id
@@ -2517,7 +2517,7 @@ def project_incidents(project_id):
 
 @main_bp.route('/projects/<project_id>/incidents/add', methods=['GET', 'POST'])
 @login_required
-@require_permission('projects.edit')
+@require_permission('incidents.create')
 def project_incident_add(project_id):
     try:
         project_id = project_id
@@ -2557,7 +2557,7 @@ def project_incident_add(project_id):
 
 @main_bp.route('/projects/<project_id>/incidents/resolve')
 @login_required
-@require_permission('projects.edit')
+@require_permission('incidents.resolve')
 def project_resolve_incident(project_id):
     try:
         project = Project.query.get_or_404(project_id)
@@ -2593,7 +2593,7 @@ def project_resolve_incident(project_id):
 # Enhanced Projects Section - Suspicions
 @main_bp.route('/projects/<project_id>/suspicions')
 @login_required
-@require_permission('projects.view')
+@require_permission('suspicions.view')
 def project_suspicions(project_id):
     try:
         project_id = project_id
@@ -2608,7 +2608,7 @@ def project_suspicions(project_id):
 
 @main_bp.route('/projects/<project_id>/suspicions/add', methods=['GET', 'POST'])
 @login_required
-@require_permission('projects.edit')
+@require_permission('suspicions.create')
 def project_suspicion_add(project_id):
     try:
         project_id = project_id
@@ -2650,7 +2650,7 @@ def project_suspicion_add(project_id):
 # Enhanced Projects Section - Evaluations
 @main_bp.route('/projects/<project_id>/evaluations')
 @login_required
-@require_permission('projects.view')
+@require_permission('evaluations.view')
 def project_evaluations(project_id):
     try:
         project_id = project_id
@@ -2665,7 +2665,7 @@ def project_evaluations(project_id):
 
 @main_bp.route('/projects/<project_id>/evaluations/add', methods=['GET', 'POST'])
 @login_required
-@require_permission('projects.edit')
+@require_permission('evaluations.create')
 def project_evaluation_add(project_id):
     try:
         project_id = project_id
