@@ -286,7 +286,7 @@ PERMISSIONS_DATA = [
         "sort_order": 5
     },
 
-    # ============ BREEDING (5) ============
+    # ============ BREEDING (11) ============
     {
         "key": "breeding.view",
         "name": "View Breeding",
@@ -331,6 +331,98 @@ PERMISSIONS_DATA = [
         "category": "breeding",
         "description": "Export breeding reports to PDF or Excel",
         "sort_order": 5
+    },
+    {
+        "key": "breeding.checkup",
+        "name": "Breeding Checkup",
+        "name_ar": "فحص التربية",
+        "name_en": "Breeding Checkup",
+        "category": "breeding",
+        "description": "Manage breeding checkup records",
+        "sort_order": 6
+    },
+    {
+        "key": "breeding.excretion",
+        "name": "Breeding Excretion",
+        "name_ar": "إخراج التربية",
+        "name_en": "Breeding Excretion",
+        "category": "breeding",
+        "description": "Manage breeding excretion records",
+        "sort_order": 7
+    },
+    {
+        "key": "breeding.deworming",
+        "name": "Breeding Deworming",
+        "name_ar": "تطهير التربية",
+        "name_en": "Breeding Deworming",
+        "category": "breeding",
+        "description": "Manage breeding deworming records",
+        "sort_order": 8
+    },
+    {
+        "key": "breeding.grooming",
+        "name": "Breeding Grooming",
+        "name_ar": "تنظيف التربية",
+        "name_en": "Breeding Grooming",
+        "category": "breeding",
+        "description": "Manage breeding grooming records",
+        "sort_order": 9
+    },
+    {
+        "key": "breeding.feeding",
+        "name": "Breeding Feeding",
+        "name_ar": "تغذية التربية",
+        "name_en": "Breeding Feeding",
+        "category": "breeding",
+        "description": "Manage breeding feeding records",
+        "sort_order": 10
+    },
+    {
+        "key": "breeding.training",
+        "name": "Breeding Training",
+        "name_ar": "تدريب التربية",
+        "name_en": "Breeding Training",
+        "category": "breeding",
+        "description": "Manage breeding training activities",
+        "sort_order": 11
+    },
+
+    # ============ CLEANING (4) ============
+    {
+        "key": "cleaning.view",
+        "name": "View Cleaning",
+        "name_ar": "عرض التنظيف",
+        "name_en": "View Cleaning",
+        "category": "cleaning",
+        "description": "View cleaning records",
+        "sort_order": 1
+    },
+    {
+        "key": "cleaning.create",
+        "name": "Create Cleaning Record",
+        "name_ar": "إنشاء سجل تنظيف",
+        "name_en": "Create Cleaning Record",
+        "category": "cleaning",
+        "description": "Create a new cleaning record",
+        "sort_order": 2
+    },
+    {
+        "key": "cleaning.edit",
+        "name": "Edit Cleaning Record",
+        "name_ar": "تعديل سجل التنظيف",
+        "name_en": "Edit Cleaning Record",
+        "category": "cleaning",
+        "description": "Edit cleaning record details",
+        "sort_order": 3
+    },
+    {
+        "key": "cleaning.delete",
+        "name": "Delete Cleaning Record",
+        "name_ar": "حذف سجل التنظيف",
+        "name_en": "Delete Cleaning Record",
+        "category": "cleaning",
+        "description": "Delete a cleaning record",
+        "sort_order": 4
     },
 
     # ============ HANDLER REPORTS (4) ============
@@ -585,6 +677,80 @@ PERMISSIONS_DATA = [
         "sort_order": 2
     },
 
+    # ============ REPORTS - DETAILED SUB-CATEGORIES (8) ============
+    {
+        "key": "reports.attendance.pm_daily.view",
+        "name": "View PM Daily Attendance Reports",
+        "name_ar": "عرض تقارير حضور مدير المشروع اليومية",
+        "name_en": "View PM Daily Attendance Reports",
+        "category": "reports.attendance",
+        "description": "View PM daily attendance reports",
+        "sort_order": 10
+    },
+    {
+        "key": "reports.attendance.pm_daily.export",
+        "name": "Export PM Daily Attendance Reports",
+        "name_ar": "تصدير تقارير حضور مدير المشروع",
+        "name_en": "Export PM Daily Attendance Reports",
+        "category": "reports.attendance",
+        "description": "Export PM daily attendance reports to PDF or Excel",
+        "sort_order": 11
+    },
+    {
+        "key": "reports.breeding.caretaker_daily.view",
+        "name": "View Caretaker Daily Reports",
+        "name_ar": "عرض تقارير العناية اليومية",
+        "name_en": "View Caretaker Daily Reports",
+        "category": "reports.breeding",
+        "description": "View caretaker daily breeding reports",
+        "sort_order": 10
+    },
+    {
+        "key": "reports.breeding.caretaker_daily.export",
+        "name": "Export Caretaker Daily Reports",
+        "name_ar": "تصدير تقارير العناية اليومية",
+        "name_en": "Export Caretaker Daily Reports",
+        "category": "reports.breeding",
+        "description": "Export caretaker daily reports to PDF or Excel",
+        "sort_order": 11
+    },
+    {
+        "key": "reports.training.trainer_daily.view",
+        "name": "View Trainer Daily Reports",
+        "name_ar": "عرض تقارير المدرب اليومية",
+        "name_en": "View Trainer Daily Reports",
+        "category": "reports.training",
+        "description": "View trainer daily training reports",
+        "sort_order": 10
+    },
+    {
+        "key": "reports.training.trainer_daily.export",
+        "name": "Export Trainer Daily Reports",
+        "name_ar": "تصدير تقارير المدرب اليومية",
+        "name_en": "Export Trainer Daily Reports",
+        "category": "reports.training",
+        "description": "Export trainer daily reports to PDF or Excel",
+        "sort_order": 11
+    },
+    {
+        "key": "reports.breeding.checkup.view",
+        "name": "View Breeding Checkup Reports",
+        "name_ar": "عرض تقارير فحص التربية",
+        "name_en": "View Breeding Checkup Reports",
+        "category": "reports.breeding",
+        "description": "View breeding checkup reports",
+        "sort_order": 12
+    },
+    {
+        "key": "reports.breeding.checkup.export",
+        "name": "Export Breeding Checkup Reports",
+        "name_ar": "تصدير تقارير فحص التربية",
+        "name_en": "Export Breeding Checkup Reports",
+        "category": "reports.breeding",
+        "description": "Export breeding checkup reports to PDF or Excel",
+        "sort_order": 13
+    },
+
     # ============ ADMIN (6) ============
     {
         "key": "admin.dashboard",
@@ -717,7 +883,7 @@ PERMISSIONS_DATA = [
         "sort_order": 4
     },
 
-    # ============ SUPERVISOR (3) ============
+    # ============ SUPERVISOR (5) ============
     {
         "key": "supervisor.schedules",
         "name": "Supervisor Schedules",
@@ -728,13 +894,22 @@ PERMISSIONS_DATA = [
         "sort_order": 1
     },
     {
+        "key": "supervisor.reports.view",
+        "name": "Supervisor View Reports",
+        "name_ar": "عرض تقارير المشرف",
+        "name_en": "Supervisor View Reports",
+        "category": "supervisor",
+        "description": "View supervisor reports",
+        "sort_order": 2
+    },
+    {
         "key": "supervisor.reports",
         "name": "Supervisor Reports",
         "name_ar": "تقارير المشرف",
         "name_en": "Supervisor Reports",
         "category": "supervisor",
         "description": "View and manage supervisor reports",
-        "sort_order": 2
+        "sort_order": 3
     },
     {
         "key": "supervisor.approve",
@@ -743,10 +918,19 @@ PERMISSIONS_DATA = [
         "name_en": "Supervisor Approve",
         "category": "supervisor",
         "description": "Approve reports as supervisor",
-        "sort_order": 3
+        "sort_order": 4
+    },
+    {
+        "key": "supervisor.dashboard",
+        "name": "Supervisor Dashboard",
+        "name_ar": "لوحة المشرف",
+        "name_en": "Supervisor Dashboard",
+        "category": "supervisor",
+        "description": "Access supervisor dashboard",
+        "sort_order": 5
     },
 
-    # ============ PM DASHBOARD (5) ============
+    # ============ PM - PROJECT MANAGER (15) ============
     {
         "key": "pm.dashboard",
         "name": "PM Dashboard",
@@ -757,13 +941,22 @@ PERMISSIONS_DATA = [
         "sort_order": 1
     },
     {
-        "key": "pm.team",
-        "name": "PM Team",
-        "name_ar": "فريق المشروع",
-        "name_en": "PM Team",
+        "key": "pm.team.view",
+        "name": "PM View Team",
+        "name_ar": "عرض فريق المشروع",
+        "name_en": "PM View Team",
         "category": "pm",
-        "description": "View and manage project team",
+        "description": "View project team members",
         "sort_order": 2
+    },
+    {
+        "key": "pm.project.view",
+        "name": "PM View Project",
+        "name_ar": "عرض تفاصيل المشروع",
+        "name_en": "PM View Project",
+        "category": "pm",
+        "description": "View project details and settings",
+        "sort_order": 3
     },
     {
         "key": "pm.dogs",
@@ -772,25 +965,198 @@ PERMISSIONS_DATA = [
         "name_en": "PM Dogs",
         "category": "pm",
         "description": "View and manage project dogs",
-        "sort_order": 3
-    },
-    {
-        "key": "pm.approvals",
-        "name": "PM Approvals",
-        "name_ar": "موافقات المشروع",
-        "name_en": "PM Approvals",
-        "category": "pm",
-        "description": "Handle project approvals",
         "sort_order": 4
     },
     {
-        "key": "pm.project",
-        "name": "PM Project",
-        "name_ar": "إدارة المشروع",
-        "name_en": "PM Project",
+        "key": "pm.approvals.view",
+        "name": "PM View Approvals",
+        "name_ar": "عرض الموافقات",
+        "name_en": "PM View Approvals",
         "category": "pm",
-        "description": "Manage project settings and details",
+        "description": "View pending reports for approval",
         "sort_order": 5
+    },
+    {
+        "key": "pm.reports.view",
+        "name": "PM View Reports",
+        "name_ar": "عرض التقارير",
+        "name_en": "PM View Reports",
+        "category": "pm",
+        "description": "View submitted reports",
+        "sort_order": 6
+    },
+    {
+        "key": "pm.reports.approve",
+        "name": "PM Approve Reports",
+        "name_ar": "اعتماد التقارير",
+        "name_en": "PM Approve Reports",
+        "category": "pm",
+        "description": "Approve handler and staff reports",
+        "sort_order": 7
+    },
+    {
+        "key": "pm.reports.reject",
+        "name": "PM Reject Reports",
+        "name_ar": "رفض التقارير",
+        "name_en": "PM Reject Reports",
+        "category": "pm",
+        "description": "Reject handler and staff reports",
+        "sort_order": 8
+    },
+    {
+        "key": "pm.reports.request_edit",
+        "name": "PM Request Report Edits",
+        "name_ar": "طلب تعديل التقارير",
+        "name_en": "PM Request Report Edits",
+        "category": "pm",
+        "description": "Request edits on submitted reports",
+        "sort_order": 9
+    },
+    {
+        "key": "pm.reports.export",
+        "name": "PM Export Reports",
+        "name_ar": "تصدير التقارير",
+        "name_en": "PM Export Reports",
+        "category": "pm",
+        "description": "Export reports to PDF or Excel",
+        "sort_order": 10
+    },
+    {
+        "key": "pm.incidents.view",
+        "name": "PM View Incidents",
+        "name_ar": "عرض الحوادث",
+        "name_en": "PM View Incidents",
+        "category": "pm",
+        "description": "View project incidents",
+        "sort_order": 11
+    },
+    {
+        "key": "pm.incidents.create",
+        "name": "PM Create Incidents",
+        "name_ar": "إنشاء حوادث",
+        "name_en": "PM Create Incidents",
+        "category": "pm",
+        "description": "Create incident reports",
+        "sort_order": 12
+    },
+    {
+        "key": "pm.schedules.view",
+        "name": "PM View Schedules",
+        "name_ar": "عرض الجداول",
+        "name_en": "PM View Schedules",
+        "category": "pm",
+        "description": "View project schedules",
+        "sort_order": 13
+    },
+    {
+        "key": "pm.schedules.create",
+        "name": "PM Create Schedules",
+        "name_ar": "إنشاء جداول",
+        "name_en": "PM Create Schedules",
+        "category": "pm",
+        "description": "Create project schedules",
+        "sort_order": 14
+    },
+    {
+        "key": "pm.schedules.edit",
+        "name": "PM Edit Schedules",
+        "name_ar": "تعديل الجداول",
+        "name_en": "PM Edit Schedules",
+        "category": "pm",
+        "description": "Edit project schedules",
+        "sort_order": 15
+    },
+
+    # ============ HANDLERS - السائسين (10) ============
+    {
+        "key": "handlers.general.access",
+        "name": "Handler General Access",
+        "name_ar": "وصول عام للسائس",
+        "name_en": "Handler General Access",
+        "category": "handlers",
+        "description": "General access for handler role",
+        "sort_order": 1
+    },
+    {
+        "key": "handlers.dashboard",
+        "name": "Handler Dashboard",
+        "name_ar": "لوحة السائس",
+        "name_en": "Handler Dashboard",
+        "category": "handlers",
+        "description": "Access handler dashboard",
+        "sort_order": 2
+    },
+    {
+        "key": "handlers.reports.view",
+        "name": "Handler View Reports",
+        "name_ar": "عرض تقارير السائس",
+        "name_en": "Handler View Reports",
+        "category": "handlers",
+        "description": "View own reports",
+        "sort_order": 3
+    },
+    {
+        "key": "handlers.reports.create",
+        "name": "Handler Create Reports",
+        "name_ar": "إنشاء تقارير السائس",
+        "name_en": "Handler Create Reports",
+        "category": "handlers",
+        "description": "Create daily and shift reports",
+        "sort_order": 4
+    },
+    {
+        "key": "handlers.reports.edit",
+        "name": "Handler Edit Reports",
+        "name_ar": "تعديل تقارير السائس",
+        "name_en": "Handler Edit Reports",
+        "category": "handlers",
+        "description": "Edit own draft reports",
+        "sort_order": 5
+    },
+    {
+        "key": "handlers.reports.delete",
+        "name": "Handler Delete Reports",
+        "name_ar": "حذف تقارير السائس",
+        "name_en": "Handler Delete Reports",
+        "category": "handlers",
+        "description": "Delete own draft reports",
+        "sort_order": 6
+    },
+    {
+        "key": "handlers.reports.submit",
+        "name": "Handler Submit Reports",
+        "name_ar": "تقديم تقارير السائس",
+        "name_en": "Handler Submit Reports",
+        "category": "handlers",
+        "description": "Submit reports for approval",
+        "sort_order": 7
+    },
+    {
+        "key": "handlers.notifications.view",
+        "name": "Handler View Notifications",
+        "name_ar": "عرض إشعارات السائس",
+        "name_en": "Handler View Notifications",
+        "category": "handlers",
+        "description": "View handler notifications",
+        "sort_order": 8
+    },
+    {
+        "key": "handlers.profile.view",
+        "name": "Handler View Profile",
+        "name_ar": "عرض ملف السائس",
+        "name_en": "Handler View Profile",
+        "category": "handlers",
+        "description": "View and edit own profile",
+        "sort_order": 9
+    },
+    {
+        "key": "handlers.schedule.view",
+        "name": "Handler View Schedule",
+        "name_ar": "عرض جدول السائس",
+        "name_en": "Handler View Schedule",
+        "category": "handlers",
+        "description": "View own daily schedule",
+        "sort_order": 10
     },
 
     # ============ NOTIFICATIONS (2) ============
