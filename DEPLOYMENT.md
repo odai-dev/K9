@@ -1,367 +1,588 @@
-# K9 Operations Management System - Production Deployment Guide
+# دليل نشر نظام إدارة عمليات الكلاب البوليسية K9
+# K9 Operations Management System - Deployment Guide
 
-This guide provides comprehensive instructions for deploying the K9 Operations Management System in production using Docker and Docker Compose.
+هذا الدليل يشرح خطوة بخطوة كيفية نشر التطبيق على خادم Contabo VPS بدون Docker.
 
-## Prerequisites
+---
 
-- Docker Engine 20.10+ and Docker Compose 2.0+
-- A server with at least 2GB RAM and 10GB disk space
-- Domain name (for SSL configuration)
-- Basic knowledge of Docker and Linux administration
+## المتطلبات الأساسية
 
-## Quick Start
+### متطلبات الخادم
+- **نظام التشغيل**: Ubuntu 22.04 LTS (موصى به) أو Debian 11+
+- **الذاكرة (RAM)**: 2GB كحد أدنى (4GB موصى به)
+- **المساحة**: 20GB كحد أدنى
+- **Python**: 3.11 أو أحدث
+- **PostgreSQL**: 14 أو أحدث
 
-### 1. Clone and Setup
+### ما ستحتاجه
+- وصول SSH إلى الخادم (عادة root أو sudo)
+- اسم نطاق (domain) يشير إلى عنوان IP الخادم
+- عنوان بريد إلكتروني للحصول على شهادة SSL
 
+---
+
+## الخطوة 1: تحديث النظام وتثبيت الأساسيات
+
+اتصل بالخادم عبر SSH:
 ```bash
-# Clone the repository
-git clone <your-repository-url>
-cd k9-operations-system
-
-# Copy environment template
-cp .env.example .env
+ssh root@your_server_ip
 ```
 
-### 2. Configure Environment
-
-Edit the `.env` file with your production values:
-
+قم بتحديث النظام:
 ```bash
-# Generate a secure password for PostgreSQL
-POSTGRES_PASSWORD=your_secure_database_password_here
-
-# Generate a secure session secret (32+ characters)
-# You can use: python -c "import secrets; print(secrets.token_urlsafe(32))"
-SESSION_SECRET=your_secure_random_session_secret_here
-
-# Optional: Customize other settings
-POSTGRES_DB=k9operations
-POSTGRES_USER=k9user
-WEB_PORT=80
-GUNICORN_WORKERS=4
+apt update && apt upgrade -y
 ```
 
-### 3. Build and Deploy
-
+تثبيت الحزم الأساسية:
 ```bash
-# Build the application
-docker-compose build
-
-# Start the services
-docker-compose up -d
-
-# Check that services are running
-docker-compose ps
-
-# View logs
-docker-compose logs web
+apt install -y python3.11 python3.11-venv python3-pip \
+    postgresql postgresql-contrib \
+    nginx certbot python3-certbot-nginx \
+    git curl wget unzip
 ```
 
-### 4. Initialize the Database
+---
 
-The system will automatically run database migrations on startup. To manually run migrations:
+## الخطوة 2: إنشاء مستخدم للتطبيق
 
+لأسباب أمنية، أنشئ مستخدم خاص للتطبيق:
 ```bash
-# Run migrations
-docker-compose exec web flask db upgrade
-
-# Check database connection
-docker-compose exec web flask shell
+adduser --system --group --home /home/k9app k9app
 ```
 
-### 5. Create Admin User
+---
 
-Since production mode doesn't create a default admin user, create one manually:
+## الخطوة 3: إعداد PostgreSQL
+
+ادخل إلى PostgreSQL:
+```bash
+sudo -u postgres psql
+```
+
+أنشئ قاعدة البيانات والمستخدم:
+```sql
+-- إنشاء قاعدة البيانات
+CREATE DATABASE k9_operations ENCODING 'UTF8';
+
+-- إنشاء المستخدم (غير كلمة المرور!)
+CREATE USER k9user WITH PASSWORD 'YOUR_STRONG_PASSWORD_HERE';
+
+-- منح الصلاحيات
+GRANT ALL PRIVILEGES ON DATABASE k9_operations TO k9user;
+\c k9_operations
+GRANT ALL ON SCHEMA public TO k9user;
+
+-- الخروج
+\q
+```
+
+**مهم جداً**: استبدل `YOUR_STRONG_PASSWORD_HERE` بكلمة مرور قوية!
+
+---
+
+## الخطوة 4: تحميل الكود
+
+انتقل إلى مجلد التطبيق:
+```bash
+cd /home/k9app
+```
+
+### الخيار أ: النسخ من Git
+```bash
+sudo -u k9app git clone YOUR_REPOSITORY_URL app
+```
+
+### الخيار ب: رفع الملفات يدوياً
+ارفع الملفات باستخدام SCP أو SFTP:
+```bash
+# من جهازك المحلي:
+scp -r ./your_project_folder root@your_server_ip:/home/k9app/app
+chown -R k9app:k9app /home/k9app/app
+```
+
+---
+
+## الخطوة 5: إعداد بيئة Python
 
 ```bash
-# Connect to the container
-docker-compose exec web flask shell
+cd /home/k9app/app
 
-# In the Flask shell:
-from models import User, UserRole
+# إنشاء بيئة افتراضية
+sudo -u k9app python3.11 -m venv venv
+
+# تفعيل البيئة
+source venv/bin/activate
+
+# تثبيت المتطلبات
+pip install --upgrade pip
+pip install -r requirements.txt
+pip install gunicorn
+```
+
+---
+
+## الخطوة 6: إعداد متغيرات البيئة
+
+أنشئ ملف البيئة:
+```bash
+sudo -u k9app nano /home/k9app/app/.env
+```
+
+أضف المحتوى التالي (عدل القيم!):
+```bash
+# إعداد الإنتاج
+FLASK_ENV=production
+
+# مفتاح الجلسة (أنشئ مفتاح قوي!)
+# python -c "import secrets; print(secrets.token_urlsafe(32))"
+SESSION_SECRET=YOUR_GENERATED_SECRET_KEY
+
+# اتصال قاعدة البيانات
+DATABASE_URL=postgresql://k9user:YOUR_PASSWORD@localhost:5432/k9_operations
+PGHOST=localhost
+PGPORT=5432
+PGDATABASE=k9_operations
+PGUSER=k9user
+PGPASSWORD=YOUR_PASSWORD
+```
+
+لتوليد مفتاح الجلسة:
+```bash
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+---
+
+## الخطوة 7: إعداد قاعدة البيانات
+
+تفعيل البيئة وتشغيل الترحيل:
+```bash
+cd /home/k9app/app
+source venv/bin/activate
+
+# تصدير متغيرات البيئة
+export $(cat .env | xargs)
+
+# تشغيل ترحيل قاعدة البيانات
+flask db upgrade
+```
+
+### إنشاء المستخدم الأول (مشرف عام)
+
+أنشئ سكريبت لإضافة المستخدم:
+```bash
+nano /home/k9app/app/create_admin.py
+```
+
+```python
+#!/usr/bin/env python3
+import os
+import sys
+sys.path.insert(0, '/home/k9app/app')
+
+from app import app, db
+from k9.models.models import User, UserRole
 from werkzeug.security import generate_password_hash
-from app import db
+import uuid
 
-# Create admin user
-admin = User()
-admin.username = 'admin'
-admin.email = 'admin@yourdomain.com'
-admin.password_hash = generate_password_hash('your_secure_password')
-admin.role = UserRole.GENERAL_ADMIN
-admin.full_name = 'System Administrator'
-admin.active = True
+def create_admin():
+    with app.app_context():
+        # تحقق من وجود مستخدم
+        existing = User.query.filter_by(username='admin').first()
+        if existing:
+            print("المستخدم 'admin' موجود بالفعل")
+            return
+        
+        # إنشاء المستخدم
+        admin = User()
+        admin.id = str(uuid.uuid4())
+        admin.username = 'admin'
+        admin.email = 'admin@example.com'
+        admin.password_hash = generate_password_hash('CHANGE_THIS_PASSWORD')
+        admin.role = UserRole.GENERAL_ADMIN
+        admin.is_active = True
+        
+        db.session.add(admin)
+        db.session.commit()
+        print("تم إنشاء المستخدم 'admin' بنجاح!")
+        print("مهم: غير كلمة المرور فوراً بعد تسجيل الدخول!")
 
-db.session.add(admin)
-db.session.commit()
-print("Admin user created successfully")
-exit()
+if __name__ == '__main__':
+    create_admin()
 ```
 
-## Production Configuration
-
-### Environment Variables
-
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | Yes (auto-generated) | - |
-| `SESSION_SECRET` | Secret key for sessions | Yes | - |
-| `POSTGRES_DB` | Database name | Yes | k9operations |
-| `POSTGRES_USER` | Database user | Yes | k9user |
-| `POSTGRES_PASSWORD` | Database password | Yes | - |
-| `WEB_PORT` | External port for web service | No | 80 |
-| `GUNICORN_WORKERS` | Number of Gunicorn workers | No | 4 |
-
-### Security Considerations
-
-1. **Change Default Credentials**: The development admin account (admin/admin123) is disabled in production
-2. **Strong Passwords**: Use strong, unique passwords for database and session secrets
-3. **Firewall**: Configure firewall to only allow necessary ports (80, 443, SSH)
-4. **SSL/TLS**: Use the provided Nginx configuration for SSL termination
-5. **Regular Updates**: Keep Docker images and the host system updated
-
-## Reverse Proxy and SSL Setup
-
-### Using Nginx (Recommended)
-
-1. Install Nginx on your host system:
+شغل السكريبت:
 ```bash
-sudo apt update && sudo apt install nginx
+source venv/bin/activate
+export $(cat .env | xargs)
+python create_admin.py
 ```
 
-2. Copy the provided configuration:
+---
+
+## الخطوة 8: إعداد Gunicorn
+
+أنشئ ملف إعدادات Gunicorn:
 ```bash
-sudo cp nginx.conf.example /etc/nginx/sites-available/k9-operations
-sudo ln -s /etc/nginx/sites-available/k9-operations /etc/nginx/sites-enabled/
+nano /home/k9app/app/gunicorn.conf.py
 ```
 
-3. Edit the configuration file:
+```python
+# Gunicorn configuration
+import multiprocessing
+
+# Server socket
+bind = "127.0.0.1:8000"
+backlog = 2048
+
+# Worker processes
+workers = multiprocessing.cpu_count() * 2 + 1
+worker_class = "sync"
+worker_connections = 1000
+timeout = 120
+keepalive = 5
+
+# Restart workers after this many requests
+max_requests = 1000
+max_requests_jitter = 50
+
+# Logging
+accesslog = "/home/k9app/logs/gunicorn-access.log"
+errorlog = "/home/k9app/logs/gunicorn-error.log"
+loglevel = "info"
+
+# Process naming
+proc_name = "k9-gunicorn"
+
+# Daemon mode (when running with systemd, set to False)
+daemon = False
+
+# Environment variables
+raw_env = [
+    "FLASK_ENV=production",
+]
+```
+
+أنشئ مجلد السجلات:
 ```bash
-sudo nano /etc/nginx/sites-enabled/k9-operations
+mkdir -p /home/k9app/logs
+chown k9app:k9app /home/k9app/logs
 ```
 
-4. Update the following in the Nginx config:
-   - Replace `your-domain.com` with your actual domain
-   - Update SSL certificate paths
-   - Adjust the Docker volume path for uploads
+---
 
-5. Obtain SSL certificates (using Let's Encrypt):
+## الخطوة 9: إعداد Systemd Service
+
+أنشئ ملف الخدمة:
 ```bash
-sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d your-domain.com
+nano /etc/systemd/system/k9app.service
 ```
 
-6. Test and reload Nginx:
+```ini
+[Unit]
+Description=K9 Operations Management System
+After=network.target postgresql.service
+
+[Service]
+User=k9app
+Group=k9app
+WorkingDirectory=/home/k9app/app
+EnvironmentFile=/home/k9app/app/.env
+ExecStart=/home/k9app/app/venv/bin/gunicorn --config gunicorn.conf.py main:app
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+PrivateTmp=true
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+تفعيل وتشغيل الخدمة:
 ```bash
-sudo nginx -t
-sudo systemctl reload nginx
+systemctl daemon-reload
+systemctl enable k9app
+systemctl start k9app
+
+# التحقق من الحالة
+systemctl status k9app
 ```
 
-## Management Commands
+---
 
-### Viewing Logs
+## الخطوة 10: إعداد Nginx
+
+أنشئ ملف إعدادات Nginx:
 ```bash
-# All services
-docker-compose logs
-
-# Web service only
-docker-compose logs web
-
-# Database service only
-docker-compose logs db
-
-# Follow logs in real-time
-docker-compose logs -f web
+nano /etc/nginx/sites-available/k9app
 ```
 
-### Database Operations
-```bash
-# Create a new migration
-docker-compose exec web flask db migrate -m "Description of changes"
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com www.your-domain.com;
+    
+    # Redirect HTTP to HTTPS
+    return 301 https://$server_name$request_uri;
+}
 
-# Apply migrations
-docker-compose exec web flask db upgrade
-
-# Database backup
-docker-compose exec db pg_dump -U k9user k9operations > backup.sql
-
-# Database restore
-docker-compose exec -T db psql -U k9user k9operations < backup.sql
-```
-
-### Scaling and Performance
-
-#### Horizontal Scaling
-```bash
-# Scale web service to 3 instances
-docker-compose up -d --scale web=3
-
-# Update Nginx upstream configuration accordingly
-```
-
-#### Resource Limits
-Add to `docker-compose.yml` under the web service:
-```yaml
-deploy:
-  resources:
-    limits:
-      memory: 1G
-      cpus: '0.5'
-    reservations:
-      memory: 512M
-      cpus: '0.25'
-```
-
-### Monitoring
-
-#### Health Checks
-Both services include health checks. Monitor with:
-```bash
-docker-compose ps
-```
-
-#### Log Monitoring
-Set up log rotation and monitoring:
-```bash
-# Configure Docker log rotation
-sudo nano /etc/docker/daemon.json
-```
-
-Add:
-```json
-{
-  "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "10m",
-    "max-file": "3"
-  }
+server {
+    listen 443 ssl http2;
+    server_name your-domain.com www.your-domain.com;
+    
+    # SSL certificates (will be configured by Certbot)
+    # ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+    
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    
+    # Max upload size
+    client_max_body_size 20M;
+    
+    # Static files
+    location /static {
+        alias /home/k9app/app/k9/static;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+    
+    # Uploaded files
+    location /uploads {
+        alias /home/k9app/app/uploads;
+        expires 1d;
+    }
+    
+    # Application
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
 }
 ```
 
-## Backup and Recovery
+**مهم**: استبدل `your-domain.com` باسم نطاقك الفعلي!
 
-### Automated Backup Script
+فعّل الموقع:
+```bash
+ln -s /etc/nginx/sites-available/k9app /etc/nginx/sites-enabled/
+nginx -t  # اختبار الإعدادات
+systemctl reload nginx
+```
+
+---
+
+## الخطوة 11: إعداد SSL (HTTPS)
+
+### باستخدام Let's Encrypt (مجاني)
+```bash
+certbot --nginx -d your-domain.com -d www.your-domain.com
+```
+
+اتبع التعليمات وأدخل بريدك الإلكتروني.
+
+### التجديد التلقائي
+Certbot يضيف تلقائياً مهمة للتجديد. للتحقق:
+```bash
+certbot renew --dry-run
+```
+
+---
+
+## الخطوة 12: إعداد جدار الحماية
+
+```bash
+# تفعيل UFW
+ufw enable
+
+# السماح بـ SSH
+ufw allow ssh
+
+# السماح بـ HTTP و HTTPS
+ufw allow 'Nginx Full'
+
+# التحقق
+ufw status
+```
+
+---
+
+## الخطوة 13: إعداد النسخ الاحتياطي
+
+أنشئ سكريبت النسخ الاحتياطي:
+```bash
+nano /home/k9app/backup.sh
+```
+
 ```bash
 #!/bin/bash
-# backup.sh
-BACKUP_DIR="/var/backups/k9-operations"
+
+# إعدادات
+BACKUP_DIR="/home/k9app/backups"
+DB_NAME="k9_operations"
+DB_USER="k9user"
+DAYS_TO_KEEP=7
 DATE=$(date +%Y%m%d_%H%M%S)
 
+# إنشاء المجلد إن لم يوجد
 mkdir -p $BACKUP_DIR
 
-# Database backup
-docker-compose exec -T db pg_dump -U k9user k9operations > $BACKUP_DIR/db_$DATE.sql
+# النسخ الاحتياطي
+PGPASSWORD=$PGPASSWORD pg_dump -h localhost -U $DB_USER $DB_NAME > "$BACKUP_DIR/db_$DATE.sql"
 
-# Uploads backup
-docker run --rm -v k9-operations_uploads_data:/data -v $BACKUP_DIR:/backup alpine tar czf /backup/uploads_$DATE.tar.gz -C /data .
+# ضغط الملف
+gzip "$BACKUP_DIR/db_$DATE.sql"
 
-# Keep only last 7 backups
-find $BACKUP_DIR -name "*.sql" -mtime +7 -delete
-find $BACKUP_DIR -name "*.tar.gz" -mtime +7 -delete
+# حذف النسخ القديمة
+find $BACKUP_DIR -name "*.sql.gz" -mtime +$DAYS_TO_KEEP -delete
+
+echo "Backup completed: db_$DATE.sql.gz"
 ```
 
-### Recovery Process
 ```bash
-# Stop services
-docker-compose down
-
-# Restore database
-docker-compose up -d db
-sleep 10
-cat backup.sql | docker-compose exec -T db psql -U k9user k9operations
-
-# Restore uploads
-docker run --rm -v k9-operations_uploads_data:/data -v /path/to/backup:/backup alpine tar xzf /backup/uploads_backup.tar.gz -C /data
-
-# Start all services
-docker-compose up -d
+chmod +x /home/k9app/backup.sh
 ```
 
-## Troubleshooting
-
-### Common Issues
-
-1. **Database Connection Failed**
-   ```bash
-   # Check database status
-   docker-compose exec db pg_isready -U k9user
-   
-   # Check environment variables
-   docker-compose exec web env | grep DATABASE_URL
-   ```
-
-2. **Permission Errors**
-   ```bash
-   # Fix upload directory permissions
-   docker-compose exec web chown -R k9user:k9user /app/uploads
-   ```
-
-3. **Memory Issues**
-   ```bash
-   # Reduce Gunicorn workers
-   echo "GUNICORN_WORKERS=2" >> .env
-   docker-compose restart web
-   ```
-
-4. **SSL Certificate Issues**
-   ```bash
-   # Renew Let's Encrypt certificates
-   sudo certbot renew --nginx
-   ```
-
-### Performance Tuning
-
-1. **Database Performance**
-   - Add database indices for frequently queried fields
-   - Configure PostgreSQL memory settings
-   - Enable query logging for slow queries
-
-2. **Application Performance**
-   - Adjust Gunicorn worker count based on CPU cores
-   - Enable Nginx caching for static files
-   - Consider Redis for session storage in multi-instance deployments
-
-3. **Monitoring Setup**
-   - Use Prometheus + Grafana for metrics
-   - Set up log aggregation with ELK stack
-   - Configure alerting for critical errors
-
-## Maintenance
-
-### Regular Tasks
-- Weekly database backups
-- Monthly security updates
-- Quarterly certificate renewal checks
-- Monitor disk space and logs
-
-### Updates
+إضافة مهمة cron:
 ```bash
-# Pull latest images
-docker-compose pull
-
-# Recreate containers
-docker-compose up -d --force-recreate
-
-# Clean up old images
-docker image prune -f
+crontab -e
 ```
 
-## Support
+أضف:
+```
+# نسخة احتياطية يومية الساعة 2 صباحاً
+0 2 * * * /home/k9app/backup.sh >> /home/k9app/logs/backup.log 2>&1
+```
 
-For deployment issues or questions:
-1. Check the application logs: `docker-compose logs web`
-2. Verify environment configuration
-3. Ensure all prerequisites are met
-4. Review the troubleshooting section above
+---
 
-## Security Checklist
+## الخطوة 14: تدوير السجلات (Log Rotation)
 
-- [ ] Changed default database password
-- [ ] Generated secure SESSION_SECRET
-- [ ] Configured firewall rules
-- [ ] Set up SSL certificates
-- [ ] Created admin user with strong password
-- [ ] Configured automated backups
-- [ ] Set up log monitoring
-- [ ] Applied security headers in Nginx
-- [ ] Restricted database access
-- [ ] Enabled Docker security options
+```bash
+nano /etc/logrotate.d/k9app
+```
+
+```
+/home/k9app/logs/*.log {
+    daily
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    create 0640 k9app k9app
+    sharedscripts
+    postrotate
+        systemctl reload k9app
+    endscript
+}
+```
+
+---
+
+## الأوامر المفيدة
+
+### إدارة الخدمة
+```bash
+# تشغيل/إيقاف/إعادة تشغيل
+systemctl start k9app
+systemctl stop k9app
+systemctl restart k9app
+
+# عرض الحالة
+systemctl status k9app
+
+# عرض السجلات
+journalctl -u k9app -f
+```
+
+### تحديث التطبيق
+```bash
+cd /home/k9app/app
+git pull origin main  # أو نسخ الملفات الجديدة
+source venv/bin/activate
+pip install -r requirements.txt
+flask db upgrade
+systemctl restart k9app
+```
+
+### السجلات
+```bash
+# سجلات Gunicorn
+tail -f /home/k9app/logs/gunicorn-error.log
+tail -f /home/k9app/logs/gunicorn-access.log
+
+# سجلات Nginx
+tail -f /var/log/nginx/access.log
+tail -f /var/log/nginx/error.log
+```
+
+---
+
+## استكشاف الأخطاء
+
+### التطبيق لا يعمل
+```bash
+# تحقق من الخدمة
+systemctl status k9app
+
+# تحقق من السجلات
+journalctl -u k9app -n 50
+
+# تحقق من Nginx
+nginx -t
+systemctl status nginx
+```
+
+### مشاكل قاعدة البيانات
+```bash
+# تحقق من PostgreSQL
+systemctl status postgresql
+
+# اختبار الاتصال
+sudo -u postgres psql -c "SELECT 1"
+```
+
+### مشاكل الصلاحيات
+```bash
+# إصلاح صلاحيات الملفات
+chown -R k9app:k9app /home/k9app/app
+chmod -R 755 /home/k9app/app
+```
+
+---
+
+## قائمة التحقق النهائية
+
+- [ ] تغيير كلمة مرور PostgreSQL
+- [ ] توليد SESSION_SECRET قوي
+- [ ] تغيير كلمة مرور المستخدم admin
+- [ ] إعداد SSL/HTTPS
+- [ ] تفعيل جدار الحماية
+- [ ] إعداد النسخ الاحتياطي
+- [ ] اختبار تسجيل الدخول
+- [ ] اختبار جميع الوظائف الرئيسية
+- [ ] مراقبة السجلات للأخطاء
+
+---
+
+## الدعم والمساعدة
+
+إذا واجهت أي مشاكل:
+1. تحقق من السجلات أولاً
+2. تأكد من صحة متغيرات البيئة
+3. تأكد من تشغيل جميع الخدمات
+
+بالتوفيق في نشر التطبيق! 🎉

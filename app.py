@@ -27,11 +27,17 @@ csrf = CSRFProtect()
 app = Flask(__name__, template_folder='k9/templates', static_folder='k9/static')
 app.secret_key = os.environ.get("SESSION_SECRET")
 if not app.secret_key:
-    # For local development, provide a fallback but warn user
-    import secrets
-    app.secret_key = secrets.token_urlsafe(32)
-    print("WARNING: SESSION_SECRET not set. Using temporary session key.")
-    print("Set SESSION_SECRET environment variable for production!")
+    if flask_env == "production":
+        raise RuntimeError(
+            "SESSION_SECRET environment variable is required in production. "
+            "Generate a secure key with: python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+        )
+    else:
+        # For local development only, provide a fallback
+        import secrets
+        app.secret_key = secrets.token_urlsafe(32)
+        print("WARNING: SESSION_SECRET not set. Using temporary session key.")
+        print("Set SESSION_SECRET environment variable for production!")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1) # needed for url_for to generate with https
 
 # CSRF configuration - configured later after environment check
@@ -41,7 +47,7 @@ app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
 app.config['WTF_CSRF_CHECK_DEFAULT'] = True
 app.config['WTF_CSRF_METHODS'] = ['POST', 'PUT', 'PATCH', 'DELETE']
 app.config['WTF_CSRF_HEADERS'] = ['X-CSRFToken', 'X-CSRF-Token']
-app.config['WTF_CSRF_SSL_STRICT'] = False  # Required for Replit iframe/proxy environment
+app.config['WTF_CSRF_SSL_STRICT'] = True if flask_env == "production" else False  # Enable SSL strict in production
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
 
 # Configure database - enforce PostgreSQL in production
@@ -141,12 +147,15 @@ with app.app_context():
     import k9.models.permissions_new  # noqa: F401
 
     # Bootstrap database on fresh import - creates all tables
-    # For production, use migrations instead
-    try:
-        db.create_all()
-        print("✓ Database tables created successfully")
-    except Exception as e:
-        print(f"Warning: Could not create tables: {e}")
+    # For production, use migrations instead (flask db upgrade)
+    if flask_env != "production":
+        try:
+            db.create_all()
+            print("✓ Database tables created successfully")
+        except Exception as e:
+            print(f"Warning: Could not create tables: {e}")
+    else:
+        print("✓ Production mode: Using migrations for database schema (flask db upgrade)")
     
     # User creation is handled via migrations and manual setup
     # No automatic user creation during app initialization
