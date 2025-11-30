@@ -67,6 +67,84 @@ ACTION_NAMES = {
     'start': {'ar': 'بدء', 'en': 'Start'},
 }
 
+SUBSECTION_NAMES = {
+    'management': 'الإدارة',
+    'details': 'التفاصيل',
+    'assignments': 'التعيينات',
+    'daily': 'اليومي',
+    'weekly': 'الأسبوعي',
+    'unified': 'الموحد',
+    'dashboard': 'لوحة التحكم',
+    'general': 'عام',
+    'profile': 'الملف الشخصي',
+    'schedule': 'الجدول',
+    'reports': 'التقارير',
+    'daily_reports': 'التقارير اليومية',
+    'my_tasks': 'مهامي',
+    'admin': 'إدارة',
+    'users': 'المستخدمين',
+    'settings': 'الإعدادات',
+    'permissions': 'الصلاحيات',
+    'backup': 'النسخ الاحتياطي',
+    'audit': 'سجل التدقيق',
+    'sessions': 'الجلسات',
+    'visits': 'الزيارات',
+    'programs': 'البرامج',
+    'activities': 'الأنشطة',
+    'feeding': 'التغذية',
+    'checkup': 'الفحص الظاهري',
+    'cleaning': 'التنظيف',
+    'grooming': 'العناية',
+    'excretion': 'الإخراج',
+    'deworming': 'مكافحة الديدان',
+    'feeding_log': 'سجل التغذية',
+    'heat_cycles': 'دورات الحرارة',
+    'mating': 'التزاوج',
+    'pregnancy': 'الحمل',
+    'delivery': 'الولادة',
+    'puppies': 'الجراء',
+    'puppy_training': 'تدريب الجراء',
+    'maturity': 'البلوغ',
+    'notifications': 'الإشعارات',
+    'approvals': 'الموافقات',
+    'team': 'الفريق',
+    'dogs': 'الكلاب',
+    'project': 'المشروع',
+    'schedules': 'الجداول',
+    'incidents': 'الحوادث',
+    'suspicions': 'الشبهات',
+    'evaluations': 'التقييمات',
+    'locations': 'المواقع',
+    'main': 'الرئيسية',
+    'index': 'الرئيسية',
+    'login': 'تسجيل الدخول',
+    'logout': 'تسجيل الخروج',
+    'mode': 'الوضع',
+    'setup': 'الإعداد',
+    'create_manager': 'إنشاء مدير',
+    'status': 'الحالة',
+    'backup_codes': 'رموز النسخ الاحتياطي',
+    'password': 'كلمة المرور',
+    'request': 'طلب',
+    'reset': 'إعادة تعيين',
+    'mfa': 'المصادقة الثنائية',
+    'global': 'البحث العام',
+    'google_drive': 'جوجل درايف',
+    'handler': 'السائس',
+    'all': 'الكل',
+    'attendance': 'الحضور',
+    'training': 'التدريب',
+    'breeding': 'التربية',
+    'veterinary': 'البيطرية',
+    'caretaker': 'مقدم الرعاية',
+    'trainer_daily': 'يومي المدرب',
+    'pm_daily': 'يومي مدير المشروع',
+    'pm_weekly': 'أسبوعي مدير المشروع',
+    'handler_daily': 'يومي السائس',
+    'monthly': 'الشهري',
+    'veterinary_daily': 'يومي البيطرية',
+}
+
 def get_action_type(key):
     """Extract the action type from a permission key."""
     parts = key.split('.')
@@ -80,6 +158,18 @@ def get_category(key):
     """Extract the category from a permission key."""
     parts = key.split('.')
     return parts[0] if parts else 'general'
+
+def translate_subsection(subsection):
+    """Translate a subsection name to Arabic."""
+    parts = subsection.split('.')
+    translated_parts = []
+    for part in parts:
+        ar_name = SUBSECTION_NAMES.get(part.lower())
+        if ar_name:
+            translated_parts.append(ar_name)
+        else:
+            translated_parts.append(SUBSECTION_NAMES.get(part.lower().replace('_', ' '), part))
+    return ' - '.join(translated_parts) if translated_parts else subsection
 
 def generate_arabic_name(key, page_name):
     """Generate a proper Arabic name for the permission."""
@@ -95,8 +185,10 @@ def generate_arabic_name(key, page_name):
     
     if len(parts) > 2:
         subsection = '.'.join(parts[1:-1])
-        subsection_ar = page_name if page_name else subsection
+        subsection_ar = translate_subsection(subsection)
         return f"{cat_ar} - {subsection_ar} - {action_ar}"
+    elif len(parts) == 2:
+        return f"{cat_ar} - {action_ar}"
     else:
         return f"{cat_ar} - {action_ar}"
 
