@@ -254,6 +254,9 @@ class User(UserMixin, db.Model):
     mfa_secret = db.Column(db.String(32))
     backup_codes = db.Column(JSON, default=list)
     
+    # Permission cache invalidation - updated when permissions change
+    permissions_updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
     # For project managers - which sections they can access
     allowed_sections = db.Column(JSON, default=list)
     

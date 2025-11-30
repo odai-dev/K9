@@ -35,6 +35,8 @@ def load_user_permissions(user_id):
         Set of permission keys (strings)
     """
     from k9.models.permissions_new import UserPermission, Permission
+    from k9.models.models import User
+    from datetime import datetime
     
     # Query all permissions granted to this user
     user_perms = UserPermission.query.filter_by(user_id=user_id).all()
@@ -47,20 +49,59 @@ def load_user_permissions(user_id):
     
     # Store in session for fast access
     session['user_permissions'] = list(permission_keys)
+    
+    # Store the timestamp when permissions were loaded
+    user = User.query.get(user_id)
+    if user and user.permissions_updated_at:
+        session['permissions_loaded_at'] = user.permissions_updated_at.isoformat()
+    else:
+        session['permissions_loaded_at'] = datetime.utcnow().isoformat()
+    
     session.modified = True
     
     return permission_keys
 
 
+def _should_reload_permissions():
+    """
+    Check if permissions should be reloaded from database.
+    Returns True if the user's permissions have been updated since they were loaded.
+    """
+    from k9.models.models import User
+    from datetime import datetime
+    
+    if not current_user.is_authenticated:
+        return False
+    
+    loaded_at_str = session.get('permissions_loaded_at')
+    if not loaded_at_str:
+        return True  # Never loaded, should load
+    
+    user = User.query.get(current_user.id)
+    if not user or not user.permissions_updated_at:
+        return False
+    
+    try:
+        loaded_at = datetime.fromisoformat(loaded_at_str)
+        return user.permissions_updated_at > loaded_at
+    except (ValueError, TypeError):
+        return True  # Invalid format, reload to be safe
+
+
 def get_user_permissions():
     """
     Get current user's permissions from session.
+    Automatically reloads if permissions have been updated since last load.
     
     Returns:
         Set of permission keys (strings)
     """
     if not current_user.is_authenticated:
         return set()
+    
+    # Check if permissions need to be reloaded (they were updated by admin)
+    if _should_reload_permissions():
+        load_user_permissions(current_user.id)
     
     # Load from session
     perms = session.get('user_permissions', [])
@@ -402,6 +443,8 @@ def grant_permission(user_id, permission_key, granted_by_user_id=None):
     """
     from app import db
     from k9.models.permissions_new import Permission, UserPermission, PermissionChangeLog
+    from k9.models.models import User
+    from datetime import datetime
     
     # Find the permission
     permission = Permission.query.filter_by(key=permission_key).first()
@@ -435,6 +478,11 @@ def grant_permission(user_id, permission_key, granted_by_user_id=None):
     )
     db.session.add(log)
     
+    # Update the user's permissions_updated_at timestamp to invalidate their session cache
+    target_user = User.query.get(user_id)
+    if target_user:
+        target_user.permissions_updated_at = datetime.utcnow()
+    
     db.session.commit()
     
     # Reload permissions if this user is currently logged in
@@ -458,6 +506,8 @@ def revoke_permission(user_id, permission_key, revoked_by_user_id=None):
     """
     from app import db
     from k9.models.permissions_new import Permission, UserPermission, PermissionChangeLog
+    from k9.models.models import User
+    from datetime import datetime
     
     # Find the permission
     permission = Permission.query.filter_by(key=permission_key).first()
@@ -485,6 +535,11 @@ def revoke_permission(user_id, permission_key, revoked_by_user_id=None):
         ip_address=request.remote_addr if has_request_context() else None
     )
     db.session.add(log)
+    
+    # Update the user's permissions_updated_at timestamp to invalidate their session cache
+    target_user = User.query.get(user_id)
+    if target_user:
+        target_user.permissions_updated_at = datetime.utcnow()
     
     db.session.commit()
     
