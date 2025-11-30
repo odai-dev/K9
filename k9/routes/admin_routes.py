@@ -221,10 +221,11 @@ def initialize_user_permissions(user_id):
     if user.role != UserRole.PROJECT_MANAGER:
         return jsonify({'error': 'يمكن تهيئة صلاحيات مديري المشاريع فقط'}), 400
     
-    # Grant default PM permissions
+    # Grant default PM permissions - use correct keys from database
     default_pm_permissions = [
-        'projects.view', 'dogs.view', 'employees.view', 'schedules.view',
-        'shifts.view', 'attendance.view', 'reports.view'
+        'projects.view', 'dogs.view', 'employees.view', 'schedule.view',
+        'shifts.view', 'reports.attendance.view', 'pm.dashboard',
+        'pm.project.view', 'pm.team.view', 'pm.approvals.view'
     ]
     
     count = 0
