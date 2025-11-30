@@ -882,6 +882,109 @@ PERMISSIONS_DATA = [
         "description": "Delete an incident report",
         "sort_order": 4
     },
+    {
+        "key": "incidents.resolve",
+        "name": "Resolve Incident",
+        "name_ar": "حل الحادثة",
+        "name_en": "Resolve Incident",
+        "category": "incidents",
+        "description": "Mark an incident as resolved",
+        "sort_order": 5
+    },
+
+    # ============ SUSPICIONS (5) ============
+    {
+        "key": "suspicions.view",
+        "name": "View Suspicions",
+        "name_ar": "عرض الاشتباهات",
+        "name_en": "View Suspicions",
+        "category": "suspicions",
+        "description": "View suspicion reports",
+        "sort_order": 1
+    },
+    {
+        "key": "suspicions.create",
+        "name": "Create Suspicion",
+        "name_ar": "إنشاء اشتباه",
+        "name_en": "Create Suspicion",
+        "category": "suspicions",
+        "description": "Create a new suspicion report",
+        "sort_order": 2
+    },
+    {
+        "key": "suspicions.edit",
+        "name": "Edit Suspicion",
+        "name_ar": "تعديل اشتباه",
+        "name_en": "Edit Suspicion",
+        "category": "suspicions",
+        "description": "Edit suspicion report details",
+        "sort_order": 3
+    },
+    {
+        "key": "suspicions.delete",
+        "name": "Delete Suspicion",
+        "name_ar": "حذف اشتباه",
+        "name_en": "Delete Suspicion",
+        "category": "suspicions",
+        "description": "Delete a suspicion report",
+        "sort_order": 4
+    },
+    {
+        "key": "suspicions.close",
+        "name": "Close Suspicion",
+        "name_ar": "إغلاق اشتباه",
+        "name_en": "Close Suspicion",
+        "category": "suspicions",
+        "description": "Close a suspicion case",
+        "sort_order": 5
+    },
+
+    # ============ EVALUATIONS (5) ============
+    {
+        "key": "evaluations.view",
+        "name": "View Evaluations",
+        "name_ar": "عرض التقييمات",
+        "name_en": "View Evaluations",
+        "category": "evaluations",
+        "description": "View evaluation records",
+        "sort_order": 1
+    },
+    {
+        "key": "evaluations.create",
+        "name": "Create Evaluation",
+        "name_ar": "إنشاء تقييم",
+        "name_en": "Create Evaluation",
+        "category": "evaluations",
+        "description": "Create a new evaluation",
+        "sort_order": 2
+    },
+    {
+        "key": "evaluations.edit",
+        "name": "Edit Evaluation",
+        "name_ar": "تعديل تقييم",
+        "name_en": "Edit Evaluation",
+        "category": "evaluations",
+        "description": "Edit evaluation details",
+        "sort_order": 3
+    },
+    {
+        "key": "evaluations.delete",
+        "name": "Delete Evaluation",
+        "name_ar": "حذف تقييم",
+        "name_en": "Delete Evaluation",
+        "category": "evaluations",
+        "description": "Delete an evaluation record",
+        "sort_order": 4
+    },
+    {
+        "key": "evaluations.approve",
+        "name": "Approve Evaluation",
+        "name_ar": "اعتماد تقييم",
+        "name_en": "Approve Evaluation",
+        "category": "evaluations",
+        "description": "Approve an evaluation",
+        "sort_order": 5
+    },
 
     # ============ SUPERVISOR (5) ============
     {

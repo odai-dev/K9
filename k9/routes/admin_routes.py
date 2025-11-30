@@ -351,6 +351,8 @@ def get_permissions_matrix(user_id, project_id):
             'accounts': {'ar': 'الحسابات', 'en': 'Accounts', 'icon': 'fa-user-cog'},
             'shifts': {'ar': 'الورديات', 'en': 'Shifts', 'icon': 'fa-clock'},
             'incidents': {'ar': 'الحوادث', 'en': 'Incidents', 'icon': 'fa-exclamation-triangle'},
+            'suspicions': {'ar': 'الاشتباهات', 'en': 'Suspicions', 'icon': 'fa-search'},
+            'evaluations': {'ar': 'التقييمات', 'en': 'Evaluations', 'icon': 'fa-star'},
             'supervisor': {'ar': 'المشرف', 'en': 'Supervisor', 'icon': 'fa-user-tie'},
             'pm': {'ar': 'مدير المشروع', 'en': 'Project Manager', 'icon': 'fa-user-shield'},
             'handlers': {'ar': 'السائسين', 'en': 'Handlers', 'icon': 'fa-user'},

@@ -1,0 +1,37 @@
+There is a major problem in the new permissions system.  
+The General Admin cannot see all screens and operations inside the permissions management screen, even though these screens exist in the system and appear in the Admin interface.
+
+For example:
+I enabled the permission for a Project Manager to “Create Incident”, but when I logged in as that Project Manager, the interface only showed “View Incident” and the button for “Add Incident” or “Suspected Incident” never appeared.  
+This means many screens and actions are still missing from the permissions matrix.
+
+Here is what you MUST fix:
+
+1) The permissions management screen must include ALL screens and ALL actions that exist anywhere in the entire system.  
+   Not some of them — ALL of them.  
+   If a screen or a button exists for the Admin, it MUST appear in the permissions UI so the Admin can enable or disable it.
+
+2) For every screen in the system, you must list all actions separately:
+   - View / Open
+   - Add / Create
+   - Edit / Update
+   - Delete / Remove
+   - Approve / Reject (where applicable)
+
+3) The General Admin must be able to turn ON/OFF each action independently for each user.
+
+4) When the Admin turns ON a permission:
+   - The corresponding button or screen MUST appear immediately in the user’s dashboard.  
+   - Example: If “Create Incident” is ON → the “Add Incident” button must appear in the PM dashboard and must open the create page.  
+   - If “View Approvals” is ON → the user must see the approvals screen.  
+   - If “Suspected Incident” is ON → its button must appear.
+
+5) Any screen or route that exists in the system but is NOT added to the permissions UI is a bug.  
+   You must scan the entire system (routes, templates, buttons) and add every missing screen and every missing action into the permissions matrix.
+
+6) After implementing this:
+   - Test enabling and disabling multiple permissions,
+   - Log in as the user,
+   - Ensure the correct buttons and screens appear or disappear exactly as configured.
+
+Fix this completely and give me a summary of what was added and corrected.
