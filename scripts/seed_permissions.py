@@ -1435,6 +1435,84 @@ PERMISSIONS_DATA = [
         "description": "View training sessions",
         "sort_order": 10
     },
+
+    # ============ ADMIN BACKUP (1) ============
+    {
+        "key": "admin.backup.manage",
+        "name": "Manage Backups",
+        "name_ar": "إدارة النسخ الاحتياطية",
+        "name_en": "Manage Backups",
+        "category": "admin",
+        "description": "Create, restore, and manage system backups",
+        "sort_order": 14
+    },
+
+    # ============ BREEDING DETAILED REPORTS (4) ============
+    {
+        "key": "reports.breeding.feeding.daily.view",
+        "name": "View Daily Feeding Reports",
+        "name_ar": "عرض تقارير التغذية اليومية",
+        "name_en": "View Daily Feeding Reports",
+        "category": "reports.breeding",
+        "description": "View daily breeding feeding reports",
+        "sort_order": 20
+    },
+    {
+        "key": "reports.breeding.feeding.weekly.view",
+        "name": "View Weekly Feeding Reports",
+        "name_ar": "عرض تقارير التغذية الأسبوعية",
+        "name_en": "View Weekly Feeding Reports",
+        "category": "reports.breeding",
+        "description": "View weekly breeding feeding reports",
+        "sort_order": 21
+    },
+    {
+        "key": "reports.breeding.checkup.daily.view",
+        "name": "View Daily Checkup Reports",
+        "name_ar": "عرض تقارير الفحص اليومية",
+        "name_en": "View Daily Checkup Reports",
+        "category": "reports.breeding",
+        "description": "View daily breeding checkup reports",
+        "sort_order": 22
+    },
+    {
+        "key": "reports.breeding.checkup.weekly.view",
+        "name": "View Weekly Checkup Reports",
+        "name_ar": "عرض تقارير الفحص الأسبوعية",
+        "name_en": "View Weekly Checkup Reports",
+        "category": "reports.breeding",
+        "description": "View weekly breeding checkup reports",
+        "sort_order": 23
+    },
+
+    # ============ BREEDING DETAILED ACTIVITY (3) ============
+    {
+        "key": "breeding.deworming.view",
+        "name": "View Deworming Records",
+        "name_ar": "عرض سجلات التطهير",
+        "name_en": "View Deworming Records",
+        "category": "breeding",
+        "description": "View breeding deworming records",
+        "sort_order": 20
+    },
+    {
+        "key": "breeding.deworming.create",
+        "name": "Create Deworming Records",
+        "name_ar": "إنشاء سجلات التطهير",
+        "name_en": "Create Deworming Records",
+        "category": "breeding",
+        "description": "Create breeding deworming records",
+        "sort_order": 21
+    },
+    {
+        "key": "breeding.deworming.edit",
+        "name": "Edit Deworming Records",
+        "name_ar": "تعديل سجلات التطهير",
+        "name_en": "Edit Deworming Records",
+        "category": "breeding",
+        "description": "Edit breeding deworming records",
+        "sort_order": 22
+    },
 ]
 
 
