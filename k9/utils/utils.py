@@ -931,10 +931,11 @@ def get_user_assigned_projects(user):
     for p in managed_projects:
         project_ids.add(p.id)
     
-    # Projects via ProjectAssignment
-    assignments = ProjectAssignment.query.filter_by(user_id=user.id, is_active=True).all()
-    for a in assignments:
-        project_ids.add(a.project_id)
+    # Projects via ProjectAssignment (using employee_id, not user_id)
+    if hasattr(user, 'employee') and user.employee:
+        assignments = ProjectAssignment.query.filter_by(employee_id=user.employee.id, is_active=True).all()
+        for a in assignments:
+            project_ids.add(a.project_id)
     
     if project_ids:
         return Project.query.filter(Project.id.in_(project_ids)).all()
