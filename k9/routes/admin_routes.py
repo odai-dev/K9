@@ -329,24 +329,29 @@ def get_permissions_matrix(user_id, project_id):
         project = Project.query.get_or_404(project_id)
         
         # Define role-specific permission categories
+        # IMPORTANT: These categories must match the 'category' field in Permission table
         ROLE_PERMISSION_CATEGORIES = {
             UserRole.HANDLER: [
-                'handlers', 'handler_reports', 'tasks', 'notifications', 'dogs', 'training',
+                'handlers',  # Handler-specific: dashboard, reports, schedule, notifications
+                'handler_reports', 'tasks', 'notifications', 'dogs', 'training',
                 'reports.training', 'reports.veterinary'
             ],
             UserRole.PROJECT_MANAGER: [
-                'pm', 'dogs', 'employees', 'projects', 'training', 'veterinary',
+                'pm',  # PM-specific: dashboard, approvals, reports, schedules
+                'dogs', 'employees', 'projects', 'training', 'veterinary',
                 'breeding', 'production', 'incidents', 'schedule', 'shifts',
-                'handler_reports', 'supervisor', 'tasks', 'notifications',
+                'handler_reports', 'supervisor', 'tasks', 'notifications', 'cleaning',
                 'reports.attendance', 'reports.training', 'reports.veterinary',
-                'reports.breeding.feeding', 'reports.breeding.checkup', 'reports.caretaker'
+                'reports.breeding.feeding', 'reports.breeding.checkup', 'reports.caretaker',
+                'reports.breeding'  # For detailed breeding reports
             ],
             UserRole.TRAINER: [
                 'training', 'dogs', 'reports.training', 'tasks', 'notifications'
             ],
             UserRole.BREEDER: [
-                'breeding', 'production', 'dogs', 'reports.breeding.feeding',
-                'reports.breeding.checkup', 'reports.caretaker', 'tasks', 'notifications'
+                'breeding', 'production', 'dogs', 'cleaning',
+                'reports.breeding.feeding', 'reports.breeding.checkup', 
+                'reports.caretaker', 'reports.breeding', 'tasks', 'notifications'
             ],
             UserRole.VET: [
                 'veterinary', 'dogs', 'reports.veterinary', 'tasks', 'notifications'

@@ -45,7 +45,7 @@ def sanitize_text(text):
 
 @bp.route('/api/breeding/cleaning/list')
 @login_required
-@require_permission('cleaning:view')
+@require_permission('cleaning.view')
 def list_cleaning_logs():
     """List cleaning logs with filters and KPIs"""
     try:
@@ -159,7 +159,7 @@ def list_cleaning_logs():
 
 @bp.route('/api/breeding/cleaning', methods=['POST'])
 @login_required
-@require_permission('cleaning:create')
+@require_permission('cleaning.create')
 def create_cleaning_log():
     """Create new cleaning log"""
     try:
@@ -267,7 +267,7 @@ def create_cleaning_log():
 
 @bp.route('/api/breeding/cleaning/<log_id>', methods=['PUT'])
 @login_required
-@require_permission('cleaning:edit')
+@require_permission('cleaning.edit')
 def update_cleaning_log(log_id):
     """Update existing cleaning log"""
     try:
@@ -343,7 +343,7 @@ def update_cleaning_log(log_id):
 
 @bp.route('/api/breeding/cleaning/<log_id>', methods=['DELETE'])
 @login_required
-@require_permission('cleaning:delete')
+@require_permission('cleaning.delete')
 def delete_cleaning_log(log_id):
     """Delete cleaning log"""
     try:
