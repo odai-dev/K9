@@ -1,0 +1,71 @@
+There is a serious and still unresolved problem in the permissions system related to:
+
+- Project Managers
+- Handlers (sais)
+- The admin “permissions” screen
+
+I will explain the problem in a clear scenario so you can understand and fix it completely.
+
+I am the General Admin.
+
+When I open the permissions management screen to give permissions to a Project Manager or a Handler, I only see a small set of options. These options are NOT complete and do NOT cover all screens and actions they actually use in the system.
+
+What I need as a General Admin is very simple and very clear:
+
+1) I want to see ALL screens and ALL actions for:
+   - Project Manager role
+   - Handler role
+
+2) For each screen, I want to be able to allow or deny:
+   - View / open the screen
+   - Create / Add
+   - Edit
+   - Delete
+   - Approve / Reject (where applicable)
+
+3) These permissions must appear as ON/OFF switches (or similar) in the permissions UI, so I can control exactly what each user can and cannot do.
+
+Right now, this is NOT happening.
+
+Here is the real problem in behavior:
+
+- I logged in as General Admin.
+- I opened the permissions management for a specific Project Manager.
+- I gave this Project Manager permission to access certain pages (for example: incident logging, approvals).
+- I saved the permissions successfully.
+- Then I logged out and logged in as that Project Manager.
+- When I click on the "incident" button to log an incident, I get a message that I am not allowed to access this page.
+- When I click on the approvals screen, I also get that I am not allowed to access it.
+- Some of these screens (like approvals) do not even appear in the permissions UI for me to turn them ON or OFF. So I cannot control them at all.
+
+This means two things are wrong:
+
+1) The permissions management UI is incomplete:
+   - It does NOT list all screens and actions that belong to Project Managers and Handlers.
+   - Some important screens (like incident reporting, approvals, etc.) are completely missing from the permissions list.
+
+2) The permissions that I turn ON for a user are not being fully applied:
+   - Even after I enable a permission and save changes as General Admin,
+     the user (Project Manager or Handler) still cannot open that screen
+     and sees a "not allowed to access this page" message.
+
+I want you to:
+
+- Make the permissions management screen truly COMPLETE for Project Managers and Handlers.
+- Every screen and every important action they can do in the system must appear there with a clear label.
+- I must be able to turn ON/OFF access to:
+  - Incident logging screen
+  - Approvals screen
+  - Any other PM or Handler screen (dashboards, reports, schedules, etc.)
+- After I enable a permission and save it, the user must actually be able to access that screen in their interface. No more “not allowed” errors when the permission is ON.
+
+Please:
+
+- Review all Project Manager and Handler screens and operations.
+- Make sure they are all represented in the permissions UI for the General Admin.
+- Make sure that when I turn a permission ON and save it, it is applied correctly and the user can access that screen.
+- Fix any missing links between the permissions and the actual screens.
+
+At the end, give me a short summary of:
+- Which screens and actions you added to the permissions UI,
+- And how you ensured that the permissions now actually work end-to-end for Project Managers and Handlers.
