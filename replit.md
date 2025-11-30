@@ -54,6 +54,14 @@ Preferred communication style: Simple, everyday language.
 - **Production Readiness**: Complete removal of debug code, comprehensive error handling with structured logging, and robust security hardening including CSRF protection and file upload security.
 - **Unified PDF Design**: Minimal Elegant design system implemented across all PDF reports for consistent professional document generation.
 
+## Recent Maintenance (2025-11-30)
+- **Template Cleanup**: Removed 15 deprecated/orphaned templates that were replaced by modern versions:
+  - Admin: `admin_panel.html`, `permission_management.html` (replaced by new dashboard and permission system)
+  - Training: `add.html`, `list.html` (merged into breeding training activity)
+  - Projects: `list.html`, `dashboard.html`, `assignment_add.html`, `dog_add.html`, `sections_overview.html` (replaced by modern_list and modern_dashboard)
+  - Production: `list.html` (unused legacy)
+  - Reports: `trainer_daily.html`, `veterinary/daily.html`, breeding daily/weekly variants (replaced by unified report system)
+
 ## External Dependencies
 
 ### Python Packages
