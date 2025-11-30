@@ -66,25 +66,37 @@ def _should_reload_permissions():
     """
     Check if permissions should be reloaded from database.
     Returns True if the user's permissions have been updated since they were loaded.
+    Uses flask.g to cache the check per request to avoid multiple DB queries.
     """
+    from flask import g
     from k9.models.models import User
     from datetime import datetime
     
     if not current_user.is_authenticated:
         return False
     
+    # Cache the result in flask.g to avoid multiple DB queries per request
+    cache_key = '_permissions_reload_checked'
+    if hasattr(g, cache_key):
+        return getattr(g, cache_key)
+    
     loaded_at_str = session.get('permissions_loaded_at')
     if not loaded_at_str:
+        setattr(g, cache_key, True)
         return True  # Never loaded, should load
     
     user = User.query.get(current_user.id)
     if not user or not user.permissions_updated_at:
+        setattr(g, cache_key, False)
         return False
     
     try:
         loaded_at = datetime.fromisoformat(loaded_at_str)
-        return user.permissions_updated_at > loaded_at
+        result = user.permissions_updated_at > loaded_at
+        setattr(g, cache_key, result)
+        return result
     except (ValueError, TypeError):
+        setattr(g, cache_key, True)
         return True  # Invalid format, reload to be safe
 
 
