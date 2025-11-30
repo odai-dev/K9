@@ -19,7 +19,8 @@
 
 .step-indicator {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
+    gap: 60px;
     margin-bottom: 40px;
     position: relative;
 }
@@ -28,47 +29,50 @@
     content: '';
     position: absolute;
     top: 20px;
-    right: 25%;
-    left: 25%;
-    height: 2px;
-    background: #e2e8f0;
+    right: 30%;
+    left: 30%;
+    height: 3px;
+    background: linear-gradient(90deg, #e2e8f0 0%, #e2e8f0 100%);
     z-index: 0;
 }
 
 .step {
-    flex: 1;
     text-align: center;
     position: relative;
     z-index: 1;
 }
 
 .step-circle {
-    width: 40px;
-    height: 40px;
+    width: 45px;
+    height: 45px;
     border-radius: 50%;
     background: #e2e8f0;
     color: #718096;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 1.1rem;
     margin-bottom: 10px;
     transition: all 0.3s ease;
+    border: 3px solid transparent;
 }
 
 .step.active .step-circle {
-    background: #1a365d;
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
     color: white;
-    transform: scale(1.1);
+    transform: scale(1.15);
+    box-shadow: 0 5px 15px rgba(26, 54, 93, 0.4);
 }
 
 .step.completed .step-circle {
-    background: #10b981;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: white;
+    border-color: #059669;
 }
 
 .step-label {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     color: #718096;
     font-weight: 500;
 }
@@ -78,25 +82,30 @@
     font-weight: 600;
 }
 
+.step.completed .step-label {
+    color: #059669;
+}
+
 .selection-card {
     background: #f7fafc;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
-    padding: 20px;
+    padding: 18px 20px;
     cursor: pointer;
     transition: all 0.3s ease;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
 }
 
 .selection-card:hover {
     border-color: #1a365d;
     background: white;
     transform: translateX(-5px);
+    box-shadow: 0 4px 12px rgba(26, 54, 93, 0.1);
 }
 
 .selection-card.selected {
-    border-color: #1a365d;
-    background: #edf2f7;
+    border-color: #10b981;
+    background: #ecfdf5;
 }
 
 .selection-card-title {
@@ -107,19 +116,33 @@
 }
 
 .selection-card-subtitle {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: #718096;
 }
 
-.permission-section {
+.selection-card .badge-assigned {
+    background: #10b981;
+    color: white;
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border-radius: 10px;
+    margin-right: 8px;
+}
+
+.permission-category {
     background: white;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     overflow: hidden;
+    transition: all 0.3s ease;
 }
 
-.section-header {
+.permission-category:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.category-header {
     background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
     color: white;
     padding: 15px 20px;
@@ -130,99 +153,136 @@
     transition: all 0.3s ease;
 }
 
-.section-header:hover {
+.category-header:hover {
     background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);
 }
 
-.section-title {
-    font-size: 1.1rem;
+.category-header.expanded {
+    border-radius: 0;
+}
+
+.category-title {
+    font-size: 1.05rem;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
-.section-body {
-    padding: 20px;
+.category-title i {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.category-stats {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.category-stats .stat-badge {
+    background: rgba(255,255,255,0.2);
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+}
+
+.category-stats .stat-granted {
+    background: rgba(16, 185, 129, 0.3);
+}
+
+.category-toggle-icon {
+    transition: transform 0.3s ease;
+}
+
+.category-header.expanded .category-toggle-icon {
+    transform: rotate(180deg);
+}
+
+.category-body {
     display: none;
+    padding: 0;
+    background: #fafbfc;
 }
 
-.section-body.show {
+.category-body.show {
     display: block;
 }
 
-.permission-item {
+.category-actions {
+    background: #f1f5f9;
+    padding: 12px 20px;
+    border-bottom: 1px solid #e2e8f0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 15px;
-    border-bottom: 1px solid #f7fafc;
+}
+
+.category-actions .btn-sm {
+    padding: 5px 12px;
+    font-size: 0.8rem;
+}
+
+.permission-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f0f4f8;
     transition: background 0.2s ease;
 }
 
-.permission-item:last-child {
+.permission-row:last-child {
     border-bottom: none;
 }
 
-.permission-item:hover {
-    background: #f7fafc;
+.permission-row:hover {
+    background: #f0f4f8;
+}
+
+.permission-info {
+    flex: 1;
 }
 
 .permission-name {
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: #2d3748;
     font-weight: 500;
+    margin-bottom: 3px;
+}
+
+.permission-key {
+    font-size: 0.75rem;
+    color: #a0aec0;
+    font-family: monospace;
 }
 
 .permission-type-badge {
     display: inline-block;
     padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 0.75rem;
+    border-radius: 15px;
+    font-size: 0.7rem;
     font-weight: 600;
-    margin-right: 10px;
+    margin-left: 10px;
+    text-transform: uppercase;
 }
 
-.permission-type-VIEW {
-    background: #e6f7ff;
-    color: #0066cc;
-}
-
-.permission-type-CREATE {
-    background: #e6ffe6;
-    color: #00cc00;
-}
-
-.permission-type-EDIT {
-    background: #fff7e6;
-    color: #ff9900;
-}
-
-.permission-type-DELETE {
-    background: #ffe6e6;
-    color: #cc0000;
-}
-
-.permission-type-EXPORT {
-    background: #f3e6ff;
-    color: #9900cc;
-}
-
-.permission-type-ASSIGN {
-    background: #e6f2ff;
-    color: #0080ff;
-}
-
-.permission-type-APPROVE {
-    background: #e6fff2;
-    color: #00cc66;
-}
+.permission-type-VIEW { background: #dbeafe; color: #1d4ed8; }
+.permission-type-CREATE { background: #dcfce7; color: #15803d; }
+.permission-type-EDIT { background: #fef3c7; color: #b45309; }
+.permission-type-DELETE { background: #fee2e2; color: #b91c1c; }
+.permission-type-EXPORT { background: #f3e8ff; color: #7c3aed; }
+.permission-type-ASSIGN { background: #e0f2fe; color: #0284c7; }
+.permission-type-APPROVE { background: #d1fae5; color: #047857; }
+.permission-type-ACCESS { background: #fce7f3; color: #be185d; }
+.permission-type-SUBMIT { background: #cffafe; color: #0e7490; }
+.permission-type-MANAGE { background: #fef9c3; color: #a16207; }
 
 .toggle-switch {
     position: relative;
     display: inline-block;
-    width: 50px;
-    height: 24px;
+    width: 52px;
+    height: 26px;
 }
 
 .toggle-switch input {
@@ -239,28 +299,34 @@
     right: 0;
     bottom: 0;
     background-color: #cbd5e0;
-    transition: .4s;
-    border-radius: 24px;
+    transition: .3s;
+    border-radius: 26px;
 }
 
 .slider:before {
     position: absolute;
     content: "";
-    height: 18px;
-    width: 18px;
+    height: 20px;
+    width: 20px;
     left: 3px;
     bottom: 3px;
     background-color: white;
-    transition: .4s;
+    transition: .3s;
     border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 input:checked + .slider {
-    background-color: #10b981;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
 }
 
 input:checked + .slider:before {
     transform: translateX(26px);
+}
+
+input:disabled + .slider {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .save-button {
@@ -272,10 +338,10 @@ input:checked + .slider:before {
     color: white;
     border: none;
     border-radius: 50px;
-    padding: 15px 40px;
+    padding: 15px 50px;
     font-size: 1.1rem;
     font-weight: 600;
-    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
     cursor: pointer;
     transition: all 0.3s ease;
     z-index: 1000;
@@ -284,11 +350,13 @@ input:checked + .slider:before {
 
 .save-button:hover {
     transform: translateX(-50%) translateY(-3px);
-    box-shadow: 0 15px 35px rgba(16, 185, 129, 0.4);
+    box-shadow: 0 15px 40px rgba(16, 185, 129, 0.5);
 }
 
 .save-button.show {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .user-info-card {
@@ -296,23 +364,70 @@ input:checked + .slider:before {
     color: white;
     border-radius: 15px;
     padding: 25px;
-    margin-bottom: 30px;
+    margin-bottom: 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.user-info-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-avatar {
+    width: 60px;
+    height: 60px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
 }
 
 .user-info-title {
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     font-weight: 600;
     margin-bottom: 5px;
 }
 
 .user-info-subtitle {
     opacity: 0.9;
-    font-size: 1rem;
+    font-size: 0.95rem;
+}
+
+.user-info-right {
+    text-align: left;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.stat-item {
+    background: rgba(255,255,255,0.15);
+    padding: 10px 15px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    opacity: 0.8;
 }
 
 .loading-spinner {
     text-align: center;
-    padding: 50px;
+    padding: 60px;
     display: none;
 }
 
@@ -336,42 +451,140 @@ input:checked + .slider:before {
     background: white;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
-    padding: 12px 20px;
+    padding: 14px 20px;
     font-size: 1rem;
     width: 100%;
     margin-bottom: 20px;
-    transition: border-color 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 .search-box:focus {
     outline: none;
     border-color: #1a365d;
+    box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.1);
 }
 
-.btn-primary-custom {
-    background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
-    color: white;
-    border: none;
+.filter-bar {
+    background: #f7fafc;
+    border-radius: 12px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.filter-btn {
+    padding: 8px 16px;
     border-radius: 8px;
-    padding: 10px 25px;
-    font-weight: 600;
-    transition: all 0.3s ease;
+    border: 2px solid #e2e8f0;
+    background: white;
+    color: #4a5568;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.btn-primary-custom:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(26, 54, 93, 0.3);
+.filter-btn:hover {
+    border-color: #1a365d;
+    color: #1a365d;
 }
 
-.changes-indicator {
-    display: inline-block;
+.filter-btn.active {
+    background: #1a365d;
+    border-color: #1a365d;
+    color: white;
+}
+
+.changes-badge {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
     background: #fbbf24;
     color: #78350f;
-    padding: 5px 15px;
+    padding: 8px 20px;
     border-radius: 20px;
-    font-size: 0.9rem;
     font-weight: 600;
-    margin-right: 15px;
+    display: none;
+    z-index: 999;
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+}
+
+.changes-badge.show {
+    display: block;
+}
+
+.btn-back {
+    background: #f1f5f9;
+    border: none;
+    color: #475569;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-back:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+}
+
+.project-info-bar {
+    background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 18px 25px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.project-info-bar h5 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.project-info-bar .project-code {
+    opacity: 0.8;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .step-indicator {
+        gap: 30px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .user-info-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+    }
+    
+    .user-info-left {
+        flex-direction: column;
+    }
+    
+    .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-buttons {
+        justify-content: center;
+    }
 }
 </style>
 {% endblock %}
@@ -384,14 +597,13 @@ input:checked + .slider:before {
                 <i class="fas fa-user-lock me-2"></i>
                 إدارة الصلاحيات الشاملة
             </h2>
-            <p class="text-muted">تحكم كامل في صلاحيات جميع المستخدمين حسب المشروع</p>
+            <p class="text-muted">تحكم كامل في صلاحيات جميع المستخدمين - جميع الشاشات والعمليات</p>
         </div>
     </div>
 
     <div class="permissions-container">
-        <!-- Step Indicator -->
         <div class="step-indicator">
-            <div class="step" id="step1" data-step="1">
+            <div class="step active" id="step1" data-step="1">
                 <div class="step-circle">1</div>
                 <div class="step-label">اختيار المشروع</div>
             </div>
@@ -405,80 +617,104 @@ input:checked + .slider:before {
             </div>
         </div>
 
-        <!-- Step 1: Project Selection -->
         <div class="step-content" id="step1-content">
-            <h4 class="mb-4">اختر المشروع لإدارة صلاحياته</h4>
-            <input type="text" class="search-box" id="project-search" placeholder="🔍 ابحث عن مشروع...">
+            <h4 class="mb-4"><i class="fas fa-project-diagram me-2"></i>اختر المشروع</h4>
+            <input type="text" class="search-box" id="project-search" placeholder="🔍 ابحث عن مشروع بالاسم أو الكود...">
             <div id="projects-list" class="loading-spinner show">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">جاري التحميل...</span>
-                </div>
+                <div class="spinner-border text-primary" role="status"></div>
                 <p class="mt-3">جاري تحميل المشاريع...</p>
             </div>
         </div>
 
-        <!-- Step 2: User Selection -->
         <div class="step-content" id="step2-content" style="display: none;">
-            <button class="btn btn-sm btn-outline-secondary mb-3" onclick="goToStep(1)">
+            <button class="btn btn-back mb-3" onclick="goToStep(1)">
                 <i class="fas fa-arrow-right me-2"></i>العودة للمشاريع
             </button>
-            <div class="user-info-card" style="background: linear-gradient(135deg, #2c5282 0%, #1a365d 100%);">
-                <div class="user-info-title" id="selected-project-name"></div>
-                <div class="user-info-subtitle" id="selected-project-code"></div>
-            </div>
-            <h4 class="mb-4">اختر المستخدم لإدارة صلاحياته</h4>
-            <input type="text" class="search-box" id="user-search" placeholder="🔍 ابحث عن مستخدم...">
-            <div id="users-list" class="loading-spinner show">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">جاري التحميل...</span>
+            <div class="project-info-bar">
+                <div>
+                    <h5 id="selected-project-name"></h5>
+                    <span class="project-code" id="selected-project-code"></span>
                 </div>
+                <i class="fas fa-building fa-2x" style="opacity: 0.5;"></i>
+            </div>
+            <h4 class="mb-4"><i class="fas fa-user me-2"></i>اختر المستخدم</h4>
+            <input type="text" class="search-box" id="user-search" placeholder="🔍 ابحث عن مستخدم بالاسم أو الرقم الوظيفي...">
+            <div id="users-list" class="loading-spinner show">
+                <div class="spinner-border text-primary" role="status"></div>
                 <p class="mt-3">جاري تحميل المستخدمين...</p>
             </div>
         </div>
 
-        <!-- Step 3: Permissions Management -->
         <div class="step-content" id="step3-content" style="display: none;">
-            <button class="btn btn-sm btn-outline-secondary mb-3" onclick="goToStep(2)">
+            <button class="btn btn-back mb-3" onclick="goToStep(2)">
                 <i class="fas fa-arrow-right me-2"></i>العودة للمستخدمين
             </button>
+            
             <div class="user-info-card">
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="user-info-left">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
                     <div>
                         <div class="user-info-title" id="selected-user-name"></div>
-                        <div class="user-info-subtitle" id="selected-user-role"></div>
+                        <div class="user-info-subtitle">
+                            <span id="selected-user-role"></span> | 
+                            <span id="selected-user-project"></span>
+                        </div>
                     </div>
-                    <div>
-                        <span class="changes-indicator" id="changes-indicator" style="display: none;">
-                            <i class="fas fa-exclamation-circle me-1"></i>
-                            <span id="changes-count">0</span> تغيير
-                        </span>
+                </div>
+                <div class="user-info-right">
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-total">0</div>
+                            <div class="stat-label">إجمالي</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-granted">0</div>
+                            <div class="stat-label">مفعّل</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-categories">0</div>
+                            <div class="stat-label">فئة</div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="mb-0">إدارة الصلاحيات</h4>
+
+            <div class="filter-bar">
                 <div>
-                    <button class="btn btn-sm btn-success me-2" onclick="toggleAllPermissions(true)">
-                        <i class="fas fa-check-circle me-2"></i>تفعيل الكل
+                    <input type="text" class="form-control" id="permission-search" placeholder="🔍 ابحث في الصلاحيات..." style="min-width: 300px;">
+                </div>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" onclick="filterPermissions('all')">الكل</button>
+                    <button class="filter-btn" onclick="filterPermissions('granted')">المفعّلة</button>
+                    <button class="filter-btn" onclick="filterPermissions('denied')">المعطّلة</button>
+                </div>
+                <div>
+                    <button class="btn btn-success btn-sm me-2" onclick="toggleAllPermissions(true)">
+                        <i class="fas fa-check-circle me-1"></i>تفعيل الكل
                     </button>
-                    <button class="btn btn-sm btn-danger" onclick="toggleAllPermissions(false)">
-                        <i class="fas fa-times-circle me-2"></i>إلغاء الكل
+                    <button class="btn btn-danger btn-sm" onclick="toggleAllPermissions(false)">
+                        <i class="fas fa-times-circle me-1"></i>إلغاء الكل
                     </button>
                 </div>
             </div>
+
             <div id="permissions-list" class="loading-spinner show">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">جاري التحميل...</span>
-                </div>
+                <div class="spinner-border text-primary" role="status"></div>
                 <p class="mt-3">جاري تحميل الصلاحيات...</p>
             </div>
         </div>
     </div>
 
-    <!-- Save Button -->
+    <div class="changes-badge" id="changes-badge">
+        <i class="fas fa-exclamation-circle me-2"></i>
+        <span id="changes-count">0</span> تغيير غير محفوظ
+    </div>
+
     <button class="save-button" id="save-button" onclick="savePermissions()">
-        <i class="fas fa-save me-2"></i>
-        حفظ التغييرات
+        <i class="fas fa-save"></i>
+        <span>حفظ التغييرات</span>
     </button>
 </div>
 {% endblock %}
@@ -491,69 +727,102 @@ let selectedUser = null;
 let allPermissions = [];
 let changedPermissions = {};
 let originalPermissions = {};
+let currentFilter = 'all';
 
-// Get CSRF token from meta tag or cookie
+const ROLE_NAMES = {
+    'HANDLER': 'سائس',
+    'PROJECT_MANAGER': 'مدير مشروع',
+    'GENERAL_ADMIN': 'مسؤول عام',
+    'TRAINER': 'مدرب',
+    'BREEDER': 'مربي',
+    'VET': 'طبيب بيطري'
+};
+
 function getCSRFToken() {
     const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-    if (csrfMeta) {
-        return csrfMeta.getAttribute('content');
-    }
-    
-    // Try to get from cookie
+    if (csrfMeta) return csrfMeta.getAttribute('content');
     const cookies = document.cookie.split(';');
     for (let cookie of cookies) {
         const [name, value] = cookie.trim().split('=');
-        if (name === 'csrf_token') {
-            return value;
-        }
+        if (name === 'csrf_token') return value;
     }
-    
     return '';
 }
 
-// Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     goToStep(1);
     loadProjects();
+    
+    document.getElementById('project-search').addEventListener('input', function(e) {
+        filterItems('projects-list', e.target.value.toLowerCase(), '.selection-card');
+    });
+    
+    document.getElementById('user-search').addEventListener('input', function(e) {
+        filterItems('users-list', e.target.value.toLowerCase(), '.selection-card');
+    });
+    
+    document.getElementById('permission-search').addEventListener('input', function(e) {
+        filterPermissionsList(e.target.value.toLowerCase());
+    });
 });
 
-// Load all projects
+function filterItems(containerId, searchText, selector) {
+    const container = document.getElementById(containerId);
+    const items = container.querySelectorAll(selector);
+    items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(searchText) ? '' : 'none';
+    });
+}
+
+function filterPermissionsList(searchText) {
+    const categories = document.querySelectorAll('.permission-category');
+    categories.forEach(cat => {
+        const rows = cat.querySelectorAll('.permission-row');
+        let visibleCount = 0;
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const match = text.includes(searchText);
+            row.style.display = match ? '' : 'none';
+            if (match) visibleCount++;
+        });
+        cat.style.display = visibleCount > 0 || !searchText ? '' : 'none';
+    });
+}
+
+function goToStep(step) {
+    currentStep = step;
+    
+    document.querySelectorAll('.step').forEach((s, i) => {
+        s.classList.remove('active', 'completed');
+        if (i + 1 < step) s.classList.add('completed');
+        else if (i + 1 === step) s.classList.add('active');
+    });
+    
+    document.querySelectorAll('.step-content').forEach((c, i) => {
+        c.style.display = i + 1 === step ? 'block' : 'none';
+    });
+}
+
 function loadProjects() {
     const container = document.getElementById('projects-list');
     container.className = 'loading-spinner show';
-    container.innerHTML = `
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">جاري التحميل...</span>
-        </div>
-        <p class="mt-3">جاري تحميل المشاريع...</p>
-    `;
+    container.innerHTML = '<div class="spinner-border text-primary"></div><p class="mt-3">جاري تحميل المشاريع...</p>';
     
     fetch('/admin/permissions/projects')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('فشل في تحميل المشاريع');
-            }
-            return response.json();
-        })
-        .then(data => {
-            displayProjects(data.projects);
-        })
+        .then(response => response.json())
+        .then(data => displayProjects(data.projects))
         .catch(error => {
             container.className = '';
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-exclamation-triangle text-warning"></i>
                     <h5>فشل في تحميل المشاريع</h5>
-                    <p>${error.message || 'حدث خطأ أثناء تحميل المشاريع'}</p>
-                    <button class="btn btn-primary-custom mt-3" onclick="loadProjects()">
-                        <i class="fas fa-redo me-2"></i>إعادة المحاولة
-                    </button>
-                </div>
-            `;
+                    <button class="btn btn-primary mt-3" onclick="loadProjects()">إعادة المحاولة</button>
+                </div>`;
         });
 }
 
-// Display projects list
 function displayProjects(projects) {
     const container = document.getElementById('projects-list');
     container.className = '';
@@ -563,59 +832,61 @@ function displayProjects(projects) {
             <div class="empty-state">
                 <i class="fas fa-folder-open"></i>
                 <h5>لا توجد مشاريع</h5>
-                <p>لم يتم العثور على أي مشاريع في النظام</p>
-            </div>
-        `;
+            </div>`;
         return;
     }
     
-    let html = `<div class="mb-3 alert alert-info">
+    let html = `<div class="alert alert-info mb-4">
         <i class="fas fa-info-circle me-2"></i>
-        تم العثور على <strong>${projects.length}</strong> مشروع. اختر مشروعاً لإدارة صلاحياته.
+        تم العثور على <strong>${projects.length}</strong> مشروع - اختر مشروعاً لإدارة صلاحياته
     </div>`;
     
     projects.forEach(project => {
+        const statusBadge = project.status === 'ACTIVE' ? 
+            '<span class="badge bg-success">نشط</span>' : 
+            '<span class="badge bg-secondary">' + project.status + '</span>';
+        
         html += `
             <div class="selection-card" onclick="selectProject('${project.id}', '${project.name}', '${project.code}')">
-                <div class="selection-card-title">
-                    <i class="fas fa-project-diagram me-2"></i>${project.name}
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="selection-card-title">
+                            <i class="fas fa-project-diagram me-2"></i>${project.name}
+                        </div>
+                        <div class="selection-card-subtitle">
+                            <i class="fas fa-hashtag me-1"></i>${project.code} | 
+                            <i class="fas fa-users me-1"></i>${project.employees_count} موظف
+                        </div>
+                    </div>
+                    <div>${statusBadge}</div>
                 </div>
-                <div class="selection-card-subtitle">
-                    <i class="fas fa-code me-2"></i>كود المشروع: ${project.code} | 
-                    <i class="fas fa-users me-2"></i>الموظفون: ${project.employees_count}
-                </div>
-            </div>
-        `;
+            </div>`;
     });
     
     container.innerHTML = html;
 }
 
-// Select a project
 function selectProject(projectId, projectName, projectCode) {
     selectedProject = { id: projectId, name: projectName, code: projectCode };
     document.getElementById('selected-project-name').textContent = projectName;
-    document.getElementById('selected-project-code').textContent = `كود المشروع: ${projectCode}`;
+    document.getElementById('selected-project-code').textContent = 'كود: ' + projectCode;
     goToStep(2);
     loadUsers(projectId);
 }
 
-// Load users for selected project
 function loadUsers(projectId) {
     const container = document.getElementById('users-list');
     container.className = 'loading-spinner show';
     
     fetch(`/admin/permissions/users/${projectId}`)
         .then(response => response.json())
-        .then(data => {
-            displayUsers(data.users);
-        })
+        .then(data => displayUsers(data.users))
         .catch(error => {
-            showError('فشل في تحميل المستخدمين');
+            container.className = '';
+            container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h5>فشل في تحميل المستخدمين</h5></div>';
         });
 }
 
-// Display users list
 function displayUsers(users) {
     const container = document.getElementById('users-list');
     container.className = '';
@@ -625,310 +896,316 @@ function displayUsers(users) {
             <div class="empty-state">
                 <i class="fas fa-users"></i>
                 <h5>لا يوجد مستخدمون</h5>
-                <p>لم يتم العثور على أي مستخدمين مرتبطين بهذا المشروع</p>
-            </div>
-        `;
+            </div>`;
         return;
     }
     
-    let html = '';
+    let html = `<div class="alert alert-info mb-4">
+        <i class="fas fa-info-circle me-2"></i>
+        تم العثور على <strong>${users.length}</strong> مستخدم - اختر مستخدماً لإدارة صلاحياته
+    </div>`;
+    
     users.forEach(user => {
-        const roleName = getRoleName(user.role);
+        const roleName = ROLE_NAMES[user.role] || user.role;
+        const assignedBadge = user.is_assigned ? '<span class="badge-assigned">معيّن</span>' : '';
+        
         html += `
             <div class="selection-card" onclick="selectUser('${user.id}', '${user.full_name}', '${user.role}')">
-                <div class="selection-card-title">
-                    <i class="fas fa-user me-2"></i>${user.full_name}
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="selection-card-title">
+                            ${assignedBadge}
+                            <i class="fas fa-user me-2"></i>${user.full_name}
+                        </div>
+                        <div class="selection-card-subtitle">
+                            <i class="fas fa-id-badge me-1"></i>${user.username} | 
+                            <i class="fas fa-user-tag me-1"></i>${roleName} | 
+                            <i class="fas fa-briefcase me-1"></i>${user.employee_name || '-'}
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-left text-muted"></i>
                 </div>
-                <div class="selection-card-subtitle">
-                    ${user.username} | ${roleName} | ${user.employee_name} (${user.employee_id})
-                </div>
-            </div>
-        `;
+            </div>`;
     });
     
     container.innerHTML = html;
 }
 
-// Select a user
 function selectUser(userId, userName, userRole) {
     selectedUser = { id: userId, name: userName, role: userRole };
     document.getElementById('selected-user-name').textContent = userName;
-    document.getElementById('selected-user-role').textContent = getRoleName(userRole);
+    document.getElementById('selected-user-role').textContent = ROLE_NAMES[userRole] || userRole;
+    document.getElementById('selected-user-project').textContent = selectedProject.name;
     goToStep(3);
     loadPermissions(userId, selectedProject.id);
 }
 
-// Load permissions matrix
 function loadPermissions(userId, projectId) {
     const container = document.getElementById('permissions-list');
     container.className = 'loading-spinner show';
+    changedPermissions = {};
+    originalPermissions = {};
+    updateChangesIndicator();
     
     fetch(`/admin/permissions/matrix/${userId}/${projectId}`)
         .then(response => response.json())
         .then(data => {
             allPermissions = data.permissions;
-            originalPermissions = {};
+            
+            document.getElementById('stat-total').textContent = data.stats.total;
+            document.getElementById('stat-granted').textContent = data.stats.granted;
+            document.getElementById('stat-categories').textContent = data.stats.categories_count;
+            
             data.permissions.forEach(perm => {
-                const key = `${perm.section}.${perm.subsection}.${perm.permission_type}`;
-                originalPermissions[key] = perm.is_granted;
+                originalPermissions[perm.key] = perm.is_granted;
             });
+            
             displayPermissions(data.permissions);
         })
         .catch(error => {
-            showError('فشل في تحميل الصلاحيات');
+            container.className = '';
+            container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h5>فشل في تحميل الصلاحيات</h5></div>';
         });
 }
 
-// Display permissions
 function displayPermissions(permissions) {
     const container = document.getElementById('permissions-list');
     container.className = '';
     
-    // Group permissions by section
-    const sections = {};
+    const categories = {};
     permissions.forEach(perm => {
-        if (!sections[perm.section]) {
-            sections[perm.section] = [];
+        if (!categories[perm.category]) {
+            categories[perm.category] = {
+                name_ar: perm.category_ar,
+                icon: perm.category_icon,
+                permissions: []
+            };
         }
-        sections[perm.section].push(perm);
+        categories[perm.category].permissions.push(perm);
     });
     
     let html = '';
-    Object.keys(sections).forEach(sectionKey => {
-        const sectionPerms = sections[sectionKey];
-        const sectionName = sectionPerms[0].name_ar;
+    Object.keys(categories).sort().forEach(catKey => {
+        const cat = categories[catKey];
+        const grantedCount = cat.permissions.filter(p => p.is_granted).length;
         
         html += `
-            <div class="permission-section">
-                <div class="section-header" onclick="toggleSection(this)">
-                    <div class="section-title">
-                        <i class="fas fa-chevron-left transition-icon"></i>
-                        ${sectionName}
+            <div class="permission-category" data-category="${catKey}">
+                <div class="category-header" onclick="toggleCategory(this)">
+                    <div class="category-title">
+                        <i class="fas ${cat.icon}"></i>
+                        <span>${cat.name_ar}</span>
+                        <span style="opacity: 0.7; font-size: 0.8rem;">(${catKey})</span>
                     </div>
-                    <div>
-                        <span class="badge bg-light text-dark">${sectionPerms.length} صلاحية</span>
+                    <div class="category-stats">
+                        <span class="stat-badge stat-granted">${grantedCount}/${cat.permissions.length} مفعّل</span>
+                        <i class="fas fa-chevron-down category-toggle-icon"></i>
                     </div>
                 </div>
-                <div class="section-body">
-        `;
+                <div class="category-body">
+                    <div class="category-actions">
+                        <span class="text-muted">${cat.permissions.length} صلاحية</span>
+                        <div>
+                            <button class="btn btn-outline-success btn-sm me-2" onclick="toggleCategoryPermissions('${catKey}', true, event)">
+                                <i class="fas fa-check me-1"></i>تفعيل الكل
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="toggleCategoryPermissions('${catKey}', false, event)">
+                                <i class="fas fa-times me-1"></i>إلغاء الكل
+                            </button>
+                        </div>
+                    </div>`;
         
-        sectionPerms.forEach(perm => {
-            const permKey = `${perm.section}.${perm.subsection}.${perm.permission_type}`;
+        cat.permissions.forEach(perm => {
+            const typeClass = `permission-type-${perm.permission_type}`;
             html += `
-                <div class="permission-item">
-                    <div>
-                        <span class="permission-type-badge permission-type-${perm.permission_type}">
-                            ${perm.permission_type}
-                        </span>
-                        <span class="permission-name">${perm.name_ar}</span>
+                <div class="permission-row" data-granted="${perm.is_granted}">
+                    <div class="permission-info">
+                        <div class="permission-name">
+                            ${perm.name_ar}
+                            <span class="permission-type-badge ${typeClass}">${perm.permission_type}</span>
+                        </div>
+                        <div class="permission-key">${perm.key}</div>
                     </div>
                     <label class="toggle-switch">
                         <input type="checkbox" 
                                ${perm.is_granted ? 'checked' : ''} 
-                               onchange="togglePermission('${perm.section}', '${perm.subsection}', '${perm.permission_type}', this.checked)"
-                               data-perm-key="${permKey}">
+                               data-perm-key="${perm.key}"
+                               data-section="${perm.section}"
+                               data-subsection="${perm.subsection}"
+                               data-type="${perm.permission_type}"
+                               onchange="togglePermission(this)">
                         <span class="slider"></span>
                     </label>
-                </div>
-            `;
+                </div>`;
         });
         
-        html += `
-                </div>
-            </div>
-        `;
+        html += '</div></div>';
     });
     
     container.innerHTML = html;
 }
 
-// Toggle section visibility
-function toggleSection(header) {
+function toggleCategory(header) {
     const body = header.nextElementSibling;
-    const icon = header.querySelector('.transition-icon');
+    const isExpanded = body.classList.contains('show');
     
-    if (body.classList.contains('show')) {
+    if (isExpanded) {
         body.classList.remove('show');
-        icon.style.transform = 'rotate(0deg)';
+        header.classList.remove('expanded');
     } else {
         body.classList.add('show');
-        icon.style.transform = 'rotate(-90deg)';
+        header.classList.add('expanded');
     }
 }
 
-// Toggle single permission
-function togglePermission(section, subsection, permissionType, isGranted) {
-    const key = `${section}.${subsection}.${permissionType}`;
-    changedPermissions[key] = {
-        section: section,
-        subsection: subsection,
-        permission_type: permissionType,
-        is_granted: isGranted
-    };
+function togglePermission(checkbox) {
+    const key = checkbox.dataset.permKey;
+    const isGranted = checkbox.checked;
+    const originalValue = originalPermissions[key];
     
+    if (isGranted !== originalValue) {
+        changedPermissions[key] = {
+            section: checkbox.dataset.section,
+            subsection: checkbox.dataset.subsection,
+            permission_type: checkbox.dataset.type,
+            is_granted: isGranted
+        };
+    } else {
+        delete changedPermissions[key];
+    }
+    
+    checkbox.closest('.permission-row').dataset.granted = isGranted;
     updateChangesIndicator();
+    updateStats();
 }
 
-// Toggle all permissions
-function toggleAllPermissions(grant) {
-    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+function toggleCategoryPermissions(category, grant, event) {
+    if (event) event.stopPropagation();
+    
+    const categoryEl = document.querySelector(`.permission-category[data-category="${category}"]`);
+    const checkboxes = categoryEl.querySelectorAll('input[type="checkbox"]');
+    
     checkboxes.forEach(checkbox => {
         if (checkbox.checked !== grant) {
             checkbox.checked = grant;
-            const key = checkbox.getAttribute('data-perm-key');
-            const parts = key.split('.');
-            changedPermissions[key] = {
-                section: parts[0],
-                subsection: parts[1],
-                permission_type: parts[2],
-                is_granted: grant
-            };
+            togglePermission(checkbox);
         }
     });
-    
-    updateChangesIndicator();
 }
 
-// Update changes indicator
+function toggleAllPermissions(grant) {
+    if (!confirm(grant ? 'هل تريد تفعيل جميع الصلاحيات؟' : 'هل تريد إلغاء جميع الصلاحيات؟')) return;
+    
+    const checkboxes = document.querySelectorAll('#permissions-list input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        if (checkbox.checked !== grant) {
+            checkbox.checked = grant;
+            togglePermission(checkbox);
+        }
+    });
+}
+
+function filterPermissions(type) {
+    currentFilter = type;
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    document.querySelectorAll('.permission-row').forEach(row => {
+        const granted = row.dataset.granted === 'true';
+        if (type === 'all') row.style.display = '';
+        else if (type === 'granted') row.style.display = granted ? '' : 'none';
+        else if (type === 'denied') row.style.display = !granted ? '' : 'none';
+    });
+}
+
 function updateChangesIndicator() {
-    const changesCount = Object.keys(changedPermissions).length;
-    const indicator = document.getElementById('changes-indicator');
-    const saveButton = document.getElementById('save-button');
-    const countSpan = document.getElementById('changes-count');
+    const count = Object.keys(changedPermissions).length;
+    const badge = document.getElementById('changes-badge');
+    const saveBtn = document.getElementById('save-button');
     
-    if (changesCount > 0) {
-        indicator.style.display = 'inline-block';
-        saveButton.classList.add('show');
-        countSpan.textContent = changesCount;
+    document.getElementById('changes-count').textContent = count;
+    
+    if (count > 0) {
+        badge.classList.add('show');
+        saveBtn.classList.add('show');
     } else {
-        indicator.style.display = 'none';
-        saveButton.classList.remove('show');
+        badge.classList.remove('show');
+        saveBtn.classList.remove('show');
     }
 }
 
-// Save permissions
-function savePermissions() {
-    if (Object.keys(changedPermissions).length === 0) {
-        showSuccess('لا توجد تغييرات للحفظ');
-        return;
-    }
-    
-    const saveButton = document.getElementById('save-button');
-    saveButton.disabled = true;
-    saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري الحفظ...';
-    
-    const csrfToken = getCSRFToken();
-    
-    const promises = Object.values(changedPermissions).map(perm => {
-        return fetch('/admin/permissions/update', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify({
-                user_id: selectedUser.id,
-                section: perm.section,
-                subsection: perm.subsection,
-                permission_type: perm.permission_type,
-                is_granted: perm.is_granted,
-                project_id: selectedProject.id
-            })
-        });
+function updateStats() {
+    let grantedCount = 0;
+    document.querySelectorAll('#permissions-list input[type="checkbox"]').forEach(cb => {
+        if (cb.checked) grantedCount++;
     });
+    document.getElementById('stat-granted').textContent = grantedCount;
+}
+
+async function savePermissions() {
+    const changes = Object.keys(changedPermissions);
+    if (changes.length === 0) return;
     
-    Promise.all(promises)
-        .then(responses => {
-            return Promise.all(responses.map(r => {
-                if (!r.ok) {
-                    return r.text().then(text => {
-                        return { success: false, error: 'فشل في الحفظ' };
-                    });
-                }
-                return r.json();
-            }));
-        })
-        .then(results => {
-            const failed = results.filter(r => !r.success);
-            if (failed.length === 0) {
-                showSuccess('تم حفظ جميع التغييرات بنجاح');
-                changedPermissions = {};
-                updateChangesIndicator();
-                // Reload permissions to reflect changes
-                loadPermissions(selectedUser.id, selectedProject.id);
+    const saveBtn = document.getElementById('save-button');
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const key of changes) {
+        const change = changedPermissions[key];
+        try {
+            const response = await fetch('/admin/permissions/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                body: JSON.stringify({
+                    user_id: selectedUser.id,
+                    section: change.section,
+                    subsection: change.subsection,
+                    permission_type: change.permission_type,
+                    is_granted: change.is_granted,
+                    project_id: selectedProject.id
+                })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                successCount++;
+                originalPermissions[key] = change.is_granted;
             } else {
-                showError(`فشل حفظ ${failed.length} من التغييرات`);
+                failCount++;
+                console.error('Failed to update:', key, result.error);
             }
-        })
-        .catch(error => {
-            showError('فشل في حفظ التغييرات: ' + error.message);
-        })
-        .finally(() => {
-            saveButton.disabled = false;
-            saveButton.innerHTML = '<i class="fas fa-save me-2"></i>حفظ التغييرات';
-        });
-}
-
-// Navigate between steps
-function goToStep(step) {
-    // Hide all step contents
-    document.querySelectorAll('.step-content').forEach(content => {
-        content.style.display = 'none';
-    });
-    
-    // Show selected step
-    document.getElementById(`step${step}-content`).style.display = 'block';
-    
-    // Update step indicator
-    document.querySelectorAll('.step').forEach(stepEl => {
-        stepEl.classList.remove('active', 'completed');
-        const stepNum = parseInt(stepEl.getAttribute('data-step'));
-        if (stepNum < step) {
-            stepEl.classList.add('completed');
-        } else if (stepNum === step) {
-            stepEl.classList.add('active');
+        } catch (error) {
+            failCount++;
+            console.error('Error updating permission:', key, error);
         }
-    });
+    }
     
-    currentStep = step;
+    changedPermissions = {};
+    updateChangesIndicator();
+    
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = '<i class="fas fa-save"></i> حفظ التغييرات';
+    
+    if (failCount === 0) {
+        showToast('success', `تم حفظ ${successCount} تغيير بنجاح`);
+    } else {
+        showToast('warning', `تم حفظ ${successCount} تغيير، فشل ${failCount}`);
+    }
 }
 
-// Helper functions
-function getRoleName(role) {
-    const roles = {
-        'GENERAL_ADMIN': 'مدير عام',
-        'PROJECT_MANAGER': 'مسؤول مشروع',
-        'HANDLER': 'سائس',
-        'TRAINER': 'مدرب',
-        'BREEDER': 'مربي',
-        'VET': 'طبيب'
-    };
-    return roles[role] || role;
+function showToast(type, message) {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'warning'} position-fixed`;
+    toast.style.cssText = 'top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>${message}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
 }
-
-function showSuccess(message) {
-    alert('✓ ' + message);
-}
-
-function showError(message) {
-    alert('✗ ' + message);
-}
-
-// Search functionality
-document.getElementById('project-search')?.addEventListener('input', function(e) {
-    const searchTerm = e.target.value.toLowerCase();
-    document.querySelectorAll('#projects-list .selection-card').forEach(card => {
-        const text = card.textContent.toLowerCase();
-        card.style.display = text.includes(searchTerm) ? 'block' : 'none';
-    });
-});
-
-document.getElementById('user-search')?.addEventListener('input', function(e) {
-    const searchTerm = e.target.value.toLowerCase();
-    document.querySelectorAll('#users-list .selection-card').forEach(card => {
-        const text = card.textContent.toLowerCase();
-        card.style.display = text.includes(searchTerm) ? 'block' : 'none';
-    });
-});
 </script>
 {% endblock %}
