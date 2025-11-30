@@ -1225,6 +1225,216 @@ PERMISSIONS_DATA = [
         "description": "Export production reports to PDF or Excel",
         "sort_order": 5
     },
+
+    # ============ ACCOUNT MANAGEMENT (5) ============
+    {
+        "key": "account_management.index.view",
+        "name": "View Account Management",
+        "name_ar": "عرض إدارة الحسابات",
+        "name_en": "View Account Management",
+        "category": "account_management",
+        "description": "View account management page",
+        "sort_order": 1
+    },
+    {
+        "key": "account_management.create.access",
+        "name": "Create Account Access",
+        "name_ar": "إنشاء حساب مستخدم",
+        "name_en": "Create Account Access",
+        "category": "account_management",
+        "description": "Create new user accounts",
+        "sort_order": 2
+    },
+    {
+        "key": "account_management.reset_password.access",
+        "name": "Reset Password Access",
+        "name_ar": "إعادة تعيين كلمة المرور",
+        "name_en": "Reset Password Access",
+        "category": "account_management",
+        "description": "Reset user passwords",
+        "sort_order": 3
+    },
+    {
+        "key": "account_management.toggle_status.access",
+        "name": "Toggle Account Status",
+        "name_ar": "تفعيل/تعطيل الحساب",
+        "name_en": "Toggle Account Status",
+        "category": "account_management",
+        "description": "Enable or disable user accounts",
+        "sort_order": 4
+    },
+    {
+        "key": "account_management.api.access",
+        "name": "Account Management API",
+        "name_ar": "واجهة إدارة الحسابات",
+        "name_en": "Account Management API",
+        "category": "account_management",
+        "description": "Access account management API endpoints",
+        "sort_order": 5
+    },
+
+    # ============ MFA - Two Factor Authentication (6) ============
+    {
+        "key": "mfa.setup.access",
+        "name": "MFA Setup Access",
+        "name_ar": "إعداد المصادقة الثنائية",
+        "name_en": "MFA Setup Access",
+        "category": "mfa",
+        "description": "Setup two-factor authentication",
+        "sort_order": 1
+    },
+    {
+        "key": "mfa.disable.access",
+        "name": "MFA Disable Access",
+        "name_ar": "تعطيل المصادقة الثنائية",
+        "name_en": "MFA Disable Access",
+        "category": "mfa",
+        "description": "Disable two-factor authentication",
+        "sort_order": 2
+    },
+    {
+        "key": "mfa.status.view",
+        "name": "MFA Status View",
+        "name_ar": "عرض حالة المصادقة",
+        "name_en": "MFA Status View",
+        "category": "mfa",
+        "description": "View MFA status",
+        "sort_order": 3
+    },
+    {
+        "key": "mfa.backup_codes.regenerate",
+        "name": "Regenerate Backup Codes",
+        "name_ar": "إعادة إنشاء أكواد الطوارئ",
+        "name_en": "Regenerate Backup Codes",
+        "category": "mfa",
+        "description": "Regenerate MFA backup codes",
+        "sort_order": 4
+    },
+    {
+        "key": "mfa.password.change",
+        "name": "Change Password",
+        "name_ar": "تغيير كلمة المرور",
+        "name_en": "Change Password",
+        "category": "mfa",
+        "description": "Change user password",
+        "sort_order": 5
+    },
+    {
+        "key": "password_reset.reset.access",
+        "name": "Password Reset Access",
+        "name_ar": "إعادة تعيين كلمة المرور",
+        "name_en": "Password Reset Access",
+        "category": "mfa",
+        "description": "Access password reset functionality",
+        "sort_order": 6
+    },
+
+    # ============ GENERAL & API ACCESS (4) ============
+    {
+        "key": "general.access",
+        "name": "General Access",
+        "name_ar": "الوصول العام",
+        "name_en": "General Access",
+        "category": "general",
+        "description": "General system access",
+        "sort_order": 1
+    },
+    {
+        "key": "api.dashboard.access",
+        "name": "Dashboard API Access",
+        "name_ar": "وصول واجهة لوحة التحكم",
+        "name_en": "Dashboard API Access",
+        "category": "general",
+        "description": "Access dashboard API endpoints",
+        "sort_order": 2
+    },
+    {
+        "key": "search.global.access",
+        "name": "Global Search Access",
+        "name_ar": "البحث الشامل",
+        "name_en": "Global Search Access",
+        "category": "general",
+        "description": "Access global search functionality",
+        "sort_order": 3
+    },
+    {
+        "key": "auth.create_manager.access",
+        "name": "Create Manager Access",
+        "name_ar": "إنشاء مدير",
+        "name_en": "Create Manager Access",
+        "category": "general",
+        "description": "Create new project managers",
+        "sort_order": 4
+    },
+
+    # ============ ADMIN EXTENDED (3) ============
+    {
+        "key": "admin.general.access",
+        "name": "Admin General Access",
+        "name_ar": "وصول المسؤول العام",
+        "name_en": "Admin General Access",
+        "category": "admin",
+        "description": "General admin access",
+        "sort_order": 10
+    },
+    {
+        "key": "admin.notifications.view",
+        "name": "Admin View Notifications",
+        "name_ar": "عرض إشعارات المسؤول",
+        "name_en": "Admin View Notifications",
+        "category": "admin",
+        "description": "View admin notifications",
+        "sort_order": 11
+    },
+    {
+        "key": "admin.google_drive.manage",
+        "name": "Manage Google Drive",
+        "name_ar": "إدارة Google Drive",
+        "name_en": "Manage Google Drive",
+        "category": "admin",
+        "description": "Manage Google Drive backup settings",
+        "sort_order": 12
+    },
+
+    # ============ REPORTS - GENERAL & EXTENDED (5) ============
+    {
+        "key": "admin.reports.view_pending",
+        "name": "View Pending Reports",
+        "name_ar": "عرض التقارير المعلقة",
+        "name_en": "View Pending Reports",
+        "category": "admin",
+        "description": "View pending reports for final approval",
+        "sort_order": 13
+    },
+    {
+        "key": "reports.general.view",
+        "name": "View General Reports",
+        "name_ar": "عرض التقارير العامة",
+        "name_en": "View General Reports",
+        "category": "reports.general",
+        "description": "View general reports",
+        "sort_order": 1
+    },
+    {
+        "key": "reports.veterinary.legacy.access",
+        "name": "Veterinary Legacy Reports",
+        "name_ar": "التقارير البيطرية القديمة",
+        "name_en": "Veterinary Legacy Reports",
+        "category": "reports.veterinary",
+        "description": "Access legacy veterinary reports",
+        "sort_order": 10
+    },
+
+    # ============ TRAINING SESSIONS (1) ============
+    {
+        "key": "training.sessions.view",
+        "name": "View Training Sessions",
+        "name_ar": "عرض جلسات التدريب",
+        "name_en": "View Training Sessions",
+        "category": "training",
+        "description": "View training sessions",
+        "sort_order": 10
+    },
 ]
 
 
