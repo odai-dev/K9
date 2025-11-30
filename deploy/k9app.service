@@ -1,0 +1,33 @@
+# K9 Operations Management System - Systemd Service File
+# Copy this file to /etc/systemd/system/k9app.service on your server
+#
+# After copying, run:
+#   systemctl daemon-reload
+#   systemctl enable k9app
+#   systemctl start k9app
+
+[Unit]
+Description=K9 Operations Management System
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+User=k9app
+Group=k9app
+WorkingDirectory=/home/k9app/app
+EnvironmentFile=/home/k9app/app/.env
+ExecStart=/home/k9app/app/venv/bin/gunicorn --config gunicorn.conf.py main:app
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+PrivateTmp=true
+Restart=always
+RestartSec=10
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/k9app/app/uploads /home/k9app/logs /home/k9app/backups
+
+[Install]
+WantedBy=multi-user.target
