@@ -324,75 +324,62 @@ def get_project_users(project_id):
 @login_required
 @require_admin_permission('admin.permissions.view')
 def get_permissions_matrix(user_id, project_id):
-    """Get complete permissions matrix for a user in a project"""
+    """Get complete permissions matrix for a user in a project - SHOWS ALL PERMISSIONS"""
     try:
         user = User.query.get_or_404(user_id)
         project = Project.query.get_or_404(project_id)
         
-        # Define role-specific permission categories
-        # IMPORTANT: These categories must match the 'category' field in Permission table
-        ROLE_PERMISSION_CATEGORIES = {
-            UserRole.HANDLER: [
-                'handlers',  # Handler-specific: dashboard, reports, schedule, notifications
-                'handler_reports', 'tasks', 'notifications', 'dogs', 'training',
-                'reports.training', 'reports.veterinary'
-            ],
-            UserRole.PROJECT_MANAGER: [
-                'pm',  # PM-specific: dashboard, approvals, reports, schedules
-                'dogs', 'employees', 'projects', 'training', 'veterinary',
-                'breeding', 'production', 'incidents', 'schedule', 'shifts',
-                'handler_reports', 'supervisor', 'tasks', 'notifications', 'cleaning',
-                'reports.attendance', 'reports.training', 'reports.veterinary',
-                'reports.breeding.feeding', 'reports.breeding.checkup', 'reports.caretaker',
-                'reports.breeding'  # For detailed breeding reports
-            ],
-            UserRole.TRAINER: [
-                'training', 'dogs', 'reports.training', 'tasks', 'notifications'
-            ],
-            UserRole.BREEDER: [
-                'breeding', 'production', 'dogs', 'cleaning',
-                'reports.breeding.feeding', 'reports.breeding.checkup', 
-                'reports.caretaker', 'reports.breeding', 'tasks', 'notifications'
-            ],
-            UserRole.VET: [
-                'veterinary', 'dogs', 'reports.veterinary', 'tasks', 'notifications'
-            ],
-            UserRole.GENERAL_ADMIN: None  # Admin sees all permissions
-        }
-        
-        # Get allowed categories for this user's role
-        allowed_categories = ROLE_PERMISSION_CATEGORIES.get(user.role)
-        
-        # Get all permissions grouped by category
+        # Get ALL permissions grouped by category - NO role-based filtering
+        # General Admin needs to see and control ALL permissions for any user
         grouped_perms = get_all_permissions_grouped()
-        
-        # Filter permissions by role if not admin
-        if allowed_categories is not None:
-            filtered_perms = {}
-            for category, perms in grouped_perms.items():
-                if category in allowed_categories:
-                    filtered_perms[category] = perms
-            grouped_perms = filtered_perms
         
         # Get user's granted permissions
         user_perms = get_user_permission_keys(str(user.id))
         
+        # Category metadata for display
+        CATEGORY_NAMES = {
+            'dogs': {'ar': 'الكلاب', 'en': 'Dogs', 'icon': 'fa-dog'},
+            'employees': {'ar': 'الموظفين', 'en': 'Employees', 'icon': 'fa-users'},
+            'projects': {'ar': 'المشاريع', 'en': 'Projects', 'icon': 'fa-project-diagram'},
+            'schedule': {'ar': 'الجداول', 'en': 'Schedule', 'icon': 'fa-calendar'},
+            'training': {'ar': 'التدريب', 'en': 'Training', 'icon': 'fa-running'},
+            'veterinary': {'ar': 'البيطرة', 'en': 'Veterinary', 'icon': 'fa-stethoscope'},
+            'breeding': {'ar': 'التربية', 'en': 'Breeding', 'icon': 'fa-paw'},
+            'cleaning': {'ar': 'التنظيف', 'en': 'Cleaning', 'icon': 'fa-broom'},
+            'handler_reports': {'ar': 'تقارير السائسين', 'en': 'Handler Reports', 'icon': 'fa-file-alt'},
+            'tasks': {'ar': 'المهام', 'en': 'Tasks', 'icon': 'fa-tasks'},
+            'accounts': {'ar': 'الحسابات', 'en': 'Accounts', 'icon': 'fa-user-cog'},
+            'shifts': {'ar': 'الورديات', 'en': 'Shifts', 'icon': 'fa-clock'},
+            'incidents': {'ar': 'الحوادث', 'en': 'Incidents', 'icon': 'fa-exclamation-triangle'},
+            'supervisor': {'ar': 'المشرف', 'en': 'Supervisor', 'icon': 'fa-user-tie'},
+            'pm': {'ar': 'مدير المشروع', 'en': 'Project Manager', 'icon': 'fa-user-shield'},
+            'handlers': {'ar': 'السائسين', 'en': 'Handlers', 'icon': 'fa-user'},
+            'admin': {'ar': 'الإدارة', 'en': 'Admin', 'icon': 'fa-cogs'},
+            'notifications': {'ar': 'الإشعارات', 'en': 'Notifications', 'icon': 'fa-bell'},
+            'production': {'ar': 'الإنتاج', 'en': 'Production', 'icon': 'fa-industry'},
+            'account_management': {'ar': 'إدارة الحسابات', 'en': 'Account Management', 'icon': 'fa-users-cog'},
+            'mfa': {'ar': 'المصادقة الثنائية', 'en': 'MFA', 'icon': 'fa-shield-alt'},
+            'general': {'ar': 'عام', 'en': 'General', 'icon': 'fa-globe'},
+            'reports.attendance': {'ar': 'تقارير الحضور', 'en': 'Attendance Reports', 'icon': 'fa-clipboard-check'},
+            'reports.training': {'ar': 'تقارير التدريب', 'en': 'Training Reports', 'icon': 'fa-chart-line'},
+            'reports.veterinary': {'ar': 'التقارير البيطرية', 'en': 'Veterinary Reports', 'icon': 'fa-file-medical'},
+            'reports.breeding.feeding': {'ar': 'تقارير تغذية التربية', 'en': 'Breeding Feeding Reports', 'icon': 'fa-utensils'},
+            'reports.breeding.checkup': {'ar': 'تقارير فحص التربية', 'en': 'Breeding Checkup Reports', 'icon': 'fa-heartbeat'},
+            'reports.caretaker': {'ar': 'تقارير العناية', 'en': 'Caretaker Reports', 'icon': 'fa-hand-holding-heart'},
+            'reports.breeding': {'ar': 'تقارير التربية', 'en': 'Breeding Reports', 'icon': 'fa-paw'},
+            'reports.general': {'ar': 'التقارير العامة', 'en': 'General Reports', 'icon': 'fa-file'}
+        }
+        
         permissions_data = []
         for category, perms in grouped_perms.items():
+            cat_meta = CATEGORY_NAMES.get(category, {'ar': category, 'en': category, 'icon': 'fa-folder'})
+            
             for perm in perms:
-                # Parse the permission key to extract section, subsection, and permission_type
-                # Format examples:
-                # - dogs.view -> section=dogs, subsection='', type=VIEW
-                # - admin.permissions.edit -> section=admin, subsection=permissions, type=EDIT
-                # - reports.breeding.checkup.view -> section=reports, subsection=breeding.checkup, type=VIEW
                 key_parts = perm.key.split('.')
-                
-                # The last part is always the permission type (view, edit, create, delete, export, etc.)
                 permission_type = key_parts[-1].upper() if key_parts else 'VIEW'
                 
                 if len(key_parts) >= 3:
                     section = key_parts[0]
-                    # Subsection is everything between first and last part
                     subsection = '.'.join(key_parts[1:-1])
                 elif len(key_parts) == 2:
                     section = key_parts[0]
@@ -403,6 +390,9 @@ def get_permissions_matrix(user_id, project_id):
                 
                 permissions_data.append({
                     'category': category,
+                    'category_ar': cat_meta['ar'],
+                    'category_en': cat_meta['en'],
+                    'category_icon': cat_meta['icon'],
                     'key': perm.key,
                     'section': section,
                     'subsection': subsection,
@@ -414,18 +404,28 @@ def get_permissions_matrix(user_id, project_id):
                     'is_granted': perm.key in user_perms
                 })
         
+        # Get total counts
+        total_permissions = len(permissions_data)
+        granted_count = sum(1 for p in permissions_data if p['is_granted'])
+        
         return jsonify({
             'user': {
                 'id': str(user.id),
                 'username': user.username,
-                'full_name': user.full_name
+                'full_name': user.full_name,
+                'role': user.role.value if hasattr(user.role, 'value') else str(user.role)
             },
             'project': {
                 'id': str(project.id),
                 'name': project.name,
                 'code': project.code
             },
-            'permissions': permissions_data
+            'permissions': permissions_data,
+            'stats': {
+                'total': total_permissions,
+                'granted': granted_count,
+                'categories_count': len(grouped_perms)
+            }
         })
     except Exception as e:
         logger.error(f"Error getting permissions matrix: {e}")
