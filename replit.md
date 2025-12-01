@@ -29,7 +29,7 @@ Preferred communication style: Simple, everyday language.
 - **Core Management**: Tracks K9 lifecycle, employee information, training records, veterinary care, and breeding production.
 - **Project Operations**: Manages project lifecycle, resource allocation, incident logging, performance evaluations, and project locations.
 - **Attendance System**: Comprehensive tracking with shift management, scheduling, project-specific recording, and Arabic RTL PDF export, using an advanced Unified Matrix Attendance System.
-- **Ultra-Granular Permission System**: Provides `GENERAL_ADMIN` users with fine-grained control over user access, featuring 89 distinct permission keys across 23 categories, audit logging, and an intuitive admin dashboard. A three-step workflow (Select Project → Select User → Manage Permissions) for `GENERAL_ADMIN` users to manage permissions, with full metadata registry and real-time toggling.
+- **Ultra-Granular Permission System**: Provides `GENERAL_ADMIN` users with fine-grained control over user access, featuring 385 distinct permission keys across 39 categories, audit logging, and an intuitive admin dashboard. A three-step workflow (Select Project → Select User → Manage Permissions) for `GENERAL_ADMIN` users to manage permissions, with full metadata registry and real-time toggling. All 164 permission keys used in code are fully covered in the database.
 - **Excel Export System**: Comprehensive XLSX export functionality for reports with Arabic RTL support.
 - **Modern Reporting Hub**: Centralized dashboard with dynamic statistics, categorized report organization, and integrated chart visualization.
 - **Handler Daily System**: Comprehensive daily operations management for K9 handlers including schedule creation, two-tier reporting (Shift and Daily Reports), and a modern notification system.
@@ -53,6 +53,13 @@ Preferred communication style: Simple, everyday language.
 - **Navbar Access Control**: Template-level permission checking ensures users see only relevant navigation options.
 - **Production Readiness**: Complete removal of debug code, comprehensive error handling with structured logging, and robust security hardening including CSRF protection and file upload security.
 - **Unified PDF Design**: Minimal Elegant design system implemented across all PDF reports for consistent professional document generation.
+
+## Recent Maintenance (2025-12-01)
+- **Permission System Complete Overhaul**: Fixed critical permission key format mismatch where database stored verbose keys but code checked simple keys.
+  - Added 83 missing permissions (45 from decorators + 38 from template checks)
+  - Total permissions: 385 across 39 categories
+  - All 164 code-referenced permission keys now exist in database
+  - Categories: account, admin, api, assignments, audit, auth, backup, breeding, cleaning, dashboard, deworming, dictionaries, dogs, employees, evaluations, excretion, general, grooming, handlers, home, incidents, locations, mfa, notifications, password_reset, pm, production, projects, reports, schedule, search, settings, shifts, supervisor, suspicions, tasks, training, users, veterinary
 
 ## Recent Maintenance (2025-11-30)
 - **Template Cleanup**: Removed 15 deprecated/orphaned templates that were replaced by modern versions:
