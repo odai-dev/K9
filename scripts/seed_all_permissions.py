@@ -44,6 +44,14 @@ CATEGORY_NAMES = {
     'account': {'ar': 'إدارة الحسابات', 'en': 'Account Management', 'icon': 'fa-user-circle'},
     'notifications': {'ar': 'الإشعارات', 'en': 'Notifications', 'icon': 'fa-bell'},
     'backup': {'ar': 'النسخ الاحتياطي', 'en': 'Backup', 'icon': 'fa-database'},
+    'cleaning': {'ar': 'التنظيف', 'en': 'Cleaning', 'icon': 'fa-broom'},
+    'settings': {'ar': 'الإعدادات', 'en': 'Settings', 'icon': 'fa-cog'},
+    'dictionaries': {'ar': 'القوائم المرجعية', 'en': 'Dictionaries', 'icon': 'fa-book'},
+    'audit': {'ar': 'سجل التدقيق', 'en': 'Audit Log', 'icon': 'fa-history'},
+    'users': {'ar': 'إدارة المستخدمين', 'en': 'User Management', 'icon': 'fa-users-cog'},
+    'grooming': {'ar': 'العناية', 'en': 'Grooming', 'icon': 'fa-cut'},
+    'excretion': {'ar': 'الإخراج', 'en': 'Excretion', 'icon': 'fa-toilet'},
+    'deworming': {'ar': 'مكافحة الديدان', 'en': 'Deworming', 'icon': 'fa-bug'},
 }
 
 ACTION_NAMES = {
