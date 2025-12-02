@@ -687,147 +687,155 @@ with app.app_context():
         return send_from_directory('uploads', filename)
     
     # Initialize Automated Backup Scheduler
-    try:
-        from apscheduler.schedulers.background import BackgroundScheduler
-        from apscheduler.triggers.cron import CronTrigger
-        from k9.models.models import BackupSettings, BackupFrequency
-        from k9.utils.backup_utils import LocalBackupManager
-        from datetime import datetime
-        
-        backup_scheduler = BackgroundScheduler()
-        
-        def run_scheduled_backup():
-            """Run scheduled backup job"""
-            with app.app_context():
-                try:
-                    settings = BackupSettings.get_settings()
-                    
-                    if not settings.auto_backup_enabled or settings.backup_frequency == BackupFrequency.DISABLED:
-                        print("⚠ Automated backup skipped: disabled in settings")
-                        return
-                    
-                    backup_manager = LocalBackupManager()
-                    description = f'Automated {settings.backup_frequency.value.lower()} backup'
-                    success, filename, error = backup_manager.create_backup(description)
-                    
-                    settings.last_backup_at = datetime.utcnow()
-                    if success:
-                        if error:
-                            settings.last_backup_status = 'partial'
-                            settings.last_backup_message = f'Backup created locally but Google Drive upload failed: {error}'
-                            print(f"⚠ Automated backup created locally: {filename}, but Google Drive upload failed: {error}")
-                        else:
-                            settings.last_backup_status = 'success'
-                            settings.last_backup_message = f'Automated backup created: {filename}'
-                            print(f"✓ Automated backup created successfully: {filename}")
-                        
-                        if settings.retention_days > 0:
-                            cleanup_count = backup_manager.cleanup_old_backups(settings.retention_days)
-                            if cleanup_count > 0:
-                                print(f"✓ Cleaned up {cleanup_count} old backups")
-                    else:
-                        settings.last_backup_status = 'failed'
-                        settings.last_backup_message = error
-                        print(f"✗ Automated backup failed: {error}")
-                    
-                    db.session.commit()
-                    
-                except Exception as e:
-                    print(f"✗ Scheduled backup error: {str(e)}")
-        
-        def reschedule_backup_jobs():
-            """Reschedule backup jobs based on current settings"""
-            if backup_scheduler is None:
-                return False
-                
-            with app.app_context():
-                try:
-                    backup_scheduler.remove_job('backup_job')
-                    print("✓ Removed existing backup job")
-                except:
-                    pass
-                
-                try:
-                    settings = BackupSettings.get_settings()
-                except Exception:
-                    # Tables don't exist yet (during migration), skip backup scheduling
-                    return False
-                
-                if settings.auto_backup_enabled and settings.backup_frequency != BackupFrequency.DISABLED:
-                    if settings.backup_frequency == BackupFrequency.DAILY:
-                        trigger = CronTrigger(hour=settings.backup_hour, minute=0)
-                        backup_scheduler.add_job(
-                            run_scheduled_backup,
-                            trigger=trigger,
-                            id='backup_job',
-                            name='Daily Backup',
-                            replace_existing=True
-                        )
-                        print(f"✓ Daily backup scheduled at {settings.backup_hour}:00")
-                    
-                    elif settings.backup_frequency == BackupFrequency.WEEKLY:
-                        trigger = CronTrigger(day_of_week='sun', hour=settings.backup_hour, minute=0)
-                        backup_scheduler.add_job(
-                            run_scheduled_backup,
-                            trigger=trigger,
-                            id='backup_job',
-                            name='Weekly Backup',
-                            replace_existing=True
-                        )
-                        print(f"✓ Weekly backup scheduled on Sundays at {settings.backup_hour}:00")
-                    
-                    elif settings.backup_frequency == BackupFrequency.MONTHLY:
-                        trigger = CronTrigger(day=1, hour=settings.backup_hour, minute=0)
-                        backup_scheduler.add_job(
-                            run_scheduled_backup,
-                            trigger=trigger,
-                            id='backup_job',
-                            name='Monthly Backup',
-                            replace_existing=True
-                        )
-                        print(f"✓ Monthly backup scheduled on 1st of month at {settings.backup_hour}:00")
-                    
-                    return True
-                else:
-                    print("⚠ Automated backup not scheduled: disabled in settings")
-                    return False
-        
-        backup_scheduler.start()
-        print("✓ Backup scheduler started")
-        
-        reschedule_backup_jobs()
-        
-        # Add daily schedule auto-lock job
-        try:
-            from k9.utils.schedule_utils import auto_lock_yesterday_schedules, cleanup_old_notifications
-            from config import Config
-            
-            # Auto-lock schedules at the end of each day
-            backup_scheduler.add_job(
-                auto_lock_yesterday_schedules,
-                trigger=CronTrigger(hour=Config.SCHEDULE_AUTO_LOCK_HOUR, minute=Config.SCHEDULE_AUTO_LOCK_MINUTE),
-                id='auto_lock_schedules',
-                name='Auto Lock Yesterday Schedules',
-                replace_existing=True
-            )
-            print(f"✓ Auto-lock schedules job scheduled at {Config.SCHEDULE_AUTO_LOCK_HOUR}:{Config.SCHEDULE_AUTO_LOCK_MINUTE:02d}")
-            
-            # Cleanup old notifications weekly
-            backup_scheduler.add_job(
-                cleanup_old_notifications,
-                trigger=CronTrigger(day_of_week='mon', hour=2, minute=0),
-                id='cleanup_notifications',
-                name='Cleanup Old Notifications',
-                replace_existing=True
-            )
-            print("✓ Notification cleanup job scheduled (weekly on Monday 2:00 AM)")
-            
-        except Exception as e:
-            print(f"⚠ Warning: Could not schedule auto-lock job: {e}")
-        
-        app.reschedule_backup_jobs = reschedule_backup_jobs  # type: ignore
-        
-    except Exception as e:
-        print(f"⚠ Warning: Could not initialize backup scheduler: {e}")
+    # Skip scheduler when running seed/migration scripts (set SKIP_SCHEDULER=1)
+    skip_scheduler = os.environ.get('SKIP_SCHEDULER', '').lower() in ('1', 'true', 'yes')
+    
+    if skip_scheduler:
+        print("⚠ Scheduler initialization skipped (SKIP_SCHEDULER=1)")
         backup_scheduler = None
         app.reschedule_backup_jobs = lambda: False  # type: ignore
+    else:
+        try:
+            from apscheduler.schedulers.background import BackgroundScheduler
+            from apscheduler.triggers.cron import CronTrigger
+            from k9.models.models import BackupSettings, BackupFrequency
+            from k9.utils.backup_utils import LocalBackupManager
+            from datetime import datetime
+            
+            backup_scheduler = BackgroundScheduler()
+            
+            def run_scheduled_backup():
+                """Run scheduled backup job"""
+                with app.app_context():
+                    try:
+                        settings = BackupSettings.get_settings()
+                        
+                        if not settings.auto_backup_enabled or settings.backup_frequency == BackupFrequency.DISABLED:
+                            print("⚠ Automated backup skipped: disabled in settings")
+                            return
+                        
+                        backup_manager = LocalBackupManager()
+                        description = f'Automated {settings.backup_frequency.value.lower()} backup'
+                        success, filename, error = backup_manager.create_backup(description)
+                        
+                        settings.last_backup_at = datetime.utcnow()
+                        if success:
+                            if error:
+                                settings.last_backup_status = 'partial'
+                                settings.last_backup_message = f'Backup created locally but Google Drive upload failed: {error}'
+                                print(f"⚠ Automated backup created locally: {filename}, but Google Drive upload failed: {error}")
+                            else:
+                                settings.last_backup_status = 'success'
+                                settings.last_backup_message = f'Automated backup created: {filename}'
+                                print(f"✓ Automated backup created successfully: {filename}")
+                            
+                            if settings.retention_days > 0:
+                                cleanup_count = backup_manager.cleanup_old_backups(settings.retention_days)
+                                if cleanup_count > 0:
+                                    print(f"✓ Cleaned up {cleanup_count} old backups")
+                        else:
+                            settings.last_backup_status = 'failed'
+                            settings.last_backup_message = error
+                            print(f"✗ Automated backup failed: {error}")
+                        
+                        db.session.commit()
+                        
+                    except Exception as e:
+                        print(f"✗ Scheduled backup error: {str(e)}")
+            
+            def reschedule_backup_jobs():
+                """Reschedule backup jobs based on current settings"""
+                if backup_scheduler is None:
+                    return False
+                    
+                with app.app_context():
+                    try:
+                        backup_scheduler.remove_job('backup_job')
+                        print("✓ Removed existing backup job")
+                    except:
+                        pass
+                    
+                    try:
+                        settings = BackupSettings.get_settings()
+                    except Exception:
+                        # Tables don't exist yet (during migration), skip backup scheduling
+                        return False
+                    
+                    if settings.auto_backup_enabled and settings.backup_frequency != BackupFrequency.DISABLED:
+                        if settings.backup_frequency == BackupFrequency.DAILY:
+                            trigger = CronTrigger(hour=settings.backup_hour, minute=0)
+                            backup_scheduler.add_job(
+                                run_scheduled_backup,
+                                trigger=trigger,
+                                id='backup_job',
+                                name='Daily Backup',
+                                replace_existing=True
+                            )
+                            print(f"✓ Daily backup scheduled at {settings.backup_hour}:00")
+                        
+                        elif settings.backup_frequency == BackupFrequency.WEEKLY:
+                            trigger = CronTrigger(day_of_week='sun', hour=settings.backup_hour, minute=0)
+                            backup_scheduler.add_job(
+                                run_scheduled_backup,
+                                trigger=trigger,
+                                id='backup_job',
+                                name='Weekly Backup',
+                                replace_existing=True
+                            )
+                            print(f"✓ Weekly backup scheduled on Sundays at {settings.backup_hour}:00")
+                        
+                        elif settings.backup_frequency == BackupFrequency.MONTHLY:
+                            trigger = CronTrigger(day=1, hour=settings.backup_hour, minute=0)
+                            backup_scheduler.add_job(
+                                run_scheduled_backup,
+                                trigger=trigger,
+                                id='backup_job',
+                                name='Monthly Backup',
+                                replace_existing=True
+                            )
+                            print(f"✓ Monthly backup scheduled on 1st of month at {settings.backup_hour}:00")
+                        
+                        return True
+                    else:
+                        print("⚠ Automated backup not scheduled: disabled in settings")
+                        return False
+            
+            backup_scheduler.start()
+            print("✓ Backup scheduler started")
+            
+            reschedule_backup_jobs()
+            
+            # Add daily schedule auto-lock job
+            try:
+                from k9.utils.schedule_utils import auto_lock_yesterday_schedules, cleanup_old_notifications
+                from config import Config
+                
+                # Auto-lock schedules at the end of each day
+                backup_scheduler.add_job(
+                    auto_lock_yesterday_schedules,
+                    trigger=CronTrigger(hour=Config.SCHEDULE_AUTO_LOCK_HOUR, minute=Config.SCHEDULE_AUTO_LOCK_MINUTE),
+                    id='auto_lock_schedules',
+                    name='Auto Lock Yesterday Schedules',
+                    replace_existing=True
+                )
+                print(f"✓ Auto-lock schedules job scheduled at {Config.SCHEDULE_AUTO_LOCK_HOUR}:{Config.SCHEDULE_AUTO_LOCK_MINUTE:02d}")
+                
+                # Cleanup old notifications weekly
+                backup_scheduler.add_job(
+                    cleanup_old_notifications,
+                    trigger=CronTrigger(day_of_week='mon', hour=2, minute=0),
+                    id='cleanup_notifications',
+                    name='Cleanup Old Notifications',
+                    replace_existing=True
+                )
+                print("✓ Notification cleanup job scheduled (weekly on Monday 2:00 AM)")
+                
+            except Exception as e:
+                print(f"⚠ Warning: Could not schedule auto-lock job: {e}")
+            
+            app.reschedule_backup_jobs = reschedule_backup_jobs  # type: ignore
+            
+        except Exception as e:
+            print(f"⚠ Warning: Could not initialize backup scheduler: {e}")
+            backup_scheduler = None
+            app.reschedule_backup_jobs = lambda: False  # type: ignore
