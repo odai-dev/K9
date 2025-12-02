@@ -157,6 +157,15 @@ with app.app_context():
     else:
         print("✓ Production mode: Using migrations for database schema (flask db upgrade)")
     
+    # CRITICAL: Auto-seed permissions on every startup
+    # Permissions are the foundation of the system and must NEVER be empty
+    try:
+        from k9.utils.permission_seeder import ensure_permissions_exist
+        from k9.models.permissions_new import Permission
+        ensure_permissions_exist(db, Permission)
+    except Exception as e:
+        print(f"⚠ Warning: Could not auto-seed permissions: {e}")
+    
     # User creation is handled via migrations and manual setup
     # No automatic user creation during app initialization
 

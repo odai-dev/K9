@@ -54,10 +54,18 @@ Preferred communication style: Simple, everyday language.
 - **Production Readiness**: Complete removal of debug code, comprehensive error handling with structured logging, and robust security hardening including CSRF protection and file upload security.
 - **Unified PDF Design**: Minimal Elegant design system implemented across all PDF reports for consistent professional document generation.
 
+## Recent Maintenance (2025-12-02)
+- **Automatic Permission Seeding**: Implemented automatic permission seeding on every app startup.
+  - Created `k9/utils/permission_seeder.py` - reusable seeding module
+  - Permissions are auto-seeded during `app.app_context()` initialization
+  - Idempotent design: safe to run on every startup (no duplicates)
+  - Reads from `permissions_map.json` plus additional permissions list
+  - Total permissions: 302 across 29 categories
+  - **Permissions will NEVER be empty** - they are seeded before any other initialization
+
 ## Recent Maintenance (2025-12-01)
 - **Permission System Complete Overhaul**: Fixed critical permission key format mismatch where database stored verbose keys but code checked simple keys.
   - Added 83 missing permissions (45 from decorators + 38 from template checks)
-  - Total permissions: 385 across 39 categories
   - All 164 code-referenced permission keys now exist in database
   - Categories: account, admin, api, assignments, audit, auth, backup, breeding, cleaning, dashboard, deworming, dictionaries, dogs, employees, evaluations, excretion, general, grooming, handlers, home, incidents, locations, mfa, notifications, password_reset, pm, production, projects, reports, schedule, search, settings, shifts, supervisor, suspicions, tasks, training, users, veterinary
 
