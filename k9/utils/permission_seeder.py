@@ -49,6 +49,8 @@ CATEGORY_NAMES = {
     'grooming': {'ar': 'العناية', 'en': 'Grooming', 'icon': 'fa-cut'},
     'excretion': {'ar': 'الإخراج', 'en': 'Excretion', 'icon': 'fa-toilet'},
     'deworming': {'ar': 'مكافحة الديدان', 'en': 'Deworming', 'icon': 'fa-bug'},
+    'handler_daily': {'ar': 'يومي السائس', 'en': 'Handler Daily', 'icon': 'fa-clipboard-list'},
+    'profile': {'ar': 'الملف الشخصي', 'en': 'Profile', 'icon': 'fa-user'},
 }
 
 ACTION_NAMES = {
@@ -70,6 +72,8 @@ ACTION_NAMES = {
     'disable': {'ar': 'تعطيل', 'en': 'Disable'},
     'complete': {'ar': 'إكمال', 'en': 'Complete'},
     'start': {'ar': 'بدء', 'en': 'Start'},
+    'replace': {'ar': 'استبدال', 'en': 'Replace'},
+    'lock': {'ar': 'قفل', 'en': 'Lock'},
 }
 
 SUBSECTION_NAMES = {
@@ -148,6 +152,15 @@ SUBSECTION_NAMES = {
     'handler_daily': 'يومي السائس',
     'monthly': 'الشهري',
     'veterinary_daily': 'يومي البيطرية',
+    'items': 'البنود',
+    'lock': 'القفل',
+    'accounts': 'الحسابات',
+    'cloud': 'السحابة',
+    'system': 'النظام',
+    'select_project': 'اختيار المشروع',
+    'api': 'واجهة البرمجة',
+    'mark_read': 'وضع علامة مقروء',
+    'handlers': 'السائسين',
 }
 
 ADDITIONAL_PERMISSIONS = [
@@ -268,6 +281,99 @@ ADDITIONAL_PERMISSIONS = [
     {'key': 'supervisor.reports.view', 'name_ar': 'المشرف - عرض التقارير', 'category': 'supervisor'},
     {'key': 'supervisor.schedules.view', 'name_ar': 'المشرف - عرض الجداول', 'category': 'supervisor'},
     {'key': 'search.global.access', 'name_ar': 'البحث العام - وصول', 'category': 'search'},
+    
+    # Tasks - My Tasks permissions
+    {'key': 'tasks.my_tasks.view', 'name_ar': 'المهام - مهامي - عرض', 'category': 'tasks'},
+    {'key': 'tasks.my_tasks.complete', 'name_ar': 'المهام - مهامي - إكمال', 'category': 'tasks'},
+    {'key': 'tasks.my_tasks.start', 'name_ar': 'المهام - مهامي - بدء', 'category': 'tasks'},
+    
+    # Schedule permissions
+    {'key': 'schedule.management.view', 'name_ar': 'الجداول - عرض', 'category': 'schedule'},
+    {'key': 'schedule.management.create', 'name_ar': 'الجداول - إضافة', 'category': 'schedule'},
+    {'key': 'schedule.management.edit', 'name_ar': 'الجداول - تعديل', 'category': 'schedule'},
+    {'key': 'schedule.items.view', 'name_ar': 'الجداول - البنود - عرض', 'category': 'schedule'},
+    {'key': 'schedule.items.create', 'name_ar': 'الجداول - البنود - إضافة', 'category': 'schedule'},
+    {'key': 'schedule.items.delete', 'name_ar': 'الجداول - البنود - حذف', 'category': 'schedule'},
+    {'key': 'schedule.lock.manage', 'name_ar': 'الجداول - القفل - إدارة', 'category': 'schedule'},
+    
+    # Shifts - API permissions
+    {'key': 'shifts.api.view', 'name_ar': 'الورديات - واجهة البرمجة - عرض', 'category': 'shifts'},
+    
+    # Supervisor additional permissions
+    {'key': 'supervisor.schedules.create', 'name_ar': 'المشرف - الجداول - إضافة', 'category': 'supervisor'},
+    {'key': 'supervisor.schedules.edit', 'name_ar': 'المشرف - الجداول - تعديل', 'category': 'supervisor'},
+    {'key': 'supervisor.schedules.delete', 'name_ar': 'المشرف - الجداول - حذف', 'category': 'supervisor'},
+    {'key': 'supervisor.schedules.lock', 'name_ar': 'المشرف - الجداول - قفل', 'category': 'supervisor'},
+    {'key': 'supervisor.reports.approve', 'name_ar': 'المشرف - التقارير - موافقة', 'category': 'supervisor'},
+    {'key': 'supervisor.reports.reject', 'name_ar': 'المشرف - التقارير - رفض', 'category': 'supervisor'},
+    {'key': 'supervisor.handlers.replace', 'name_ar': 'المشرف - السائسين - استبدال', 'category': 'supervisor'},
+    {'key': 'supervisor.api.access', 'name_ar': 'المشرف - واجهة البرمجة - وصول', 'category': 'supervisor'},
+    
+    # Reports - Attendance permissions
+    {'key': 'reports.attendance.view', 'name_ar': 'التقارير - الحضور - عرض', 'category': 'reports'},
+    {'key': 'reports.attendance.create', 'name_ar': 'التقارير - الحضور - إضافة', 'category': 'reports'},
+    {'key': 'reports.attendance.export', 'name_ar': 'التقارير - الحضور - تصدير', 'category': 'reports'},
+    
+    # Reports - Training permissions
+    {'key': 'reports.training.view', 'name_ar': 'التقارير - التدريب - عرض', 'category': 'reports'},
+    {'key': 'reports.training.create', 'name_ar': 'التقارير - التدريب - إضافة', 'category': 'reports'},
+    {'key': 'reports.training.edit', 'name_ar': 'التقارير - التدريب - تعديل', 'category': 'reports'},
+    {'key': 'reports.training.approve', 'name_ar': 'التقارير - التدريب - موافقة', 'category': 'reports'},
+    
+    # Reports - Breeding Feeding permissions
+    {'key': 'reports.breeding.feeding.view', 'name_ar': 'التقارير - التغذية - عرض', 'category': 'reports'},
+    {'key': 'reports.breeding.feeding.create', 'name_ar': 'التقارير - التغذية - إضافة', 'category': 'reports'},
+    {'key': 'reports.breeding.feeding.export', 'name_ar': 'التقارير - التغذية - تصدير', 'category': 'reports'},
+    
+    # Reports - Breeding Checkup permissions
+    {'key': 'reports.breeding.checkup.view', 'name_ar': 'التقارير - الفحص الظاهري - عرض', 'category': 'reports'},
+    {'key': 'reports.breeding.checkup.create', 'name_ar': 'التقارير - الفحص الظاهري - إضافة', 'category': 'reports'},
+    {'key': 'reports.breeding.checkup.export', 'name_ar': 'التقارير - الفحص الظاهري - تصدير', 'category': 'reports'},
+    
+    # Reports - Veterinary permissions
+    {'key': 'reports.veterinary.view', 'name_ar': 'التقارير - البيطرية - عرض', 'category': 'reports'},
+    {'key': 'reports.veterinary.create', 'name_ar': 'التقارير - البيطرية - إضافة', 'category': 'reports'},
+    {'key': 'reports.veterinary.export', 'name_ar': 'التقارير - البيطرية - تصدير', 'category': 'reports'},
+    
+    # Reports - Caretaker permissions
+    {'key': 'reports.caretaker.view', 'name_ar': 'التقارير - مقدم الرعاية - عرض', 'category': 'reports'},
+    {'key': 'reports.caretaker.create', 'name_ar': 'التقارير - مقدم الرعاية - إضافة', 'category': 'reports'},
+    {'key': 'reports.caretaker.export', 'name_ar': 'التقارير - مقدم الرعاية - تصدير', 'category': 'reports'},
+    
+    # Handler Daily permissions
+    {'key': 'handler_daily.schedules.view', 'name_ar': 'يومي السائس - الجداول - عرض', 'category': 'handler_daily'},
+    {'key': 'handler_daily.reports.view', 'name_ar': 'يومي السائس - التقارير - عرض', 'category': 'handler_daily'},
+    {'key': 'handler_daily.reports.create', 'name_ar': 'يومي السائس - التقارير - إضافة', 'category': 'handler_daily'},
+    {'key': 'handler_daily.reports.edit', 'name_ar': 'يومي السائس - التقارير - تعديل', 'category': 'handler_daily'},
+    
+    # PM additional permissions
+    {'key': 'pm.general.access', 'name_ar': 'مدير المشروع - وصول عام', 'category': 'pm'},
+    {'key': 'pm.notifications.view', 'name_ar': 'مدير المشروع - الإشعارات - عرض', 'category': 'pm'},
+    {'key': 'pm.profile.view', 'name_ar': 'مدير المشروع - الملف الشخصي - عرض', 'category': 'pm'},
+    {'key': 'pm.approvals.manage', 'name_ar': 'مدير المشروع - الموافقات - إدارة', 'category': 'pm'},
+    {'key': 'pm.breeding.approve', 'name_ar': 'مدير المشروع - التربية - موافقة', 'category': 'pm'},
+    {'key': 'pm.breeding.reject', 'name_ar': 'مدير المشروع - التربية - رفض', 'category': 'pm'},
+    {'key': 'pm.select_project.access', 'name_ar': 'مدير المشروع - اختيار المشروع - وصول', 'category': 'pm'},
+    
+    # Admin additional permissions
+    {'key': 'admin.accounts.view', 'name_ar': 'لوحة الإدارة - الحسابات - عرض', 'category': 'admin'},
+    {'key': 'admin.accounts.create', 'name_ar': 'لوحة الإدارة - الحسابات - إضافة', 'category': 'admin'},
+    {'key': 'admin.accounts.edit', 'name_ar': 'لوحة الإدارة - الحسابات - تعديل', 'category': 'admin'},
+    {'key': 'admin.accounts.delete', 'name_ar': 'لوحة الإدارة - الحسابات - حذف', 'category': 'admin'},
+    {'key': 'admin.reports.approve', 'name_ar': 'لوحة الإدارة - التقارير - موافقة', 'category': 'admin'},
+    {'key': 'admin.reports.reject', 'name_ar': 'لوحة الإدارة - التقارير - رفض', 'category': 'admin'},
+    {'key': 'admin.cloud.manage', 'name_ar': 'لوحة الإدارة - السحابة - إدارة', 'category': 'admin'},
+    {'key': 'admin.system.manage', 'name_ar': 'لوحة الإدارة - النظام - إدارة', 'category': 'admin'},
+    {'key': 'admin.api.access', 'name_ar': 'لوحة الإدارة - واجهة البرمجة - وصول', 'category': 'admin'},
+    
+    # Notifications permissions
+    {'key': 'notifications.view', 'name_ar': 'الإشعارات - عرض', 'category': 'notifications'},
+    {'key': 'notifications.mark_read', 'name_ar': 'الإشعارات - وضع علامة مقروء', 'category': 'notifications'},
+    {'key': 'notifications.settings.manage', 'name_ar': 'الإشعارات - الإعدادات - إدارة', 'category': 'notifications'},
+    
+    # Profile permissions
+    {'key': 'profile.view', 'name_ar': 'الملف الشخصي - عرض', 'category': 'profile'},
+    {'key': 'profile.edit', 'name_ar': 'الملف الشخصي - تعديل', 'category': 'profile'},
 ]
 
 
