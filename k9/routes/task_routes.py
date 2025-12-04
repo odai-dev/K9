@@ -125,7 +125,7 @@ def admin_create():
 
 @task_bp.route('/admin/<task_id>')
 @login_required
-@require_permission('tasks.view')
+@require_permission('tasks.management.view')
 def admin_view(task_id):
     """عرض تفاصيل المهمة"""
     task = TaskService.get_task(task_id)
@@ -142,7 +142,7 @@ def admin_view(task_id):
 
 @task_bp.route('/admin/<task_id>/edit', methods=['GET', 'POST'])
 @login_required
-@require_permission('tasks.edit')
+@require_permission('tasks.management.edit')
 def admin_edit(task_id):
     """تعديل مهمة"""
     task = TaskService.get_task(task_id)
@@ -196,7 +196,7 @@ def admin_edit(task_id):
 
 @task_bp.route('/admin/<task_id>/delete', methods=['POST'])
 @login_required
-@require_permission('tasks.delete')
+@require_permission('tasks.management.delete')
 def admin_delete(task_id):
     """حذف مهمة"""
     success, error = TaskService.delete_task(task_id)
@@ -254,7 +254,7 @@ def handler_index():
 
 @task_bp.route('/my-tasks/<task_id>')
 @login_required
-@require_permission('tasks.view')
+@require_permission('tasks.my_tasks.view')
 def handler_view(task_id):
     """عرض تفاصيل المهمة"""
     task = TaskService.get_task(task_id)
@@ -276,7 +276,7 @@ def handler_view(task_id):
 
 @task_bp.route('/my-tasks/<task_id>/complete', methods=['POST'])
 @login_required
-@require_permission('tasks.approve')
+@require_permission('tasks.my_tasks.complete')
 def handler_complete(task_id):
     """إكمال مهمة"""
     _, error = TaskService.complete_task(
@@ -294,7 +294,7 @@ def handler_complete(task_id):
 
 @task_bp.route('/my-tasks/<task_id>/start', methods=['POST'])
 @login_required
-@require_permission('tasks.approve')
+@require_permission('tasks.my_tasks.start')
 def handler_start(task_id):
     """بدء العمل على مهمة"""
     task = TaskService.get_task(task_id)
