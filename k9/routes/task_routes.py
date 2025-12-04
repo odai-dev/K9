@@ -19,7 +19,7 @@ task_bp = Blueprint('tasks', __name__, url_prefix='/tasks')
 
 @task_bp.route('/admin')
 @login_required
-@require_permission('tasks.view')
+@require_permission('tasks.management.view')
 def admin_index():
     """قائمة المهام للمشرف"""
     # Get filter parameters
@@ -63,7 +63,7 @@ def admin_index():
 
 @task_bp.route('/admin/create', methods=['GET', 'POST'])
 @login_required
-@require_permission('tasks.create')
+@require_permission('tasks.management.create')
 def admin_create():
     """إنشاء مهمة جديدة"""
     if request.method == 'POST':
@@ -215,7 +215,7 @@ def admin_delete(task_id):
 
 @task_bp.route('/my-tasks')
 @login_required
-@require_permission('tasks.view')
+@require_permission('tasks.my_tasks.view')
 def handler_index():
     """قائمة مهام السائس"""
     # Get filter parameters
