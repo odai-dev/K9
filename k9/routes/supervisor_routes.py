@@ -196,7 +196,7 @@ def schedule_view(schedule_id):
 
 @supervisor_bp.route('/schedules/<schedule_id>/lock', methods=['POST'])
 @login_required
-@require_permission('schedule.edit')
+@require_permission('supervisor.schedules.lock')
 def schedule_lock(schedule_id):
     """قفل الجدول اليومي"""
     schedule = DailySchedule.query.get_or_404(schedule_id)
@@ -215,7 +215,7 @@ def schedule_lock(schedule_id):
 
 @supervisor_bp.route('/schedules/<schedule_id>/unlock', methods=['POST'])
 @login_required
-@require_permission('schedule.edit')
+@require_permission('supervisor.schedules.lock')
 def schedule_unlock(schedule_id):
     """إلغاء قفل الجدول اليومي"""
     schedule = DailySchedule.query.get_or_404(schedule_id)
@@ -234,7 +234,7 @@ def schedule_unlock(schedule_id):
 
 @supervisor_bp.route('/schedules/<schedule_id>/delete', methods=['POST'])
 @login_required
-@require_permission('schedule.edit')
+@require_permission('supervisor.schedules.delete')
 def schedule_delete(schedule_id):
     """حذف الجدول اليومي"""
     schedule = DailySchedule.query.get_or_404(schedule_id)
