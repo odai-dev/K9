@@ -20,7 +20,7 @@ supervisor_bp = Blueprint('supervisor', __name__, url_prefix='/supervisor')
 
 @supervisor_bp.route('/schedules')
 @login_required
-@require_permission('schedule.view')
+@require_permission('supervisor.schedules.view')
 def schedules_index():
     """قائمة الجداول اليومية"""
     page = request.args.get('page', 1, type=int)
@@ -72,7 +72,7 @@ def schedules_index():
 
 @supervisor_bp.route('/schedules/create', methods=['GET', 'POST'])
 @login_required
-@require_permission('schedule.create')
+@require_permission('supervisor.schedules.create')
 def schedule_create():
     """إنشاء جدول يومي جديد"""
     if request.method == 'POST':
@@ -414,6 +414,7 @@ def get_locations_by_project(project_id):
 @supervisor_bp.route('/reports')
 @login_required
 @admin_or_pm_required
+@require_permission('supervisor.reports.view')
 def reports_index():
     """قائمة تقارير السائسين للمراجعة"""
     from k9.models.models_handler_daily import HandlerReport, ReportStatus
@@ -512,6 +513,7 @@ def report_view(report_id):
 @supervisor_bp.route('/reports/<report_id>/approve', methods=['POST'])
 @login_required
 @admin_or_pm_required
+@require_permission('supervisor.reports.approve')
 def report_approve(report_id):
     """اعتماد التقرير"""
     from k9.models.models_handler_daily import HandlerReport, ReportStatus
@@ -552,6 +554,7 @@ def report_approve(report_id):
 @supervisor_bp.route('/reports/<report_id>/reject', methods=['POST'])
 @login_required
 @admin_or_pm_required
+@require_permission('supervisor.reports.reject')
 def report_reject(report_id):
     """رفض التقرير"""
     from k9.models.models_handler_daily import HandlerReport, ReportStatus
