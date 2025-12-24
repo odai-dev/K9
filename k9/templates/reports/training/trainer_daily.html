@@ -1,0 +1,180 @@
+{% extends base_template|default("base.html") %}
+
+{% block title %}تقرير المدرب اليومي{% endblock %}
+
+{% block content %}
+<div class="container-fluid" dir="rtl">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-dumbbell text-primary me-2"></i>
+                        تقرير المدرب اليومي
+                    </h1>
+                    <p class="text-muted mb-0">تقرير شامل لجلسات التدريب اليومية للكلاب</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        العودة للوحة التحكم
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% include 'reports/training/_filters.html' %}
+
+    <div class="row report-preview" id="report-content-area" style="display: none;">
+        {% include 'reports/_header.html' %}
+        
+        <div class="col-12 mb-4">
+            <div class="row" id="kpi-cards">
+                <div class="col-md-2">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">إجمالي الجلسات</div>
+                                    <div class="h4 mb-0" id="total-sessions">0</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-clipboard-list fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">عدد الكلاب</div>
+                                    <div class="h4 mb-0" id="unique-dogs">0</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-dog fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">عدد المدربين</div>
+                                    <div class="h4 mb-0" id="unique-trainers">0</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-user-tie fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-warning text-dark">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">متوسط الدرجة</div>
+                                    <div class="h4 mb-0" id="avg-score">0</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-star fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-secondary text-white">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">التاريخ</div>
+                                    <div class="h6 mb-0" id="date-display">-</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-calendar fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-2">
+                    <div class="card bg-light text-dark">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="small">المشروع</div>
+                                    <div class="h6 mb-0 text-truncate" id="project-display">-</div>
+                                </div>
+                                <div class="ms-2">
+                                    <i class="fas fa-building fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table me-2"></i>
+                        <span id="table-title">بيانات التدريب اليومي</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="trainer-daily-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="text-center">التاريخ</th>
+                                    <th class="text-center">المدرب</th>
+                                    <th class="text-center">اسم الكلب</th>
+                                    <th class="text-center">رمز الكلب</th>
+                                    <th class="text-center">الفئة</th>
+                                    <th class="text-center">التمرين</th>
+                                    <th class="text-center">الدرجة</th>
+                                    <th class="text-center">ملاحظات</th>
+                                    <th class="text-center">وقت التسجيل</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="text-center py-5 d-none" id="empty-state">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">لا توجد بيانات</h5>
+                        <p class="text-muted">لم يتم العثور على سجلات تدريب في التاريخ المحدد</p>
+                    </div>
+                    
+                    <div class="text-center py-5 d-none" id="table-loading">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">جاري التحميل...</span>
+                        </div>
+                        <p class="text-muted">جاري تحميل البيانات...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/reports_trainer_daily.js') }}"></script>
+{% endblock %}
