@@ -12,7 +12,7 @@ from k9.utils.permissions_new import (
     get_project_managers, get_all_projects,
     get_users_by_project, get_user_permissions_by_project,
     grant_permission, revoke_permission, get_user_permission_keys,
-    get_all_permissions_grouped
+    get_all_permissions_grouped, batch_grant_permissions, batch_revoke_permissions
 )
 from k9.utils.security_utils import PasswordValidator, SecurityHelper
 from k9.models.models import User, Project, UserRole, ProjectAssignment
@@ -175,7 +175,7 @@ def update_user_permission():
 @login_required
 @require_admin_permission('admin.permissions.edit')
 def bulk_update_user_permissions():
-    """Bulk update permissions for a category"""
+    """Bulk update permissions for a category - OPTIMIZED with batch operations"""
     data = request.get_json()
     
     required_fields = ['user_id', 'category', 'is_granted']
@@ -191,15 +191,13 @@ def bulk_update_user_permissions():
     
     # Get all permissions in this category
     permissions = Permission.query.filter_by(category=category).all()
-    count = 0
+    permission_keys = [perm.key for perm in permissions]
     
-    for perm in permissions:
-        if is_granted:
-            if grant_permission(str(user.id), perm.key, str(current_user.id)):
-                count += 1
-        else:
-            if revoke_permission(str(user.id), perm.key, str(current_user.id)):
-                count += 1
+    # Use batch operations (ONE commit for all changes)
+    if is_granted:
+        count = batch_grant_permissions(str(user.id), permission_keys, str(current_user.id))
+    else:
+        count = batch_revoke_permissions(str(user.id), permission_keys, str(current_user.id))
     
     log_audit(
         user_id=current_user.id,
@@ -215,7 +213,7 @@ def bulk_update_user_permissions():
 @login_required
 @require_admin_permission('admin.permissions.edit')
 def initialize_user_permissions(user_id):
-    """Initialize default permissions for a new PROJECT_MANAGER"""
+    """Initialize default permissions for a new PROJECT_MANAGER - OPTIMIZED with batch"""
     user = User.query.get_or_404(user_id)
     
     if user.role != UserRole.PROJECT_MANAGER:
@@ -228,10 +226,8 @@ def initialize_user_permissions(user_id):
         'pm.project.view', 'pm.team.view', 'pm.approvals.view'
     ]
     
-    count = 0
-    for perm_key in default_pm_permissions:
-        if grant_permission(str(user.id), perm_key, str(current_user.id)):
-            count += 1
+    # Use batch operation (ONE commit for all 10 permissions)
+    count = batch_grant_permissions(str(user.id), default_pm_permissions, str(current_user.id))
     
     log_audit(
         user_id=current_user.id,

@@ -441,7 +441,7 @@ def require_admin_permission(permission_key='admin.permissions.view'):
     return decorator
 
 
-def grant_permission(user_id, permission_key, granted_by_user_id=None):
+def grant_permission(user_id, permission_key, granted_by_user_id=None, _batch_session=None, _commit=True):
     """
     Grant a permission to a user.
     
@@ -449,6 +449,8 @@ def grant_permission(user_id, permission_key, granted_by_user_id=None):
         user_id: User to grant permission to
         permission_key: Permission key to grant
         granted_by_user_id: User granting the permission (for audit)
+        _batch_session: Internal - SQLAlchemy session for batch operations (don't commit)
+        _commit: Internal - whether to commit immediately (False for batch operations)
         
     Returns:
         True if successful, False otherwise
@@ -457,6 +459,8 @@ def grant_permission(user_id, permission_key, granted_by_user_id=None):
     from k9.models.permissions_new import Permission, UserPermission, PermissionChangeLog
     from k9.models.models import User
     from datetime import datetime
+    
+    session = _batch_session if _batch_session else db.session
     
     # Find the permission
     permission = Permission.query.filter_by(key=permission_key).first()
@@ -478,7 +482,7 @@ def grant_permission(user_id, permission_key, granted_by_user_id=None):
         permission_id=permission.id,
         granted_by_user_id=granted_by_user_id
     )
-    db.session.add(user_perm)
+    session.add(user_perm)
     
     # Log the change
     log = PermissionChangeLog(
@@ -488,23 +492,23 @@ def grant_permission(user_id, permission_key, granted_by_user_id=None):
         changed_by_user_id=granted_by_user_id,
         ip_address=request.remote_addr if has_request_context() else None
     )
-    db.session.add(log)
+    session.add(log)
     
     # Update the user's permissions_updated_at timestamp to invalidate their session cache
     target_user = User.query.get(user_id)
     if target_user:
         target_user.permissions_updated_at = datetime.utcnow()
     
-    db.session.commit()
-    
-    # Reload permissions if this user is currently logged in
-    if current_user.is_authenticated and str(current_user.id) == str(user_id):
-        load_user_permissions(user_id)
+    if _commit:
+        session.commit()
+        # Reload permissions if this user is currently logged in
+        if current_user.is_authenticated and str(current_user.id) == str(user_id):
+            load_user_permissions(user_id)
     
     return True
 
 
-def revoke_permission(user_id, permission_key, revoked_by_user_id=None):
+def revoke_permission(user_id, permission_key, revoked_by_user_id=None, _batch_session=None, _commit=True):
     """
     Revoke a permission from a user.
     
@@ -512,6 +516,8 @@ def revoke_permission(user_id, permission_key, revoked_by_user_id=None):
         user_id: User to revoke permission from
         permission_key: Permission key to revoke
         revoked_by_user_id: User revoking the permission (for audit)
+        _batch_session: Internal - SQLAlchemy session for batch operations (don't commit)
+        _commit: Internal - whether to commit immediately (False for batch operations)
         
     Returns:
         True if successful, False otherwise
@@ -520,6 +526,8 @@ def revoke_permission(user_id, permission_key, revoked_by_user_id=None):
     from k9.models.permissions_new import Permission, UserPermission, PermissionChangeLog
     from k9.models.models import User
     from datetime import datetime
+    
+    session = _batch_session if _batch_session else db.session
     
     # Find the permission
     permission = Permission.query.filter_by(key=permission_key).first()
@@ -536,7 +544,7 @@ def revoke_permission(user_id, permission_key, revoked_by_user_id=None):
         return True  # Already revoked
     
     # Remove grant
-    db.session.delete(user_perm)
+    session.delete(user_perm)
     
     # Log the change
     log = PermissionChangeLog(
@@ -546,20 +554,153 @@ def revoke_permission(user_id, permission_key, revoked_by_user_id=None):
         changed_by_user_id=revoked_by_user_id,
         ip_address=request.remote_addr if has_request_context() else None
     )
-    db.session.add(log)
+    session.add(log)
     
     # Update the user's permissions_updated_at timestamp to invalidate their session cache
     target_user = User.query.get(user_id)
     if target_user:
         target_user.permissions_updated_at = datetime.utcnow()
     
-    db.session.commit()
-    
-    # Reload permissions if this user is currently logged in
-    if current_user.is_authenticated and str(current_user.id) == str(user_id):
-        load_user_permissions(user_id)
+    if _commit:
+        session.commit()
+        # Reload permissions if this user is currently logged in
+        if current_user.is_authenticated and str(current_user.id) == str(user_id):
+            load_user_permissions(user_id)
     
     return True
+
+
+def batch_grant_permissions(user_id, permission_keys, granted_by_user_id=None):
+    """
+    Grant multiple permissions to a user in one batch (ONE commit).
+    
+    Args:
+        user_id: User to grant permissions to
+        permission_keys: List of permission keys to grant
+        granted_by_user_id: User granting the permissions (for audit)
+        
+    Returns:
+        Number of permissions successfully granted
+    """
+    from app import db
+    from k9.models.permissions_new import Permission, UserPermission, PermissionChangeLog
+    from k9.models.models import User
+    from datetime import datetime
+    
+    if not permission_keys:
+        return 0
+    
+    count = 0
+    
+    # Batch all operations before commit
+    for permission_key in permission_keys:
+        permission = Permission.query.filter_by(key=permission_key).first()
+        if not permission:
+            continue
+        
+        existing = UserPermission.query.filter_by(
+            user_id=user_id,
+            permission_id=permission.id
+        ).first()
+        
+        if existing:
+            continue  # Already granted
+        
+        user_perm = UserPermission(
+            user_id=user_id,
+            permission_id=permission.id,
+            granted_by_user_id=granted_by_user_id
+        )
+        db.session.add(user_perm)
+        
+        log = PermissionChangeLog(
+            user_id=user_id,
+            permission_id=permission.id,
+            action='granted',
+            changed_by_user_id=granted_by_user_id,
+            ip_address=request.remote_addr if has_request_context() else None
+        )
+        db.session.add(log)
+        count += 1
+    
+    if count > 0:
+        # Update timestamp for all changes at once
+        target_user = User.query.get(user_id)
+        if target_user:
+            target_user.permissions_updated_at = datetime.utcnow()
+        
+        # COMMIT ONCE for all changes
+        db.session.commit()
+        
+        # Reload permissions if this user is currently logged in
+        if current_user.is_authenticated and str(current_user.id) == str(user_id):
+            load_user_permissions(user_id)
+    
+    return count
+
+
+def batch_revoke_permissions(user_id, permission_keys, revoked_by_user_id=None):
+    """
+    Revoke multiple permissions from a user in one batch (ONE commit).
+    
+    Args:
+        user_id: User to revoke permissions from
+        permission_keys: List of permission keys to revoke
+        revoked_by_user_id: User revoking the permissions (for audit)
+        
+    Returns:
+        Number of permissions successfully revoked
+    """
+    from app import db
+    from k9.models.permissions_new import Permission, UserPermission, PermissionChangeLog
+    from k9.models.models import User
+    from datetime import datetime
+    
+    if not permission_keys:
+        return 0
+    
+    count = 0
+    
+    # Batch all operations before commit
+    for permission_key in permission_keys:
+        permission = Permission.query.filter_by(key=permission_key).first()
+        if not permission:
+            continue
+        
+        user_perm = UserPermission.query.filter_by(
+            user_id=user_id,
+            permission_id=permission.id
+        ).first()
+        
+        if not user_perm:
+            continue  # Already revoked
+        
+        db.session.delete(user_perm)
+        
+        log = PermissionChangeLog(
+            user_id=user_id,
+            permission_id=permission.id,
+            action='revoked',
+            changed_by_user_id=revoked_by_user_id,
+            ip_address=request.remote_addr if has_request_context() else None
+        )
+        db.session.add(log)
+        count += 1
+    
+    if count > 0:
+        # Update timestamp for all changes at once
+        target_user = User.query.get(user_id)
+        if target_user:
+            target_user.permissions_updated_at = datetime.utcnow()
+        
+        # COMMIT ONCE for all changes
+        db.session.commit()
+        
+        # Reload permissions if this user is currently logged in
+        if current_user.is_authenticated and str(current_user.id) == str(user_id):
+            load_user_permissions(user_id)
+    
+    return count
 
 
 def get_all_permissions_grouped():
