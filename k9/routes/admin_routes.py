@@ -474,12 +474,12 @@ def permissions_audit_log():
     audit_logs = query.paginate(page=page, per_page=per_page, error_out=False)
     
     project_managers = get_project_managers()
-    categories = [cat for cat in get_all_permissions_grouped().keys()]
+    permission_structure = get_all_permissions_grouped()
     
     return render_template('admin/permissions_audit.html',
                          audit_logs=audit_logs,
                          project_managers=project_managers,
-                         categories=categories,
+                         permission_structure=permission_structure,
                          filters={
                              'target_user_id': target_user_id,
                              'start_date': start_date,
