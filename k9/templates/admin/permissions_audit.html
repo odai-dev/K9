@@ -92,51 +92,55 @@
                                 <small class="text-muted">{{ log.created_at.strftime('%H:%M:%S') }}</small>
                             </td>
                             <td>
+                                {% if log.changed_by %}
                                 <strong>{{ log.changed_by.full_name }}</strong><br>
                                 <small class="text-muted">{{ log.changed_by.username }}</small>
+                                {% else %}
+                                <span class="text-muted">النظام</span>
+                                {% endif %}
                             </td>
                             <td>
-                                <strong>{{ log.target_user.full_name }}</strong><br>
-                                <small class="text-muted">{{ log.target_user.username }}</small>
+                                {% if log.user %}
+                                <strong>{{ log.user.full_name }}</strong><br>
+                                <small class="text-muted">{{ log.user.username }}</small>
+                                {% else %}
+                                <span class="text-muted">غير معروف</span>
+                                {% endif %}
                             </td>
                             <td>
-                                <span class="badge bg-secondary">{{ log.section }}</span>
+                                {% if log.permission %}
+                                <span class="badge bg-secondary">{{ log.permission.category }}</span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
                             </td>
-                            <td>{{ log.subsection }}</td>
                             <td>
-                                <span class="badge bg-info">
-                                    {% if log.permission_type.value == 'VIEW' %}عرض
-                                    {% elif log.permission_type.value == 'CREATE' %}إنشاء
-                                    {% elif log.permission_type.value == 'EDIT' %}تعديل
-                                    {% elif log.permission_type.value == 'DELETE' %}حذف
-                                    {% elif log.permission_type.value == 'EXPORT' %}تصدير
-                                    {% elif log.permission_type.value == 'ASSIGN' %}تعيين
-                                    {% elif log.permission_type.value == 'APPROVE' %}اعتماد
-                                    {% else %}{{ log.permission_type.value }}
-                                    {% endif %}
-                                </span>
+                                {% if log.permission %}
+                                {{ log.permission.name_ar or log.permission.name }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log.permission %}
+                                <span class="badge bg-info">{{ log.permission.key }}</span>
+                                {% else %}
+                                -
+                                {% endif %}
                             </td>
                             <td>
                                 <div class="d-flex align-items-center">
-                                    {% if log.old_value %}
-                                        <span class="badge bg-success me-1">✓</span>
+                                    {% if log.action == 'granted' %}
+                                        <span class="badge bg-success">منح ✓</span>
+                                    {% elif log.action == 'revoked' %}
+                                        <span class="badge bg-danger">سحب ✗</span>
                                     {% else %}
-                                        <span class="badge bg-danger me-1">✗</span>
-                                    {% endif %}
-                                    <i class="fas fa-arrow-left mx-1 text-muted"></i>
-                                    {% if log.new_value %}
-                                        <span class="badge bg-success">✓</span>
-                                    {% else %}
-                                        <span class="badge bg-danger">✗</span>
+                                        <span class="badge bg-secondary">{{ log.action }}</span>
                                     {% endif %}
                                 </div>
                             </td>
                             <td>
-                                {% if log.project_id %}
-                                    <span class="badge bg-primary">{{ log.project.name if log.project else log.project_id }}</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">عام</span>
-                                {% endif %}
+                                <span class="badge bg-secondary">عام</span>
                             </td>
                             <td>
                                 <small class="text-muted font-monospace">{{ log.ip_address or 'N/A' }}</small>
