@@ -29,7 +29,7 @@ Preferred communication style: Simple, everyday language.
 - **Core Management**: Tracks K9 lifecycle, employee information, training records, veterinary care, and breeding production.
 - **Project Operations**: Manages project lifecycle, resource allocation, incident logging, performance evaluations, and project locations.
 - **Attendance System**: Comprehensive tracking with shift management, scheduling, project-specific recording, and Arabic RTL PDF export, using an advanced Unified Matrix Attendance System.
-- **Ultra-Granular Permission System**: Provides `GENERAL_ADMIN` users with fine-grained control over user access, featuring 385 distinct permission keys across 39 categories, audit logging, and an intuitive admin dashboard. A three-step workflow (Select Project → Select User → Manage Permissions) for `GENERAL_ADMIN` users to manage permissions, with full metadata registry and real-time toggling. All 164 permission keys used in code are fully covered in the database.
+- **V2 Role-Based Permission System**: Modern role-based access control with ~50 organized permissions grouped by module. Features 6 predefined roles (super_admin, general_admin, project_manager, handler, veterinarian, trainer, breeder), wildcard permission matching (e.g., `admin.*`), permission overrides, and audit logging. Legacy admin_mode bypass preserved for GENERAL_ADMIN flexibility.
 - **Excel Export System**: Comprehensive XLSX export functionality for reports with Arabic RTL support.
 - **Modern Reporting Hub**: Centralized dashboard with dynamic statistics, categorized report organization, and integrated chart visualization.
 - **Handler Daily System**: Comprehensive daily operations management for K9 handlers including schedule creation, two-tier reporting (Shift and Daily Reports), and a modern notification system.
@@ -53,6 +53,22 @@ Preferred communication style: Simple, everyday language.
 - **Navbar Access Control**: Template-level permission checking ensures users see only relevant navigation options.
 - **Production Readiness**: Complete removal of debug code, comprehensive error handling with structured logging, and robust security hardening including CSRF protection and file upload security.
 - **Unified PDF Design**: Minimal Elegant design system implemented across all PDF reports for consistent professional document generation.
+
+## Recent Maintenance (2026-01-09)
+- **V2 Permission System Implementation**: Complete rebuild of the permission system from flat 385-key structure to role-based architecture.
+  - **New Models**: `Role`, `UserRoleAssignment`, `PermissionOverride`, `PermissionAuditLog` in `k9/models/permissions_v2.py`
+  - **PermissionService**: Unified permission service with caching and wildcard support in `k9/services/permission_service.py`
+  - **Role-Based Access**: 6 predefined roles (super_admin, general_admin, project_manager, handler, veterinarian, trainer, breeder)
+  - **~50 Organized Permissions**: Grouped by module (dogs.*, employees.*, projects.*, reports.*, etc.)
+  - **Wildcard Support**: Pattern matching for permissions (e.g., `admin.*` grants all admin permissions)
+  - **Template Helpers**: Context processor provides `can()`, `can_any()`, `can_all()`, `is_admin()`, `has_role()` functions
+  - **Legacy Compatibility**: Updated decorators delegate to V2 while preserving admin_mode bypass for GENERAL_ADMIN users
+  - **Auto Migration**: All existing users automatically migrated to V2 role assignments on startup
+  - **Key Files**: 
+    - Models: `k9/models/permissions_v2.py`
+    - Service: `k9/services/permission_service.py`
+    - Migration: `k9/utils/permissions_v2_migration.py`
+    - Decorators: `k9/utils/permissions_new.py` (updated to use V2)
 
 ## Recent Maintenance (2025-12-02)
 - **Automatic Permission Seeding**: Implemented automatic permission seeding on every app startup.
