@@ -120,13 +120,16 @@ def get_user_permissions():
     return set(perms)
 
 
-def has_permission(permission_key, user=None):
+def has_permission(permission_key, user=None, project_id=None):
     """
     Check if current user has a specific permission.
+    Uses V2 PermissionService for role-based access control.
+    GENERAL_ADMIN users in admin mode have full access (admin bypass preserved).
     
     Args:
         permission_key: The permission key to check (e.g., 'dogs.view')
         user: Optional user object (defaults to current_user)
+        project_id: Optional project ID for project-scoped permissions
         
     Returns:
         True if user has the permission, False otherwise
@@ -137,21 +140,25 @@ def has_permission(permission_key, user=None):
     if not user or not hasattr(user, 'is_authenticated') or not user.is_authenticated:
         return False
     
-    # GENERAL_ADMIN in admin mode has ALL permissions
+    # Admin mode bypass: GENERAL_ADMIN in admin mode has full access
     if _is_admin_mode(user):
         return True
     
-    user_perms = get_user_permissions()
-    return permission_key in user_perms
+    # Use V2 PermissionService for role-based check
+    from k9.services.permission_service import PermissionService
+    return PermissionService.has_permission(user.id, permission_key, project_id)
 
 
-def has_any_permission(*permission_keys, user=None):
+def has_any_permission(*permission_keys, user=None, project_id=None):
     """
     Check if current user has ANY of the specified permissions.
+    Uses V2 PermissionService for role-based access control.
+    GENERAL_ADMIN users in admin mode have full access (admin bypass preserved).
     
     Args:
         *permission_keys: Variable number of permission keys
         user: Optional user object (defaults to current_user)
+        project_id: Optional project ID for project-scoped permissions
         
     Returns:
         True if user has at least one permission, False otherwise
@@ -162,21 +169,25 @@ def has_any_permission(*permission_keys, user=None):
     if not user or not hasattr(user, 'is_authenticated') or not user.is_authenticated:
         return False
     
-    # GENERAL_ADMIN in admin mode has ALL permissions
+    # Admin mode bypass: GENERAL_ADMIN in admin mode has full access
     if _is_admin_mode(user):
         return True
     
-    user_perms = get_user_permissions()
-    return any(key in user_perms for key in permission_keys)
+    # Use V2 PermissionService
+    from k9.services.permission_service import PermissionService
+    return PermissionService.has_any_permission(user.id, list(permission_keys), project_id)
 
 
-def has_all_permissions(*permission_keys, user=None):
+def has_all_permissions(*permission_keys, user=None, project_id=None):
     """
     Check if current user has ALL of the specified permissions.
+    Uses V2 PermissionService for role-based access control.
+    GENERAL_ADMIN users in admin mode have full access (admin bypass preserved).
     
     Args:
         *permission_keys: Variable number of permission keys
         user: Optional user object (defaults to current_user)
+        project_id: Optional project ID for project-scoped permissions
         
     Returns:
         True if user has all permissions, False otherwise
@@ -187,12 +198,46 @@ def has_all_permissions(*permission_keys, user=None):
     if not user or not hasattr(user, 'is_authenticated') or not user.is_authenticated:
         return False
     
-    # GENERAL_ADMIN in admin mode has ALL permissions
+    # Admin mode bypass: GENERAL_ADMIN in admin mode has full access
     if _is_admin_mode(user):
         return True
     
-    user_perms = get_user_permissions()
-    return all(key in user_perms for key in permission_keys)
+    # Use V2 PermissionService
+    from k9.services.permission_service import PermissionService
+    return PermissionService.has_all_permissions(user.id, list(permission_keys), project_id)
+
+
+def _extract_project_id(kwargs):
+    """
+    Extract and normalize project_id from various request contexts.
+    Checks: kwargs, query args, form data, JSON body, and session.
+    Returns integer project_id or None.
+    """
+    project_id = None
+    
+    # Check kwargs first (route parameters)
+    if 'project_id' in kwargs:
+        project_id = kwargs.get('project_id')
+    # Check query string
+    elif request.args.get('project_id'):
+        project_id = request.args.get('project_id')
+    # Check form data
+    elif request.form.get('project_id'):
+        project_id = request.form.get('project_id')
+    # Check JSON body
+    elif request.is_json and request.json:
+        project_id = request.json.get('project_id')
+    # Check session
+    elif session.get('current_project_id'):
+        project_id = session.get('current_project_id')
+    
+    # Normalize to integer if present
+    if project_id is not None:
+        try:
+            return int(project_id)
+        except (ValueError, TypeError):
+            return None
+    return None
 
 
 def require_permission(permission_key):
@@ -200,6 +245,7 @@ def require_permission(permission_key):
     Decorator to enforce permission on a route.
     If user doesn't have the permission, redirect to dashboard with error.
     Handles both regular requests and AJAX/API requests.
+    Automatically extracts project_id from kwargs, args, form, JSON, or session for project-scoped checks.
     
     Args:
         permission_key: The permission key required for this route (e.g., 'dogs.view')
@@ -221,7 +267,10 @@ def require_permission(permission_key):
                     return jsonify({'success': False, 'error': 'يرجى تسجيل الدخول'}), 401
                 return redirect(url_for('auth.login'))
             
-            if not has_permission(permission_key):
+            # Extract project_id from multiple sources
+            project_id = _extract_project_id(kwargs)
+            
+            if not has_permission(permission_key, project_id=project_id):
                 if is_ajax:
                     return jsonify({'success': False, 'error': 'ليس لديك صلاحية للوصول إلى هذه الصفحة'}), 403
                 flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
@@ -235,6 +284,7 @@ def require_permission(permission_key):
 def require_any_permission(*permission_keys):
     """
     Decorator to enforce that user has ANY of the specified permissions.
+    Automatically extracts project_id from kwargs, args, form, JSON, or session for project-scoped checks.
     
     Args:
         *permission_keys: Variable number of permission keys
@@ -255,7 +305,10 @@ def require_any_permission(*permission_keys):
                     return jsonify({'success': False, 'error': 'يرجى تسجيل الدخول'}), 401
                 return redirect(url_for('auth.login'))
             
-            if not has_any_permission(*permission_keys):
+            # Extract project_id from multiple sources
+            project_id = _extract_project_id(kwargs)
+            
+            if not has_any_permission(*permission_keys, project_id=project_id):
                 if is_ajax:
                     return jsonify({'success': False, 'error': 'ليس لديك صلاحية للوصول إلى هذه الصفحة'}), 403
                 flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
@@ -269,6 +322,7 @@ def require_any_permission(*permission_keys):
 def require_all_permissions(*permission_keys):
     """
     Decorator to enforce that user has ALL of the specified permissions.
+    Automatically extracts project_id from kwargs, args, form, JSON, or session for project-scoped checks.
     
     Args:
         *permission_keys: Variable number of permission keys
@@ -289,7 +343,10 @@ def require_all_permissions(*permission_keys):
                     return jsonify({'success': False, 'error': 'يرجى تسجيل الدخول'}), 401
                 return redirect(url_for('auth.login'))
             
-            if not has_all_permissions(*permission_keys):
+            # Extract project_id from multiple sources
+            project_id = _extract_project_id(kwargs)
+            
+            if not has_all_permissions(*permission_keys, project_id=project_id):
                 if is_ajax:
                     return jsonify({'success': False, 'error': 'ليس لديك صلاحية للوصول إلى هذه الصفحة'}), 403
                 flash('ليس لديك صلاحية للوصول إلى هذه الصفحة', 'error')
@@ -302,12 +359,13 @@ def require_all_permissions(*permission_keys):
 
 def admin_required(f):
     """
-    Decorator to restrict access to GENERAL_ADMIN in admin mode OR users with admin.* permissions.
-    This allows non-admin users to access admin pages if they've been granted specific admin permissions.
+    Decorator to restrict access to admin users.
+    Uses V2 PermissionService for role-based access control.
     
     The decorator allows access if:
-    1. User is GENERAL_ADMIN in admin mode
-    2. User has ANY permission starting with 'admin.' (e.g., admin.backup.manage, admin.permissions.view, etc.)
+    1. User is GENERAL_ADMIN in admin mode (legacy mode switching preserved)
+    2. User has general_admin or super_admin role in V2
+    3. User has any admin.* permission (delegated admin access)
     
     Usage:
         @app.route('/admin/settings')
@@ -325,15 +383,19 @@ def admin_required(f):
             flash('يرجى تسجيل الدخول للوصول إلى هذه الصفحة', 'warning')
             return redirect(url_for('auth.login'))
         
-        # GENERAL_ADMIN in admin mode always has access
+        # Preserve admin_mode handling for GENERAL_ADMIN users
         if _is_admin_mode(current_user):
             return f(*args, **kwargs)
         
-        # Check if user has ANY admin.* permissions (permission-based access)
-        user_perms = get_user_permission_keys(str(current_user.id))
-        has_any_admin_permission = any(perm.startswith('admin.') for perm in user_perms)
+        # Use V2 PermissionService for admin check
+        from k9.services.permission_service import PermissionService
         
-        if has_any_admin_permission:
+        # Check if user is admin
+        if PermissionService.is_admin(current_user.id):
+            return f(*args, **kwargs)
+        
+        # Check for any admin.* permission (delegated admin access)
+        if PermissionService.has_permission(current_user.id, 'admin.*'):
             return f(*args, **kwargs)
         
         # Access denied
@@ -348,6 +410,7 @@ def admin_required(f):
 def admin_or_pm_required(f):
     """
     Require GENERAL_ADMIN (in admin mode) or user with PM-level permissions.
+    Uses V2 PermissionService for role-based access control.
     PM-level permissions include projects, dogs, employees, reports, schedules, etc.
     
     Usage:
@@ -356,22 +419,22 @@ def admin_or_pm_required(f):
         def supervisor_page():
             ...
     """
-    # PM-level permission prefixes that indicate project manager access
-    PM_PERMISSION_PREFIXES = (
-        'projects.',
-        'dogs.',
-        'employees.',
-        'reports.',
-        'schedules.',
-        'shifts.',
-        'attendance.',
-        'training.',
-        'veterinary.',
-        'breeding.',
-        'supervisor.',
-        'pm.',
-        'admin.',
-    )
+    # PM-level permission patterns for wildcard checks
+    PM_PERMISSION_PATTERNS = [
+        'projects.*',
+        'dogs.*',
+        'employees.*',
+        'reports.*',
+        'schedules.*',
+        'shifts.*',
+        'attendance.*',
+        'training.*',
+        'veterinary.*',
+        'breeding.*',
+        'supervisor.*',
+        'pm.*',
+        'admin.*',
+    ]
     
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -383,13 +446,19 @@ def admin_or_pm_required(f):
         if _is_admin_mode(current_user):
             return f(*args, **kwargs)
         
-        # Check if user has any PM-level permission
-        user_perms = get_user_permissions()
-        has_pm_permission = any(
-            perm.startswith(prefix) for perm in user_perms for prefix in PM_PERMISSION_PREFIXES
-        )
+        # Use V2 PermissionService for PM-level check
+        from k9.services.permission_service import PermissionService
         
-        if has_pm_permission:
+        # Check if user is admin
+        if PermissionService.is_admin(current_user.id):
+            return f(*args, **kwargs)
+        
+        # Check if user has project_manager role
+        if PermissionService.has_role(current_user.id, 'project_manager'):
+            return f(*args, **kwargs)
+        
+        # Check if user has any PM-level permission via V2
+        if PermissionService.has_any_permission(current_user.id, PM_PERMISSION_PATTERNS):
             return f(*args, **kwargs)
         
         flash('غير مصرح لك بالوصول إلى هذه الصفحة', 'danger')
