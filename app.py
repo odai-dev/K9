@@ -145,6 +145,7 @@ with app.app_context():
     import k9.models.models  # noqa: F401
     import k9.models.models_handler_daily  # noqa: F401
     import k9.models.permissions_new  # noqa: F401
+    import k9.models.permissions_v2  # noqa: F401 - New permission system
 
     # Bootstrap database on fresh import - creates all tables
     # For production, use migrations instead (flask db upgrade)
@@ -165,6 +166,25 @@ with app.app_context():
         ensure_permissions_exist(db, Permission)
     except Exception as e:
         print(f"⚠ Warning: Could not auto-seed permissions: {e}")
+    
+    # Initialize V2 Permission System (new role-based system)
+    try:
+        from k9.services.permission_service import init_permission_context_processor, seed_default_roles
+        from k9.utils.permissions_v2_migration import run_migration_if_needed
+        
+        # Seed default roles
+        seed_default_roles()
+        print("✓ V2 Permission roles seeded successfully")
+        
+        # Run migration for existing users if needed
+        run_migration_if_needed()
+        print("✓ V2 Permission migration check completed")
+        
+        # Register context processor for templates
+        init_permission_context_processor(app)
+        print("✓ V2 Permission context processor registered")
+    except Exception as e:
+        print(f"⚠ Warning: Could not initialize V2 permissions: {e}")
     
     # User creation is handled via migrations and manual setup
     # No automatic user creation during app initialization
@@ -306,14 +326,13 @@ with app.app_context():
     def has_permission(first_arg, second_arg=None):
         """
         Template-compatible permission check wrapper.
+        Uses V2 PermissionService for role-based access control.
+        
         Handles both old format: has_permission(user, 'old.key')
         And new format: has_permission('new.key')
-        
-        GENERAL_ADMIN in admin mode always returns True.
         """
         from flask_login import current_user
-        from k9.models.models import UserRole
-        from flask import session
+        from k9.services.permission_service import PermissionService
         
         # Determine which format is being used
         if second_arg is not None:
@@ -329,17 +348,11 @@ with app.app_context():
         if not user or not hasattr(user, 'is_authenticated') or not user.is_authenticated:
             return False
         
-        # GENERAL_ADMIN in admin mode has ALL permissions
-        if hasattr(user, 'role') and user.role == UserRole.GENERAL_ADMIN:
-            admin_mode = session.get('admin_mode', 'general_admin')
-            if admin_mode == 'general_admin':
-                return True
-        
-        # Map old key to new key if needed
+        # Map old key to new V2 key format if needed
         mapped_key = PERMISSION_KEY_MAP.get(permission_key, permission_key)
         
-        # Check permission using new system
-        return _has_permission_new(mapped_key, user)
+        # Use V2 PermissionService for role-based check
+        return PermissionService.has_permission(user.id, mapped_key)
     
     def get_notification_link(notification):
         """Generate direct link for notification based on related_type and related_id"""
@@ -436,19 +449,58 @@ with app.app_context():
         except Exception:
             return 0
     
+    # V2 Permission helper wrappers for templates
+    def has_any_permission_v2(*permission_keys):
+        """Check if current user has any of the specified permissions"""
+        from flask_login import current_user
+        from k9.services.permission_service import PermissionService
+        if not current_user.is_authenticated:
+            return False
+        return PermissionService.has_any_permission(current_user.id, list(permission_keys))
+    
+    def has_all_permissions_v2(*permission_keys):
+        """Check if current user has all specified permissions"""
+        from flask_login import current_user
+        from k9.services.permission_service import PermissionService
+        if not current_user.is_authenticated:
+            return False
+        return PermissionService.has_all_permissions(current_user.id, list(permission_keys))
+    
+    def is_admin_v2():
+        """Check if current user is an admin using V2 system"""
+        from flask_login import current_user
+        from k9.services.permission_service import PermissionService
+        if not current_user.is_authenticated:
+            return False
+        return PermissionService.is_admin(current_user.id)
+    
+    def has_role_v2(role_name, project_id=None):
+        """Check if current user has a specific role"""
+        from flask_login import current_user
+        from k9.services.permission_service import PermissionService
+        if not current_user.is_authenticated:
+            return False
+        return PermissionService.has_role(current_user.id, role_name, project_id)
+    
+    # Import V2 permission types for templates
+    from k9.models.permissions_v2 import RoleType, PermissionKey
+    
     app.jinja_env.globals.update(
         get_user_permissions=get_user_permissions,
         get_notification_link=get_notification_link,
         get_pending_reports_count=get_pending_reports_count,
         get_pm_pending_count=get_pm_pending_count,
-        is_admin=is_admin,
+        is_admin=is_admin_v2,
         is_admin_mode=_is_admin_mode,
         has_permission=has_permission,
-        has_any_permission=has_any_permission,
-        has_all_permissions=has_all_permissions,
+        has_any_permission=has_any_permission_v2,
+        has_all_permissions=has_all_permissions_v2,
+        has_role=has_role_v2,
         get_sections_for_user=get_sections_for_user,
         date=date,
-        datetime=datetime
+        datetime=datetime,
+        RoleType=RoleType,
+        PermissionKey=PermissionKey
     )
     
     # Context processor for notifications (all users)
