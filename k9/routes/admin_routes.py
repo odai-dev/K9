@@ -2128,3 +2128,242 @@ def get_user_permission_audit(user_id):
             'pages': (total + per_page - 1) // per_page
         }
     })
+
+
+# =============================================================================
+# V2 Role Management Routes
+# =============================================================================
+
+@admin_bp.route('/roles')
+@login_required
+@admin_required
+def roles_list():
+    """List all V2 roles"""
+    from k9.models.permissions_v2 import Role, ROLE_PERMISSIONS
+    
+    roles = Role.query.filter_by(is_active=True).order_by(Role.name).all()
+    
+    roles_data = []
+    for role in roles:
+        role_permissions = ROLE_PERMISSIONS.get(role.name, [])
+        roles_data.append({
+            'id': str(role.id),
+            'name': role.name,
+            'name_ar': role.name_ar,
+            'description': role.description,
+            'is_system': role.is_system,
+            'permissions': role_permissions,
+            'permission_count': len(role_permissions)
+        })
+    
+    return render_template('admin/roles_list.html', roles=roles_data)
+
+
+@admin_bp.route('/roles/api/list')
+@login_required
+@admin_required
+def api_roles_list():
+    """API: Get all roles"""
+    from k9.models.permissions_v2 import Role, ROLE_PERMISSIONS
+    
+    roles = Role.query.filter_by(is_active=True).order_by(Role.name).all()
+    
+    return jsonify({
+        'roles': [{
+            'id': str(r.id),
+            'name': r.name,
+            'name_ar': r.name_ar,
+            'description': r.description,
+            'is_system': r.is_system,
+            'permissions': ROLE_PERMISSIONS.get(r.name, [])
+        } for r in roles]
+    })
+
+
+@admin_bp.route('/roles/user/<user_id>')
+@login_required
+@admin_required
+def get_user_roles(user_id):
+    """Get V2 roles for a specific user"""
+    from k9.models.permissions_v2 import UserRoleAssignment
+    from k9.services.permission_service import PermissionService
+    
+    user = User.query.get_or_404(user_id)
+    
+    assignments = UserRoleAssignment.query.filter_by(
+        user_id=user_id,
+        is_active=True
+    ).all()
+    
+    roles = []
+    for a in assignments:
+        if a.role:
+            role_perms = PermissionService.get_role_permissions(a.role.name)
+            roles.append({
+                'assignment_id': str(a.id),
+                'role_id': str(a.role_id),
+                'role_name': a.role.name,
+                'role_name_ar': a.role.name_ar,
+                'project_id': str(a.project_id) if a.project_id else None,
+                'granted_at': a.granted_at.isoformat() if a.granted_at else None,
+                'expires_at': a.expires_at.isoformat() if a.expires_at else None,
+                'permissions': role_perms
+            })
+    
+    effective_permissions = list(PermissionService.get_user_permissions(user_id))
+    
+    return jsonify({
+        'user': {
+            'id': str(user.id),
+            'username': user.username,
+            'full_name': user.full_name,
+            'role': user.role.value if user.role else None
+        },
+        'roles': roles,
+        'effective_permissions': effective_permissions
+    })
+
+
+@admin_bp.route('/roles/assign', methods=['POST'])
+@login_required
+@admin_required
+def assign_role():
+    """Assign a V2 role to a user"""
+    from k9.services.permission_service import PermissionService
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        user_id = data.get('user_id')
+        role_name = data.get('role_name')
+        project_id = data.get('project_id')
+        
+        if not user_id or not role_name:
+            return jsonify({'error': 'user_id and role_name are required'}), 400
+        
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        PermissionService.grant_role(
+            user_id=user_id,
+            role_name=role_name,
+            project_id=project_id,
+            granted_by_id=str(current_user.id)
+        )
+        db.session.commit()
+        
+        log_audit(
+            action='role_assigned',
+            target_type='User',
+            target_id=str(user_id),
+            description=f"Assigned role '{role_name}' to user {user.username}"
+        )
+        
+        PermissionService.clear_cache(user_id)
+        
+        return jsonify({
+            'success': True,
+            'message': f"تم تعيين الدور '{role_name}' للمستخدم {user.username}"
+        })
+        
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error assigning role: {e}")
+        return jsonify({'error': f'Failed to assign role: {str(e)}'}), 500
+
+
+@admin_bp.route('/roles/revoke', methods=['POST'])
+@login_required
+@admin_required
+def revoke_role():
+    """Revoke a V2 role from a user"""
+    from k9.services.permission_service import PermissionService
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        user_id = data.get('user_id')
+        role_name = data.get('role_name')
+        project_id = data.get('project_id')
+        
+        if not user_id or not role_name:
+            return jsonify({'error': 'user_id and role_name are required'}), 400
+        
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        success = PermissionService.revoke_role(
+            user_id=user_id,
+            role_name=role_name,
+            project_id=project_id
+        )
+        db.session.commit()
+        
+        if success:
+            log_audit(
+                action='role_revoked',
+                target_type='User',
+                target_id=str(user_id),
+                description=f"Revoked role '{role_name}' from user {user.username}"
+            )
+            
+            PermissionService.clear_cache(user_id)
+            
+            return jsonify({
+                'success': True,
+                'message': f"تم إلغاء الدور '{role_name}' من المستخدم {user.username}"
+            })
+        else:
+            return jsonify({'error': 'Role assignment not found'}), 404
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error revoking role: {e}")
+        return jsonify({'error': f'Failed to revoke role: {str(e)}'}), 500
+
+
+@admin_bp.route('/roles/users')
+@login_required
+@admin_required
+def roles_users_management():
+    """V2 Role management interface - list users with their roles"""
+    from k9.models.permissions_v2 import Role, UserRoleAssignment
+    from k9.services.permission_service import PermissionService
+    
+    users = User.query.order_by(User.username).all()
+    roles = Role.query.filter_by(is_active=True).order_by(Role.name).all()
+    
+    users_data = []
+    for user in users:
+        assignments = UserRoleAssignment.query.filter_by(
+            user_id=user.id,
+            is_active=True
+        ).all()
+        
+        user_roles = []
+        for a in assignments:
+            if a.role:
+                user_roles.append({
+                    'name': a.role.name,
+                    'name_ar': a.role.name_ar
+                })
+        
+        users_data.append({
+            'id': str(user.id),
+            'username': user.username,
+            'full_name': user.full_name,
+            'user_role': user.role.value if user.role else None,
+            'v2_roles': user_roles
+        })
+    
+    return render_template('admin/roles_users.html', 
+                          users=users_data, 
+                          roles=[{'id': str(r.id), 'name': r.name, 'name_ar': r.name_ar} for r in roles])

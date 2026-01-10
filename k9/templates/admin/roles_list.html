@@ -1,0 +1,173 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}إدارة الأدوار{% endblock %}
+
+{% block extra_css %}
+<style>
+.role-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.role-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.role-header {
+    padding: 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.role-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-left: 1rem;
+}
+
+.role-super_admin { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+.role-general_admin { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+.role-project_manager { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
+.role-handler { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; }
+.role-veterinarian { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; }
+.role-trainer { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333; }
+.role-breeder { background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%); color: #333; }
+.role-viewer { background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%); color: white; }
+
+.role-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0;
+}
+
+.role-name-badge {
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: #718096;
+    background: #f1f5f9;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.role-body {
+    padding: 1.25rem;
+}
+
+.permission-badge {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    margin: 0.25rem;
+    font-size: 0.8rem;
+    border-radius: 20px;
+    background: #edf2f7;
+    color: #4a5568;
+    font-family: monospace;
+    direction: ltr;
+}
+
+.permission-badge.wildcard {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.page-header {
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.system-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h2 class="mb-1"><i class="fas fa-user-shield me-2"></i>إدارة الأدوار (V2)</h2>
+                <p class="mb-0 opacity-75">نظام الصلاحيات المبني على الأدوار</p>
+            </div>
+            <div class="col-auto">
+                <a href="{{ url_for('admin.roles_users_management') }}" class="btn btn-light">
+                    <i class="fas fa-users-cog me-1"></i>تعيين الأدوار للمستخدمين
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for role in roles %}
+        <div class="col-lg-6 col-xl-4">
+            <div class="role-card">
+                <div class="role-header">
+                    <div class="d-flex align-items-center">
+                        <div class="role-icon role-{{ role.name }}">
+                            {% if role.name == 'super_admin' %}
+                            <i class="fas fa-crown"></i>
+                            {% elif role.name == 'general_admin' %}
+                            <i class="fas fa-user-shield"></i>
+                            {% elif role.name == 'project_manager' %}
+                            <i class="fas fa-project-diagram"></i>
+                            {% elif role.name == 'handler' %}
+                            <i class="fas fa-dog"></i>
+                            {% elif role.name == 'veterinarian' %}
+                            <i class="fas fa-stethoscope"></i>
+                            {% elif role.name == 'trainer' %}
+                            <i class="fas fa-graduation-cap"></i>
+                            {% elif role.name == 'breeder' %}
+                            <i class="fas fa-paw"></i>
+                            {% else %}
+                            <i class="fas fa-user"></i>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h5 class="role-title">{{ role.name_ar or role.name }}</h5>
+                            <span class="role-name-badge">{{ role.name }}</span>
+                            {% if role.is_system %}
+                            <span class="badge bg-info system-badge ms-1">نظام</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <span class="badge bg-primary">{{ role.permission_count }} صلاحية</span>
+                </div>
+                <div class="role-body">
+                    {% if role.description %}
+                    <p class="text-muted small mb-3">{{ role.description }}</p>
+                    {% endif %}
+                    <div class="permissions-list">
+                        {% for perm in role.permissions %}
+                        <span class="permission-badge {% if perm.endswith('.*') or perm == '*' %}wildcard{% endif %}">
+                            {% if perm == '*' %}
+                            <i class="fas fa-asterisk me-1"></i>جميع الصلاحيات
+                            {% else %}
+                            {{ perm }}
+                            {% endif %}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
