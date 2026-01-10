@@ -52,24 +52,52 @@ def unauthorized():
 @main_bp.route('/my-permissions')
 @login_required
 def user_permissions_dashboard():
-    """لوحة تحكم صلاحيات المستخدم - تعرض جميع الصلاحيات الممنوحة"""
-    from k9.models.permissions_new import Permission, UserPermission
+    """لوحة تحكم صلاحيات المستخدم - تعرض جميع الصلاحيات الممنوحة (V2)"""
+    from k9.services.permission_service import PermissionService
+    from k9.models.permissions_v2 import UserRoleAssignment, Role
     from collections import defaultdict
     
-    user_perms = db.session.query(Permission).join(
-        UserPermission, Permission.id == UserPermission.permission_id
-    ).filter(UserPermission.user_id == current_user.id).all()
+    # Get user's effective permissions from V2 system (includes wildcards like dogs.*)
+    user_permissions = PermissionService.get_user_permissions(current_user.id)
     
+    # Get user's roles with details
+    user_role_assignments = db.session.query(UserRoleAssignment).filter(
+        UserRoleAssignment.user_id == current_user.id,
+        UserRoleAssignment.is_active == True
+    ).all()
+    
+    user_roles = []
+    for assignment in user_role_assignments:
+        if assignment.role:
+            user_roles.append({
+                'name': assignment.role.name,
+                'name_ar': assignment.role.name_ar,
+                'description': assignment.role.description,
+                'permissions': PermissionService.get_role_permissions(assignment.role.name)
+            })
+    
+    # Build permissions grouped by category with better wildcard handling
     permissions_by_category = defaultdict(list)
-    for perm in user_perms:
-        perm_url = get_permission_url(perm.key)
+    for perm_key in user_permissions:
+        # Extract category from permission key
+        parts = perm_key.split('.')
+        category = parts[0] if parts else 'general'
+        
+        # Handle wildcards display
+        if perm_key.endswith('.*'):
+            display_name = get_wildcard_display_name(perm_key)
+        else:
+            display_name = get_permission_name_ar(perm_key)
+        
+        perm_url = get_permission_url(perm_key)
         perm_data = {
-            'key': perm.key,
-            'name_ar': perm.name_ar,
-            'description': perm.description,
-            'url': perm_url
+            'key': perm_key,
+            'name_ar': display_name,
+            'description': '',
+            'url': perm_url,
+            'is_wildcard': perm_key.endswith('.*') or perm_key == '*'
         }
-        permissions_by_category[perm.category].append(perm_data)
+        permissions_by_category[category].append(perm_data)
     
     category_names = {
         'dogs': 'الكلاب',
@@ -89,28 +117,181 @@ def user_permissions_dashboard():
         'accounts': 'الحسابات',
         'handler_reports': 'تقارير السائسين',
         'supervisor': 'المشرف',
-        'reports.attendance': 'تقارير الحضور',
-        'reports.breeding.feeding': 'تقارير التغذية',
-        'reports.breeding.checkup': 'تقارير الفحص',
-        'reports.caretaker': 'تقارير العناية',
-        'reports.training': 'تقارير التدريب',
-        'reports.veterinary': 'التقارير البيطرية'
+        'reports': 'التقارير',
+        'general': 'عام',
+        '*': 'جميع الصلاحيات'
     }
     
-    view_count = sum(1 for p in user_perms if 'view' in p.key)
-    edit_count = sum(1 for p in user_perms if 'edit' in p.key or 'create' in p.key)
+    # Count permissions - wildcards count as multiple
+    perm_count = len(user_permissions)
+    wildcard_count = sum(1 for p in user_permissions if p.endswith('.*') or p == '*')
     
-    quick_access = build_quick_access_items(user_perms)
+    # Build quick access based on wildcards and specific permissions
+    quick_access = build_quick_access_items_v2(user_permissions)
     
     return render_template('user/dashboard.html',
-        user_permissions=user_perms,
+        user_permissions=list(user_permissions),
         permissions_by_category=dict(permissions_by_category),
         categories=list(permissions_by_category.keys()),
         category_names=category_names,
-        view_count=view_count,
-        edit_count=edit_count,
-        quick_access=quick_access
+        view_count=perm_count,
+        edit_count=wildcard_count,
+        quick_access=quick_access,
+        user_roles=user_roles
     )
+
+
+def get_wildcard_display_name(permission_key):
+    """Get display name for wildcard permission patterns"""
+    wildcard_names = {
+        '*': 'صلاحيات كاملة (مدير النظام)',
+        'dogs.*': 'جميع صلاحيات الكلاب',
+        'employees.*': 'جميع صلاحيات الموظفين',
+        'projects.*': 'جميع صلاحيات المشاريع',
+        'training.*': 'جميع صلاحيات التدريب',
+        'veterinary.*': 'جميع صلاحيات البيطري',
+        'breeding.*': 'جميع صلاحيات التربية',
+        'production.*': 'جميع صلاحيات الإنتاج',
+        'reports.*': 'جميع صلاحيات التقارير',
+        'admin.*': 'جميع صلاحيات الإدارة',
+        'pm.*': 'جميع صلاحيات مدير المشروع',
+        'schedule.*': 'جميع صلاحيات الجداول',
+        'shifts.*': 'جميع صلاحيات الورديات',
+        'incidents.*': 'جميع صلاحيات الحوادث',
+        'tasks.*': 'جميع صلاحيات المهام',
+        'notifications.*': 'جميع صلاحيات الإشعارات',
+        'supervisor.*': 'جميع صلاحيات المشرف',
+        'handler.*': 'جميع صلاحيات السائس',
+    }
+    return wildcard_names.get(permission_key, permission_key)
+
+
+def get_permission_name_ar(permission_key):
+    """Convert permission key to Arabic name"""
+    name_map = {
+        'dogs.view': 'عرض الكلاب',
+        'dogs.create': 'إضافة كلب',
+        'dogs.edit': 'تعديل الكلاب',
+        'dogs.delete': 'حذف الكلاب',
+        'employees.view': 'عرض الموظفين',
+        'employees.create': 'إضافة موظف',
+        'employees.edit': 'تعديل الموظفين',
+        'employees.delete': 'حذف الموظفين',
+        'projects.view': 'عرض المشاريع',
+        'projects.create': 'إضافة مشروع',
+        'projects.edit': 'تعديل المشاريع',
+        'projects.delete': 'حذف المشاريع',
+        'training.view': 'عرض التدريب',
+        'training.create': 'إضافة تدريب',
+        'veterinary.view': 'عرض البيطري',
+        'veterinary.create': 'إضافة زيارة',
+        'breeding.view': 'عرض التربية',
+        'breeding.create': 'إضافة سجل',
+        'reports.view': 'عرض التقارير',
+        'admin.dashboard': 'لوحة الإدارة',
+        'admin.permissions': 'إدارة الصلاحيات',
+        'pm.dashboard': 'لوحة مدير المشروع',
+    }
+    return name_map.get(permission_key, permission_key)
+
+
+def build_quick_access_items_v2(permission_keys):
+    """Build quick access items based on V2 permission keys (set of strings with wildcards)"""
+    quick_items = []
+    perm_keys = list(permission_keys) if isinstance(permission_keys, set) else permission_keys
+    
+    def has_perm(pattern):
+        """Check if user has permission (exact match or via wildcard)"""
+        if pattern in perm_keys:
+            return True
+        # Check for wildcards
+        if '*' in perm_keys:
+            return True
+        parts = pattern.split('.')
+        if parts:
+            wildcard = f"{parts[0]}.*"
+            if wildcard in perm_keys:
+                return True
+        return False
+    
+    try:
+        if has_perm('dogs.view') or has_perm('dogs.*'):
+            quick_items.append({
+                'title': 'الكلاب',
+                'icon': 'fas fa-dog',
+                'url': url_for('main.dogs_list'),
+                'color': 'text-primary'
+            })
+    except Exception:
+        pass
+    
+    try:
+        if has_perm('employees.view') or has_perm('employees.*'):
+            quick_items.append({
+                'title': 'الموظفين',
+                'icon': 'fas fa-users',
+                'url': url_for('main.employees_list'),
+                'color': 'text-success'
+            })
+    except Exception:
+        pass
+    
+    try:
+        if has_perm('pm.dashboard') or has_perm('pm.*'):
+            quick_items.append({
+                'title': 'لوحة مدير المشروع',
+                'icon': 'fas fa-project-diagram',
+                'url': url_for('pm.dashboard'),
+                'color': 'text-warning'
+            })
+    except Exception:
+        pass
+    
+    try:
+        if has_perm('training.view') or has_perm('training.*'):
+            quick_items.append({
+                'title': 'التدريب',
+                'icon': 'fas fa-graduation-cap',
+                'url': url_for('main.training_list'),
+                'color': 'text-info'
+            })
+    except Exception:
+        pass
+    
+    try:
+        if has_perm('veterinary.view') or has_perm('veterinary.*'):
+            quick_items.append({
+                'title': 'الطب البيطري',
+                'icon': 'fas fa-stethoscope',
+                'url': url_for('main.veterinary_list'),
+                'color': 'text-danger'
+            })
+    except Exception:
+        pass
+    
+    try:
+        if has_perm('admin.dashboard') or has_perm('admin.*'):
+            quick_items.append({
+                'title': 'لوحة الإدارة',
+                'icon': 'fas fa-cog',
+                'url': url_for('admin.dashboard'),
+                'color': 'text-dark'
+            })
+    except Exception:
+        pass
+    
+    try:
+        if has_perm('projects.view') or has_perm('projects.*'):
+            quick_items.append({
+                'title': 'المشاريع',
+                'icon': 'fas fa-folder-open',
+                'url': url_for('main.projects_list'),
+                'color': 'text-secondary'
+            })
+    except Exception:
+        pass
+    
+    return quick_items
 
 def get_permission_url(permission_key):
     """تحويل مفتاح الصلاحية إلى رابط مباشر"""

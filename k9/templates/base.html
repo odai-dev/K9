@@ -45,8 +45,6 @@
                         </a>
                     </li>
                     
-                    {% set permissions = get_user_permissions(current_user) %}
-                    
                     {% if has_permission('dogs.management.view') or has_permission('employees.management.view') %}
                     {% set is_resources_active = request.endpoint and (request.endpoint.startswith('main.dogs_') or request.endpoint.startswith('main.employees_')) %}
                     <li class="nav-item dropdown {% if is_resources_active %}active{% endif %}">

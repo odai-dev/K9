@@ -277,22 +277,35 @@
         </div>
     </div>
 
+    {% if user_roles %}
+    <div class="mb-3">
+        <h5 class="text-white mb-2"><i class="fas fa-user-tag me-2"></i>أدوارك:</h5>
+        <div class="d-flex flex-wrap gap-2">
+            {% for role in user_roles %}
+            <span class="badge bg-light text-dark fs-6 py-2 px-3">
+                <i class="fas fa-crown me-1 text-warning"></i>{{ role.name_ar }}
+            </span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <div class="stats-row">
         <div class="stat-card">
-            <div class="stat-number">{{ user_permissions|length }}</div>
-            <div class="stat-label">إجمالي الصلاحيات</div>
+            <div class="stat-number">{{ user_roles|length if user_roles else 0 }}</div>
+            <div class="stat-label">الأدوار المعينة</div>
         </div>
         <div class="stat-card">
             <div class="stat-number">{{ categories|length }}</div>
-            <div class="stat-label">الفئات</div>
+            <div class="stat-label">فئات الصلاحيات</div>
         </div>
         <div class="stat-card">
             <div class="stat-number">{{ view_count }}</div>
-            <div class="stat-label">صلاحيات العرض</div>
+            <div class="stat-label">إجمالي الصلاحيات</div>
         </div>
         <div class="stat-card">
             <div class="stat-number">{{ edit_count }}</div>
-            <div class="stat-label">صلاحيات التعديل</div>
+            <div class="stat-label">صلاحيات شاملة</div>
         </div>
     </div>
 
@@ -373,7 +386,8 @@
                     <li class="permission-item">
                         <div class="permission-info">
                             <div class="permission-icon 
-                                {% if 'view' in perm.key %}icon-view
+                                {% if perm.is_wildcard %}bg-gradient text-white
+                                {% elif 'view' in perm.key %}icon-view
                                 {% elif 'create' in perm.key %}icon-create
                                 {% elif 'edit' in perm.key %}icon-edit
                                 {% elif 'delete' in perm.key %}icon-delete
@@ -381,8 +395,11 @@
                                 {% elif 'approve' in perm.key %}icon-approve
                                 {% elif 'assign' in perm.key %}icon-assign
                                 {% elif 'submit' in perm.key %}icon-submit
-                                {% else %}icon-view{% endif %}">
-                                {% if 'view' in perm.key %}
+                                {% else %}icon-view{% endif %}" 
+                                {% if perm.is_wildcard %}style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"{% endif %}>
+                                {% if perm.is_wildcard %}
+                                <i class="fas fa-asterisk"></i>
+                                {% elif 'view' in perm.key %}
                                 <i class="fas fa-eye"></i>
                                 {% elif 'create' in perm.key %}
                                 <i class="fas fa-plus"></i>
@@ -403,7 +420,12 @@
                                 {% endif %}
                             </div>
                             <div>
-                                <div class="permission-name">{{ perm.name_ar }}</div>
+                                <div class="permission-name">
+                                    {{ perm.name_ar }}
+                                    {% if perm.is_wildcard %}
+                                    <span class="badge bg-primary ms-1">صلاحية شاملة</span>
+                                    {% endif %}
+                                </div>
                                 <div class="permission-key">{{ perm.key }}</div>
                             </div>
                         </div>
