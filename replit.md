@@ -54,11 +54,31 @@ Preferred communication style: Simple, everyday language.
 - **Production Readiness**: Complete removal of debug code, comprehensive error handling with structured logging, and robust security hardening including CSRF protection and file upload security.
 - **Unified PDF Design**: Minimal Elegant design system implemented across all PDF reports for consistent professional document generation.
 
+## Recent Maintenance (2026-01-10)
+- **V2 Permission System Finalization**: Complete integration of role-based permission system across all components.
+  - **Admin UI for Role Management**: Added `/admin/roles` and `/admin/roles/users` for managing V2 roles
+    - Role listing with permission display
+    - Interactive role assignment/revocation for users
+    - AJAX-based operations with CSRF protection
+  - **User Permissions Dashboard**: Updated `/my-permissions` to display V2 roles and wildcard permissions
+    - Shows user's assigned roles with Arabic names
+    - Displays permission patterns with wildcard badges
+    - Quick access links based on V2 permissions
+  - **Template Integration**: All templates use V2 context processor functions
+    - `has_permission()`, `can()`, `can_any()`, `can_all()`, `is_admin()`, `has_role()`
+    - Removed legacy `get_user_permissions()` calls from base templates
+  - **Key Routes Added**:
+    - `GET /admin/roles` - List all V2 roles
+    - `GET /admin/roles/users` - User role management interface
+    - `POST /admin/roles/assign` - Assign role to user
+    - `POST /admin/roles/revoke` - Revoke role from user
+    - `GET /admin/roles/user/<id>` - Get user's V2 roles (API)
+
 ## Recent Maintenance (2026-01-09)
 - **V2 Permission System Implementation**: Complete rebuild of the permission system from flat 385-key structure to role-based architecture.
   - **New Models**: `Role`, `UserRoleAssignment`, `PermissionOverride`, `PermissionAuditLog` in `k9/models/permissions_v2.py`
   - **PermissionService**: Unified permission service with caching and wildcard support in `k9/services/permission_service.py`
-  - **Role-Based Access**: 6 predefined roles (super_admin, general_admin, project_manager, handler, veterinarian, trainer, breeder)
+  - **Role-Based Access**: 7 predefined roles (super_admin, general_admin, project_manager, handler, veterinarian, trainer, breeder, viewer)
   - **~50 Organized Permissions**: Grouped by module (dogs.*, employees.*, projects.*, reports.*, etc.)
   - **Wildcard Support**: Pattern matching for permissions (e.g., `admin.*` grants all admin permissions)
   - **Template Helpers**: Context processor provides `can()`, `can_any()`, `can_all()`, `is_admin()`, `has_role()` functions
