@@ -523,7 +523,7 @@
                     {% endif %}
                     {% if has_permission('admin.permissions.view') %}
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="{{ url_for('admin.comprehensive_permissions') }}"><i class="fas fa-key me-2 text-success"></i>إدارة الصلاحيات</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('admin.access_control_hub') }}"><i class="fas fa-shield-alt me-2 text-success"></i>مركز التحكم في الوصول</a></li>
                     {% endif %}
                     {% if has_permission('admin.backup') %}
                     <li><a class="dropdown-item" href="{{ url_for('admin.backup_management') }}"><i class="fas fa-database me-2 text-secondary"></i>النسخ الاحتياطية</a></li>
