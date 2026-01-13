@@ -2529,6 +2529,7 @@ def access_control_save():
                 target_user_id=user_id,
                 changed_by_id=current_user.id,
                 action='role_change',
+                entity_type='role',
                 details=f'Changed role from {old_role or "none"} to {new_role}',
                 ip_address=request.remote_addr
             )
@@ -2551,6 +2552,7 @@ def access_control_save():
                         target_user_id=user_id,
                         changed_by_id=current_user.id,
                         action='grant' if is_granted else 'revoke',
+                        entity_type='permission_override',
                         details=f'Updated override: {perm_key}',
                         ip_address=request.remote_addr
                     )
@@ -2569,6 +2571,7 @@ def access_control_save():
                     target_user_id=user_id,
                     changed_by_id=current_user.id,
                     action='grant' if is_granted else 'revoke',
+                    entity_type='permission_override',
                     details=f'New override: {perm_key}',
                     ip_address=request.remote_addr
                 )
@@ -2581,6 +2584,7 @@ def access_control_save():
                     target_user_id=user_id,
                     changed_by_id=current_user.id,
                     action='revoke',
+                    entity_type='permission_override',
                     details=f'Removed override: {perm_key}',
                     ip_address=request.remote_addr
                 )
