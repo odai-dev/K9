@@ -2458,7 +2458,7 @@ def access_control_user_permissions(user_id):
         current_role = assignment.role.name
     
     overrides = {}
-    override_records = PermissionOverride.query.filter_by(user_id=user_id).all()
+    override_records = PermissionOverride.query.filter_by(user_id=user_id, project_id=None).all()
     for o in override_records:
         overrides[o.permission_key] = o.is_granted
     
@@ -2534,41 +2534,57 @@ def access_control_save():
             )
             db.session.add(audit)
         
-        if overrides:
-            existing_overrides = {o.permission_key: o for o in PermissionOverride.query.filter_by(user_id=user_id).all()}
+        existing_overrides_list = PermissionOverride.query.filter_by(user_id=user_id, project_id=None).all()
+        existing_overrides = {o.permission_key: o for o in existing_overrides_list}
+        processed_keys = set()
+        
+        for perm_key, is_granted in overrides.items():
+            processed_keys.add(perm_key)
             
-            for perm_key, is_granted in overrides.items():
-                if perm_key in existing_overrides:
-                    existing = existing_overrides[perm_key]
-                    if existing.is_granted != is_granted:
-                        existing.is_granted = is_granted
-                        existing.granted_by_id = current_user.id
-                        
-                        audit = PermissionAuditLog(
-                            target_user_id=user_id,
-                            changed_by_id=current_user.id,
-                            action='grant' if is_granted else 'revoke',
-                            details=f'Override: {perm_key}',
-                            ip_address=request.remote_addr
-                        )
-                        db.session.add(audit)
-                else:
-                    new_override = PermissionOverride(
-                        user_id=user_id,
-                        permission_key=perm_key,
-                        is_granted=is_granted,
-                        granted_by_id=current_user.id
-                    )
-                    db.session.add(new_override)
+            if perm_key in existing_overrides:
+                existing = existing_overrides[perm_key]
+                if existing.is_granted != is_granted:
+                    existing.is_granted = is_granted
+                    existing.granted_by_id = current_user.id
                     
                     audit = PermissionAuditLog(
                         target_user_id=user_id,
                         changed_by_id=current_user.id,
                         action='grant' if is_granted else 'revoke',
-                        details=f'New override: {perm_key}',
+                        details=f'Updated override: {perm_key}',
                         ip_address=request.remote_addr
                     )
                     db.session.add(audit)
+            else:
+                new_override = PermissionOverride(
+                    user_id=user_id,
+                    permission_key=perm_key,
+                    is_granted=is_granted,
+                    project_id=None,
+                    granted_by_id=current_user.id
+                )
+                db.session.add(new_override)
+                
+                audit = PermissionAuditLog(
+                    target_user_id=user_id,
+                    changed_by_id=current_user.id,
+                    action='grant' if is_granted else 'revoke',
+                    details=f'New override: {perm_key}',
+                    ip_address=request.remote_addr
+                )
+                db.session.add(audit)
+        
+        for perm_key, override_to_remove in existing_overrides.items():
+            if perm_key not in processed_keys:
+                db.session.delete(override_to_remove)
+                audit = PermissionAuditLog(
+                    target_user_id=user_id,
+                    changed_by_id=current_user.id,
+                    action='revoke',
+                    details=f'Removed override: {perm_key}',
+                    ip_address=request.remote_addr
+                )
+                db.session.add(audit)
         
         db.session.commit()
         
