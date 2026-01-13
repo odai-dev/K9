@@ -122,10 +122,10 @@ ROLE_PERMISSIONS = {
         # Dogs module
         "dogs.view", "dogs.create", "dogs.edit", "dogs.export",
         # Employees module
-        "employees.view", "employees.create", "employees.edit",
+        "employees.view", "employees.create", "employees.edit", "employees.delete",
         # Projects module (includes incidents, suspicions, evaluations)
-        "projects.view", "projects.create", "projects.edit",
-        "incidents.view", "incidents.create", "incidents.edit",
+        "projects.view", "projects.create", "projects.edit", "projects.delete",
+        "incidents.view", "incidents.create", "incidents.edit", "incidents.resolve",
         "suspicions.view", "suspicions.create",
         "evaluations.view", "evaluations.create",
         # Training module
@@ -138,14 +138,25 @@ ROLE_PERMISSIONS = {
         "production.view", "production.create",
         # Reports module
         "reports.view", "reports.create", "reports.approve", "reports.export",
-        # Schedule module
+        "reports.attendance.view",
+        # Schedule module - all schedule operations
         "schedule.view", "schedule.create", "schedule.edit", "schedule.approve",
+        "schedule.management.view", "schedule.management.create", 
+        "schedule.management.edit", "schedule.management.delete",
+        # Shifts module
+        "shifts.view", "shifts.create", "shifts.edit",
+        # Tasks module
+        "tasks.management.view", "tasks.management.create", 
+        "tasks.management.edit", "tasks.management.delete",
+        "tasks.my_tasks.view", "tasks.my_tasks.start", "tasks.my_tasks.complete",
         # PM operations
         "pm.dashboard", "pm.review_reports", "pm.manage_project",
         # Handler daily
         "handler_daily.view",
-        # Supervisor
-        "supervisor.reports.view", "supervisor.schedules.view"
+        # Supervisor - full access to schedules and reports
+        "supervisor.reports.view", "supervisor.reports.approve", "supervisor.reports.reject",
+        "supervisor.schedules.view", "supervisor.schedules.create", 
+        "supervisor.schedules.lock", "supervisor.schedules.delete"
     ],
     
     RoleType.HANDLER: [
