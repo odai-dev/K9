@@ -2601,8 +2601,11 @@ def access_control_save():
         
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error saving access control: {e}")
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Error saving access control: {e}", exc_info=True)
+        return jsonify({
+            'error': 'حدث خطأ أثناء حفظ الصلاحيات. يرجى المحاولة مرة أخرى.',
+            'error_en': 'An error occurred while saving permissions. Please try again.'
+        }), 500
 
 
 def get_role_arabic_name(role_name):
