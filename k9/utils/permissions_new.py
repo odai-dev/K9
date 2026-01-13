@@ -25,7 +25,7 @@ def _is_admin_mode(user):
 
 def load_user_permissions(user_id):
     """
-    Load all permission keys for a user into the session.
+    Load all permission keys for a user into the session using V2 PermissionService.
     Called during login to cache permissions for fast checking.
     
     Args:
@@ -34,18 +34,12 @@ def load_user_permissions(user_id):
     Returns:
         Set of permission keys (strings)
     """
-    from k9.models.permissions_new import UserPermission, Permission
+    from k9.services.permission_service import PermissionService
     from k9.models.models import User
     from datetime import datetime
     
-    # Query all permissions granted to this user
-    user_perms = UserPermission.query.filter_by(user_id=user_id).all()
-    
-    # Extract permission keys
-    permission_keys = set()
-    for up in user_perms:
-        if up.permission:
-            permission_keys.add(up.permission.key)
+    # Use V2 PermissionService to get all user permissions (resolves roles + wildcards)
+    permission_keys = PermissionService.get_user_permissions(user_id)
     
     # Store in session for fast access
     session['user_permissions'] = list(permission_keys)
@@ -102,8 +96,8 @@ def _should_reload_permissions():
 
 def get_user_permissions():
     """
-    Get current user's permissions from session.
-    Automatically reloads if permissions have been updated since last load.
+    Get current user's permissions using V2 PermissionService.
+    Uses session cache with automatic reload when permissions change.
     
     Returns:
         Set of permission keys (strings)
@@ -115,9 +109,14 @@ def get_user_permissions():
     if _should_reload_permissions():
         load_user_permissions(current_user.id)
     
-    # Load from session
-    perms = session.get('user_permissions', [])
-    return set(perms)
+    # Try session first for performance
+    perms = session.get('user_permissions')
+    if perms is not None:
+        return set(perms)
+    
+    # Fallback: load directly from V2 PermissionService
+    from k9.services.permission_service import PermissionService
+    return PermissionService.get_user_permissions(current_user.id)
 
 
 def has_permission(permission_key, user=None, project_id=None):
@@ -512,136 +511,95 @@ def require_admin_permission(permission_key='admin.permissions.view'):
 
 def grant_permission(user_id, permission_key, granted_by_user_id=None, _batch_session=None, _commit=True):
     """
-    Grant a permission to a user.
+    Grant a permission to a user using V2 PermissionOverride.
     
     Args:
         user_id: User to grant permission to
         permission_key: Permission key to grant
         granted_by_user_id: User granting the permission (for audit)
-        _batch_session: Internal - SQLAlchemy session for batch operations (don't commit)
-        _commit: Internal - whether to commit immediately (False for batch operations)
+        _batch_session: Internal - Ignored in V2 (kept for backward compatibility)
+        _commit: Internal - Ignored in V2 (always commits)
         
     Returns:
         True if successful, False otherwise
     """
-    from app import db
-    from k9.models.permissions_new import Permission, UserPermission, PermissionChangeLog
+    from k9.services.permission_service import PermissionService
     from k9.models.models import User
     from datetime import datetime
     
-    session = _batch_session if _batch_session else db.session
+    # Use V2 PermissionService to grant permission via override
+    try:
+        PermissionService.grant_permission(
+            user_id=user_id,
+            permission_key=permission_key,
+            granted_by_id=granted_by_user_id
+        )
+        success = True
+    except Exception:
+        success = False
     
-    # Find the permission
-    permission = Permission.query.filter_by(key=permission_key).first()
-    if not permission:
-        return False
-    
-    # Check if already granted
-    existing = UserPermission.query.filter_by(
-        user_id=user_id,
-        permission_id=permission.id
-    ).first()
-    
-    if existing:
-        return True  # Already granted
-    
-    # Create grant
-    user_perm = UserPermission(
-        user_id=user_id,
-        permission_id=permission.id,
-        granted_by_user_id=granted_by_user_id
-    )
-    session.add(user_perm)
-    
-    # Log the change
-    log = PermissionChangeLog(
-        user_id=user_id,
-        permission_id=permission.id,
-        action='granted',
-        changed_by_user_id=granted_by_user_id,
-        ip_address=request.remote_addr if has_request_context() else None
-    )
-    session.add(log)
-    
-    # Update the user's permissions_updated_at timestamp to invalidate their session cache
-    target_user = User.query.get(user_id)
-    if target_user:
-        target_user.permissions_updated_at = datetime.utcnow()
-    
-    if _commit:
-        session.commit()
+    if success:
+        # Update the user's permissions_updated_at timestamp to invalidate their session cache
+        from app import db
+        target_user = User.query.get(user_id)
+        if target_user:
+            target_user.permissions_updated_at = datetime.utcnow()
+            db.session.commit()
+        
         # Reload permissions if this user is currently logged in
         if current_user.is_authenticated and str(current_user.id) == str(user_id):
             load_user_permissions(user_id)
     
-    return True
+    return success
 
 
 def revoke_permission(user_id, permission_key, revoked_by_user_id=None, _batch_session=None, _commit=True):
     """
-    Revoke a permission from a user.
+    Revoke a permission from a user using V2 PermissionOverride.
     
     Args:
         user_id: User to revoke permission from
         permission_key: Permission key to revoke
         revoked_by_user_id: User revoking the permission (for audit)
-        _batch_session: Internal - SQLAlchemy session for batch operations (don't commit)
-        _commit: Internal - whether to commit immediately (False for batch operations)
+        _batch_session: Internal - Ignored in V2 (kept for backward compatibility)
+        _commit: Internal - Ignored in V2 (always commits)
         
     Returns:
         True if successful, False otherwise
     """
-    from app import db
-    from k9.models.permissions_new import Permission, UserPermission, PermissionChangeLog
+    from k9.services.permission_service import PermissionService
     from k9.models.models import User
     from datetime import datetime
     
-    session = _batch_session if _batch_session else db.session
+    # Use V2 PermissionService to revoke permission via override
+    try:
+        PermissionService.revoke_permission(
+            user_id=user_id,
+            permission_key=permission_key,
+            revoked_by_id=revoked_by_user_id
+        )
+        success = True
+    except Exception:
+        success = False
     
-    # Find the permission
-    permission = Permission.query.filter_by(key=permission_key).first()
-    if not permission:
-        return False
-    
-    # Find the grant
-    user_perm = UserPermission.query.filter_by(
-        user_id=user_id,
-        permission_id=permission.id
-    ).first()
-    
-    if not user_perm:
-        return True  # Already revoked
-    
-    # Remove grant
-    session.delete(user_perm)
-    
-    # Log the change
-    log = PermissionChangeLog(
-        user_id=user_id,
-        permission_id=permission.id,
-        action='revoked',
-        changed_by_user_id=revoked_by_user_id,
-        ip_address=request.remote_addr if has_request_context() else None
-    )
-    session.add(log)
-    
-    # Update the user's permissions_updated_at timestamp to invalidate their session cache
-    target_user = User.query.get(user_id)
-    if target_user:
-        target_user.permissions_updated_at = datetime.utcnow()
-    
-    if _commit:
-        session.commit()
+    if success:
+        # Update the user's permissions_updated_at timestamp to invalidate their session cache
+        from app import db
+        target_user = User.query.get(user_id)
+        if target_user:
+            target_user.permissions_updated_at = datetime.utcnow()
+            db.session.commit()
+        
         # Reload permissions if this user is currently logged in
         if current_user.is_authenticated and str(current_user.id) == str(user_id):
             load_user_permissions(user_id)
     
-    return True
+    return success
 
 
 def batch_grant_permissions(user_id, permission_keys, granted_by_user_id=None):
     """
-    Grant multiple permissions to a user in one batch (ONE commit).
+    Grant multiple permissions to a user using V2 PermissionService.
     
     Args:
         user_id: User to grant permissions to
@@ -651,55 +609,34 @@ def batch_grant_permissions(user_id, permission_keys, granted_by_user_id=None):
     Returns:
         Number of permissions successfully granted
     """
-    from app import db
-    from k9.models.permissions_new import Permission, UserPermission, PermissionChangeLog
+    from k9.services.permission_service import PermissionService
     from k9.models.models import User
     from datetime import datetime
+    from app import db
     
     if not permission_keys:
         return 0
     
     count = 0
     
-    # Batch all operations before commit
+    # Grant each permission via V2 PermissionService
     for permission_key in permission_keys:
-        permission = Permission.query.filter_by(key=permission_key).first()
-        if not permission:
+        try:
+            PermissionService.grant_permission(
+                user_id=user_id,
+                permission_key=permission_key,
+                granted_by_id=granted_by_user_id
+            )
+            count += 1
+        except Exception:
             continue
-        
-        existing = UserPermission.query.filter_by(
-            user_id=user_id,
-            permission_id=permission.id
-        ).first()
-        
-        if existing:
-            continue  # Already granted
-        
-        user_perm = UserPermission(
-            user_id=user_id,
-            permission_id=permission.id,
-            granted_by_user_id=granted_by_user_id
-        )
-        db.session.add(user_perm)
-        
-        log = PermissionChangeLog(
-            user_id=user_id,
-            permission_id=permission.id,
-            action='granted',
-            changed_by_user_id=granted_by_user_id,
-            ip_address=request.remote_addr if has_request_context() else None
-        )
-        db.session.add(log)
-        count += 1
     
     if count > 0:
         # Update timestamp for all changes at once
         target_user = User.query.get(user_id)
         if target_user:
             target_user.permissions_updated_at = datetime.utcnow()
-        
-        # COMMIT ONCE for all changes
-        db.session.commit()
+            db.session.commit()
         
         # Reload permissions if this user is currently logged in
         if current_user.is_authenticated and str(current_user.id) == str(user_id):
@@ -710,7 +647,7 @@ def batch_grant_permissions(user_id, permission_keys, granted_by_user_id=None):
 
 def batch_revoke_permissions(user_id, permission_keys, revoked_by_user_id=None):
     """
-    Revoke multiple permissions from a user in one batch (ONE commit).
+    Revoke multiple permissions from a user using V2 PermissionService.
     
     Args:
         user_id: User to revoke permissions from
@@ -720,50 +657,34 @@ def batch_revoke_permissions(user_id, permission_keys, revoked_by_user_id=None):
     Returns:
         Number of permissions successfully revoked
     """
-    from app import db
-    from k9.models.permissions_new import Permission, UserPermission, PermissionChangeLog
+    from k9.services.permission_service import PermissionService
     from k9.models.models import User
     from datetime import datetime
+    from app import db
     
     if not permission_keys:
         return 0
     
     count = 0
     
-    # Batch all operations before commit
+    # Revoke each permission via V2 PermissionService
     for permission_key in permission_keys:
-        permission = Permission.query.filter_by(key=permission_key).first()
-        if not permission:
+        try:
+            PermissionService.revoke_permission(
+                user_id=user_id,
+                permission_key=permission_key,
+                revoked_by_id=revoked_by_user_id
+            )
+            count += 1
+        except Exception:
             continue
-        
-        user_perm = UserPermission.query.filter_by(
-            user_id=user_id,
-            permission_id=permission.id
-        ).first()
-        
-        if not user_perm:
-            continue  # Already revoked
-        
-        db.session.delete(user_perm)
-        
-        log = PermissionChangeLog(
-            user_id=user_id,
-            permission_id=permission.id,
-            action='revoked',
-            changed_by_user_id=revoked_by_user_id,
-            ip_address=request.remote_addr if has_request_context() else None
-        )
-        db.session.add(log)
-        count += 1
     
     if count > 0:
         # Update timestamp for all changes at once
         target_user = User.query.get(user_id)
         if target_user:
             target_user.permissions_updated_at = datetime.utcnow()
-        
-        # COMMIT ONCE for all changes
-        db.session.commit()
+            db.session.commit()
         
         # Reload permissions if this user is currently logged in
         if current_user.is_authenticated and str(current_user.id) == str(user_id):
@@ -823,7 +744,7 @@ def _is_pm_mode(user):
 
 def get_sections_for_user(user=None):
     """
-    Get list of sections/categories the user has access to based on their permissions.
+    Get list of sections/categories the user has access to based on their V2 permissions.
     
     Args:
         user: Optional user object (defaults to current_user)
@@ -840,13 +761,21 @@ def get_sections_for_user(user=None):
     if _is_admin_mode(user):
         return ['admin', 'dogs', 'employees', 'projects', 'training', 'veterinary', 
                 'breeding', 'reports', 'schedules', 'shifts', 'attendance', 'handlers',
-                'supervisor', 'caretaker', 'security', 'audit', 'notifications', 'dashboard']
+                'supervisor', 'caretaker', 'security', 'audit', 'notifications', 'dashboard',
+                'handler_daily', 'pm', 'users']
     
-    user_perms = get_user_permissions()
+    # Use V2 PermissionService to get user permissions
+    from k9.services.permission_service import PermissionService
+    user_perms = PermissionService.get_user_permissions(user.id)
+    
     sections = set()
     for perm in user_perms:
         if '.' in perm:
             section = perm.split('.')[0]
+            sections.add(section)
+        elif perm.endswith('.*'):
+            # Handle wildcard patterns like "dogs.*"
+            section = perm[:-2]
             sections.add(section)
     
     return list(sections)
