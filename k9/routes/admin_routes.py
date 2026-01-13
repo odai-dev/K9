@@ -45,6 +45,11 @@ def dashboard():
     from sqlalchemy import func
     
     # System statistics - using V2 permission system
+    # Calculate permission statistics - count all permission key attributes in PermissionKey class
+    from k9.models.permissions_v2 import PermissionKey, PermissionOverride
+    total_permissions = len([attr for attr in dir(PermissionKey) if not attr.startswith('_') and isinstance(getattr(PermissionKey, attr), str)])
+    granted_permissions = PermissionOverride.query.filter_by(is_granted=True).count()
+    
     stats = {
         'total_users': User.query.count(),
         'total_project_managers': User.query.filter_by(role=UserRole.PROJECT_MANAGER).count(),
@@ -53,6 +58,8 @@ def dashboard():
         'total_employees': Employee.query.count(),
         'total_roles': Role.query.count(),
         'total_role_assignments': UserRoleAssignment.query.count(),
+        'total_permissions': total_permissions,
+        'granted_permissions': granted_permissions,
     }
     
     # Recent activities - use V2 PermissionAuditLog
