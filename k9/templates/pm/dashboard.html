@@ -448,7 +448,7 @@
                                 </a>
                                 {% endif %}
                                 {% if has_permission('incidents.create') %}
-                                <a href="{{ url_for('main.project_incidents', project_id=project.id) }}#addIncidentModal" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#addIncidentModal" title="تسجيل حادث">
+                                <a href="{{ url_for('main.project_incident_add', project_id=project.id) }}" class="btn btn-sm btn-warning" title="تسجيل حادث">
                                     <i class="fas fa-plus"></i> إضافة حادث
                                 </a>
                                 {% endif %}
@@ -493,7 +493,7 @@
                                 </a>
                                 {% endif %}
                                 {% if has_permission('suspicions.create') %}
-                                <a href="{{ url_for('main.project_suspicions', project_id=project.id) }}#addSuspicionModal" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#addSuspicionModal" title="تسجيل اشتباه">
+                                <a href="{{ url_for('main.project_suspicion_add', project_id=project.id) }}" class="btn btn-sm btn-info" title="تسجيل اشتباه">
                                     <i class="fas fa-plus"></i> إضافة اشتباه
                                 </a>
                                 {% endif %}
@@ -538,7 +538,7 @@
                                 </a>
                                 {% endif %}
                                 {% if has_permission('evaluations.create') %}
-                                <a href="{{ url_for('main.project_evaluations', project_id=project.id) }}#addEvaluationModal" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addEvaluationModal" title="إضافة تقييم">
+                                <a href="{{ url_for('main.project_evaluation_add', project_id=project.id) }}" class="btn btn-sm btn-success" title="إضافة تقييم">
                                     <i class="fas fa-plus"></i> إضافة تقييم
                                 </a>
                                 {% endif %}
