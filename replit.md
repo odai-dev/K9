@@ -63,6 +63,12 @@ Preferred communication style: Simple, everyday language.
     - `grant_permission()` - Calls PermissionService.grant_permission() (uses PermissionOverride)
     - `revoke_permission()` - Calls PermissionService.revoke_permission() (uses PermissionOverride)
     - `batch_grant_permissions()` / `batch_revoke_permissions()` - Use V2 PermissionService
+  - **Admin Routes V2 Migration**:
+    - Dashboard stats use V2 Role/UserRoleAssignment counts
+    - Audit logs use V2 PermissionAuditLog
+    - Template assignment maps to V2 roles (8 templates: full_access, pm_access, view_only, handler_access, security_access, vet_access, breeding_manager, trainer_access)
+    - Added PermissionService.clear_user_roles() and clear_user_overrides() methods
+  - **V1 Scripts Removed**: 9 obsolete V1 seed scripts deleted from scripts/ directory
   - **V1 Tables Deprecated**: UserPermission/Permission tables no longer source of truth
   - **V2 is Single Source of Truth**: All permission data flows through V2 Role/PermissionOverride tables
 
