@@ -75,6 +75,10 @@ Preferred communication style: Simple, everyday language.
     - Updated ROLE_PERMISSIONS to use canonical 2-part keys (dogs.view, employees.view, projects.view) matching route decorators
     - Updated navbar (base.html) to use same 2-part keys instead of mismatched 3-part keys (dogs.management.view → dogs.view)
     - This fixes the issue where project managers could see permissions on /my-permissions but not access features through the UI
+  - **Template Helper Signature Fixes**:
+    - Fixed `is_admin(current_user)` → `is_admin()` in unauthorized.html, handler/profile.html
+    - Replaced `get_sections_for_user(current_user)` with `has_role('project_manager')` across base.html, handler/profile.html, admin/profile.html
+    - All template helpers now use correct zero-argument signatures matching V2 context processor
 
 ## Recent Maintenance (2026-01-10)
 - **V2 Permission System Finalization**: Complete integration of role-based permission system across all components.

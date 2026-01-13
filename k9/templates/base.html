@@ -163,7 +163,7 @@
                     </li>
                     {% endif %}
                     
-                    {% if get_sections_for_user(current_user)|length == 0 %}
+                    {% if not is_admin() and not has_role('project_manager') %}
                     {% set is_handler_active = request.endpoint and (request.endpoint.startswith('handler.') or request.endpoint.startswith('tasks.handler_')) %}
                     <li class="nav-item dropdown {% if is_handler_active %}active{% endif %}">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_handler_active %}active{% endif %}" href="#" id="handlerDropdown" role="button" data-bs-toggle="dropdown">
@@ -190,7 +190,7 @@
                     </li>
                     {% endif %}
                     
-                    {% if get_sections_for_user(current_user)|length > 0 %}
+                    {% if has_role('project_manager') %}
                     {% set is_pm_active = request.endpoint and request.endpoint.startswith('pm.') %}
                     <li class="nav-item dropdown {% if is_pm_active %}active{% endif %}">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_pm_active %}active{% endif %}" href="#" id="pmDropdown" role="button" data-bs-toggle="dropdown">
@@ -459,7 +459,7 @@
     <!-- Mobile Bottom Navigation -->
     {% if current_user.is_authenticated %}
     <nav class="mobile-bottom-nav d-md-none">
-        {% if get_sections_for_user(current_user)|length == 0 %}
+        {% if not is_admin() and not has_role('project_manager') %}
         <a href="{{ url_for('handler.dashboard') }}" class="nav-item {{ 'active' if request.endpoint == 'handler.dashboard' }}">
             <i class="fas fa-home"></i>
             <span>الرئيسية</span>
@@ -479,7 +479,7 @@
             <span class="notification-dot"></span>
             {% endif %}
         </a>
-        {% elif get_sections_for_user(current_user)|length > 0 %}
+        {% elif is_admin() or has_role('project_manager') %}
         <a href="{{ url_for('admin.dashboard') }}" class="nav-item {{ 'active' if request.endpoint == 'admin.dashboard' }}">
             <i class="fas fa-home"></i>
             <span>الرئيسية</span>

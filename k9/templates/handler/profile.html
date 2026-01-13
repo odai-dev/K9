@@ -157,9 +157,9 @@
             <h2 class="mb-2">{{ employee.name }}</h2>
             <p class="mb-1">
                 <span class="badge badge-role bg-light text-dark">
-                    {% if is_admin(current_user) %}
+                    {% if is_admin() %}
                     <i class="fas fa-user-shield me-1"></i>مدير عام
-                    {% elif get_sections_for_user(current_user)|length > 0 %}
+                    {% elif has_role('project_manager') %}
                     <i class="fas fa-users-cog me-1"></i>مسؤول مشروع
                     {% else %}
                     <i class="fas fa-dog me-1"></i>سائس

@@ -210,7 +210,7 @@
                                     <span class="badge bg-primary">
                                         {% if is_admin() %}
                                         مدير عام
-                                        {% elif get_sections_for_user(current_user)|length > 0 %}
+                                        {% elif has_role('project_manager') %}
                                         مدير مشروع
                                         {% else %}
                                         سائس
