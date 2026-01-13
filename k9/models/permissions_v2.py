@@ -106,6 +106,7 @@ class PermissionKey:
 
 
 # Role to permissions mapping - defines what each role can do
+# Keys must match route decorator keys (canonical 2-part format)
 ROLE_PERMISSIONS = {
     RoleType.SUPER_ADMIN: ["*"],  # All permissions
     
@@ -113,56 +114,102 @@ ROLE_PERMISSIONS = {
         # Full access to everything except super admin features
         "dogs.*", "employees.*", "projects.*", "training.*",
         "veterinary.*", "breeding.*", "reports.*", "schedule.*",
-        "users.*", "admin.*", "handler_daily.*", "pm.*"
+        "users.*", "admin.*", "handler_daily.*", "pm.*", "production.*",
+        "supervisor.*"
     ],
     
     RoleType.PROJECT_MANAGER: [
-        "dogs.view", "dogs.export",
-        "employees.view",
-        "projects.view", "projects.edit", "projects.manage_team",
-        "training.view",
-        "veterinary.view",
-        "breeding.view",
-        "reports.view", "reports.approve", "reports.export",
+        # Dogs module
+        "dogs.view", "dogs.create", "dogs.export",
+        # Employees module
+        "employees.view", "employees.create",
+        # Projects module
+        "projects.view", "projects.create", "projects.edit",
+        # Training module
+        "training.view", "training.create",
+        # Veterinary module
+        "veterinary.view", "veterinary.create",
+        # Breeding module
+        "breeding.view", "breeding.create",
+        # Reports module
+        "reports.view", "reports.create", "reports.approve", "reports.export",
+        # Schedule module
         "schedule.view", "schedule.approve",
+        # PM operations
         "pm.dashboard", "pm.review_reports", "pm.manage_project",
-        "handler_daily.view"
+        # Handler daily
+        "handler_daily.view",
+        # Supervisor
+        "supervisor.reports.view", "supervisor.schedules.view"
     ],
     
     RoleType.HANDLER: [
+        # Dogs module
         "dogs.view",
+        # Training module
         "training.view", "training.create",
+        # Veterinary module
         "veterinary.view",
+        # Reports module
         "reports.view", "reports.create",
+        # Schedule module
         "schedule.view",
+        # Handler daily
         "handler_daily.view", "handler_daily.create", "handler_daily.edit"
     ],
     
     RoleType.VETERINARIAN: [
+        # Dogs module
         "dogs.view",
+        # Veterinary module
         "veterinary.view", "veterinary.create", "veterinary.edit",
+        # Reports module
         "reports.view", "reports.create",
+        # Handler daily
         "handler_daily.view"
     ],
     
     RoleType.TRAINER: [
+        # Dogs module
         "dogs.view",
+        # Training module
         "training.view", "training.create", "training.edit",
+        # Reports module
         "reports.view", "reports.create",
+        # Handler daily
         "handler_daily.view"
     ],
     
     RoleType.BREEDER: [
+        # Dogs module
         "dogs.view",
+        # Breeding module
         "breeding.view", "breeding.create", "breeding.edit",
+        # Production module
+        "production.view", "production.create", "production.edit",
+        # Reports module
         "reports.view", "reports.create",
+        # Handler daily
         "handler_daily.view"
     ],
     
     RoleType.VIEWER: [
-        "dogs.view", "employees.view", "projects.view",
-        "training.view", "veterinary.view", "breeding.view",
-        "reports.view", "schedule.view"
+        # Dogs module
+        "dogs.view",
+        # Employees module
+        "employees.view",
+        # Projects module
+        "projects.view",
+        # Training module
+        "training.view",
+        # Veterinary module
+        "veterinary.view",
+        # Breeding module
+        "breeding.view",
+        # Reports module
+        "reports.view",
+        # Schedule module
+        "schedule.view"
     ]
 }
 
