@@ -71,6 +71,10 @@ Preferred communication style: Simple, everyday language.
   - **V1 Scripts Removed**: 9 obsolete V1 seed scripts deleted from scripts/ directory
   - **V1 Tables Deprecated**: UserPermission/Permission tables no longer source of truth
   - **V2 is Single Source of Truth**: All permission data flows through V2 Role/PermissionOverride tables
+  - **Permission Key Alignment Fix**: 
+    - Updated ROLE_PERMISSIONS to use canonical 2-part keys (dogs.view, employees.view, projects.view) matching route decorators
+    - Updated navbar (base.html) to use same 2-part keys instead of mismatched 3-part keys (dogs.management.view → dogs.view)
+    - This fixes the issue where project managers could see permissions on /my-permissions but not access features through the UI
 
 ## Recent Maintenance (2026-01-10)
 - **V2 Permission System Finalization**: Complete integration of role-based permission system across all components.
