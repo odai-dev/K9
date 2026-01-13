@@ -310,7 +310,7 @@ def get_permission_url(permission_key):
         'pm.team': 'pm.my_team',
         'pm.approvals': 'pm.pending_approvals',
         'admin.dashboard': 'admin.dashboard',
-        'admin.permissions.view': 'admin.comprehensive_permissions',
+        'admin.permissions.view': 'admin.access_control_hub',
         'schedule.view': 'handler_daily.schedules',
         'reports.breeding.feeding.view': 'unified_feeding_reports_ui.feeding',
         'reports.breeding.checkup.view': 'unified_checkup_reports_ui.checkup',
