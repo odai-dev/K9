@@ -2539,8 +2539,33 @@ def access_control_save():
         existing_overrides = {o.permission_key: o for o in existing_overrides_list}
         processed_keys = set()
         
+        role_name = new_role or old_role
+        role_permissions = set()
+        if role_name:
+            from k9.models.permissions_v2 import ROLE_PERMISSIONS, RoleType
+            try:
+                role_type = RoleType(role_name)
+                role_permissions = set(ROLE_PERMISSIONS.get(role_type, []))
+            except ValueError:
+                pass
+        
         for perm_key, is_granted in overrides.items():
             processed_keys.add(perm_key)
+            
+            has_in_role = perm_key in role_permissions or any(
+                p.endswith('.*') and perm_key.startswith(p[:-2] + '.') 
+                for p in role_permissions
+            )
+            
+            if is_granted and has_in_role:
+                if perm_key in existing_overrides:
+                    db.session.delete(existing_overrides[perm_key])
+                continue
+            
+            if not is_granted and not has_in_role:
+                if perm_key in existing_overrides:
+                    db.session.delete(existing_overrides[perm_key])
+                continue
             
             if perm_key in existing_overrides:
                 existing = existing_overrides[perm_key]
