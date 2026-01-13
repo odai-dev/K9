@@ -1,0 +1,1144 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}مركز التحكم في الوصول{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">الرئيسية</a></li>
+<li class="breadcrumb-item active" aria-current="page">مركز التحكم في الوصول</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.hub-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.hub-header {
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 16px;
+    margin-bottom: 30px;
+}
+
+.hub-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.hub-subtitle {
+    opacity: 0.9;
+    font-size: 1rem;
+}
+
+.search-container {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.search-input {
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px 20px;
+    font-size: 1rem;
+    width: 100%;
+    transition: all 0.3s;
+}
+
+.search-input:focus {
+    border-color: #1a365d;
+    box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.1);
+    outline: none;
+}
+
+.user-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.user-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 2px solid transparent;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.user-card:hover {
+    border-color: #1a365d;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.user-card.selected {
+    border-color: #10b981;
+    background: #f0fdf4;
+}
+
+.user-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.user-info h5 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1a365d;
+}
+
+.user-info p {
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.role-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.role-badge.admin { background: #dc2626; color: white; }
+.role-badge.pm { background: #2563eb; color: white; }
+.role-badge.handler { background: #16a34a; color: white; }
+.role-badge.trainer { background: #9333ea; color: white; }
+.role-badge.vet { background: #0891b2; color: white; }
+.role-badge.breeder { background: #ea580c; color: white; }
+.role-badge.viewer { background: #64748b; color: white; }
+
+.panel-container {
+    display: none;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.panel-container.show {
+    display: block;
+}
+
+.panel-header {
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+    color: white;
+    padding: 24px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.panel-user-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.panel-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.panel-body {
+    padding: 30px;
+}
+
+.section-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1a365d;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.role-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+}
+
+.role-card {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.role-card:hover {
+    border-color: #1a365d;
+    background: white;
+}
+
+.role-card.selected {
+    border-color: #10b981;
+    background: #f0fdf4;
+}
+
+.role-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.role-card-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1a365d;
+}
+
+.role-card-desc {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-bottom: 12px;
+}
+
+.role-card-perms {
+    font-size: 0.8rem;
+    color: #1a365d;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.role-check {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.role-card.selected .role-check {
+    background: #10b981;
+    border-color: #10b981;
+    color: white;
+}
+
+.bundle-section {
+    margin-top: 30px;
+    padding-top: 30px;
+    border-top: 2px solid #e2e8f0;
+}
+
+.bundle-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.bundle-card {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s;
+}
+
+.bundle-card:hover {
+    border-color: #1a365d;
+}
+
+.bundle-header {
+    background: #f1f5f9;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.bundle-title {
+    font-weight: 600;
+    color: #1a365d;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.bundle-toggle {
+    width: 50px;
+    height: 26px;
+    border-radius: 13px;
+    background: #cbd5e1;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.bundle-toggle.active {
+    background: #10b981;
+}
+
+.bundle-toggle::after {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: white;
+    top: 2px;
+    right: 2px;
+    transition: all 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.bundle-toggle.active::after {
+    right: 26px;
+}
+
+.bundle-body {
+    padding: 16px 20px;
+    display: none;
+}
+
+.bundle-body.show {
+    display: block;
+}
+
+.perm-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.perm-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.perm-item:last-child {
+    border-bottom: none;
+}
+
+.perm-name {
+    font-size: 0.9rem;
+    color: #374151;
+}
+
+.perm-key {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-family: monospace;
+}
+
+.perm-switch {
+    width: 40px;
+    height: 22px;
+    border-radius: 11px;
+    background: #cbd5e1;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.perm-switch.active {
+    background: #10b981;
+}
+
+.perm-switch::after {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    top: 2px;
+    right: 2px;
+    transition: all 0.3s;
+}
+
+.perm-switch.active::after {
+    right: 20px;
+}
+
+.action-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 2px solid #e2e8f0;
+    padding: 16px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transform: translateY(100%);
+    transition: transform 0.3s;
+    z-index: 1000;
+}
+
+.action-bar.show {
+    transform: translateY(0);
+}
+
+.changes-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #1a365d;
+}
+
+.changes-count {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.btn-save {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s;
+}
+
+.btn-save:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+.btn-cancel {
+    background: #f1f5f9;
+    color: #64748b;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-cancel:hover {
+    background: #e2e8f0;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #64748b;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.alert-success-toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: #10b981;
+    color: white;
+    padding: 16px 30px;
+    border-radius: 10px;
+    font-weight: 600;
+    z-index: 9999;
+    transition: transform 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.alert-success-toast.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+.current-role-info {
+    background: #fef3c7;
+    border: 2px solid #fcd34d;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.current-role-info i {
+    color: #f59e0b;
+    font-size: 1.3rem;
+}
+
+.role-from-v2 {
+    display: inline-block;
+    background: #dbeafe;
+    color: #1d4ed8;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+}
+
+.loading-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="hub-container">
+    <div class="hub-header">
+        <h1 class="hub-title"><i class="fas fa-shield-alt me-3"></i>مركز التحكم في الوصول</h1>
+        <p class="hub-subtitle">إدارة صلاحيات المستخدمين بطريقة سهلة وفعالة - اختر المستخدم ثم عيّن له دوراً</p>
+    </div>
+
+    <div class="search-container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="position-relative">
+                    <i class="fas fa-search position-absolute" style="top: 50%; right: 16px; transform: translateY(-50%); color: #94a3b8;"></i>
+                    <input type="text" class="search-input" id="user-search" placeholder="ابحث عن مستخدم بالاسم أو اسم المستخدم..." style="padding-right: 45px;">
+                </div>
+            </div>
+            <div class="col-md-4 text-start">
+                <span class="text-muted" id="user-count">جاري التحميل...</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="user-grid" id="users-grid">
+        <div class="empty-state">
+            <i class="fas fa-spinner fa-spin"></i>
+            <h5>جاري تحميل المستخدمين...</h5>
+        </div>
+    </div>
+
+    <div class="panel-container" id="permissions-panel">
+        <div class="panel-header">
+            <div class="panel-user-info">
+                <div class="panel-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div>
+                    <h4 id="panel-user-name" style="margin: 0; font-weight: 700;"></h4>
+                    <p id="panel-user-details" style="margin: 4px 0 0; opacity: 0.8;"></p>
+                </div>
+            </div>
+            <button class="btn btn-light" onclick="closePanel()">
+                <i class="fas fa-times me-2"></i>إغلاق
+            </button>
+        </div>
+
+        <div class="panel-body">
+            <div id="current-role-display"></div>
+
+            <div class="section-title">
+                <i class="fas fa-user-tag"></i>
+                اختر الدور الرئيسي
+            </div>
+
+            <div class="role-cards" id="role-cards"></div>
+
+            <div class="bundle-section">
+                <div class="section-title">
+                    <i class="fas fa-layer-group"></i>
+                    حزم الصلاحيات التفصيلية
+                    <span class="badge bg-secondary ms-2">اختياري</span>
+                </div>
+                <p class="text-muted mb-4">يمكنك تخصيص الصلاحيات بشكل دقيق عبر تفعيل أو إلغاء حزم محددة</p>
+                
+                <div class="bundle-grid" id="bundles-grid"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="action-bar" id="action-bar">
+    <div class="changes-info">
+        <i class="fas fa-exclamation-triangle text-warning"></i>
+        <span>لديك تغييرات غير محفوظة</span>
+        <span class="changes-count"><span id="changes-count">0</span> تغيير</span>
+    </div>
+    <div>
+        <button class="btn-cancel me-3" onclick="cancelChanges()">إلغاء</button>
+        <button class="btn-save" onclick="saveChanges()">
+            <i class="fas fa-save"></i>
+            حفظ التغييرات
+        </button>
+    </div>
+</div>
+
+<div class="alert-success-toast" id="success-toast">
+    <i class="fas fa-check-circle"></i>
+    <span>تم حفظ التغييرات بنجاح</span>
+</div>
+
+<div class="loading-overlay" id="loading-overlay">
+    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
+    <p class="mt-3 text-muted">جاري الحفظ...</p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const ROLES = {
+    'general_admin': {
+        name: 'مسؤول عام',
+        name_en: 'General Admin',
+        desc: 'صلاحيات كاملة للنظام بما في ذلك إدارة المستخدمين والنسخ الاحتياطي',
+        icon: 'fa-user-shield',
+        color: '#dc2626',
+        perms_count: 'كل الصلاحيات'
+    },
+    'project_manager': {
+        name: 'مدير مشروع',
+        name_en: 'Project Manager',
+        desc: 'إدارة المشاريع والفرق والتقارير والموافقات',
+        icon: 'fa-briefcase',
+        color: '#2563eb',
+        perms_count: '32 صلاحية'
+    },
+    'handler': {
+        name: 'سائس',
+        name_en: 'Handler',
+        desc: 'عمليات التدريب اليومية والتقارير',
+        icon: 'fa-dog',
+        color: '#16a34a',
+        perms_count: '11 صلاحية'
+    },
+    'trainer': {
+        name: 'مدرب',
+        name_en: 'Trainer',
+        desc: 'إدارة جلسات التدريب وتقييم الأداء',
+        icon: 'fa-dumbbell',
+        color: '#9333ea',
+        perms_count: '8 صلاحيات'
+    },
+    'veterinarian': {
+        name: 'طبيب بيطري',
+        name_en: 'Veterinarian',
+        desc: 'إدارة الزيارات البيطرية والسجلات الصحية',
+        icon: 'fa-stethoscope',
+        color: '#0891b2',
+        perms_count: '8 صلاحيات'
+    },
+    'breeder': {
+        name: 'مربي',
+        name_en: 'Breeder',
+        desc: 'إدارة التربية والإنتاج والجراء',
+        icon: 'fa-paw',
+        color: '#ea580c',
+        perms_count: '10 صلاحيات'
+    },
+    'viewer': {
+        name: 'مشاهد',
+        name_en: 'Viewer',
+        desc: 'عرض البيانات فقط بدون تعديل',
+        icon: 'fa-eye',
+        color: '#64748b',
+        perms_count: '8 صلاحيات'
+    }
+};
+
+const BUNDLES = {
+    'dogs': {
+        name: 'إدارة الكلاب',
+        icon: 'fa-dog',
+        permissions: [
+            { key: 'dogs.view', name: 'عرض الكلاب' },
+            { key: 'dogs.create', name: 'إضافة كلب' },
+            { key: 'dogs.edit', name: 'تعديل بيانات الكلاب' },
+            { key: 'dogs.delete', name: 'حذف الكلاب' },
+            { key: 'dogs.export', name: 'تصدير بيانات الكلاب' }
+        ]
+    },
+    'employees': {
+        name: 'إدارة الموظفين',
+        icon: 'fa-users',
+        permissions: [
+            { key: 'employees.view', name: 'عرض الموظفين' },
+            { key: 'employees.create', name: 'إضافة موظف' },
+            { key: 'employees.edit', name: 'تعديل بيانات الموظفين' },
+            { key: 'employees.delete', name: 'حذف الموظفين' },
+            { key: 'employees.export', name: 'تصدير بيانات الموظفين' }
+        ]
+    },
+    'projects': {
+        name: 'إدارة المشاريع',
+        icon: 'fa-project-diagram',
+        permissions: [
+            { key: 'projects.view', name: 'عرض المشاريع' },
+            { key: 'projects.create', name: 'إنشاء مشروع' },
+            { key: 'projects.edit', name: 'تعديل المشاريع' },
+            { key: 'projects.delete', name: 'حذف المشاريع' },
+            { key: 'projects.manage_team', name: 'إدارة فريق المشروع' }
+        ]
+    },
+    'training': {
+        name: 'التدريب',
+        icon: 'fa-dumbbell',
+        permissions: [
+            { key: 'training.view', name: 'عرض جلسات التدريب' },
+            { key: 'training.create', name: 'إضافة جلسة تدريب' },
+            { key: 'training.edit', name: 'تعديل جلسات التدريب' },
+            { key: 'training.delete', name: 'حذف جلسات التدريب' }
+        ]
+    },
+    'veterinary': {
+        name: 'الرعاية البيطرية',
+        icon: 'fa-stethoscope',
+        permissions: [
+            { key: 'veterinary.view', name: 'عرض الزيارات البيطرية' },
+            { key: 'veterinary.create', name: 'إضافة زيارة بيطرية' },
+            { key: 'veterinary.edit', name: 'تعديل الزيارات' },
+            { key: 'veterinary.delete', name: 'حذف الزيارات' }
+        ]
+    },
+    'breeding': {
+        name: 'التربية والإنتاج',
+        icon: 'fa-paw',
+        permissions: [
+            { key: 'breeding.view', name: 'عرض بيانات التربية' },
+            { key: 'breeding.create', name: 'إضافة سجلات التربية' },
+            { key: 'breeding.edit', name: 'تعديل سجلات التربية' },
+            { key: 'breeding.delete', name: 'حذف سجلات التربية' }
+        ]
+    },
+    'reports': {
+        name: 'التقارير',
+        icon: 'fa-file-alt',
+        permissions: [
+            { key: 'reports.view', name: 'عرض التقارير' },
+            { key: 'reports.create', name: 'إنشاء تقرير' },
+            { key: 'reports.edit', name: 'تعديل التقارير' },
+            { key: 'reports.approve', name: 'اعتماد التقارير' },
+            { key: 'reports.export', name: 'تصدير التقارير' }
+        ]
+    },
+    'schedule': {
+        name: 'الجدولة والحضور',
+        icon: 'fa-calendar-alt',
+        permissions: [
+            { key: 'schedule.view', name: 'عرض الجداول' },
+            { key: 'schedule.create', name: 'إنشاء جدول' },
+            { key: 'schedule.edit', name: 'تعديل الجداول' },
+            { key: 'schedule.approve', name: 'اعتماد الجداول' }
+        ]
+    },
+    'admin': {
+        name: 'الإدارة والنظام',
+        icon: 'fa-cog',
+        permissions: [
+            { key: 'admin.dashboard', name: 'لوحة التحكم' },
+            { key: 'admin.settings', name: 'إعدادات النظام' },
+            { key: 'admin.backup', name: 'النسخ الاحتياطي' },
+            { key: 'admin.audit', name: 'سجل المراجعة' }
+        ]
+    }
+};
+
+let users = [];
+let selectedUser = null;
+let originalRole = null;
+let selectedRole = null;
+let originalOverrides = {};
+let currentOverrides = {};
+let changesCount = 0;
+
+function getCSRFToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadUsers();
+    renderRoleCards();
+    renderBundles();
+    
+    document.getElementById('user-search').addEventListener('input', function(e) {
+        filterUsers(e.target.value.toLowerCase());
+    });
+});
+
+async function loadUsers() {
+    try {
+        const response = await fetch('/admin/access-control/api/users');
+        const data = await response.json();
+        users = data.users;
+        renderUsers(users);
+        document.getElementById('user-count').textContent = `${users.length} مستخدم`;
+    } catch (error) {
+        console.error('Error loading users:', error);
+        document.getElementById('users-grid').innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-exclamation-triangle text-danger"></i>
+                <h5>فشل في تحميل المستخدمين</h5>
+                <button class="btn btn-primary mt-3" onclick="loadUsers()">إعادة المحاولة</button>
+            </div>`;
+    }
+}
+
+function renderUsers(usersToRender) {
+    const grid = document.getElementById('users-grid');
+    
+    if (usersToRender.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <h5>لا يوجد مستخدمون</h5>
+            </div>`;
+        return;
+    }
+    
+    grid.innerHTML = usersToRender.map(user => {
+        const roleInfo = ROLES[user.v2_role] || ROLES['viewer'];
+        const initials = user.full_name.split(' ').map(n => n[0]).join('').substring(0, 2);
+        
+        return `
+            <div class="user-card" onclick="selectUser('${user.id}')" id="user-card-${user.id}">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="user-avatar">${initials}</div>
+                    <div class="user-info flex-grow-1">
+                        <h5>${user.full_name}</h5>
+                        <p><i class="fas fa-at me-1"></i>${user.username}</p>
+                    </div>
+                    <div>
+                        <span class="role-badge" style="background: ${roleInfo.color};">
+                            <i class="fas ${roleInfo.icon} me-1"></i>${roleInfo.name}
+                        </span>
+                    </div>
+                </div>
+            </div>`;
+    }).join('');
+}
+
+function filterUsers(search) {
+    const filtered = users.filter(u => 
+        u.full_name.toLowerCase().includes(search) || 
+        u.username.toLowerCase().includes(search)
+    );
+    renderUsers(filtered);
+}
+
+function renderRoleCards() {
+    const container = document.getElementById('role-cards');
+    
+    container.innerHTML = Object.entries(ROLES).map(([key, role]) => `
+        <div class="role-card" id="role-card-${key}" onclick="selectRole('${key}')">
+            <div class="role-card-header">
+                <div>
+                    <div class="role-card-title">
+                        <i class="fas ${role.icon} me-2" style="color: ${role.color};"></i>
+                        ${role.name}
+                    </div>
+                </div>
+                <div class="role-check">
+                    <i class="fas fa-check" style="font-size: 12px;"></i>
+                </div>
+            </div>
+            <div class="role-card-desc">${role.desc}</div>
+            <div class="role-card-perms">
+                <i class="fas fa-key"></i>
+                ${role.perms_count}
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderBundles() {
+    const container = document.getElementById('bundles-grid');
+    
+    container.innerHTML = Object.entries(BUNDLES).map(([key, bundle]) => `
+        <div class="bundle-card" id="bundle-${key}">
+            <div class="bundle-header" onclick="toggleBundleExpand('${key}')">
+                <div class="bundle-title">
+                    <i class="fas ${bundle.icon}"></i>
+                    ${bundle.name}
+                    <span class="badge bg-light text-dark">${bundle.permissions.length}</span>
+                </div>
+                <div class="bundle-toggle" id="bundle-toggle-${key}" onclick="toggleBundle('${key}', event)"></div>
+            </div>
+            <div class="bundle-body" id="bundle-body-${key}">
+                <ul class="perm-list">
+                    ${bundle.permissions.map(perm => `
+                        <li class="perm-item">
+                            <div>
+                                <div class="perm-name">${perm.name}</div>
+                                <div class="perm-key">${perm.key}</div>
+                            </div>
+                            <div class="perm-switch" id="perm-${perm.key.replace('.', '-')}" 
+                                 onclick="togglePermission('${perm.key}', event)"></div>
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function selectUser(userId) {
+    document.querySelectorAll('.user-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById(`user-card-${userId}`).classList.add('selected');
+    
+    selectedUser = users.find(u => u.id === userId);
+    
+    document.getElementById('panel-user-name').textContent = selectedUser.full_name;
+    document.getElementById('panel-user-details').textContent = `@${selectedUser.username}`;
+    
+    try {
+        const response = await fetch(`/admin/access-control/api/user/${userId}/permissions`);
+        const data = await response.json();
+        
+        originalRole = data.current_role;
+        selectedRole = data.current_role;
+        originalOverrides = { ...data.overrides };
+        currentOverrides = { ...data.overrides };
+        
+        if (originalRole) {
+            document.getElementById('current-role-display').innerHTML = `
+                <div class="current-role-info">
+                    <i class="fas fa-info-circle"></i>
+                    <span>الدور الحالي: <span class="role-from-v2">${ROLES[originalRole]?.name || originalRole}</span></span>
+                </div>`;
+        } else {
+            document.getElementById('current-role-display').innerHTML = '';
+        }
+        
+        updateRoleSelection();
+        updateBundleStates();
+        
+        document.getElementById('permissions-panel').classList.add('show');
+        document.getElementById('permissions-panel').scrollIntoView({ behavior: 'smooth' });
+        
+    } catch (error) {
+        console.error('Error loading user permissions:', error);
+        alert('فشل في تحميل صلاحيات المستخدم');
+    }
+}
+
+function selectRole(roleKey) {
+    selectedRole = roleKey;
+    updateRoleSelection();
+    updateBundleStates();
+    updateChangesCount();
+}
+
+function updateRoleSelection() {
+    document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+    if (selectedRole) {
+        const card = document.getElementById(`role-card-${selectedRole}`);
+        if (card) card.classList.add('selected');
+    }
+}
+
+function updateBundleStates() {
+    Object.entries(BUNDLES).forEach(([bundleKey, bundle]) => {
+        const toggle = document.getElementById(`bundle-toggle-${bundleKey}`);
+        let activeCount = 0;
+        
+        bundle.permissions.forEach(perm => {
+            const permSwitch = document.getElementById(`perm-${perm.key.replace('.', '-')}`);
+            const hasPermission = checkHasPermission(perm.key);
+            
+            if (hasPermission) {
+                permSwitch?.classList.add('active');
+                activeCount++;
+            } else {
+                permSwitch?.classList.remove('active');
+            }
+        });
+        
+        if (activeCount === bundle.permissions.length) {
+            toggle.classList.add('active');
+        } else {
+            toggle.classList.remove('active');
+        }
+    });
+}
+
+function checkHasPermission(permKey) {
+    if (currentOverrides[permKey] !== undefined) {
+        return currentOverrides[permKey];
+    }
+    
+    if (selectedRole === 'general_admin' || selectedRole === 'super_admin') {
+        return true;
+    }
+    
+    return false;
+}
+
+function toggleBundleExpand(bundleKey) {
+    const body = document.getElementById(`bundle-body-${bundleKey}`);
+    body.classList.toggle('show');
+}
+
+function toggleBundle(bundleKey, event) {
+    event.stopPropagation();
+    const toggle = document.getElementById(`bundle-toggle-${bundleKey}`);
+    const isActive = toggle.classList.contains('active');
+    const bundle = BUNDLES[bundleKey];
+    
+    bundle.permissions.forEach(perm => {
+        currentOverrides[perm.key] = !isActive;
+    });
+    
+    updateBundleStates();
+    updateChangesCount();
+}
+
+function togglePermission(permKey, event) {
+    event.stopPropagation();
+    const permSwitch = document.getElementById(`perm-${permKey.replace('.', '-')}`);
+    const isActive = permSwitch.classList.contains('active');
+    
+    currentOverrides[permKey] = !isActive;
+    
+    updateBundleStates();
+    updateChangesCount();
+}
+
+function updateChangesCount() {
+    let count = 0;
+    
+    if (selectedRole !== originalRole) count++;
+    
+    const allKeys = new Set([...Object.keys(currentOverrides), ...Object.keys(originalOverrides)]);
+    allKeys.forEach(key => {
+        if (currentOverrides[key] !== originalOverrides[key]) count++;
+    });
+    
+    changesCount = count;
+    document.getElementById('changes-count').textContent = count;
+    
+    const actionBar = document.getElementById('action-bar');
+    if (count > 0) {
+        actionBar.classList.add('show');
+    } else {
+        actionBar.classList.remove('show');
+    }
+}
+
+function closePanel() {
+    if (changesCount > 0) {
+        if (!confirm('لديك تغييرات غير محفوظة. هل تريد الإغلاق؟')) return;
+    }
+    
+    document.getElementById('permissions-panel').classList.remove('show');
+    document.querySelectorAll('.user-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById('action-bar').classList.remove('show');
+    selectedUser = null;
+    changesCount = 0;
+}
+
+function cancelChanges() {
+    selectedRole = originalRole;
+    currentOverrides = { ...originalOverrides };
+    updateRoleSelection();
+    updateBundleStates();
+    updateChangesCount();
+}
+
+async function saveChanges() {
+    if (!selectedUser) return;
+    
+    document.getElementById('loading-overlay').classList.add('show');
+    
+    try {
+        const response = await fetch('/admin/access-control/api/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({
+                user_id: selectedUser.id,
+                role: selectedRole,
+                overrides: currentOverrides
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            originalRole = selectedRole;
+            originalOverrides = { ...currentOverrides };
+            updateChangesCount();
+            
+            const userIndex = users.findIndex(u => u.id === selectedUser.id);
+            if (userIndex !== -1) {
+                users[userIndex].v2_role = selectedRole;
+            }
+            renderUsers(users);
+            
+            document.getElementById('success-toast').classList.add('show');
+            setTimeout(() => {
+                document.getElementById('success-toast').classList.remove('show');
+            }, 3000);
+        } else {
+            alert('فشل في حفظ التغييرات: ' + (result.error || 'خطأ غير معروف'));
+        }
+    } catch (error) {
+        console.error('Error saving:', error);
+        alert('حدث خطأ أثناء الحفظ');
+    } finally {
+        document.getElementById('loading-overlay').classList.remove('show');
+    }
+}
+</script>
+{% endblock %}

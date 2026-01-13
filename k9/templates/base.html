@@ -238,8 +238,8 @@
                             {% endif %}
                             {% if is_admin() or has_permission('admin.permissions.view') %}
                             <li>
-                                <a class="dropdown-item {% if request.endpoint == 'admin.comprehensive_permissions' %}active{% endif %}" href="{{ url_for('admin.comprehensive_permissions') }}">
-                                    <i class="fas fa-key me-2"></i>إدارة الصلاحيات
+                                <a class="dropdown-item {% if request.endpoint == 'admin.access_control_hub' %}active{% endif %}" href="{{ url_for('admin.access_control_hub') }}">
+                                    <i class="fas fa-shield-alt me-2"></i>مركز التحكم في الوصول
                                 </a>
                             </li>
                             <li><hr class="dropdown-divider"></li>

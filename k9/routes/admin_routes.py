@@ -263,8 +263,8 @@ def initialize_user_permissions(user_id):
 @login_required
 @require_admin_permission('admin.permissions.view')
 def comprehensive_permissions():
-    """Comprehensive permissions management interface"""
-    return render_template('admin/comprehensive_permissions.html')
+    """Redirect to the new Access Control Hub"""
+    return redirect(url_for('admin.access_control_hub'))
 
 @admin_bp.route('/permissions/projects')
 @login_required
@@ -2391,3 +2391,210 @@ def roles_users_management():
     return render_template('admin/roles_users.html', 
                           users=users_data, 
                           roles=[{'id': str(r.id), 'name': r.name, 'name_ar': r.name_ar} for r in roles])
+
+
+# =============================================================================
+# Access Control Hub - Modern Permission Management
+# =============================================================================
+
+@admin_bp.route('/access-control')
+@login_required
+@admin_required
+def access_control_hub():
+    """Modern Access Control Hub - role-first permission management"""
+    return render_template('admin/access_control_hub.html')
+
+
+@admin_bp.route('/access-control/api/users')
+@login_required
+@admin_required
+def access_control_users():
+    """API: Get all users with their current V2 roles"""
+    from k9.models.permissions_v2 import Role, UserRoleAssignment, RoleType
+    
+    users = User.query.order_by(User.full_name).all()
+    
+    users_data = []
+    for user in users:
+        assignment = UserRoleAssignment.query.filter_by(
+            user_id=user.id,
+            is_active=True,
+            project_id=None
+        ).first()
+        
+        v2_role = None
+        if assignment and assignment.role:
+            v2_role = assignment.role.name
+        
+        users_data.append({
+            'id': str(user.id),
+            'username': user.username,
+            'full_name': user.full_name,
+            'email': user.email,
+            'v2_role': v2_role,
+            'legacy_role': user.role.value if user.role else None
+        })
+    
+    return jsonify({'users': users_data})
+
+
+@admin_bp.route('/access-control/api/user/<user_id>/permissions')
+@login_required
+@admin_required
+def access_control_user_permissions(user_id):
+    """API: Get a user's current role and permission overrides"""
+    from k9.models.permissions_v2 import Role, UserRoleAssignment, PermissionOverride
+    
+    user = User.query.get_or_404(user_id)
+    
+    assignment = UserRoleAssignment.query.filter_by(
+        user_id=user_id,
+        is_active=True,
+        project_id=None
+    ).first()
+    
+    current_role = None
+    if assignment and assignment.role:
+        current_role = assignment.role.name
+    
+    overrides = {}
+    override_records = PermissionOverride.query.filter_by(user_id=user_id).all()
+    for o in override_records:
+        overrides[o.permission_key] = o.is_granted
+    
+    return jsonify({
+        'user_id': str(user.id),
+        'username': user.username,
+        'full_name': user.full_name,
+        'current_role': current_role,
+        'overrides': overrides
+    })
+
+
+@admin_bp.route('/access-control/api/save', methods=['POST'])
+@login_required
+@admin_required
+def access_control_save():
+    """API: Save user role and permission overrides"""
+    from k9.models.permissions_v2 import Role, UserRoleAssignment, PermissionOverride, PermissionAuditLog
+    from k9.services.permission_service import PermissionService
+    
+    data = request.get_json()
+    user_id = data.get('user_id')
+    new_role = data.get('role')
+    overrides = data.get('overrides', {})
+    
+    if not user_id:
+        return jsonify({'error': 'Missing user_id'}), 400
+    
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    try:
+        current_assignment = UserRoleAssignment.query.filter_by(
+            user_id=user_id,
+            is_active=True,
+            project_id=None
+        ).first()
+        
+        old_role = current_assignment.role.name if current_assignment and current_assignment.role else None
+        
+        if new_role and new_role != old_role:
+            role = Role.query.filter_by(name=new_role, is_active=True).first()
+            
+            if not role:
+                role = Role(
+                    name=new_role,
+                    name_ar=get_role_arabic_name(new_role),
+                    description=f'Role: {new_role}',
+                    is_system=True,
+                    is_active=True
+                )
+                db.session.add(role)
+                db.session.flush()
+            
+            if current_assignment:
+                current_assignment.is_active = False
+            
+            new_assignment = UserRoleAssignment(
+                user_id=user_id,
+                role_id=role.id,
+                is_active=True,
+                granted_by_id=current_user.id
+            )
+            db.session.add(new_assignment)
+            
+            audit = PermissionAuditLog(
+                target_user_id=user_id,
+                changed_by_id=current_user.id,
+                action='role_change',
+                details=f'Changed role from {old_role or "none"} to {new_role}',
+                ip_address=request.remote_addr
+            )
+            db.session.add(audit)
+        
+        if overrides:
+            existing_overrides = {o.permission_key: o for o in PermissionOverride.query.filter_by(user_id=user_id).all()}
+            
+            for perm_key, is_granted in overrides.items():
+                if perm_key in existing_overrides:
+                    existing = existing_overrides[perm_key]
+                    if existing.is_granted != is_granted:
+                        existing.is_granted = is_granted
+                        existing.granted_by_id = current_user.id
+                        
+                        audit = PermissionAuditLog(
+                            target_user_id=user_id,
+                            changed_by_id=current_user.id,
+                            action='grant' if is_granted else 'revoke',
+                            details=f'Override: {perm_key}',
+                            ip_address=request.remote_addr
+                        )
+                        db.session.add(audit)
+                else:
+                    new_override = PermissionOverride(
+                        user_id=user_id,
+                        permission_key=perm_key,
+                        is_granted=is_granted,
+                        granted_by_id=current_user.id
+                    )
+                    db.session.add(new_override)
+                    
+                    audit = PermissionAuditLog(
+                        target_user_id=user_id,
+                        changed_by_id=current_user.id,
+                        action='grant' if is_granted else 'revoke',
+                        details=f'New override: {perm_key}',
+                        ip_address=request.remote_addr
+                    )
+                    db.session.add(audit)
+        
+        db.session.commit()
+        
+        logger.info(f"Access control updated for user {user.username} by {current_user.username}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Permissions saved successfully'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error saving access control: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+def get_role_arabic_name(role_name):
+    """Get Arabic name for a role"""
+    names = {
+        'super_admin': 'مسؤول أعلى',
+        'general_admin': 'مسؤول عام',
+        'project_manager': 'مدير مشروع',
+        'handler': 'سائس',
+        'trainer': 'مدرب',
+        'veterinarian': 'طبيب بيطري',
+        'breeder': 'مربي',
+        'viewer': 'مشاهد'
+    }
+    return names.get(role_name, role_name)
