@@ -2542,12 +2542,8 @@ def access_control_save():
         role_name = new_role or old_role
         role_permissions = set()
         if role_name:
-            from k9.models.permissions_v2 import ROLE_PERMISSIONS, RoleType
-            try:
-                role_type = RoleType(role_name)
-                role_permissions = set(ROLE_PERMISSIONS.get(role_type, []))
-            except ValueError:
-                pass
+            from k9.models.permissions_v2 import ROLE_PERMISSIONS
+            role_permissions = set(ROLE_PERMISSIONS.get(role_name, []))
         
         for perm_key, is_granted in overrides.items():
             processed_keys.add(perm_key)
