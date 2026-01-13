@@ -149,8 +149,10 @@ ROLE_PERMISSIONS = {
         "tasks.management.view", "tasks.management.create", 
         "tasks.management.edit", "tasks.management.delete",
         "tasks.my_tasks.view", "tasks.my_tasks.start", "tasks.my_tasks.complete",
-        # PM operations
+        # PM operations - full PM module access
         "pm.dashboard", "pm.review_reports", "pm.manage_project",
+        "pm.project.view", "pm.team.view", "pm.approvals.view",
+        "pm.reports.approve", "pm.reports.reject", "pm.reports.export",
         # Handler daily
         "handler_daily.view",
         # Supervisor - full access to schedules and reports
