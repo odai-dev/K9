@@ -240,6 +240,49 @@ class PermissionService:
             db.session.commit()
     
     @classmethod
+    def clear_user_roles(cls, user_id, cleared_by_id=None):
+        """Remove all role assignments from a user"""
+        assignments = UserRoleAssignment.query.filter_by(
+            user_id=user_id,
+            is_active=True
+        ).all()
+        
+        for assignment in assignments:
+            assignment.is_active = False
+            cls._log_audit(
+                target_user_id=user_id,
+                changed_by_id=cleared_by_id,
+                action='role_revoked',
+                entity_type='role',
+                entity_id=assignment.role_id,
+                old_value=assignment.role.name if assignment.role else None,
+                details=f"Revoked role: {assignment.role.name if assignment.role else 'unknown'}"
+            )
+        
+        if assignments:
+            cls.clear_cache(user_id)
+            db.session.commit()
+    
+    @classmethod
+    def clear_user_overrides(cls, user_id, cleared_by_id=None):
+        """Remove all permission overrides from a user"""
+        overrides = PermissionOverride.query.filter_by(user_id=user_id).all()
+        
+        for override in overrides:
+            cls._log_audit(
+                target_user_id=user_id,
+                changed_by_id=cleared_by_id,
+                action='permission_revoked',
+                entity_type='permission_override',
+                old_value=override.permission_key
+            )
+            db.session.delete(override)
+        
+        if overrides:
+            cls.clear_cache(user_id)
+            db.session.commit()
+    
+    @classmethod
     def grant_permission(cls, user_id, permission_key, project_id=None, granted_by_id=None, reason=None, expires_at=None):
         """Grant an individual permission override"""
         existing = PermissionOverride.query.filter_by(

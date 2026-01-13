@@ -16,7 +16,7 @@ from k9.utils.permissions_new import (
 )
 from k9.utils.security_utils import PasswordValidator, SecurityHelper
 from k9.models.models import User, Project, UserRole, ProjectAssignment
-from k9.models.permissions_new import Permission, UserPermission, PermissionChangeLog
+from k9.models.permissions_v2 import Role, UserRoleAssignment, PermissionAuditLog
 from k9.models.models_handler_daily import HandlerReport, ShiftReport
 from app import db
 from k9.utils.utils import log_audit
@@ -41,22 +41,22 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 def dashboard():
     """Main admin dashboard with system overview and navigation"""
     from k9.models.models import User, Project, Dog, Employee, TrainingSession, VeterinaryVisit
-    from k9.models.permissions_new import Permission, UserPermission, PermissionChangeLog
+    from k9.models.permissions_v2 import Role, UserRoleAssignment, PermissionOverride, PermissionAuditLog
     from sqlalchemy import func
     
-    # System statistics
+    # System statistics - using V2 permission system
     stats = {
         'total_users': User.query.count(),
         'total_project_managers': User.query.filter_by(role=UserRole.PROJECT_MANAGER).count(),
         'total_projects': Project.query.count(),
         'total_dogs': Dog.query.count(),
         'total_employees': Employee.query.count(),
-        'total_permissions': UserPermission.query.count(),
-        'granted_permissions': UserPermission.query.count(),
+        'total_roles': Role.query.count(),
+        'total_role_assignments': UserRoleAssignment.query.count(),
     }
     
-    # Recent activities - use new PermissionChangeLog
-    recent_permission_changes = PermissionChangeLog.query.order_by(PermissionChangeLog.created_at.desc()).limit(5).all()
+    # Recent activities - use V2 PermissionAuditLog
+    recent_permission_changes = PermissionAuditLog.query.order_by(PermissionAuditLog.created_at.desc()).limit(5).all()
     recent_training = TrainingSession.query.order_by(TrainingSession.created_at.desc()).limit(5).all()
     recent_vet_visits = VeterinaryVisit.query.order_by(VeterinaryVisit.created_at.desc()).limit(5).all()
     
@@ -189,9 +189,22 @@ def bulk_update_user_permissions():
     category = data['category']
     is_granted = data['is_granted']
     
-    # Get all permissions in this category
-    permissions = Permission.query.filter_by(category=category).all()
-    permission_keys = [perm.key for perm in permissions]
+    # Get all permissions in this category using V2 ROLE_PERMISSIONS patterns
+    from k9.models.permissions_v2 import ROLE_PERMISSIONS, PermissionKey
+    
+    # Collect all permission keys matching this category from ROLE_PERMISSIONS
+    all_permission_keys = set()
+    for role_perms in ROLE_PERMISSIONS.values():
+        for perm in role_perms:
+            if perm.startswith(f"{category}."):
+                all_permission_keys.add(perm)
+    
+    # Also add known permissions from PermissionKey enum
+    for key in PermissionKey:
+        if key.value.startswith(f"{category}."):
+            all_permission_keys.add(key.value)
+    
+    permission_keys = list(all_permission_keys)
     
     # Use batch operations (ONE commit for all changes)
     if is_granted:
@@ -460,16 +473,16 @@ def permissions_audit_log():
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     
-    query = PermissionChangeLog.query.order_by(PermissionChangeLog.created_at.desc())
+    query = PermissionAuditLog.query.order_by(PermissionAuditLog.created_at.desc())
     
     if target_user_id:
-        query = query.filter(PermissionChangeLog.user_id == target_user_id)
+        query = query.filter(PermissionAuditLog.target_user_id == target_user_id)
     
     if start_date:
-        query = query.filter(PermissionChangeLog.created_at >= start_date)
+        query = query.filter(PermissionAuditLog.created_at >= start_date)
     
     if end_date:
-        query = query.filter(PermissionChangeLog.created_at <= end_date)
+        query = query.filter(PermissionAuditLog.created_at <= end_date)
     
     audit_logs = query.paginate(page=page, per_page=per_page, error_out=False)
     
@@ -644,9 +657,17 @@ def preview_pm_view(user_id):
     # Get user's permissions
     permissions = list(get_user_permission_keys(str(user.id)))
     
-    # Get all permissions for comparison
-    all_perms = Permission.query.all()
-    total_permissions = len(all_perms)
+    # Get all possible permissions count from V2 ROLE_PERMISSIONS
+    from k9.models.permissions_v2 import ROLE_PERMISSIONS, PermissionKey
+    all_permission_keys = set()
+    for role_perms in ROLE_PERMISSIONS.values():
+        for perm in role_perms:
+            if not perm.endswith('.*'):  # Don't count wildcards
+                all_permission_keys.add(perm)
+    for key in PermissionKey:
+        all_permission_keys.add(key.value)
+    
+    total_permissions = len(all_permission_keys)
     granted_permissions = len(permissions)
     
     coverage_percentage = (granted_permissions / total_permissions * 100) if total_permissions > 0 else 0
@@ -682,11 +703,11 @@ def admin_profile():
         'total_projects': Project.query.count(),
         'total_dogs': Dog.query.count(),
         'total_employees': Employee.query.count(),
-        'granted_permissions': UserPermission.query.count(),
+        'total_role_assignments': UserRoleAssignment.query.count(),
     }
     
-    # Get recent admin activities (recent permission changes)
-    recent_activities = PermissionChangeLog.query.filter_by(changed_by_user_id=str(current_user.id)).order_by(PermissionChangeLog.created_at.desc()).limit(5).all()
+    # Get recent admin activities (recent permission changes from V2)
+    recent_activities = PermissionAuditLog.query.filter_by(changed_by_id=current_user.id).order_by(PermissionAuditLog.created_at.desc()).limit(5).all()
     
     if request.method == 'POST':
         action = request.form.get('action')
@@ -1991,9 +2012,9 @@ def toggle_permission_api():
 @login_required
 @require_admin_permission('admin.permissions.edit')
 def apply_permission_template():
-    """Apply a permission template to a user with proper transaction handling"""
-    from k9.utils.permissions_new import grant_permission, revoke_permission, get_user_permission_keys
-    from k9.models.permissions_new import Permission, UserPermission
+    """Apply a permission template to a user using V2 role system"""
+    from k9.services.permission_service import PermissionService
+    from k9.models.permissions_v2 import Role
     from app import db
     
     data = request.get_json()
@@ -2004,51 +2025,42 @@ def apply_permission_template():
         return jsonify({'error': 'Missing user_id or template'}), 400
     
     try:
-        all_perms = Permission.query.all()
-        valid_perm_keys = {p.key for p in all_perms}
+        # Map templates to V2 roles - comprehensive mapping
+        template_to_role = {
+            'full_access': 'super_admin',
+            'pm_access': 'project_manager',
+            'view_only': 'viewer',
+            'handler_access': 'handler',
+            'security_access': 'general_admin',
+            'vet_access': 'veterinarian',
+            'breeding_manager': 'breeder',
+            'trainer_access': 'trainer',
+        }
         
-        template_permissions = []
-        
-        if template == 'full_access':
-            template_permissions = [p.key for p in all_perms]
-        
-        elif template == 'pm_access':
-            pm_categories = ['dogs', 'projects', 'assignments', 'shifts', 'attendance', 
-                            'training', 'reports', 'schedules', 'handler', 'dashboard', 'notifications']
-            template_permissions = [p.key for p in all_perms if p.key.split('.')[0] in pm_categories]
-        
-        elif template == 'view_only':
-            template_permissions = [p.key for p in all_perms if '.view' in p.key]
-        
-        elif template == 'handler_access':
-            handler_categories = ['handler', 'reports', 'schedules', 'notifications', 'dashboard']
-            template_permissions = [p.key for p in all_perms 
-                                   if p.key.split('.')[0] in handler_categories 
-                                   and ('.view' in p.key or '.create' in p.key)]
-        
-        elif template == 'custom':
+        if template == 'custom':
             return jsonify({'success': True, 'granted_count': 0, 'message': 'Custom template - no changes made'})
         
-        if not template_permissions:
-            return jsonify({'error': 'No permissions defined for this template'}), 400
+        role_name = template_to_role.get(template)
+        if not role_name:
+            return jsonify({'error': 'Unknown template'}), 400
         
-        UserPermission.query.filter_by(user_id=user_id).delete()
+        role = Role.query.filter_by(name=role_name).first()
+        if not role:
+            return jsonify({'error': f'Role {role_name} not found'}), 400
         
-        perm_lookup = {p.key: p for p in all_perms}
-        for perm_key in template_permissions:
-            if perm_key in perm_lookup:
-                perm = perm_lookup[perm_key]
-                new_up = UserPermission(
-                    user_id=user_id,
-                    permission_id=perm.id
-                )
-                db.session.add(new_up)
+        # Clear existing roles and assign the template role
+        PermissionService.clear_user_roles(user_id, cleared_by_id=current_user.id)
+        PermissionService.grant_role(user_id, role_name, granted_by_id=current_user.id)
         
-        db.session.commit()
+        # Get permissions count from the ROLE_PERMISSIONS constant
+        from k9.models.permissions_v2 import ROLE_PERMISSIONS
+        role_permissions = ROLE_PERMISSIONS.get(role_name, [])
+        permissions_count = len(role_permissions)
         
         return jsonify({
             'success': True,
-            'granted_count': len(template_permissions)
+            'granted_count': permissions_count,
+            'role_assigned': role.name_ar or role.name
         })
         
     except Exception as e:
@@ -2061,8 +2073,9 @@ def apply_permission_template():
 @login_required
 @require_admin_permission('admin.permissions.edit')
 def revoke_all_permissions():
-    """Revoke all permissions from a user with transaction handling"""
-    from k9.models.permissions_new import UserPermission
+    """Revoke all permissions from a user using V2 system"""
+    from k9.services.permission_service import PermissionService
+    from k9.models.permissions_v2 import UserRoleAssignment, PermissionOverride
     from app import db
     
     data = request.get_json()
@@ -2072,13 +2085,17 @@ def revoke_all_permissions():
         return jsonify({'error': 'Missing user_id'}), 400
     
     try:
-        count = UserPermission.query.filter_by(user_id=user_id).count()
-        UserPermission.query.filter_by(user_id=user_id).delete()
-        db.session.commit()
+        # Count existing assignments and overrides
+        role_count = UserRoleAssignment.query.filter_by(user_id=user_id).count()
+        override_count = PermissionOverride.query.filter_by(user_id=user_id).count()
+        
+        # Clear all roles and overrides
+        PermissionService.clear_user_roles(user_id, cleared_by_id=current_user.id)
+        PermissionService.clear_user_overrides(user_id, cleared_by_id=current_user.id)
         
         return jsonify({
             'success': True,
-            'revoked_count': count
+            'revoked_count': role_count + override_count
         })
     except Exception as e:
         db.session.rollback()
@@ -2090,30 +2107,30 @@ def revoke_all_permissions():
 @login_required
 @require_admin_permission('admin.permissions.view')
 def get_user_permission_audit(user_id):
-    """Get permission change audit log for a user with pagination"""
-    from k9.models.permissions_new import PermissionChangeLog
+    """Get permission change audit log for a user with pagination (V2)"""
+    from k9.models.permissions_v2 import PermissionAuditLog
     from k9.models.models import User
     
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     per_page = min(per_page, 100)
     
-    query = PermissionChangeLog.query.filter_by(
-        user_id=user_id
-    ).order_by(PermissionChangeLog.timestamp.desc())
+    query = PermissionAuditLog.query.filter_by(
+        target_user_id=user_id
+    ).order_by(PermissionAuditLog.created_at.desc())
     
     total = query.count()
     logs = query.offset((page - 1) * per_page).limit(per_page).all()
     
-    actor_ids = {log.actor_id for log in logs if log.actor_id}
+    actor_ids = {log.changed_by_id for log in logs if log.changed_by_id}
     actors = {u.id: u for u in User.query.filter(User.id.in_(actor_ids)).all()} if actor_ids else {}
     
     result = []
     for log in logs:
-        actor = actors.get(log.actor_id) if log.actor_id else None
+        actor = actors.get(log.changed_by_id) if log.changed_by_id else None
         result.append({
-            'timestamp': log.timestamp.isoformat() if log.timestamp else None,
-            'permission_key': log.permission_key,
+            'timestamp': log.created_at.isoformat() if log.created_at else None,
+            'permission_key': log.details,
             'action': log.action,
             'actor_name': actor.full_name if actor else 'النظام',
             'ip_address': log.ip_address
