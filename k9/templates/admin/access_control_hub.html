@@ -789,6 +789,97 @@ const BUNDLES = {
             { key: 'admin.backup', name: 'النسخ الاحتياطي' },
             { key: 'admin.audit', name: 'سجل المراجعة' }
         ]
+    },
+    'incidents': {
+        name: 'الحوادث',
+        icon: 'fa-exclamation-triangle',
+        permissions: [
+            { key: 'incidents.view', name: 'عرض الحوادث' },
+            { key: 'incidents.create', name: 'تسجيل حادثة' },
+            { key: 'incidents.edit', name: 'تعديل الحوادث' },
+            { key: 'incidents.resolve', name: 'حل الحوادث' }
+        ]
+    },
+    'suspicions': {
+        name: 'الاشتباهات',
+        icon: 'fa-search',
+        permissions: [
+            { key: 'suspicions.view', name: 'عرض الاشتباهات' },
+            { key: 'suspicions.create', name: 'تسجيل اشتباه' },
+            { key: 'suspicions.edit', name: 'تعديل الاشتباهات' }
+        ]
+    },
+    'evaluations': {
+        name: 'التقييمات',
+        icon: 'fa-star',
+        permissions: [
+            { key: 'evaluations.view', name: 'عرض التقييمات' },
+            { key: 'evaluations.create', name: 'إضافة تقييم' },
+            { key: 'evaluations.edit', name: 'تعديل التقييمات' }
+        ]
+    },
+    'shifts': {
+        name: 'الورديات',
+        icon: 'fa-clock',
+        permissions: [
+            { key: 'shifts.view', name: 'عرض الورديات' },
+            { key: 'shifts.create', name: 'إنشاء وردية' },
+            { key: 'shifts.edit', name: 'تعديل الورديات' },
+            { key: 'shifts.delete', name: 'حذف الورديات' }
+        ]
+    },
+    'tasks': {
+        name: 'المهام',
+        icon: 'fa-tasks',
+        permissions: [
+            { key: 'tasks.management.view', name: 'عرض المهام' },
+            { key: 'tasks.management.create', name: 'إنشاء مهمة' },
+            { key: 'tasks.management.edit', name: 'تعديل المهام' },
+            { key: 'tasks.management.delete', name: 'حذف المهام' },
+            { key: 'tasks.my_tasks.view', name: 'عرض مهامي' },
+            { key: 'tasks.my_tasks.start', name: 'بدء المهمة' },
+            { key: 'tasks.my_tasks.complete', name: 'إتمام المهمة' }
+        ]
+    },
+    'supervisor': {
+        name: 'المشرف',
+        icon: 'fa-user-tie',
+        permissions: [
+            { key: 'supervisor.reports.view', name: 'عرض تقارير المشرف' },
+            { key: 'supervisor.reports.approve', name: 'اعتماد التقارير' },
+            { key: 'supervisor.reports.reject', name: 'رفض التقارير' },
+            { key: 'supervisor.schedules.view', name: 'عرض جداول المشرف' },
+            { key: 'supervisor.schedules.create', name: 'إنشاء جداول' },
+            { key: 'supervisor.schedules.lock', name: 'قفل الجداول' },
+            { key: 'supervisor.schedules.delete', name: 'حذف الجداول' }
+        ]
+    },
+    'production': {
+        name: 'الإنتاج',
+        icon: 'fa-industry',
+        permissions: [
+            { key: 'production.view', name: 'عرض الإنتاج' },
+            { key: 'production.create', name: 'إضافة سجل إنتاج' },
+            { key: 'production.edit', name: 'تعديل الإنتاج' }
+        ]
+    },
+    'handler_daily': {
+        name: 'العمليات اليومية للسائس',
+        icon: 'fa-clipboard-list',
+        permissions: [
+            { key: 'handler_daily.view', name: 'عرض العمليات اليومية' },
+            { key: 'handler_daily.create', name: 'إنشاء تقرير يومي' },
+            { key: 'handler_daily.edit', name: 'تعديل التقارير اليومية' }
+        ]
+    },
+    'pm': {
+        name: 'عمليات مدير المشروع',
+        icon: 'fa-briefcase',
+        permissions: [
+            { key: 'pm.dashboard', name: 'لوحة تحكم مدير المشروع' },
+            { key: 'pm.review_reports', name: 'مراجعة التقارير' },
+            { key: 'pm.manage_project', name: 'إدارة المشروع' }
+        ]
     }
 };
 
