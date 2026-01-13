@@ -120,21 +120,26 @@ ROLE_PERMISSIONS = {
     
     RoleType.PROJECT_MANAGER: [
         # Dogs module
-        "dogs.view", "dogs.create", "dogs.export",
+        "dogs.view", "dogs.create", "dogs.edit", "dogs.export",
         # Employees module
-        "employees.view", "employees.create",
-        # Projects module
+        "employees.view", "employees.create", "employees.edit",
+        # Projects module (includes incidents, suspicions, evaluations)
         "projects.view", "projects.create", "projects.edit",
+        "incidents.view", "incidents.create", "incidents.edit",
+        "suspicions.view", "suspicions.create",
+        "evaluations.view", "evaluations.create",
         # Training module
-        "training.view", "training.create",
+        "training.view", "training.create", "training.edit",
         # Veterinary module
-        "veterinary.view", "veterinary.create",
+        "veterinary.view", "veterinary.create", "veterinary.edit",
         # Breeding module
-        "breeding.view", "breeding.create",
+        "breeding.view", "breeding.create", "breeding.edit",
+        # Production module
+        "production.view", "production.create",
         # Reports module
         "reports.view", "reports.create", "reports.approve", "reports.export",
         # Schedule module
-        "schedule.view", "schedule.approve",
+        "schedule.view", "schedule.create", "schedule.edit", "schedule.approve",
         # PM operations
         "pm.dashboard", "pm.review_reports", "pm.manage_project",
         # Handler daily

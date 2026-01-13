@@ -234,18 +234,22 @@ with app.app_context():
         'training.manage_sessions.create': 'training.create',
         'training.manage_sessions.edit': 'training.edit',
         'training.manage_sessions.delete': 'training.delete',
+        'training.add_session.create': 'training.create',
         'training.reports.view': 'training.reports',
         # Veterinary
         'veterinary.visits.view': 'veterinary.view',
         'veterinary.visits.create': 'veterinary.create',
         'veterinary.visits.edit': 'veterinary.edit',
         'veterinary.visits.delete': 'veterinary.delete',
+        'veterinary.management.create': 'veterinary.create',
         'veterinary.history.view': 'veterinary.history',
         # Breeding
         'breeding.feeding.view': 'breeding.feeding',
         'breeding.checkup.view': 'breeding.checkup',
         'breeding.excretion.view': 'breeding.excretion',
         'breeding.grooming.view': 'breeding.grooming',
+        'breeding.grooming.create': 'breeding.create',
+        'breeding.grooming.edit': 'breeding.edit',
         'breeding.deworming.view': 'breeding.deworming',
         'breeding.cleaning.view': 'breeding.cleaning',
         # Production
@@ -277,20 +281,31 @@ with app.app_context():
         'incidents.management.create': 'incidents.create',
         'incidents.management.edit': 'incidents.edit',
         'incidents.management.delete': 'incidents.delete',
+        # Suspicions (project module)
+        'suspicions.view': 'projects.view',
+        'suspicions.create': 'projects.edit',
+        # Evaluations (project module)
+        'evaluations.view': 'projects.view',
+        'evaluations.create': 'projects.edit',
         # Reports
         'reports.attendance.view': 'reports.attendance.view',
         'reports.attendance.export': 'reports.attendance.export',
-        'reports.training.view': 'reports.training.view',
+        'reports.training.view': 'reports.view',
         'reports.training.export': 'reports.training.export',
-        'reports.veterinary.unified.view': 'reports.veterinary.view',
+        'reports.veterinary.view': 'reports.view',
+        'reports.veterinary.unified.view': 'reports.view',
         'reports.veterinary.unified.export': 'reports.veterinary.export',
-        'reports.breeding.feeding.unified.view': 'reports.breeding.feeding.view',
+        'reports.breeding.feeding.view': 'reports.view',
+        'reports.breeding.feeding.unified.view': 'reports.view',
         'reports.breeding.feeding.unified.export': 'reports.breeding.feeding.export',
-        'reports.breeding.checkup.unified.view': 'reports.breeding.checkup.view',
+        'reports.breeding.checkup.view': 'reports.view',
+        'reports.breeding.checkup.unified.view': 'reports.view',
         'reports.breeding.checkup.unified.export': 'reports.breeding.checkup.export',
         'reports.caretaker_daily.view': 'reports.caretaker.view',
         'reports.caretaker_daily.export': 'reports.caretaker.export',
-        'reports.general.view': 'reports.general.view',
+        'reports.general.view': 'reports.view',
+        # Handler reports
+        'handler_reports.export': 'reports.export',
         # Admin
         'admin.panel.access': 'admin.access',
         'admin.users.view': 'admin.users.view',
@@ -298,7 +313,9 @@ with app.app_context():
         'admin.permissions.view': 'admin.permissions.view',
         'admin.permissions.manage': 'admin.permissions.manage',
         'admin.backup.manage': 'admin.backup',
-        # Handler reports
+        'admin.notifications.view': 'admin.notifications',
+        'admin.tasks.send': 'admin.tasks',
+        # Handler reports (legacy)
         'handler.daily_report.view': 'handler_reports.view',
         'handler.daily_report.create': 'handler_reports.create',
         'handler.daily_report.edit': 'handler_reports.edit',
@@ -307,6 +324,7 @@ with app.app_context():
         'supervisor.dashboard.view': 'supervisor.dashboard',
         'supervisor.reports.review': 'supervisor.review',
         'supervisor.team.manage': 'supervisor.team',
+        'supervisor.schedules.create': 'supervisor.schedules.view',
         # PM
         'pm.dashboard.view': 'pm.dashboard',
         'pm.reports.review': 'pm.review',
