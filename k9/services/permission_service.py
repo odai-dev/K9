@@ -85,6 +85,9 @@ class PermissionService:
         2. If no override, check user's roles
         3. Super admin has all permissions
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
         cache_key = f"{user_id}:{permission_key}:{project_id or 'global'}"
         if cache_key in cls._cache:
             cached = cls._cache[cache_key]
@@ -104,20 +107,25 @@ class PermissionService:
             if override.expires_at and override.expires_at < datetime.utcnow():
                 pass
             else:
+                logger.debug(f"Permission check: user={user_id}, key={permission_key}, override={override.is_granted}")
                 cls._cache[cache_key] = {'value': override.is_granted, 'time': datetime.utcnow().timestamp()}
                 return override.is_granted
         
         role_assignments = cls.get_user_roles(user_id, project_id)
+        logger.debug(f"Permission check: user={user_id}, key={permission_key}, roles={[a.role.name for a in role_assignments]}")
         
         for assignment in role_assignments:
             role_name = assignment.role.name
             role_permissions = cls.get_role_permissions(role_name)
+            logger.debug(f"Role {role_name} has {len(role_permissions)} permissions, looking for {permission_key}")
             
             for perm_pattern in role_permissions:
                 if cls.expand_permission_pattern(perm_pattern, permission_key):
+                    logger.debug(f"Permission GRANTED: {permission_key} matched by {perm_pattern}")
                     cls._cache[cache_key] = {'value': True, 'time': datetime.utcnow().timestamp()}
                     return True
         
+        logger.warning(f"Permission DENIED: user={user_id}, key={permission_key}, roles={[a.role.name for a in role_assignments]}")
         cls._cache[cache_key] = {'value': False, 'time': datetime.utcnow().timestamp()}
         return False
     
