@@ -54,6 +54,18 @@ Preferred communication style: Simple, everyday language.
 - **Production Readiness**: Complete removal of debug code, comprehensive error handling with structured logging, and robust security hardening including CSRF protection and file upload security.
 - **Unified PDF Design**: Minimal Elegant design system implemented across all PDF reports for consistent professional document generation.
 
+## Recent Maintenance (2026-01-13)
+- **V2 Permission System Complete Migration**: Full decoupling from V1 flat permission tables.
+  - **V1 Interface Wrapper Updated**: `k9/utils/permissions_new.py` now fully delegates to V2 PermissionService
+    - `load_user_permissions()` - Uses PermissionService.get_user_permissions()
+    - `get_user_permissions()` - Falls back to PermissionService if session empty
+    - `get_sections_for_user()` - Uses PermissionService directly
+    - `grant_permission()` - Calls PermissionService.grant_permission() (uses PermissionOverride)
+    - `revoke_permission()` - Calls PermissionService.revoke_permission() (uses PermissionOverride)
+    - `batch_grant_permissions()` / `batch_revoke_permissions()` - Use V2 PermissionService
+  - **V1 Tables Deprecated**: UserPermission/Permission tables no longer source of truth
+  - **V2 is Single Source of Truth**: All permission data flows through V2 Role/PermissionOverride tables
+
 ## Recent Maintenance (2026-01-10)
 - **V2 Permission System Finalization**: Complete integration of role-based permission system across all components.
   - **Admin UI for Role Management**: Added `/admin/roles` and `/admin/roles/users` for managing V2 roles
