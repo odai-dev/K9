@@ -36,6 +36,7 @@ Preferred communication style: Simple, everyday language.
 - **Report Export System**: Unified Minimal Elegant PDF design for all report types with Arabic RTL support and consistent styling.
 - **Report Review Workflow**: A 2-tier review process for project-based reports with statuses, audit trails, and notifications.
 - **Admin Final Approval System**: Two-tier approval workflow (Project Manager review, General Admin final approval/rejection) for all report types, with dual notifications and audit logging.
+- **Unified Reporting System**: Centralized reporting architecture with ReportDefinition, ReportContext, and ReportApprovalHistory models. Features Generate → Preview → Approve → Export workflow, professional PDF/Excel export with Arabic RTL support, PM dashboard integration for pending reports, and permission-based export restrictions (PM must approve before export, Admin has full access).
 - **Account Management System**: Streamlined system access control for employees, linking employee records to user accounts, auto-role mapping, and secure password management.
 - **Project Manager Dashboard**: Workflow-focused interface for the `PROJECT_MANAGER` role, providing a project overview, pending approvals, team status, and project-scoped data views.
 - **Employee Document Management System**: Comprehensive document attachment system for employee records with categorized document types and secure file storage.
