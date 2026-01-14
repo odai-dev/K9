@@ -1640,39 +1640,3 @@ class UnifiedReportService:
         except Exception as e:
             logger.error(f"Error logging approval action: {e}")
     
-    @classmethod
-    def get_pending_reports_for_pm(cls, pm_user_id: str, project_id: Optional[str] = None) -> List[ReportContext]:
-        """Get all submitted reports pending PM review"""
-        query = ReportContext.query.filter_by(status=UnifiedReportStatus.SUBMITTED)
-        
-        if project_id:
-            query = query.filter_by(project_id=project_id)
-        
-        return query.order_by(desc(ReportContext.submitted_at)).all()
-    
-    @classmethod
-    def get_pending_reports_for_admin(cls, admin_user_id: str) -> List[ReportContext]:
-        """Get all reports pending admin review"""
-        if not PermissionService.has_any_permission(admin_user_id, ['admin.*', 'admin.reports.approve']):
-            return []
-        
-        return ReportContext.query.filter(
-            ReportContext.status.in_([
-                UnifiedReportStatus.PM_APPROVED,
-                UnifiedReportStatus.FORWARDED_TO_ADMIN
-            ])
-        ).order_by(desc(ReportContext.pm_reviewed_at)).all()
-    
-    @classmethod
-    def get_report_history(cls, context_id: str) -> List[ReportApprovalHistory]:
-        """Get approval history for a report"""
-        return ReportApprovalHistory.query.filter_by(
-            context_id=context_id
-        ).order_by(desc(ReportApprovalHistory.action_at)).all()
-    
-    @classmethod
-    def get_export_history(cls, context_id: str) -> List[ReportExportHistory]:
-        """Get export history for a report"""
-        return ReportExportHistory.query.filter_by(
-            context_id=context_id
-        ).order_by(desc(ReportExportHistory.exported_at)).all()
