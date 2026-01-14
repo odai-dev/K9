@@ -572,6 +572,64 @@ class UnifiedReportService:
         return False, "التقرير غير معتمد ولا يمكن تصديره"
     
     @classmethod
+    def get_pending_reports_for_pm(
+        cls,
+        pm_user_id: str,
+        project_id: Optional[str] = None,
+        limit: int = 50
+    ) -> List[ReportContext]:
+        """
+        Get all reports pending PM review for a specific PM or project.
+        
+        Args:
+            pm_user_id: The PM user ID requesting the reports
+            project_id: Optional project ID to filter by
+            limit: Maximum number of reports to return
+            
+        Returns:
+            List of ReportContext objects pending PM review
+        """
+        query = ReportContext.query.filter(
+            ReportContext.status == UnifiedReportStatus.SUBMITTED
+        )
+        
+        if project_id:
+            query = query.filter(ReportContext.project_id == project_id)
+        
+        query = query.filter(ReportContext.created_by_user_id != pm_user_id)
+        
+        query = query.order_by(desc(ReportContext.submitted_at))
+        
+        return query.limit(limit).all()
+    
+    @classmethod
+    def get_pending_reports_count_for_pm(
+        cls,
+        pm_user_id: str,
+        project_id: Optional[str] = None
+    ) -> int:
+        """
+        Get count of reports pending PM review.
+        
+        Args:
+            pm_user_id: The PM user ID
+            project_id: Optional project ID to filter by
+            
+        Returns:
+            Count of pending reports
+        """
+        query = ReportContext.query.filter(
+            ReportContext.status == UnifiedReportStatus.SUBMITTED
+        )
+        
+        if project_id:
+            query = query.filter(ReportContext.project_id == project_id)
+        
+        query = query.filter(ReportContext.created_by_user_id != pm_user_id)
+        
+        return query.count()
+    
+    @classmethod
     def invalidate_cache(cls, context_id: str) -> bool:
         """
         Invalidate cached data for a report context.

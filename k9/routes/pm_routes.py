@@ -292,6 +292,13 @@ def dashboard():
             CaretakerDailyLog.status == WorkflowStatus.PENDING_PM_REVIEW.value
         ).count()
     
+    # Pending unified reports
+    from k9.services.unified_report_service import UnifiedReportService
+    pending_unified_reports_count = UnifiedReportService.get_pending_reports_count_for_pm(
+        pm_user_id=str(current_user.id),
+        project_id=str(project.id)
+    )
+    
     # Compile statistics
     stats = {
         'dog_assignments': dog_assignments,
@@ -313,7 +320,8 @@ def dashboard():
         'pending_reports': pending_reports,
         'pending_vet_visits': pending_vet_count,
         'pending_breeding': pending_breeding,
-        'pending_caretaker': pending_caretaker
+        'pending_caretaker': pending_caretaker,
+        'pending_unified_reports': pending_unified_reports_count
     }
     
     # Get assignment objects for display in resources section
@@ -378,6 +386,13 @@ def dashboard():
             CaretakerDailyLog.status == WorkflowStatus.PENDING_PM_REVIEW.value
         ).order_by(CaretakerDailyLog.created_at.desc()).limit(10).all()
     
+    # Get pending unified reports for display
+    pending_unified_reports = UnifiedReportService.get_pending_reports_for_pm(
+        pm_user_id=str(current_user.id),
+        project_id=str(project.id),
+        limit=10
+    )
+    
     return render_template('pm/dashboard.html', 
                          project=project,
                          stats=stats,
@@ -392,6 +407,7 @@ def dashboard():
                          pending_vet_visits=pending_vet_visits,
                          pending_breeding_activities=pending_breeding_activities,
                          pending_caretaker_logs=pending_caretaker_logs,
+                         pending_unified_reports=pending_unified_reports,
                          pending_count=get_pending_count(project))
 
 @pm_bp.route('/project')
@@ -950,3 +966,149 @@ def export_shift_report_excel(report_id):
         as_attachment=True,
         download_name=filename
     )
+
+
+# ========================================
+# Unified Report Management Routes for PM
+# ========================================
+
+@pm_bp.route('/unified-reports')
+@login_required
+@require_pm_project
+def unified_reports():
+    """List all unified reports pending PM review"""
+    from k9.services.unified_report_service import UnifiedReportService
+    from k9.models.report_models import UnifiedReportType
+    
+    project, needs_selection = get_active_project()
+    if needs_selection:
+        projects = Project.query.filter_by(is_active=True).order_by(Project.name).all()
+        return render_template('pm/project_selector.html', projects=projects)
+    if not project:
+        return redirect(url_for('main.index'))
+    
+    pending_reports = UnifiedReportService.get_pending_reports_for_pm(
+        pm_user_id=str(current_user.id),
+        project_id=str(project.id)
+    )
+    
+    pending_count = UnifiedReportService.get_pending_reports_count_for_pm(
+        pm_user_id=str(current_user.id),
+        project_id=str(project.id)
+    )
+    
+    return render_template('pm/unified_reports.html',
+                          project=project,
+                          pending_reports=pending_reports,
+                          pending_count=pending_count,
+                          UnifiedReportType=UnifiedReportType)
+
+
+@pm_bp.route('/unified-reports/<context_id>')
+@login_required
+@require_pm_project
+def preview_unified_report(context_id):
+    """Preview a specific unified report"""
+    from k9.services.unified_report_service import UnifiedReportService
+    from k9.models.report_models import ReportContext
+    
+    project, needs_selection = get_active_project()
+    if needs_selection:
+        return redirect(url_for('pm.unified_reports'))
+    if not project:
+        flash('لم يتم العثور على المشروع', 'error')
+        return redirect(url_for('main.index'))
+    
+    context = ReportContext.query.get_or_404(context_id)
+    
+    if context.project_id and str(context.project_id) != str(project.id):
+        flash('ليس لديك صلاحية لمراجعة هذا التقرير', 'error')
+        return redirect(url_for('pm.unified_reports'))
+    
+    can_export, export_msg = UnifiedReportService.can_export(context_id, str(current_user.id))
+    
+    return render_template('pm/unified_report_preview.html',
+                          project=project,
+                          context=context,
+                          can_export=can_export,
+                          export_msg=export_msg)
+
+
+@pm_bp.route('/unified-reports/<context_id>/approve', methods=['POST'])
+@login_required
+@require_pm_project
+def approve_unified_report(context_id):
+    """Approve a unified report"""
+    from k9.services.unified_report_service import UnifiedReportService
+    from k9.models.report_models import ReportContext
+    
+    if not has_permission("pm.reports.approve"):
+        flash('ليس لديك صلاحية للموافقة على التقارير', 'error')
+        return redirect(url_for('pm.unified_reports'))
+    
+    project, needs_selection = get_active_project()
+    if needs_selection or not project:
+        flash('لم يتم العثور على المشروع', 'error')
+        return redirect(url_for('main.index'))
+    
+    context = ReportContext.query.get_or_404(context_id)
+    
+    if context.project_id and str(context.project_id) != str(project.id):
+        flash('ليس لديك صلاحية لمراجعة هذا التقرير', 'error')
+        return redirect(url_for('pm.unified_reports'))
+    
+    notes = request.form.get('notes', '')
+    success, message = UnifiedReportService.pm_approve(
+        context_id=context_id,
+        pm_user=current_user,
+        notes=notes
+    )
+    
+    if success:
+        flash('تمت الموافقة على التقرير بنجاح', 'success')
+    else:
+        flash(f'فشل في الموافقة على التقرير: {message}', 'error')
+    
+    return redirect(url_for('pm.unified_reports'))
+
+
+@pm_bp.route('/unified-reports/<context_id>/reject', methods=['POST'])
+@login_required
+@require_pm_project
+def reject_unified_report(context_id):
+    """Reject a unified report"""
+    from k9.services.unified_report_service import UnifiedReportService
+    from k9.models.report_models import ReportContext
+    
+    if not has_permission("pm.reports.reject"):
+        flash('ليس لديك صلاحية لرفض التقارير', 'error')
+        return redirect(url_for('pm.unified_reports'))
+    
+    project, needs_selection = get_active_project()
+    if needs_selection or not project:
+        flash('لم يتم العثور على المشروع', 'error')
+        return redirect(url_for('main.index'))
+    
+    context = ReportContext.query.get_or_404(context_id)
+    
+    if context.project_id and str(context.project_id) != str(project.id):
+        flash('ليس لديك صلاحية لمراجعة هذا التقرير', 'error')
+        return redirect(url_for('pm.unified_reports'))
+    
+    feedback = request.form.get('feedback', '')
+    if not feedback:
+        flash('يرجى إدخال سبب الرفض', 'error')
+        return redirect(url_for('pm.preview_unified_report', context_id=context_id))
+    
+    success, message = UnifiedReportService.pm_reject(
+        context_id=context_id,
+        pm_user=current_user,
+        feedback=feedback
+    )
+    
+    if success:
+        flash('تم رفض التقرير', 'info')
+    else:
+        flash(f'فشل في رفض التقرير: {message}', 'error')
+    
+    return redirect(url_for('pm.unified_reports'))

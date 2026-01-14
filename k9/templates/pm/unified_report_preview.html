@@ -1,0 +1,225 @@
+{% extends "pm/base_pm.html" %}
+
+{% block title %}معاينة التقرير - {{ context.title or 'تقرير موحد' }}{% endblock %}
+
+{% block pm_header %}
+<div class="pm-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <div>
+                <h1><i class="fas fa-file-alt me-2"></i>معاينة التقرير</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('pm.dashboard') }}">لوحة التحكم</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('pm.unified_reports') }}">التقارير الموحدة</a></li>
+                        <li class="breadcrumb-item active">معاينة</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex gap-2 mt-2 mt-md-0">
+                <a href="{{ url_for('pm.unified_reports') }}" class="btn btn-light">
+                    <i class="fas fa-arrow-right me-1"></i> العودة للقائمة
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block pm_content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2 text-primary"></i>تفاصيل التقرير
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">العنوان</label>
+                            <p class="fw-bold mb-2">{{ context.title or 'بدون عنوان' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">نوع التقرير</label>
+                            <p class="mb-2">
+                                {% set type_colors = {
+                                    'HANDLER': 'primary',
+                                    'SHIFT': 'info',
+                                    'VET': 'danger',
+                                    'TRAINER': 'success',
+                                    'CARETAKER': 'warning'
+                                } %}
+                                {% set type_names = {
+                                    'HANDLER': 'تقرير مدرب',
+                                    'SHIFT': 'تقرير وردية',
+                                    'VET': 'تقرير بيطري',
+                                    'TRAINER': 'تقرير مدرب أساسي',
+                                    'CARETAKER': 'تقرير راعي'
+                                } %}
+                                <span class="badge bg-{{ type_colors.get(context.report_type.value, 'secondary') }}">
+                                    {{ type_names.get(context.report_type.value, context.report_type.value) }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {% if context.description %}
+                    <div class="mb-3">
+                        <label class="text-muted small">الوصف</label>
+                        <p class="mb-2">{{ context.description }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="text-muted small">مقدم التقرير</label>
+                            <p class="mb-2">{{ context.created_by.username if context.created_by else 'غير محدد' }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted small">تاريخ الإنشاء</label>
+                            <p class="mb-2">{{ context.created_at.strftime('%Y-%m-%d %H:%M') if context.created_at else '-' }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted small">تاريخ التقديم</label>
+                            <p class="mb-2">{{ context.submitted_at.strftime('%Y-%m-%d %H:%M') if context.submitted_at else '-' }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="text-muted small">الحالة</label>
+                        <p class="mb-2">
+                            {% set status_colors = {
+                                'DRAFT': 'secondary',
+                                'SUBMITTED': 'warning',
+                                'PM_APPROVED': 'info',
+                                'APPROVED': 'success',
+                                'REJECTED': 'danger',
+                                'NEEDS_REVISION': 'orange'
+                            } %}
+                            {% set status_names = {
+                                'DRAFT': 'مسودة',
+                                'SUBMITTED': 'مقدم للمراجعة',
+                                'PM_APPROVED': 'موافق عليه من المدير',
+                                'APPROVED': 'معتمد',
+                                'REJECTED': 'مرفوض',
+                                'NEEDS_REVISION': 'يحتاج مراجعة'
+                            } %}
+                            <span class="badge bg-{{ status_colors.get(context.status.value, 'secondary') }}">
+                                {{ status_names.get(context.status.value, context.status.value) }}
+                            </span>
+                        </p>
+                    </div>
+                    
+                    {% if context.cached_data %}
+                    <div class="mb-3">
+                        <label class="text-muted small">البيانات المخزنة</label>
+                        <div class="bg-light p-3 rounded">
+                            <pre class="mb-0" style="max-height: 300px; overflow-y: auto; direction: ltr;">{{ context.cached_data | tojson(indent=2) }}</pre>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tasks me-2 text-success"></i>الإجراءات
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if context.status.value == 'SUBMITTED' %}
+                    <div class="d-grid gap-2">
+                        {% if has_permission('pm.reports.approve') %}
+                        <form method="POST" action="{{ url_for('pm.approve_unified_report', context_id=context.id) }}" 
+                              onsubmit="return confirm('هل أنت متأكد من الموافقة على هذا التقرير؟');">
+                            <div class="mb-2">
+                                <textarea name="notes" class="form-control" rows="2" 
+                                          placeholder="ملاحظات الموافقة (اختياري)"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fas fa-check me-1"></i> الموافقة على التقرير
+                            </button>
+                        </form>
+                        {% else %}
+                        <div class="alert alert-info small mb-0">
+                            <i class="fas fa-info-circle me-1"></i>
+                            ليس لديك صلاحية للموافقة على التقارير
+                        </div>
+                        {% endif %}
+                        
+                        <hr class="my-2">
+                        
+                        {% if has_permission('pm.reports.reject') %}
+                        <form method="POST" action="{{ url_for('pm.reject_unified_report', context_id=context.id) }}"
+                              onsubmit="return validateRejectForm(this);">
+                            <div class="mb-2">
+                                <textarea name="feedback" class="form-control" rows="2" required
+                                          placeholder="سبب الرفض (مطلوب)"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-danger w-100">
+                                <i class="fas fa-times me-1"></i> رفض التقرير
+                            </button>
+                        </form>
+                        {% else %}
+                        <div class="alert alert-info small mb-0">
+                            <i class="fas fa-info-circle me-1"></i>
+                            ليس لديك صلاحية لرفض التقارير
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-secondary small mb-0">
+                        <i class="fas fa-info-circle me-1"></i>
+                        لا يمكن اتخاذ إجراءات على هذا التقرير - الحالة: {{ status_names.get(context.status.value, context.status.value) }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card border-0 shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-download me-2 text-info"></i>التصدير
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if can_export %}
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('unified_reports.export_pdf', context_id=context.id) }}" 
+                           class="btn btn-outline-danger">
+                            <i class="fas fa-file-pdf me-1"></i> تصدير PDF
+                        </a>
+                        <a href="{{ url_for('unified_reports.export_excel', context_id=context.id) }}" 
+                           class="btn btn-outline-success">
+                            <i class="fas fa-file-excel me-1"></i> تصدير Excel
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning small mb-0">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        {{ export_msg }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function validateRejectForm(form) {
+    const feedback = form.querySelector('textarea[name="feedback"]').value.trim();
+    if (!feedback) {
+        alert('يرجى إدخال سبب الرفض');
+        return false;
+    }
+    return confirm('هل أنت متأكد من رفض هذا التقرير؟');
+}
+</script>
+{% endblock %}

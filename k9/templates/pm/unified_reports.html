@@ -1,0 +1,169 @@
+{% extends "pm/base_pm.html" %}
+
+{% block title %}التقارير الموحدة - مدير المشروع{% endblock %}
+
+{% block pm_header %}
+<div class="pm-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <div>
+                <h1><i class="fas fa-file-contract me-2"></i>التقارير الموحدة</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('pm.dashboard') }}">لوحة التحكم</a></li>
+                        <li class="breadcrumb-item active">التقارير الموحدة</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex gap-2 mt-2 mt-md-0">
+                <a href="{{ url_for('pm.dashboard') }}" class="btn btn-light">
+                    <i class="fas fa-arrow-right me-1"></i> العودة للوحة التحكم
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block pm_content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-warning bg-opacity-10 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock me-2 text-warning"></i>تقارير بانتظار المراجعة
+                        <span class="badge bg-warning text-dark ms-2">{{ pending_count }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if pending_reports %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>نوع التقرير</th>
+                                    <th>العنوان</th>
+                                    <th>مقدم التقرير</th>
+                                    <th>تاريخ التقديم</th>
+                                    <th>الحالة</th>
+                                    <th class="text-center">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report in pending_reports %}
+                                <tr>
+                                    <td>
+                                        {% set type_colors = {
+                                            'HANDLER': 'primary',
+                                            'SHIFT': 'info',
+                                            'VET': 'danger',
+                                            'TRAINER': 'success',
+                                            'CARETAKER': 'warning'
+                                        } %}
+                                        {% set type_names = {
+                                            'HANDLER': 'تقرير مدرب',
+                                            'SHIFT': 'تقرير وردية',
+                                            'VET': 'تقرير بيطري',
+                                            'TRAINER': 'تقرير مدرب أساسي',
+                                            'CARETAKER': 'تقرير راعي'
+                                        } %}
+                                        <span class="badge bg-{{ type_colors.get(report.report_type.value, 'secondary') }}">
+                                            {{ type_names.get(report.report_type.value, report.report_type.value) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ report.title or 'بدون عنوان' }}</strong>
+                                        {% if report.description %}
+                                        <br><small class="text-muted">{{ report.description[:50] }}{% if report.description|length > 50 %}...{% endif %}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if report.created_by %}
+                                        {{ report.created_by.username }}
+                                        {% else %}
+                                        <span class="text-muted">غير محدد</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if report.submitted_at %}
+                                        {{ report.submitted_at.strftime('%Y-%m-%d %H:%M') }}
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-hourglass-half me-1"></i>بانتظار المراجعة
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('pm.preview_unified_report', context_id=report.id) }}" 
+                                               class="btn btn-outline-primary" title="معاينة">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if has_permission('pm.reports.approve') %}
+                                            <form method="POST" action="{{ url_for('pm.approve_unified_report', context_id=report.id) }}" 
+                                                  style="display: inline;" onsubmit="return confirm('هل أنت متأكد من الموافقة على هذا التقرير؟');">
+                                                <button type="submit" class="btn btn-outline-success" title="موافقة">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                            {% if has_permission('pm.reports.reject') %}
+                                            <button type="button" class="btn btn-outline-danger" title="رفض" 
+                                                    data-bs-toggle="modal" data-bs-target="#rejectModal{{ report.id }}">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <h5>لا توجد تقارير بانتظار المراجعة</h5>
+                        <p class="text-muted">جميع التقارير تمت مراجعتها</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% for report in pending_reports %}
+{% if has_permission('pm.reports.reject') %}
+<div class="modal fade" id="rejectModal{{ report.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('pm.reject_unified_report', context_id=report.id) }}">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="fas fa-times-circle me-2"></i>رفض التقرير</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>هل أنت متأكد من رفض هذا التقرير؟</p>
+                    <p class="text-muted small mb-3">{{ report.title or 'بدون عنوان' }}</p>
+                    <div class="mb-3">
+                        <label class="form-label">سبب الرفض <span class="text-danger">*</span></label>
+                        <textarea name="feedback" class="form-control" rows="3" required 
+                                  placeholder="يرجى إدخال سبب رفض التقرير..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-danger">تأكيد الرفض</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}

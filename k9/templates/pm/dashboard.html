@@ -676,6 +676,73 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Pending Unified Reports -->
+                <div class="col-12 mb-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-file-contract me-2 text-primary"></i>التقارير الموحدة بانتظار المراجعة
+                                <span class="badge bg-primary">{{ stats.pending_unified_reports }}</span>
+                            </h5>
+                            <a href="{{ url_for('pm.unified_reports') }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-list me-1"></i> عرض الكل
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            {% if pending_unified_reports %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>نوع التقرير</th>
+                                                <th>العنوان</th>
+                                                <th>مقدم التقرير</th>
+                                                <th>تاريخ التقديم</th>
+                                                <th>الإجراءات</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for report in pending_unified_reports %}
+                                            <tr>
+                                                <td>
+                                                    {% set type_colors = {
+                                                        'HANDLER': 'primary',
+                                                        'SHIFT': 'info',
+                                                        'VET': 'danger',
+                                                        'TRAINER': 'success',
+                                                        'CARETAKER': 'warning'
+                                                    } %}
+                                                    {% set type_names = {
+                                                        'HANDLER': 'تقرير مدرب',
+                                                        'SHIFT': 'تقرير وردية',
+                                                        'VET': 'تقرير بيطري',
+                                                        'TRAINER': 'تقرير مدرب أساسي',
+                                                        'CARETAKER': 'تقرير راعي'
+                                                    } %}
+                                                    <span class="badge bg-{{ type_colors.get(report.report_type.value, 'secondary') }}">
+                                                        {{ type_names.get(report.report_type.value, report.report_type.value) }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ report.title or 'بدون عنوان' }}</td>
+                                                <td>{{ report.created_by.username if report.created_by else 'غير محدد' }}</td>
+                                                <td>{{ report.submitted_at.strftime('%Y-%m-%d %H:%M') if report.submitted_at else '-' }}</td>
+                                                <td>
+                                                    <a href="{{ url_for('pm.preview_unified_report', context_id=report.id) }}" class="btn btn-sm btn-primary">
+                                                        <i class="fas fa-eye me-1"></i> مراجعة
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <p class="text-muted text-center mb-0">لا توجد تقارير موحدة بانتظار المراجعة</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
