@@ -6,6 +6,7 @@ Supports the Generate Once → Preview → Export pattern with caching and appro
 """
 import json
 import logging
+import os
 from io import BytesIO
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any, Union
@@ -22,6 +23,25 @@ from k9.models.report_models import (
 )
 from k9.services.permission_service import PermissionService
 from k9.services.report_export_service import ReportExportService
+
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import cm
+from reportlab.platypus import SimpleDocTemplate, Spacer
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+
+from k9.utils.pdf_minimal_elegant import (
+    create_minimal_header,
+    create_info_section,
+    create_text_section,
+    create_data_table,
+    get_minimal_styles,
+    add_page_number,
+    MinimalColors,
+    create_spacer
+)
+from k9.utils.utils_pdf_rtl import rtl, register_arabic_fonts, get_arabic_font_name
 
 logger = logging.getLogger(__name__)
 
@@ -886,31 +906,618 @@ class UnifiedReportService:
     
     @classmethod
     def _generate_pdf(cls, context: ReportContext) -> Optional[BytesIO]:
-        """Generate PDF from report context cached data"""
-        if not context.source_report_id:
+        """
+        Generate PDF from report context cached data using the minimal elegant design.
+        Creates a unified professional PDF layout for all report types.
+        """
+        if not context.cached_data and not context.source_report_id:
             return None
         
-        method_name = cls.EXPORT_METHOD_MAP_PDF.get(context.report_type)
-        if method_name and hasattr(ReportExportService, method_name):
-            export_method = getattr(ReportExportService, method_name)
-            return export_method(str(context.source_report_id))
+        if context.source_report_id:
+            method_name = cls.EXPORT_METHOD_MAP_PDF.get(context.report_type)
+            if method_name and hasattr(ReportExportService, method_name):
+                export_method = getattr(ReportExportService, method_name)
+                result = export_method(str(context.source_report_id))
+                if result:
+                    return result
         
-        logger.warning(f"No PDF export method found for report type: {context.report_type.value}")
-        return None
+        try:
+            register_arabic_fonts()
+            buffer = BytesIO()
+            
+            doc = SimpleDocTemplate(
+                buffer,
+                pagesize=A4,
+                rightMargin=2*cm,
+                leftMargin=2*cm,
+                topMargin=2*cm,
+                bottomMargin=2.5*cm
+            )
+            
+            styles = get_minimal_styles()
+            story = []
+            
+            logo_path = 'k9/static/img/company_logo.png'
+            if not os.path.exists(logo_path):
+                logo_path = None
+            
+            report_title = context.title_ar or REPORT_TYPE_NAMES_AR.get(context.report_type, 'تقرير')
+            
+            metadata = {}
+            if context.report_date:
+                metadata['date'] = context.report_date.strftime('%Y-%m-%d')
+            elif context.date_from and context.date_to:
+                metadata['period'] = f"{context.date_from.strftime('%Y-%m-%d')} - {context.date_to.strftime('%Y-%m-%d')}"
+            
+            if context.project:
+                metadata['project'] = context.project.name
+            
+            cached_data = context.cached_data or {}
+            
+            if cached_data.get('handler'):
+                handler_info = cached_data.get('handler', {})
+                if handler_info.get('name'):
+                    metadata['handler'] = handler_info.get('name')
+            
+            header_elements = create_minimal_header(report_title, metadata, logo_path)
+            story.extend(header_elements)
+            
+            report_meta = {}
+            
+            status_display = REPORT_STATUS_NAMES_AR.get(context.status, context.status.value if context.status else 'غير معروف')
+            report_meta['الحالة'] = status_display
+            
+            if context.created_by:
+                report_meta['مقدم التقرير'] = context.created_by.username
+            
+            if context.submitted_at:
+                report_meta['تاريخ الإرسال'] = context.submitted_at.strftime('%Y-%m-%d %H:%M')
+            
+            if context.pm_reviewer:
+                report_meta['تمت المراجعة بواسطة'] = context.pm_reviewer.username
+                if context.pm_reviewed_at:
+                    report_meta['تاريخ المراجعة'] = context.pm_reviewed_at.strftime('%Y-%m-%d %H:%M')
+            
+            if context.pm_review_notes:
+                report_meta['ملاحظات المراجعة'] = context.pm_review_notes
+            
+            if report_meta:
+                meta_elements = create_info_section('معلومات التقرير', report_meta)
+                story.extend(meta_elements)
+            
+            cls._add_report_data_to_pdf(story, context.report_type, cached_data, styles)
+            
+            if context.notes:
+                notes_elements = create_text_section('ملاحظات إضافية', context.notes)
+                story.extend(notes_elements)
+            
+            doc.build(story, onFirstPage=add_page_number, onLaterPages=add_page_number)
+            buffer.seek(0)
+            return buffer
+            
+        except Exception as e:
+            logger.error(f"Error generating unified PDF: {e}")
+            return None
+    
+    @classmethod
+    def _add_report_data_to_pdf(cls, story: list, report_type: UnifiedReportType, data: Dict, styles: Dict):
+        """Add report-type specific data sections to PDF story"""
+        if not data or data.get('error'):
+            return
+        
+        if report_type == UnifiedReportType.HANDLER:
+            cls._add_handler_data_to_pdf(story, data, styles)
+        elif report_type == UnifiedReportType.SHIFT:
+            cls._add_shift_data_to_pdf(story, data, styles)
+        elif report_type == UnifiedReportType.VET:
+            cls._add_vet_data_to_pdf(story, data, styles)
+        elif report_type == UnifiedReportType.TRAINER:
+            cls._add_trainer_data_to_pdf(story, data, styles)
+        elif report_type == UnifiedReportType.CARETAKER:
+            cls._add_caretaker_data_to_pdf(story, data, styles)
+        else:
+            cls._add_generic_data_to_pdf(story, data, styles)
+    
+    @classmethod
+    def _add_handler_data_to_pdf(cls, story: list, data: Dict, styles: Dict):
+        """Add handler report specific data to PDF"""
+        dog_info = data.get('dog', {})
+        if dog_info:
+            dog_section = {
+                'اسم الكلب': dog_info.get('name', ''),
+                'رمز الكلب': dog_info.get('code', ''),
+            }
+            story.extend(create_info_section('معلومات الكلب', dog_section))
+        
+        if data.get('location'):
+            story.extend(create_info_section('الموقع', {'الموقع': data.get('location')}))
+        
+        health = data.get('health')
+        if health:
+            health_section = {}
+            health_fields = [
+                ('eyes_status', 'eyes_notes', 'العيون'),
+                ('nose_status', 'nose_notes', 'الأنف'),
+                ('ears_status', 'ears_notes', 'الأذنين'),
+                ('mouth_status', 'mouth_notes', 'الفم'),
+            ]
+            for status_field, notes_field, label in health_fields:
+                status = health.get(status_field)
+                notes = health.get(notes_field)
+                if status:
+                    value = cls._get_health_status_ar(status)
+                    if notes:
+                        value += f" - {notes}"
+                    health_section[label] = value
+            
+            if health_section:
+                story.extend(create_info_section('الفحص الصحي', health_section))
+        
+        care = data.get('care')
+        if care:
+            care_section = {}
+            if care.get('food_amount'):
+                care_section['كمية الطعام'] = care.get('food_amount')
+            if care.get('food_type'):
+                care_section['نوع الطعام'] = care.get('food_type')
+            if care.get('water_amount'):
+                care_section['كمية الماء'] = care.get('water_amount')
+            if care.get('grooming_done') is not None:
+                care_section['التمشيط'] = 'نعم' if care.get('grooming_done') else 'لا'
+            if care.get('washing_done') is not None:
+                care_section['الغسل'] = 'نعم' if care.get('washing_done') else 'لا'
+            
+            if care_section:
+                story.extend(create_info_section('العناية', care_section))
+        
+        behavior = data.get('behavior')
+        if behavior:
+            behavior_section = {}
+            if behavior.get('good_behavior_notes'):
+                behavior_section['السلوك الإيجابي'] = behavior.get('good_behavior_notes')
+            if behavior.get('bad_behavior_notes'):
+                behavior_section['السلوك السلبي'] = behavior.get('bad_behavior_notes')
+            
+            if behavior_section:
+                story.extend(create_info_section('السلوك', behavior_section))
+        
+        training = data.get('training_sessions', [])
+        if training:
+            headers = ['نوع التدريب', 'الوصف', 'من', 'إلى', 'ملاحظات']
+            rows = []
+            for session in training:
+                rows.append([
+                    session.get('training_type', ''),
+                    session.get('description', ''),
+                    session.get('time_from', '') or '',
+                    session.get('time_to', '') or '',
+                    session.get('notes', '') or ''
+                ])
+            if rows:
+                story.append(create_spacer(0.5))
+                from reportlab.platypus import Paragraph
+                story.append(Paragraph(rtl('جلسات التدريب'), styles['SectionHeading']))
+                table = create_data_table(headers, rows, [3*cm, 4*cm, 2.5*cm, 2.5*cm, 4*cm])
+                story.append(table)
+        
+        incidents = data.get('incidents', [])
+        if incidents:
+            headers = ['النوع', 'الوصف', 'التاريخ/الوقت', 'الموقع']
+            rows = []
+            for incident in incidents:
+                rows.append([
+                    incident.get('incident_type', ''),
+                    incident.get('description', ''),
+                    incident.get('incident_datetime', '') or '',
+                    incident.get('location', '') or ''
+                ])
+            if rows:
+                story.append(create_spacer(0.5))
+                from reportlab.platypus import Paragraph
+                story.append(Paragraph(rtl('الحوادث والاشتباهات'), styles['SectionHeading']))
+                table = create_data_table(headers, rows, [3*cm, 6*cm, 4*cm, 3*cm])
+                story.append(table)
+    
+    @classmethod
+    def _add_shift_data_to_pdf(cls, story: list, data: Dict, styles: Dict):
+        """Add shift report specific data to PDF"""
+        dog_info = data.get('dog', {})
+        if dog_info:
+            dog_section = {
+                'اسم الكلب': dog_info.get('name', ''),
+                'رمز الكلب': dog_info.get('code', ''),
+            }
+            story.extend(create_info_section('معلومات الكلب', dog_section))
+        
+        shift_info = {}
+        if data.get('location'):
+            shift_info['الموقع'] = data.get('location')
+        if data.get('quick_health_check'):
+            shift_info['الفحص الصحي السريع'] = data.get('quick_health_check')
+        if data.get('quick_health_notes'):
+            shift_info['ملاحظات صحية'] = data.get('quick_health_notes')
+        
+        if shift_info:
+            story.extend(create_info_section('معلومات الوردية', shift_info))
+        
+        incidents = data.get('incidents', [])
+        if incidents:
+            headers = ['النوع', 'الوصف', 'التاريخ/الوقت', 'الموقع']
+            rows = []
+            for incident in incidents:
+                rows.append([
+                    incident.get('incident_type', ''),
+                    incident.get('description', ''),
+                    incident.get('incident_datetime', '') or '',
+                    incident.get('location', '') or ''
+                ])
+            if rows:
+                story.append(create_spacer(0.5))
+                from reportlab.platypus import Paragraph
+                story.append(Paragraph(rtl('الحوادث'), styles['SectionHeading']))
+                table = create_data_table(headers, rows)
+                story.append(table)
+        
+        if data.get('notes'):
+            story.extend(create_text_section('ملاحظات', data.get('notes')))
+    
+    @classmethod
+    def _add_vet_data_to_pdf(cls, story: list, data: Dict, styles: Dict):
+        """Add veterinary report specific data to PDF"""
+        dog_info = data.get('dog', {})
+        if dog_info:
+            dog_section = {
+                'اسم الكلب': dog_info.get('name', ''),
+                'رمز الكلب': dog_info.get('code', ''),
+            }
+            story.extend(create_info_section('معلومات الكلب', dog_section))
+        
+        vet_info = {}
+        if data.get('visit_date'):
+            vet_info['تاريخ الزيارة'] = data.get('visit_date')
+        if data.get('visit_type'):
+            vet_info['نوع الزيارة'] = data.get('visit_type')
+        if data.get('diagnosis'):
+            vet_info['التشخيص'] = data.get('diagnosis')
+        if data.get('treatment'):
+            vet_info['العلاج'] = data.get('treatment')
+        if data.get('medications'):
+            vet_info['الأدوية'] = data.get('medications')
+        if data.get('follow_up_date'):
+            vet_info['موعد المتابعة'] = data.get('follow_up_date')
+        
+        if vet_info:
+            story.extend(create_info_section('تفاصيل الزيارة البيطرية', vet_info))
+        
+        if data.get('notes'):
+            story.extend(create_text_section('ملاحظات', data.get('notes')))
+    
+    @classmethod
+    def _add_trainer_data_to_pdf(cls, story: list, data: Dict, styles: Dict):
+        """Add trainer report specific data to PDF"""
+        dog_info = data.get('dog', {})
+        if dog_info:
+            dog_section = {
+                'اسم الكلب': dog_info.get('name', ''),
+                'رمز الكلب': dog_info.get('code', ''),
+            }
+            story.extend(create_info_section('معلومات الكلب', dog_section))
+        
+        training_info = {}
+        if data.get('activity_date'):
+            training_info['تاريخ النشاط'] = data.get('activity_date')
+        if data.get('category'):
+            training_info['الفئة'] = data.get('category')
+        if data.get('description'):
+            training_info['الوصف'] = data.get('description')
+        if data.get('duration_minutes'):
+            training_info['المدة (دقائق)'] = str(data.get('duration_minutes'))
+        if data.get('performance_rating'):
+            training_info['تقييم الأداء'] = data.get('performance_rating')
+        
+        if training_info:
+            story.extend(create_info_section('تفاصيل التدريب', training_info))
+        
+        if data.get('notes'):
+            story.extend(create_text_section('ملاحظات', data.get('notes')))
+    
+    @classmethod
+    def _add_caretaker_data_to_pdf(cls, story: list, data: Dict, styles: Dict):
+        """Add caretaker report specific data to PDF"""
+        dog_info = data.get('dog', {})
+        if dog_info:
+            dog_section = {
+                'اسم الكلب': dog_info.get('name', ''),
+                'رمز الكلب': dog_info.get('code', ''),
+            }
+            story.extend(create_info_section('معلومات الكلب', dog_section))
+        
+        care_info = {}
+        if data.get('log_date'):
+            care_info['تاريخ السجل'] = data.get('log_date')
+        if data.get('feeding_done') is not None:
+            care_info['تم التغذية'] = 'نعم' if data.get('feeding_done') else 'لا'
+        if data.get('feeding_notes'):
+            care_info['ملاحظات التغذية'] = data.get('feeding_notes')
+        if data.get('cleaning_done') is not None:
+            care_info['تم التنظيف'] = 'نعم' if data.get('cleaning_done') else 'لا'
+        if data.get('cleaning_notes'):
+            care_info['ملاحظات التنظيف'] = data.get('cleaning_notes')
+        if data.get('health_observation'):
+            care_info['ملاحظات صحية'] = data.get('health_observation')
+        
+        if care_info:
+            story.extend(create_info_section('تفاصيل الرعاية اليومية', care_info))
+        
+        if data.get('notes'):
+            story.extend(create_text_section('ملاحظات', data.get('notes')))
+    
+    @classmethod
+    def _add_generic_data_to_pdf(cls, story: list, data: Dict, styles: Dict):
+        """Add generic data section for unknown report types"""
+        display_data = {}
+        skip_keys = ['id', 'error', 'reports', 'total']
+        
+        for key, value in data.items():
+            if key in skip_keys:
+                continue
+            if value is not None and value != '':
+                if isinstance(value, dict):
+                    continue
+                elif isinstance(value, list):
+                    continue
+                else:
+                    display_data[key] = str(value)
+        
+        if display_data:
+            story.extend(create_info_section('بيانات التقرير', display_data))
+    
+    @classmethod
+    def _get_health_status_ar(cls, status: str) -> str:
+        """Get Arabic health status text"""
+        status_map = {
+            'NORMAL': 'طبيعي',
+            'ABNORMAL': 'غير طبيعي',
+            'NOT_CHECKED': 'لم يتم الفحص',
+            'GOOD': 'جيد',
+            'BAD': 'سيء',
+        }
+        return status_map.get(status, status or '')
     
     @classmethod
     def _generate_excel(cls, context: ReportContext) -> Optional[BytesIO]:
-        """Generate Excel from report context cached data"""
-        if not context.source_report_id:
+        """
+        Generate Excel from report context cached data with professional formatting.
+        Creates a unified professional Excel layout for all report types.
+        """
+        if not context.cached_data and not context.source_report_id:
             return None
         
-        method_name = cls.EXPORT_METHOD_MAP_EXCEL.get(context.report_type)
-        if method_name and hasattr(ReportExportService, method_name):
-            export_method = getattr(ReportExportService, method_name)
-            return export_method(str(context.source_report_id))
+        if context.source_report_id:
+            method_name = cls.EXPORT_METHOD_MAP_EXCEL.get(context.report_type)
+            if method_name and hasattr(ReportExportService, method_name):
+                export_method = getattr(ReportExportService, method_name)
+                result = export_method(str(context.source_report_id))
+                if result:
+                    return result
         
-        logger.warning(f"No Excel export method found for report type: {context.report_type.value}")
-        return None
+        try:
+            buffer = BytesIO()
+            wb = Workbook()
+            
+            header_font = Font(bold=True, size=12, color='FFFFFF')
+            header_fill = PatternFill(start_color='3A6EA5', end_color='3A6EA5', fill_type='solid')
+            title_font = Font(bold=True, size=14, color='333333')
+            meta_fill = PatternFill(start_color='F5F5F5', end_color='F5F5F5', fill_type='solid')
+            border = Border(
+                left=Side(style='thin', color='DDDDDD'),
+                right=Side(style='thin', color='DDDDDD'),
+                top=Side(style='thin', color='DDDDDD'),
+                bottom=Side(style='thin', color='DDDDDD')
+            )
+            
+            report_type_name = REPORT_TYPE_NAMES_AR.get(context.report_type, 'تقرير')
+            sheet_name = report_type_name[:31]
+            
+            ws = wb.active
+            ws.title = sheet_name
+            ws.right_to_left = True
+            
+            row = 1
+            ws.merge_cells(f'A{row}:D{row}')
+            ws[f'A{row}'] = context.title_ar or report_type_name
+            ws[f'A{row}'].font = title_font
+            ws[f'A{row}'].alignment = Alignment(horizontal='center', vertical='center')
+            row += 2
+            
+            meta_data = []
+            
+            if context.report_date:
+                meta_data.append(('التاريخ', context.report_date.strftime('%Y-%m-%d')))
+            elif context.date_from and context.date_to:
+                meta_data.append(('الفترة', f"{context.date_from.strftime('%Y-%m-%d')} - {context.date_to.strftime('%Y-%m-%d')}"))
+            
+            if context.project:
+                meta_data.append(('المشروع', context.project.name))
+            
+            status_display = REPORT_STATUS_NAMES_AR.get(context.status, context.status.value if context.status else 'غير معروف')
+            meta_data.append(('الحالة', status_display))
+            
+            if context.created_by:
+                meta_data.append(('مقدم التقرير', context.created_by.username))
+            
+            if context.submitted_at:
+                meta_data.append(('تاريخ الإرسال', context.submitted_at.strftime('%Y-%m-%d %H:%M')))
+            
+            if context.pm_reviewer:
+                meta_data.append(('المراجع', context.pm_reviewer.username))
+                if context.pm_reviewed_at:
+                    meta_data.append(('تاريخ المراجعة', context.pm_reviewed_at.strftime('%Y-%m-%d %H:%M')))
+            
+            for label, value in meta_data:
+                ws[f'A{row}'] = label
+                ws[f'B{row}'] = value
+                ws[f'A{row}'].font = Font(bold=True)
+                ws[f'A{row}'].fill = meta_fill
+                ws[f'A{row}'].border = border
+                ws[f'B{row}'].border = border
+                ws[f'A{row}'].alignment = Alignment(horizontal='right')
+                ws[f'B{row}'].alignment = Alignment(horizontal='right')
+                row += 1
+            
+            row += 1
+            
+            cached_data = context.cached_data or {}
+            row = cls._add_report_data_to_excel(ws, row, context.report_type, cached_data, header_font, header_fill, border)
+            
+            ws.column_dimensions['A'].width = 25
+            ws.column_dimensions['B'].width = 35
+            ws.column_dimensions['C'].width = 25
+            ws.column_dimensions['D'].width = 25
+            ws.column_dimensions['E'].width = 30
+            
+            if cached_data and not cached_data.get('error'):
+                cls._add_data_worksheet(wb, context.report_type, cached_data, header_font, header_fill, border)
+            
+            wb.save(buffer)
+            buffer.seek(0)
+            return buffer
+            
+        except Exception as e:
+            logger.error(f"Error generating unified Excel: {e}")
+            return None
+    
+    @classmethod
+    def _add_report_data_to_excel(cls, ws, row: int, report_type: UnifiedReportType, data: Dict, header_font, header_fill, border) -> int:
+        """Add report-type specific data to main Excel sheet"""
+        if not data or data.get('error'):
+            return row
+        
+        dog_info = data.get('dog', {})
+        if dog_info:
+            ws[f'A{row}'] = 'معلومات الكلب'
+            ws[f'A{row}'].font = Font(bold=True, size=11, color='3A6EA5')
+            row += 1
+            
+            if dog_info.get('name'):
+                ws[f'A{row}'] = 'اسم الكلب'
+                ws[f'B{row}'] = dog_info.get('name')
+                ws[f'A{row}'].border = border
+                ws[f'B{row}'].border = border
+                row += 1
+            if dog_info.get('code'):
+                ws[f'A{row}'] = 'رمز الكلب'
+                ws[f'B{row}'] = dog_info.get('code')
+                ws[f'A{row}'].border = border
+                ws[f'B{row}'].border = border
+                row += 1
+            row += 1
+        
+        if data.get('notes'):
+            ws[f'A{row}'] = 'ملاحظات'
+            ws[f'A{row}'].font = Font(bold=True)
+            row += 1
+            ws[f'A{row}'] = data.get('notes')
+            ws.merge_cells(f'A{row}:D{row}')
+            row += 1
+        
+        return row
+    
+    @classmethod
+    def _add_data_worksheet(cls, wb: Workbook, report_type: UnifiedReportType, data: Dict, header_font, header_fill, border):
+        """Add a data worksheet with tables for list data"""
+        training = data.get('training_sessions', [])
+        if training:
+            ws = wb.create_sheet('جلسات التدريب')
+            ws.right_to_left = True
+            
+            headers = ['نوع التدريب', 'الوصف', 'من', 'إلى', 'ملاحظات']
+            for col, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=header)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.border = border
+                cell.alignment = Alignment(horizontal='right')
+            
+            for row_idx, session in enumerate(training, 2):
+                values = [
+                    session.get('training_type', ''),
+                    session.get('description', ''),
+                    session.get('time_from', '') or '',
+                    session.get('time_to', '') or '',
+                    session.get('notes', '') or ''
+                ]
+                for col, val in enumerate(values, 1):
+                    cell = ws.cell(row=row_idx, column=col, value=val)
+                    cell.border = border
+                    cell.alignment = Alignment(horizontal='right')
+            
+            ws.auto_filter.ref = f"A1:E{len(training)+1}"
+            for col_idx in range(1, 6):
+                ws.column_dimensions[get_column_letter(col_idx)].width = 20
+        
+        incidents = data.get('incidents', [])
+        if incidents:
+            ws = wb.create_sheet('الحوادث')
+            ws.right_to_left = True
+            
+            headers = ['النوع', 'الوصف', 'التاريخ/الوقت', 'الموقع']
+            for col, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=header)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.border = border
+                cell.alignment = Alignment(horizontal='right')
+            
+            for row_idx, incident in enumerate(incidents, 2):
+                values = [
+                    incident.get('incident_type', ''),
+                    incident.get('description', ''),
+                    incident.get('incident_datetime', '') or '',
+                    incident.get('location', '') or ''
+                ]
+                for col, val in enumerate(values, 1):
+                    cell = ws.cell(row=row_idx, column=col, value=val)
+                    cell.border = border
+                    cell.alignment = Alignment(horizontal='right')
+            
+            ws.auto_filter.ref = f"A1:D{len(incidents)+1}"
+            for col_idx in range(1, 5):
+                ws.column_dimensions[get_column_letter(col_idx)].width = 22
+        
+        health = data.get('health')
+        if health:
+            ws = wb.create_sheet('الفحص الصحي')
+            ws.right_to_left = True
+            
+            headers = ['الجزء', 'الحالة', 'الملاحظات']
+            for col, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=header)
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.border = border
+                cell.alignment = Alignment(horizontal='right')
+            
+            health_fields = [
+                ('eyes_status', 'eyes_notes', 'العيون'),
+                ('nose_status', 'nose_notes', 'الأنف'),
+                ('ears_status', 'ears_notes', 'الأذنين'),
+                ('mouth_status', 'mouth_notes', 'الفم'),
+            ]
+            
+            row_idx = 2
+            for status_field, notes_field, label in health_fields:
+                status = health.get(status_field)
+                if status:
+                    ws.cell(row=row_idx, column=1, value=label).border = border
+                    ws.cell(row=row_idx, column=2, value=cls._get_health_status_ar(status)).border = border
+                    ws.cell(row=row_idx, column=3, value=health.get(notes_field, '')).border = border
+                    for col in range(1, 4):
+                        ws.cell(row=row_idx, column=col).alignment = Alignment(horizontal='right')
+                    row_idx += 1
+            
+            for col_idx in range(1, 4):
+                ws.column_dimensions[get_column_letter(col_idx)].width = 25
     
     @classmethod
     def _log_export(

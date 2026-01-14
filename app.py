@@ -738,6 +738,15 @@ with app.app_context():
     except Exception as e:
         print(f"⚠ Warning: Could not register PM routes: {e}")
     
+    # Register Unified Reports Routes
+    try:
+        from k9.routes.unified_reports_routes import unified_reports_bp
+        app.register_blueprint(unified_reports_bp, url_prefix='/unified-reports')
+        print("✓ Unified reports routes registered successfully")
+        
+    except Exception as e:
+        print(f"⚠ Warning: Could not register unified reports routes: {e}")
+    
     # Register Dashboard API Routes
     try:
         from k9.routes.dashboard_api_routes import dashboard_api_bp

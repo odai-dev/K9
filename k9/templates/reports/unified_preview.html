@@ -1,0 +1,669 @@
+{% extends "base.html" %}
+
+{% block title %}معاينة التقرير - {{ preview_data.title_ar or preview_data.report_type_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.report-preview-container {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+[data-theme="dark"] .report-preview-container {
+    background: #2d2d2d;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.report-header {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 12px 12px 0 0;
+}
+
+[data-theme="dark"] .report-header {
+    background: linear-gradient(135deg, #0d7377 0%, #14a76c 100%);
+}
+
+.report-header h1 {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.report-header .report-subtitle {
+    opacity: 0.9;
+    margin-top: 0.5rem;
+}
+
+.report-body {
+    padding: 2rem;
+}
+
+.report-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+[data-theme="dark"] .report-meta {
+    background: #1a1a1a;
+}
+
+.report-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.report-meta-item i {
+    font-size: 1.25rem;
+    color: #11998e;
+    width: 24px;
+    text-align: center;
+}
+
+[data-theme="dark"] .report-meta-item i {
+    color: #38ef7d;
+}
+
+.report-meta-item .label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    display: block;
+}
+
+.report-meta-item .value {
+    font-weight: 600;
+    color: #212529;
+}
+
+[data-theme="dark"] .report-meta-item .value {
+    color: #e0e0e0;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.status-draft {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.status-submitted {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-pm-approved, .status-approved {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-pm-rejected, .status-rejected {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.status-forwarded {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.report-data-section {
+    margin-top: 2rem;
+}
+
+.report-data-section h4 {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #11998e;
+    color: #11998e;
+}
+
+[data-theme="dark"] .report-data-section h4 {
+    border-bottom-color: #38ef7d;
+    color: #38ef7d;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+}
+
+.data-table th,
+.data-table td {
+    padding: 0.875rem 1rem;
+    text-align: right;
+    border-bottom: 1px solid #dee2e6;
+}
+
+[data-theme="dark"] .data-table th,
+[data-theme="dark"] .data-table td {
+    border-bottom-color: #404040;
+}
+
+.data-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+}
+
+[data-theme="dark"] .data-table th {
+    background: #1a1a1a;
+    color: #e0e0e0;
+}
+
+.data-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+[data-theme="dark"] .data-table tbody tr:hover {
+    background: #333;
+}
+
+.action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+    background: #f8f9fa;
+    border-radius: 0 0 12px 12px;
+    border-top: 1px solid #dee2e6;
+}
+
+[data-theme="dark"] .action-buttons {
+    background: #1a1a1a;
+    border-top-color: #404040;
+}
+
+.action-buttons .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.action-buttons .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn-export-pdf {
+    background: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+.btn-export-pdf:hover {
+    background: #c82333;
+    border-color: #c82333;
+    color: white;
+}
+
+.btn-export-excel {
+    background: #28a745;
+    border-color: #28a745;
+    color: white;
+}
+
+.btn-export-excel:hover {
+    background: #218838;
+    border-color: #218838;
+    color: white;
+}
+
+.btn-approve {
+    background: #11998e;
+    border-color: #11998e;
+    color: white;
+}
+
+.btn-approve:hover {
+    background: #0d7377;
+    border-color: #0d7377;
+    color: white;
+}
+
+.btn-reject {
+    background: #ffc107;
+    border-color: #ffc107;
+    color: #212529;
+}
+
+.btn-reject:hover {
+    background: #e0a800;
+    border-color: #e0a800;
+    color: #212529;
+}
+
+.btn-submit {
+    background: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+.btn-submit:hover {
+    background: #0056b3;
+    border-color: #0056b3;
+    color: white;
+}
+
+.empty-data {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+}
+
+.empty-data i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.approval-history {
+    margin-top: 2rem;
+}
+
+.approval-history-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    border-right: 3px solid #11998e;
+    background: #f8f9fa;
+    margin-bottom: 0.5rem;
+    border-radius: 0 8px 8px 0;
+}
+
+[data-theme="dark"] .approval-history-item {
+    background: #1a1a1a;
+    border-right-color: #38ef7d;
+}
+
+.approval-history-item.rejected {
+    border-right-color: #dc3545;
+}
+
+.print-only {
+    display: none;
+}
+
+@media print {
+    .action-buttons, .navbar, .btn {
+        display: none !important;
+    }
+    
+    .print-only {
+        display: block;
+    }
+    
+    .report-preview-container {
+        box-shadow: none;
+    }
+    
+    .report-header {
+        background: #333 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" dir="rtl">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.reports_hub') }}">مركز التقارير</a></li>
+                    <li class="breadcrumb-item active">معاينة التقرير</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="report-preview-container">
+        <div class="report-header">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <h1>
+                        <i class="fas fa-file-alt me-2"></i>
+                        {{ preview_data.title_ar or preview_data.report_type_name }}
+                    </h1>
+                    <p class="report-subtitle mb-0">
+                        {{ REPORT_TYPE_NAMES_AR.get(context.report_type, 'تقرير') if context else preview_data.report_type_name }}
+                    </p>
+                </div>
+                <div>
+                    {% set status_class = 'draft' %}
+                    {% if context %}
+                        {% if context.status.value == 'SUBMITTED' %}
+                            {% set status_class = 'submitted' %}
+                        {% elif context.status.value == 'PM_APPROVED' or context.status.value == 'APPROVED' %}
+                            {% set status_class = 'approved' %}
+                        {% elif context.status.value == 'PM_REJECTED' or context.status.value == 'REJECTED' %}
+                            {% set status_class = 'rejected' %}
+                        {% elif context.status.value == 'FORWARDED_TO_ADMIN' %}
+                            {% set status_class = 'forwarded' %}
+                        {% endif %}
+                    {% endif %}
+                    <span class="status-badge status-{{ status_class }}">
+                        <i class="fas fa-circle"></i>
+                        {{ REPORT_STATUS_NAMES_AR.get(context.status, 'غير معروف') if context else preview_data.status_name }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="report-body">
+            <div class="report-meta">
+                <div class="report-meta-item">
+                    <i class="fas fa-file-signature"></i>
+                    <div>
+                        <span class="label">نوع التقرير</span>
+                        <span class="value">{{ preview_data.report_type_name }}</span>
+                    </div>
+                </div>
+                
+                {% if context and context.project %}
+                <div class="report-meta-item">
+                    <i class="fas fa-project-diagram"></i>
+                    <div>
+                        <span class="label">المشروع</span>
+                        <span class="value">{{ context.project.name }}</span>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if context and context.created_by %}
+                <div class="report-meta-item">
+                    <i class="fas fa-user"></i>
+                    <div>
+                        <span class="label">مقدم التقرير</span>
+                        <span class="value">{{ context.created_by.full_name or context.created_by.username }}</span>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="report-meta-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <div>
+                        <span class="label">تاريخ الإنشاء</span>
+                        <span class="value">{{ preview_data.created_at[:10] if preview_data.created_at else '-' }}</span>
+                    </div>
+                </div>
+                
+                {% if context and context.report_date %}
+                <div class="report-meta-item">
+                    <i class="fas fa-calendar-day"></i>
+                    <div>
+                        <span class="label">تاريخ التقرير</span>
+                        <span class="value">{{ context.report_date.strftime('%Y-%m-%d') }}</span>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if preview_data.cached_at %}
+                <div class="report-meta-item">
+                    <i class="fas fa-sync-alt"></i>
+                    <div>
+                        <span class="label">آخر تحديث</span>
+                        <span class="value">{{ preview_data.cached_at[:16].replace('T', ' ') if preview_data.cached_at else '-' }}</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="report-data-section">
+                <h4>
+                    <i class="fas fa-table me-2"></i>
+                    بيانات التقرير
+                </h4>
+                
+                {% if preview_data.cached_data %}
+                    {% if preview_data.cached_data is mapping %}
+                        {% if preview_data.cached_data.records is defined and preview_data.cached_data.records is iterable %}
+                            {% set records = preview_data.cached_data.records %}
+                            {% if records|length > 0 %}
+                                <div class="table-responsive">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                {% for key in records[0].keys() %}
+                                                    <th>{{ key }}</th>
+                                                {% endfor %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for record in records %}
+                                            <tr>
+                                                {% for key, value in record.items() %}
+                                                    <td>{{ value if value is not none else '-' }}</td>
+                                                {% endfor %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="empty-data">
+                                    <i class="fas fa-inbox"></i>
+                                    <p>لا توجد بيانات في هذا التقرير</p>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <tbody>
+                                        {% for key, value in preview_data.cached_data.items() %}
+                                        <tr>
+                                            <th style="width: 30%;">{{ key }}</th>
+                                            <td>
+                                                {% if value is mapping or value is iterable and value is not string %}
+                                                    <pre style="margin: 0; white-space: pre-wrap;">{{ value|tojson(indent=2) }}</pre>
+                                                {% else %}
+                                                    {{ value if value is not none else '-' }}
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            {{ preview_data.cached_data }}
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="empty-data">
+                        <i class="fas fa-inbox"></i>
+                        <p>لا توجد بيانات محفوظة في الذاكرة المؤقتة</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if context and (context.pm_reviewer or context.admin_reviewer) %}
+            <div class="approval-history">
+                <h4>
+                    <i class="fas fa-history me-2"></i>
+                    سجل المراجعة
+                </h4>
+                
+                {% if context.pm_reviewer %}
+                <div class="approval-history-item {% if context.pm_review_status == 'rejected' %}rejected{% endif %}">
+                    <i class="fas fa-user-tie text-primary"></i>
+                    <div>
+                        <strong>مراجعة مدير المشروع</strong>
+                        <span class="text-muted mx-2">-</span>
+                        <span>{{ context.pm_reviewer.full_name or context.pm_reviewer.username }}</span>
+                        {% if context.pm_reviewed_at %}
+                        <small class="text-muted d-block">{{ context.pm_reviewed_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        {% endif %}
+                        {% if context.pm_review_notes %}
+                        <p class="mt-2 mb-0 text-muted">{{ context.pm_review_notes }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if context.admin_reviewer %}
+                <div class="approval-history-item {% if context.admin_review_status == 'rejected' %}rejected{% endif %}">
+                    <i class="fas fa-user-shield text-success"></i>
+                    <div>
+                        <strong>مراجعة الإدارة</strong>
+                        <span class="text-muted mx-2">-</span>
+                        <span>{{ context.admin_reviewer.full_name or context.admin_reviewer.username }}</span>
+                        {% if context.admin_reviewed_at %}
+                        <small class="text-muted d-block">{{ context.admin_reviewed_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        {% endif %}
+                        {% if context.admin_review_notes %}
+                        <p class="mt-2 mb-0 text-muted">{{ context.admin_review_notes }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="action-buttons">
+            <a href="{{ url_for('main.reports_hub') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-right"></i>
+                العودة للتقارير
+            </a>
+            
+            {% if can_export %}
+            <a href="{{ url_for('unified_reports.export_pdf', context_id=preview_data.context_id) }}" class="btn btn-export-pdf">
+                <i class="fas fa-file-pdf"></i>
+                تصدير PDF
+            </a>
+            <a href="{{ url_for('unified_reports.export_excel', context_id=preview_data.context_id) }}" class="btn btn-export-excel">
+                <i class="fas fa-file-excel"></i>
+                تصدير Excel
+            </a>
+            {% endif %}
+            
+            {% if can_submit %}
+            <form action="{{ url_for('unified_reports.submit_report', context_id=preview_data.context_id) }}" method="POST" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-submit" onclick="return confirm('هل أنت متأكد من إرسال التقرير للمراجعة؟')">
+                    <i class="fas fa-paper-plane"></i>
+                    إرسال للمراجعة
+                </button>
+            </form>
+            {% endif %}
+            
+            {% if can_approve %}
+            <button type="button" class="btn btn-approve" data-bs-toggle="modal" data-bs-target="#approveModal">
+                <i class="fas fa-check-circle"></i>
+                اعتماد
+            </button>
+            {% endif %}
+            
+            {% if can_reject %}
+            <button type="button" class="btn btn-reject" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                <i class="fas fa-times-circle"></i>
+                رفض
+            </button>
+            {% endif %}
+            
+            <button type="button" class="btn btn-outline-primary" onclick="window.print()">
+                <i class="fas fa-print"></i>
+                طباعة
+            </button>
+        </div>
+    </div>
+</div>
+
+{% if can_approve %}
+<div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="approveModalLabel">
+                    <i class="fas fa-check-circle me-2"></i>
+                    اعتماد التقرير
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <form action="{{ url_for('unified_reports.approve_report', context_id=preview_data.context_id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <p>هل أنت متأكد من اعتماد هذا التقرير؟</p>
+                    <div class="mb-3">
+                        <label for="approveNotes" class="form-label">ملاحظات (اختياري)</label>
+                        <textarea class="form-control" id="approveNotes" name="notes" rows="3" placeholder="أضف ملاحظات إن وجدت..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check me-1"></i>
+                        اعتماد التقرير
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if can_reject %}
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="rejectModalLabel">
+                    <i class="fas fa-times-circle me-2"></i>
+                    رفض التقرير
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <form action="{{ url_for('unified_reports.reject_report', context_id=preview_data.context_id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        سيتم إعلام مقدم التقرير بسبب الرفض.
+                    </div>
+                    <div class="mb-3">
+                        <label for="rejectReason" class="form-label">سبب الرفض <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="rejectReason" name="reason" rows="3" required placeholder="يرجى توضيح سبب رفض التقرير..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times me-1"></i>
+                        رفض التقرير
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
