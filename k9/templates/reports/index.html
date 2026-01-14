@@ -234,6 +234,13 @@ function generateReport(reportType) {
         form.method = 'POST';
         form.action = '{{ url_for("main.reports_generate") }}';
         
+        // Add CSRF token
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = '{{ csrf_token() }}';
+        form.appendChild(csrfInput);
+        
         const reportTypeInput = document.createElement('input');
         reportTypeInput.type = 'hidden';
         reportTypeInput.name = 'report_type';
