@@ -119,33 +119,33 @@ ROLE_PERMISSIONS = {
     ],
     
     RoleType.PROJECT_MANAGER: [
-        # Dogs module
-        "dogs.view", "dogs.create", "dogs.edit", "dogs.export",
-        # Employees module
-        "employees.view", "employees.create", "employees.edit", "employees.delete",
-        # Projects module (includes incidents, suspicions, evaluations)
-        "projects.view", "projects.create", "projects.edit", "projects.delete",
+        # Dogs module - full access
+        "dogs.view", "dogs.create", "dogs.edit", "dogs.export", "dogs.delete",
+        # Employees module - full access
+        "employees.view", "employees.create", "employees.edit", "employees.delete", "employees.export",
+        # Projects module (includes incidents, suspicions, evaluations) - full access
+        "projects.view", "projects.create", "projects.edit", "projects.delete", "projects.manage_team",
         "incidents.view", "incidents.create", "incidents.edit", "incidents.resolve",
-        "suspicions.view", "suspicions.create",
-        "evaluations.view", "evaluations.create",
-        # Training module
-        "training.view", "training.create", "training.edit",
-        # Veterinary module
-        "veterinary.view", "veterinary.create", "veterinary.edit",
-        # Breeding module
-        "breeding.view", "breeding.create", "breeding.edit",
-        # Production module
-        "production.view", "production.create",
-        # Reports module
-        "reports.view", "reports.create", "reports.approve", "reports.export",
+        "suspicions.view", "suspicions.create", "suspicions.edit",
+        "evaluations.view", "evaluations.create", "evaluations.edit",
+        # Training module - full access
+        "training.view", "training.create", "training.edit", "training.delete",
+        # Veterinary module - full access
+        "veterinary.view", "veterinary.create", "veterinary.edit", "veterinary.delete",
+        # Breeding module - full access
+        "breeding.view", "breeding.create", "breeding.edit", "breeding.delete",
+        # Production module - full access
+        "production.view", "production.create", "production.edit",
+        # Reports module - full access
+        "reports.view", "reports.create", "reports.edit", "reports.approve", "reports.export",
         "reports.attendance.view",
         # Schedule module - all schedule operations
         "schedule.view", "schedule.create", "schedule.edit", "schedule.approve",
         "schedule.management.view", "schedule.management.create", 
         "schedule.management.edit", "schedule.management.delete",
-        # Shifts module
-        "shifts.view", "shifts.create", "shifts.edit",
-        # Tasks module
+        # Shifts module - full access
+        "shifts.view", "shifts.create", "shifts.edit", "shifts.delete",
+        # Tasks module - full access
         "tasks.management.view", "tasks.management.create", 
         "tasks.management.edit", "tasks.management.delete",
         "tasks.my_tasks.view", "tasks.my_tasks.start", "tasks.my_tasks.complete",
@@ -153,8 +153,8 @@ ROLE_PERMISSIONS = {
         "pm.dashboard", "pm.review_reports", "pm.manage_project",
         "pm.project.view", "pm.team.view", "pm.approvals.view",
         "pm.reports.approve", "pm.reports.reject", "pm.reports.export",
-        # Handler daily
-        "handler_daily.view",
+        # Handler daily - full access
+        "handler_daily.view", "handler_daily.create", "handler_daily.edit",
         # Supervisor - full access to schedules and reports
         "supervisor.reports.view", "supervisor.reports.approve", "supervisor.reports.reject",
         "supervisor.schedules.view", "supervisor.schedules.create", 
