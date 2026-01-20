@@ -17,11 +17,42 @@ from bidi.algorithm import get_display
 import re
 from k9.utils.permissions_new import _is_admin_mode
 
-ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx'}
+import magic
 
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx'}
+ALLOWED_MIME_TYPES = {
+    'text/plain',
+    'application/pdf',
+    'image/png',
+    'image/jpeg',
+    'image/gif',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+}
+
+def allowed_file(file_storage):
+    """
+    Check if a file is allowed by both extension and content.
+    :param file_storage: A FileStorage object from Flask.
+    """
+    if not file_storage or not file_storage.filename:
+        return False
+
+    # Check the extension
+    extension = file_storage.filename.rsplit('.', 1)[1].lower() if '.' in file_storage.filename else ''
+    if extension not in ALLOWED_EXTENSIONS:
+        return False
+
+    # Check the content
+    try:
+        mime_type = magic.from_buffer(file_storage.read(2048), mime=True)
+        file_storage.seek(0)  # Reset file pointer after reading
+        if mime_type not in ALLOWED_MIME_TYPES:
+            return False
+    except Exception:
+        return False
+
+    return True
 
 def log_audit(user_id, action, target_type, target_id, description=None, old_values=None, new_values=None):
     """Log an audit trail entry"""

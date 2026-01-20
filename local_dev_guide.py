@@ -249,18 +249,21 @@ flask db upgrade
 from app import app, db
 from k9.models.models import User, UserRole
 from werkzeug.security import generate_password_hash
+import secrets
 
 with app.app_context():
     admin = User()
     admin.username = 'admin'
     admin.email = 'admin@k9ops.local'
     admin.full_name = 'System Administrator'
-    admin.password_hash = generate_password_hash('password123')
+    # Generate a secure password for manual setup
+    manual_password = secrets.token_urlsafe(12)
+    admin.password_hash = generate_password_hash(manual_password)
     admin.role = UserRole.GENERAL_ADMIN
     admin.active = True
     db.session.add(admin)
     db.session.commit()
-    print('Admin user created: admin / password123')
+    print(f'Admin user created: admin / {manual_password}')
 "
 ```
 
@@ -290,7 +293,7 @@ flask run --host=0.0.0.0 --port=5000
 2. Navigate to: http://localhost:5000
 3. Login with:
    - **Username**: admin
-   - **Password**: password123
+   - **Password**: [Generated in Step 8]
 
 ## VS Code Setup
 
@@ -523,9 +526,9 @@ curl http://localhost:5000/
 
 **Default Login:**
 - Username: `admin`
-- Password: `password123`
+- Password: `[Generated during setup]`
 
-**⚠️ Important:** Change the default admin password after first login!
+**⚠️ Important:** The admin password is randomly generated for security. Please save it from the setup script output.
 """
 
     return guide

@@ -587,7 +587,7 @@ def dogs_add():
             photo_filename = None
             if 'photo' in request.files and request.files['photo'].filename:
                 photo = request.files['photo']
-                if photo.filename and allowed_file(photo.filename):
+                if photo.filename and allowed_file(photo):
                     # Check file size
                     photo.seek(0, os.SEEK_END)
                     file_size = photo.tell()
@@ -607,7 +607,7 @@ def dogs_add():
             birth_cert_filename = None
             if 'birth_certificate' in request.files and request.files['birth_certificate'].filename:
                 cert = request.files['birth_certificate']
-                if cert.filename and allowed_file(cert.filename):
+                if cert.filename and allowed_file(cert):
                     # Check file size
                     cert.seek(0, os.SEEK_END)
                     file_size = cert.tell()
@@ -718,7 +718,7 @@ def dogs_edit(dog_id):
             # Handle photo upload
             if 'photo' in request.files and request.files['photo'].filename != '':
                 photo = request.files['photo']
-                if allowed_file(photo.filename):
+                if allowed_file(photo):
                     # Check file size
                     photo.seek(0, os.SEEK_END)
                     file_size = photo.tell()
@@ -743,7 +743,7 @@ def dogs_edit(dog_id):
             # Handle birth certificate upload
             if 'birth_certificate' in request.files and request.files['birth_certificate'].filename != '':
                 birth_cert = request.files['birth_certificate']
-                if allowed_file(birth_cert.filename):
+                if allowed_file(birth_cert):
                     # Check file size
                     birth_cert.seek(0, os.SEEK_END)
                     file_size = birth_cert.tell()
@@ -877,7 +877,7 @@ def employees_add():
             employee_photo_filename = None
             if 'employee_photo' in request.files and request.files['employee_photo'].filename:
                 photo = request.files['employee_photo']
-                if photo.filename and allowed_file(photo.filename):
+                if photo.filename and allowed_file(photo):
                     # Check file size
                     photo.seek(0, os.SEEK_END)
                     file_size = photo.tell()
@@ -897,7 +897,7 @@ def employees_add():
             id_card_photo_filename = None
             if 'id_card_photo' in request.files and request.files['id_card_photo'].filename:
                 id_card = request.files['id_card_photo']
-                if id_card.filename and allowed_file(id_card.filename):
+                if id_card.filename and allowed_file(id_card):
                     # Check file size
                     id_card.seek(0, os.SEEK_END)
                     file_size = id_card.tell()
@@ -927,7 +927,7 @@ def employees_add():
                 
                 for i, (doc_type, doc_file) in enumerate(zip(document_types, document_files)):
                     if doc_file and doc_file.filename:
-                        if allowed_file(doc_file.filename):
+                        if allowed_file(doc_file):
                             # Check document file size
                             doc_file.seek(0, os.SEEK_END)
                             file_size = doc_file.tell()
