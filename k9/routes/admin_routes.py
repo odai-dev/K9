@@ -1508,97 +1508,29 @@ def get_pending_reports_count():
     })
 
 
-@admin_bp.route('/reports/handler/<report_id>/export/pdf')
+@admin_bp.route('/reports/<report_type>/<report_id>/export/<export_format>')
 @login_required
 @admin_required
-def export_handler_report_pdf(report_id):
-    """تصدير تقرير السائس اليومي إلى PDF - الإدارة العامة"""
+def export_report(report_type, report_id, export_format):
+    """Unified report export route for Admins."""
     from k9.services.report_export_service import ReportExportService
     from flask import send_file
-    
-    report = HandlerReport.query.get_or_404(report_id)
-    
-    pdf_buffer = ReportExportService.export_handler_report_to_pdf(report_id)
-    if not pdf_buffer:
+
+    # Permission check
+    if not has_permission("admin.reports.export"):
+        return redirect("/unauthorized")
+
+    buffer, filename = ReportExportService.unified_export_report(report_type.upper(), report_id, export_format)
+
+    if not buffer or not filename:
         flash('فشل في تصدير التقرير', 'error')
         return redirect(url_for('admin.dashboard'))
+
+    mimetype = 'application/pdf' if export_format == 'pdf' else 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     
-    filename = f"handler_report_{report.date.strftime('%Y%m%d')}_{report.dog.code if report.dog else 'unknown'}.pdf"
     return send_file(
-        pdf_buffer,
-        mimetype='application/pdf',
-        as_attachment=True,
-        download_name=filename
-    )
-
-
-@admin_bp.route('/reports/handler/<report_id>/export/excel')
-@login_required
-@admin_required
-def export_handler_report_excel(report_id):
-    """تصدير تقرير السائس اليومي إلى Excel - الإدارة العامة"""
-    from k9.services.report_export_service import ReportExportService
-    from flask import send_file
-    
-    report = HandlerReport.query.get_or_404(report_id)
-    
-    excel_buffer = ReportExportService.export_handler_report_to_excel(report_id)
-    if not excel_buffer:
-        flash('فشل في تصدير التقرير', 'error')
-        return redirect(url_for('admin.dashboard'))
-    
-    filename = f"handler_report_{report.date.strftime('%Y%m%d')}_{report.dog.code if report.dog else 'unknown'}.xlsx"
-    return send_file(
-        excel_buffer,
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        as_attachment=True,
-        download_name=filename
-    )
-
-
-@admin_bp.route('/reports/shift/<report_id>/export/pdf')
-@login_required
-@admin_required
-def export_shift_report_pdf(report_id):
-    """تصدير تقرير الوردية إلى PDF - الإدارة العامة"""
-    from k9.services.report_export_service import ReportExportService
-    from flask import send_file
-    
-    report = ShiftReport.query.get_or_404(report_id)
-    
-    pdf_buffer = ReportExportService.export_shift_report_to_pdf(report_id)
-    if not pdf_buffer:
-        flash('فشل في تصدير التقرير', 'error')
-        return redirect(url_for('admin.dashboard'))
-    
-    filename = f"shift_report_{report.date.strftime('%Y%m%d')}_{report.dog.code if report.dog else 'unknown'}.pdf"
-    return send_file(
-        pdf_buffer,
-        mimetype='application/pdf',
-        as_attachment=True,
-        download_name=filename
-    )
-
-
-@admin_bp.route('/reports/shift/<report_id>/export/excel')
-@login_required
-@admin_required
-def export_shift_report_excel(report_id):
-    """تصدير تقرير الوردية إلى Excel - الإدارة العامة"""
-    from k9.services.report_export_service import ReportExportService
-    from flask import send_file
-    
-    report = ShiftReport.query.get_or_404(report_id)
-    
-    excel_buffer = ReportExportService.export_shift_report_to_excel(report_id)
-    if not excel_buffer:
-        flash('فشل في تصدير التقرير', 'error')
-        return redirect(url_for('admin.dashboard'))
-    
-    filename = f"shift_report_{report.date.strftime('%Y%m%d')}_{report.dog.code if report.dog else 'unknown'}.xlsx"
-    return send_file(
-        excel_buffer,
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        buffer,
+        mimetype=mimetype,
         as_attachment=True,
         download_name=filename
     )

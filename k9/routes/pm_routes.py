@@ -837,132 +837,46 @@ def reject_caretaker(log_id):
     return redirect(url_for('pm.pending_approvals'))
 
 
-@pm_bp.route('/reports/handler/<report_id>/export/pdf')
+@pm_bp.route('/reports/<report_type>/<report_id>/export/<export_format>')
 @login_required
 @require_pm_project
-def export_handler_report_pdf(report_id):
-    """تصدير تقرير السائس اليومي إلى PDF"""
+def export_report(report_type, report_id, export_format):
+    """Unified report export route for PMs."""
     from k9.services.report_export_service import ReportExportService
     from k9.services.access_audit_service import log_file_download
     from flask import send_file
-    
+
     project = get_pm_project()
     if not project:
         flash('لم يتم العثور على المشروع', 'error')
         return redirect(url_for('main.index'))
-    
-    # Fetch report with project scope to prevent unauthorized access
-    report = HandlerReport.query.filter_by(id=report_id, project_id=project.id).first_or_404()
-    
-    pdf_buffer = ReportExportService.export_handler_report_to_pdf(report_id)
-    if not pdf_buffer:
-        log_file_download('pdf_report', f'handler_report_{report_id}', report_id, outcome=AccessOutcome.FAILURE)
-        flash('فشل في تصدير التقرير', 'error')
-        return redirect(url_for('pm.pending_approvals'))
-    
-    filename = f"handler_report_{report.date.strftime('%Y%m%d')}_{report.dog.code if report.dog else 'unknown'}.pdf"
-    log_file_download('pdf_report', filename, report_id, outcome=AccessOutcome.SUCCESS)
-    
-    return send_file(
-        pdf_buffer,
-        mimetype='application/pdf',
-        as_attachment=True,
-        download_name=filename
-    )
 
-
-@pm_bp.route('/reports/handler/<report_id>/export/excel')
-@login_required
-@require_pm_project
-def export_handler_report_excel(report_id):
-    """تصدير تقرير السائس اليومي إلى Excel"""
+    # Permission check
     if not has_permission("pm.reports.export"):
         return redirect("/unauthorized")
-    
-    from k9.services.report_export_service import ReportExportService
-    from k9.services.access_audit_service import log_file_download
-    from flask import send_file
-    
-    project = get_pm_project()
-    if not project:
-        flash('لم يتم العثور على المشروع', 'error')
-        return redirect(url_for('main.index'))
-    
-    # Fetch report with project scope to prevent unauthorized access
-    report = HandlerReport.query.filter_by(id=report_id, project_id=project.id).first_or_404()
-    
-    excel_buffer = ReportExportService.export_handler_report_to_excel(report_id)
-    if not excel_buffer:
-        log_file_download('excel_report', f'handler_report_{report_id}', report_id, outcome=AccessOutcome.FAILURE)
+
+    # Verify report belongs to the PM's project
+    report_model = ReportExportService.REPORT_TYPE_MODELS.get(report_type.upper())
+    if not report_model:
+        flash('نوع تقرير غير صالح', 'error')
+        return redirect(url_for('pm.pending_approvals'))
+
+    report = report_model.query.filter_by(id=report_id, project_id=project.id).first_or_404()
+
+    buffer, filename = ReportExportService.unified_export_report(report_type.upper(), report_id, export_format)
+
+    if not buffer or not filename:
+        log_file_download(f'{export_format}_report', f'{report_type}_report_{report_id}', report_id, outcome=AccessOutcome.FAILURE)
         flash('فشل في تصدير التقرير', 'error')
         return redirect(url_for('pm.pending_approvals'))
-    
-    filename = f"handler_report_{report.date.strftime('%Y%m%d')}_{report.dog.code if report.dog else 'unknown'}.xlsx"
-    log_file_download('excel_report', filename, report_id, outcome=AccessOutcome.SUCCESS)
+
+    log_file_download(f'{export_format}_report', filename, report_id, outcome=AccessOutcome.SUCCESS)
+
+    mimetype = 'application/pdf' if export_format == 'pdf' else 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     
     return send_file(
-        excel_buffer,
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        as_attachment=True,
-        download_name=filename
-    )
-
-
-@pm_bp.route('/reports/shift/<report_id>/export/pdf')
-@login_required
-@require_pm_project
-def export_shift_report_pdf(report_id):
-    """تصدير تقرير الوردية إلى PDF"""
-    from k9.services.report_export_service import ReportExportService
-    from flask import send_file
-    
-    project = get_pm_project()
-    if not project:
-        flash('لم يتم العثور على المشروع', 'error')
-        return redirect(url_for('main.index'))
-    
-    # Fetch report with project scope to prevent unauthorized access
-    report = ShiftReport.query.filter_by(id=report_id, project_id=project.id).first_or_404()
-    
-    pdf_buffer = ReportExportService.export_shift_report_to_pdf(report_id)
-    if not pdf_buffer:
-        flash('فشل في تصدير التقرير', 'error')
-        return redirect(url_for('pm.pending_approvals'))
-    
-    filename = f"shift_report_{report.date.strftime('%Y%m%d')}_{report.dog.code if report.dog else 'unknown'}.pdf"
-    return send_file(
-        pdf_buffer,
-        mimetype='application/pdf',
-        as_attachment=True,
-        download_name=filename
-    )
-
-
-@pm_bp.route('/reports/shift/<report_id>/export/excel')
-@login_required
-@require_pm_project
-def export_shift_report_excel(report_id):
-    """تصدير تقرير الوردية إلى Excel"""
-    from k9.services.report_export_service import ReportExportService
-    from flask import send_file
-    
-    project = get_pm_project()
-    if not project:
-        flash('لم يتم العثور على المشروع', 'error')
-        return redirect(url_for('main.index'))
-    
-    # Fetch report with project scope to prevent unauthorized access
-    report = ShiftReport.query.filter_by(id=report_id, project_id=project.id).first_or_404()
-    
-    excel_buffer = ReportExportService.export_shift_report_to_excel(report_id)
-    if not excel_buffer:
-        flash('فشل في تصدير التقرير', 'error')
-        return redirect(url_for('pm.pending_approvals'))
-    
-    filename = f"shift_report_{report.date.strftime('%Y%m%d')}_{report.dog.code if report.dog else 'unknown'}.xlsx"
-    return send_file(
-        excel_buffer,
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        buffer,
+        mimetype=mimetype,
         as_attachment=True,
         download_name=filename
     )

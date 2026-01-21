@@ -1,0 +1,75 @@
+INFO:k9.utils.permissions_v2_migration:Migration not needed or already complete
+DEBUG:tzlocal:/etc/timezone found, contents:
+ Etc/UTC
+
+DEBUG:tzlocal:/etc/localtime found
+DEBUG:tzlocal:2 found:
+ {'/etc/timezone': 'Etc/UTC', '/etc/localtime is a symlink to': 'Etc/UTC'}
+INFO:apscheduler.scheduler:Scheduler started
+DEBUG:apscheduler.scheduler:Looking for jobs to run
+DEBUG:apscheduler.scheduler:No jobs; waiting until a job is added
+INFO:apscheduler.scheduler:Added job "Auto Lock Yesterday Schedules" to job store "default"
+INFO:apscheduler.scheduler:Added job "Cleanup Old Notifications" to job store "default"
+WARNING: SESSION_SECRET not set. Using temporary session key.
+Set SESSION_SECRET environment variable for production!
+✓ Database tables created successfully
+✓ V2 Permission roles seeded successfully
+✓ V2 Permission migration check completed
+✓ V2 Permission context processor registered
+✓ Training reports registered successfully
+✓ Cleaning API registered successfully
+✓ Excretion API registered successfully
+✓ Deworming API registered successfully
+✓ Breeding Training Activity API registered successfully
+✓ MFA routes registered successfully
+✓ Password reset routes registered successfully
+✓ Unified breeding feeding reports registered successfully
+✓ Unified breeding checkup reports registered successfully
+✓ Unified veterinary reports registered successfully
+✓ Caretaker daily reports registered successfully
+✓ Legacy breeding reports UI registered successfully
+✓ Legacy breeding reports APIs registered successfully
+✓ Handler daily system registered successfully
+✓ Project Manager routes registered successfully
+⚠ Warning: Could not register unified reports routes: name 'Tuple' is not defined
+✓ Dashboard API routes registered successfully
+✓ Security middleware initialized successfully
+✓ Backup scheduler started
+⚠ Automated backup not scheduled: disabled in settings
+✓ Auto-lock schedules job scheduled at 23:59
+✓ Notification cleanup job scheduled (weekly on Monday 2:00 AM)
+ * Serving Flask app 'app.py'
+DEBUG:apscheduler.scheduler:Looking for jobs to run
+DEBUG:apscheduler.scheduler:Next wakeup is due at 2026-01-20 23:59:00+00:00 (in 2170.170686 seconds)
+ * Debug mode: off
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:8080
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:24:41] "[33mGET /login HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:25:47] "GET / HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:25:47] "GET /static/js/api-client.js HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:25:47] "GET /static/js/chart-utils.js HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:25:47] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:25:47] "GET /static/css/style.css HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:27:08] "[33mGET /login HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:28:08] "[33mGET /login HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:30:24] "GET /auth/login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:30:24] "GET /static/img/company_logo.png HTTP/1.1" 200 -
+WARNING:app:Auth attempt: POST /auth/login from 127.0.0.1 - Status: 200
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:30:25] "POST /auth/login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:30:25] "[36mGET /static/img/company_logo.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:30:25] "[33mGET /pm/reports/pending HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:31:24] "GET /auth/login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:31:24] "GET /static/img/company_logo.png HTTP/1.1" 200 -
+WARNING:app:Auth attempt: POST /auth/login from 127.0.0.1 - Status: 200
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:31:25] "POST /auth/login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:31:25] "[36mGET /static/img/company_logo.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:31:25] "[33mGET /handler/reports/create HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:32:46] "GET /auth/login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:32:46] "GET /static/img/company_logo.png HTTP/1.1" 200 -
+WARNING:app:Auth attempt: POST /auth/login from 127.0.0.1 - Status: 200
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:32:46] "POST /auth/login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:32:46] "[36mGET /static/img/company_logo.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:32:46] "[32mGET /admin/reports/pending HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:32:46] "GET /auth/login?next=/admin/reports/pending HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:32:46] "[36mGET /static/img/company_logo.png HTTP/1.1[0m" 304 -

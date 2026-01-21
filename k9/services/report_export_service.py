@@ -41,6 +41,15 @@ from k9.utils.utils_pdf_rtl import rtl, register_arabic_fonts, get_arabic_font_n
 
 class ReportExportService:
     """Service for exporting reports to PDF and Excel"""
+
+    # Map report types to their corresponding models
+    REPORT_TYPE_MODELS = {
+        'HANDLER': HandlerReport,
+        'SHIFT': ShiftReport,
+        'TRAINER': BreedingTrainingActivity,
+        'VET': VeterinaryVisit,
+        'CARETAKER': CaretakerDailyLog
+    }
     
     # Arabic font path (using DejaVu Sans which supports Arabic)
     ARABIC_FONT_PATH = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
@@ -665,7 +674,57 @@ class ReportExportService:
             'NEEDS_VET': 'يحتاج بيطري',
         }
         return status_map.get(status, status)
-    
+
+    @staticmethod
+    def _get_report_data(report_type: str, report_id: str) -> Optional[object]:
+        """Fetch report data from the correct model."""
+        model = ReportExportService.REPORT_TYPE_MODELS.get(report_type.upper())
+        if not model:
+            return None
+        return model.query.get(report_id)
+
+    @staticmethod
+    def unified_export_report(report_type: str, report_id: str, export_format: str) -> Tuple[Optional[BytesIO], Optional[str]]:
+        """
+        Unified method to export any report to PDF or Excel.
+
+        Args:
+            report_type: The type of the report (e.g., 'HANDLER', 'SHIFT').
+            report_id: The ID of the report.
+            export_format: 'pdf' or 'excel'.
+
+        Returns:
+            A tuple containing the BytesIO buffer and the filename, or (None, None) if failed.
+        """
+        report = ReportExportService._get_report_data(report_type, report_id)
+        if not report:
+            return None, None
+
+        filename_date = report.date.strftime('%Y%m%d')
+        dog_code = report.dog.code if hasattr(report, 'dog') and report.dog else 'unknown'
+
+        base_filename = f"{report_type.lower()}_report_{filename_date}_{dog_code}"
+
+        if export_format == 'pdf':
+            if report_type == 'HANDLER':
+                buffer = ReportExportService.export_handler_report_to_pdf(report_id)
+                return buffer, f"{base_filename}.pdf"
+            elif report_type == 'SHIFT':
+                buffer = ReportExportService.export_shift_report_to_pdf(report_id)
+                return buffer, f"{base_filename}.pdf"
+            # Add other report types here as their PDF export functions are created
+
+        elif export_format == 'excel':
+            if report_type == 'HANDLER':
+                buffer = ReportExportService.export_handler_report_to_excel(report_id)
+                return buffer, f"{base_filename}.xlsx"
+            elif report_type == 'SHIFT':
+                buffer = ReportExportService.export_shift_report_to_excel(report_id)
+                return buffer, f"{base_filename}.xlsx"
+            # Add other report types here as their Excel export functions are created
+
+        return None, None
+
     @staticmethod
     def export_shift_report_to_pdf(report_id: str) -> Optional[BytesIO]:
         """
