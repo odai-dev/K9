@@ -73,3 +73,7 @@ INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:32:46] "[36mGET /static/img/company
 INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:32:46] "[32mGET /admin/reports/pending HTTP/1.1[0m" 302 -
 INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:32:46] "GET /auth/login?next=/admin/reports/pending HTTP/1.1" 200 -
 INFO:werkzeug:127.0.0.1 - - [20/Jan/2026 23:32:46] "[36mGET /static/img/company_logo.png HTTP/1.1[0m" 304 -
+DEBUG:apscheduler.scheduler:Looking for jobs to run
+INFO:apscheduler.executors.default:Running job "Auto Lock Yesterday Schedules (trigger: cron[hour='23', minute='59'], next run at: 2026-01-20 23:59:00 UTC)" (scheduled at 2026-01-20 23:59:00+00:00)
+DEBUG:apscheduler.scheduler:Next wakeup is due at 2026-01-21 23:59:00+00:00 (in 86399.950749 seconds)
+INFO:apscheduler.executors.default:Job "Auto Lock Yesterday Schedules (trigger: cron[hour='23', minute='59'], next run at: 2026-01-21 23:59:00 UTC)" executed successfully
