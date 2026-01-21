@@ -30,6 +30,7 @@ class SetupHelper:
         self.is_windows = platform.system() == 'Windows'
         self.is_linux = platform.system() == 'Linux'
         self.is_mac = platform.system() == 'Darwin'
+        self.admin_password = None
         
     def print_header(self, text):
         """Print a formatted header"""
@@ -391,8 +392,11 @@ LANGUAGES=ar,en
                         key, value = line.split('=', 1)
                         env[key] = value
                         
+        # Generate a secure random password
+        self.admin_password = secrets.token_urlsafe(12)
+
         # Create admin user script
-        admin_script = '''
+        admin_script = f'''
 from app import app, db
 from k9.models.models import User, UserRole
 from werkzeug.security import generate_password_hash
@@ -400,13 +404,13 @@ from werkzeug.security import generate_password_hash
 with app.app_context():
     username = "admin"
     email = "admin@k9ops.local"
-    password = "password123"
+    password = "{self.admin_password}"
     full_name = "System Administrator"
     
     existing_user = User.query.filter_by(username=username).first()
     
     if existing_user:
-        print("Admin user already exists, updating...")
+        print("Admin user already exists, updating password and details...")
         user = existing_user
         user.email = email
         user.full_name = full_name
@@ -425,10 +429,9 @@ with app.app_context():
         db.session.add(user)
     
     db.session.commit()
-    print(f"✓ Admin user ready!")
-    print(f"  Username: {username}")
-    print(f"  Password: {password}")
-    print(f"  Email: {email}")
+    print("✓ Admin user ready!")
+    print(f"  Username: {{username}}")
+    print(f"  Email: {{email}}")
 '''
         
         success, output, error = self.run_command(
@@ -437,13 +440,14 @@ with app.app_context():
         )
         
         if success:
-            self.print_success("Admin user created successfully")
+            self.print_success("Admin user created/updated successfully")
             self.print_info("Username: admin")
-            self.print_info("Password: password123")
-            self.print_warning("Remember to change the password after first login!")
+            self.print_info(f"Password: {self.admin_password}")
+            self.print_warning("Please save this password securely. It will not be shown again.")
             return True
         else:
             self.print_error(f"Failed to create admin user: {error}")
+            self.print_info(f"Output: {output}")
             return False
             
     def verify_installation(self):
@@ -528,11 +532,11 @@ except Exception as e:
 
 4. Login with:
    {Colors.BLUE}Username: admin{Colors.ENDC}
-   {Colors.BLUE}Password: password123{Colors.ENDC}
+   {Colors.BLUE}Password: {self.admin_password or '[see password above]'}{Colors.ENDC}
 
 {Colors.BOLD}Important Notes:{Colors.ENDC}
 • Environment variables are in .env file
-• Change admin password after first login
+• The admin password has been randomly generated for security.
 • Upload directory: {self.project_root}/uploads
 • Database migrations are in migrations/ folder
 

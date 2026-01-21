@@ -7,8 +7,8 @@ from flask_login import login_user
 # Import the app and database
 from app import app, db
 from k9.models.models import (
-    User, Project, Dog, FeedingLog, SubPermission, UserRole, 
-    PermissionType, BodyConditionScale, PrepMethod, DogGender,
+    User, Project, Dog, FeedingLog, UserRole,
+    BodyConditionScale, PrepMethod, DogGender,
     VeterinaryVisit, VisitType, Employee, EmployeeRole, CaretakerDailyLog,
     AuditLog
 )
@@ -44,7 +44,6 @@ def db_session(app_instance):
         db.session.query(FeedingLog).delete()
         db.session.query(CaretakerDailyLog).delete()
         db.session.query(VeterinaryVisit).delete()
-        db.session.query(SubPermission).delete()
         db.session.query(Dog).delete()
         db.session.query(Project).delete()
         db.session.query(AuditLog).delete()

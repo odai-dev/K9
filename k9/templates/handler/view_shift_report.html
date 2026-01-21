@@ -86,12 +86,12 @@
                     <ul class="dropdown-menu">
                         <li>
                             {% if is_admin() %}
-                            <a class="dropdown-item" href="{{ url_for('admin.export_shift_report_pdf', report_id=shift_report.id) }}">
+                            <a class="dropdown-item" href="{{ url_for('admin.export_report', report_type='shift', report_id=shift_report.id, export_format='pdf') }}">
                                 <i class="fas fa-file-pdf me-2 text-danger"></i>
                                 تصدير PDF
                             </a>
                             {% else %}
-                            <a class="dropdown-item" href="{{ url_for('pm.export_shift_report_pdf', report_id=shift_report.id) }}">
+                            <a class="dropdown-item" href="{{ url_for('pm.export_report', report_type='shift', report_id=shift_report.id, export_format='pdf') }}">
                                 <i class="fas fa-file-pdf me-2 text-danger"></i>
                                 تصدير PDF
                             </a>
@@ -99,12 +99,12 @@
                         </li>
                         <li>
                             {% if is_admin() %}
-                            <a class="dropdown-item" href="{{ url_for('admin.export_shift_report_excel', report_id=shift_report.id) }}">
+                            <a class="dropdown-item" href="{{ url_for('admin.export_report', report_type='shift', report_id=shift_report.id, export_format='excel') }}">
                                 <i class="fas fa-file-excel me-2 text-success"></i>
                                 تصدير Excel
                             </a>
                             {% else %}
-                            <a class="dropdown-item" href="{{ url_for('pm.export_shift_report_excel', report_id=shift_report.id) }}">
+                            <a class="dropdown-item" href="{{ url_for('pm.export_report', report_type='shift', report_id=shift_report.id, export_format='excel') }}">
                                 <i class="fas fa-file-excel me-2 text-success"></i>
                                 تصدير Excel
                             </a>
