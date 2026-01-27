@@ -25,14 +25,24 @@ handler_bp = Blueprint('handler', __name__, url_prefix='/handler')
 
 
 # Whitelist of endpoints allowed when handler is blocked due to pending shift reports
+# CRITICAL: This list must be synchronized with HANDLER_ALLOWED_ENDPOINTS in app.py
 ALLOWED_ENDPOINTS_WHEN_BLOCKED = {
+    # Shift report submission (required to unblock)
     'handler.new_shift_report',
     'handler.submit_shift_report', 
+    # View existing reports
     'handler.my_shift_reports',
     'handler.view_shift_report',
+    # The blocking page itself
     'handler.pending_reports_required',
+    # Profile access (optional per requirements)
+    'handler.profile',
+    # Authentication
     'auth.logout',
+    'auth.login',
+    # Static resources
     'static',
+    'uploaded_file',
 }
 
 

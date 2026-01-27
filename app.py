@@ -770,14 +770,22 @@ with app.app_context():
     # HANDLER SHIFT REPORT ENFORCEMENT (App-level)
     # Block handlers with pending shift reports from accessing the system
     # ========================================================================
+    # CRITICAL: This list must be synchronized with ALLOWED_ENDPOINTS_WHEN_BLOCKED in handler_routes.py
     HANDLER_ALLOWED_ENDPOINTS = {
+        # Shift report submission (required to unblock)
         'handler.new_shift_report',
         'handler.submit_shift_report',
+        # View existing reports
         'handler.my_shift_reports',
         'handler.view_shift_report',
+        # The blocking page itself
         'handler.pending_reports_required',
+        # Profile access (optional per requirements)
+        'handler.profile',
+        # Authentication
         'auth.logout',
         'auth.login',
+        # Static resources
         'static',
         'uploaded_file',
     }
