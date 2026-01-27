@@ -406,25 +406,30 @@
 <div class="handler-quick-nav">
     <div class="container-fluid px-4">
         <div class="d-flex flex-wrap gap-2">
-            <!-- Dashboard -->
+            <!-- Dashboard - Always visible for handlers -->
             <a class="handler-quick-nav-btn {{ 'active' if request.endpoint == 'handler.dashboard' }}" href="{{ url_for('handler.dashboard') }}">
                 <i class="fas fa-tachometer-alt"></i>
                 <span>لوحة التحكم</span>
             </a>
             
-            <!-- My Reports -->
+            <!-- My Reports - Requires handler_daily.reports.view permission -->
+            {% if has_permission('handler_daily.reports.view') %}
             <a class="handler-quick-nav-btn {{ 'active' if request.endpoint == 'handler.my_reports' }}" href="{{ url_for('handler.my_reports') }}">
                 <i class="fas fa-file-alt"></i>
                 <span>تقاريري</span>
             </a>
+            {% endif %}
             
-            <!-- New Shift Report -->
+            <!-- New Shift Report - Requires handler_daily.reports.create permission -->
+            {% if has_permission('handler_daily.reports.create') %}
             <a class="handler-quick-nav-btn {{ 'active' if request.endpoint == 'handler.select_daily_report' }}" href="{{ url_for('handler.select_daily_report') }}">
                 <i class="fas fa-plus-circle"></i>
                 <span>تقرير جديد</span>
             </a>
+            {% endif %}
             
-            <!-- Tasks -->
+            <!-- Tasks - Requires tasks.view permission -->
+            {% if has_permission('tasks.view') %}
             <a class="handler-quick-nav-btn position-relative {{ 'active' if 'tasks' in request.endpoint|default('') }}" href="{{ url_for('tasks.handler_index') }}">
                 <i class="fas fa-tasks"></i>
                 <span>المهام</span>
@@ -432,8 +437,10 @@
                 <span class="badge bg-danger">{{ pending_tasks_count }}</span>
                 {% endif %}
             </a>
+            {% endif %}
             
-            <!-- Notifications -->
+            <!-- Notifications - Requires notifications.view permission -->
+            {% if has_permission('notifications.view') %}
             <a class="handler-quick-nav-btn position-relative {{ 'active' if request.endpoint == 'handler.notifications' }}" href="{{ url_for('handler.notifications') }}">
                 <i class="fas fa-bell"></i>
                 <span>الإشعارات</span>
@@ -441,8 +448,9 @@
                 <span class="badge bg-danger">{{ unread_count }}</span>
                 {% endif %}
             </a>
+            {% endif %}
             
-            <!-- Profile -->
+            <!-- Profile - Always visible for handlers -->
             <a class="handler-quick-nav-btn {{ 'active' if request.endpoint == 'handler.profile' }}" href="{{ url_for('handler.profile') }}">
                 <i class="fas fa-user-cog"></i>
                 <span>الملف الشخصي</span>

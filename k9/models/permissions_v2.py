@@ -173,8 +173,13 @@ ROLE_PERMISSIONS = {
         "reports.view", "reports.create",
         # Schedule module
         "schedule.view",
-        # Handler daily
-        "handler_daily.view", "handler_daily.create", "handler_daily.edit"
+        # Handler daily operations
+        "handler_daily.view", "handler_daily.create", "handler_daily.edit",
+        "handler_daily.reports.view", "handler_daily.reports.create",
+        # Tasks
+        "tasks.view",
+        # Notifications
+        "notifications.view"
     ],
     
     RoleType.VETERINARIAN: [

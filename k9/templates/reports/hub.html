@@ -24,8 +24,9 @@
         </div>
     </div>
 
-    <!-- Quick Stats Cards -->
+    <!-- Quick Stats Cards - Only show stats user has permission to see -->
     <div class="row mb-4">
+        {% if has_permission('dogs.view') %}
         <div class="col-md-3 col-sm-6 mb-3">
             <div class="stats-card bg-gradient-primary">
                 <div class="d-flex align-items-center">
@@ -39,6 +40,8 @@
                 </div>
             </div>
         </div>
+        {% endif %}
+        {% if has_permission('employees.view') %}
         <div class="col-md-3 col-sm-6 mb-3">
             <div class="stats-card bg-gradient-success">
                 <div class="d-flex align-items-center">
@@ -52,6 +55,8 @@
                 </div>
             </div>
         </div>
+        {% endif %}
+        {% if has_permission('training.view') %}
         <div class="col-md-3 col-sm-6 mb-3">
             <div class="stats-card bg-gradient-warning">
                 <div class="d-flex align-items-center">
@@ -65,6 +70,8 @@
                 </div>
             </div>
         </div>
+        {% endif %}
+        {% if has_permission('veterinary.view') %}
         <div class="col-md-3 col-sm-6 mb-3">
             <div class="stats-card bg-gradient-info">
                 <div class="d-flex align-items-center">
@@ -78,11 +85,13 @@
                 </div>
             </div>
         </div>
+        {% endif %}
     </div>
 
     <!-- Reports Categories -->
     <div class="row">
         <!-- Training Reports Section -->
+        {% if has_permission('training.view') %}
         <div class="col-lg-6 mb-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-warning text-dark">
@@ -106,8 +115,10 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
-        <!-- Breeding Reports Section -->
+        <!-- Breeding Reports Section - Show if user has any breeding-related permission -->
+        {% if has_permission('breeding.view') or has_permission('breeding.feeding.view') or has_permission('breeding.checkup.view') or has_permission('caretaker.reports.view') or has_permission('veterinary.view') %}
         <div class="col-lg-6 mb-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-success text-white">
@@ -118,6 +129,7 @@
                 </div>
                 <div class="card-body">
                     <div class="list-group list-group-flush">
+                        {% if has_permission('breeding.feeding.view') or has_permission('breeding.view') %}
                         <a href="{{ url_for('unified_feeding_reports_ui.feeding') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                             <div>
                                 <i class="fas fa-utensils text-success me-2"></i>
@@ -127,6 +139,8 @@
                             </div>
                             <i class="fas fa-chevron-left"></i>
                         </a>
+                        {% endif %}
+                        {% if has_permission('breeding.checkup.view') or has_permission('breeding.view') %}
                         <a href="{{ url_for('unified_checkup_reports_ui.checkup') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                             <div>
                                 <i class="fas fa-stethoscope text-success me-2"></i>
@@ -136,6 +150,8 @@
                             </div>
                             <i class="fas fa-chevron-left"></i>
                         </a>
+                        {% endif %}
+                        {% if has_permission('caretaker.reports.view') or has_permission('breeding.view') %}
                         <a href="{{ url_for('caretaker_daily_reports_ui.caretaker_daily') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                             <div>
                                 <i class="fas fa-broom text-success me-2"></i>
@@ -145,6 +161,8 @@
                             </div>
                             <i class="fas fa-chevron-left"></i>
                         </a>
+                        {% endif %}
+                        {% if has_permission('veterinary.view') %}
                         <a href="{{ url_for('veterinary_reports_ui.veterinary') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                             <div>
                                 <i class="fas fa-user-md text-success me-2"></i>
@@ -154,12 +172,15 @@
                             </div>
                             <i class="fas fa-chevron-left"></i>
                         </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
+        {% endif %}
 
-        <!-- General Reports Section -->
+        <!-- General Reports Section - Only show if user has any report permission -->
+        {% if has_permission('dogs.view') or has_permission('employees.view') %}
         <div class="col-lg-6 mb-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-info text-white">
@@ -170,6 +191,7 @@
                 </div>
                 <div class="card-body">
                     <div class="list-group list-group-flush">
+                        {% if has_permission('dogs.view') %}
                         <a href="{{ url_for('main.reports_simple') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                             <div>
                                 <i class="fas fa-dog text-info me-2"></i>
@@ -179,6 +201,8 @@
                             </div>
                             <i class="fas fa-chevron-left"></i>
                         </a>
+                        {% endif %}
+                        {% if has_permission('employees.view') %}
                         <a href="{{ url_for('main.reports_simple') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                             <div>
                                 <i class="fas fa-users text-info me-2"></i>
@@ -188,10 +212,12 @@
                             </div>
                             <i class="fas fa-chevron-left"></i>
                         </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
+        {% endif %}
     </div>
 
     <!-- Export Formats Info -->

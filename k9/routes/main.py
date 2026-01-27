@@ -2903,12 +2903,14 @@ def project_evaluation_add(project_id):
 # Reports route
 @main_bp.route('/reports')
 @login_required
+@require_permission('reports.view')
 def reports_index():
     """Redirect to Reports Hub"""
     return redirect(url_for('main.reports_hub'))
 
 @main_bp.route('/reports/hub')
 @login_required
+@require_permission('reports.view')
 def reports_hub():
     """Centralized Reports Hub with all reporting sections"""
     # Calculate real statistics

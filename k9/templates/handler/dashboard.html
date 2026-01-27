@@ -127,7 +127,7 @@
 </div>
 
 <!-- Dogs Worked Today - Daily Reports Status -->
-{% if dogs_worked_today %}
+{% if dogs_worked_today and has_permission('handler_daily.reports.view') %}
 <div class="row mb-4">
     <div class="col-12">
         <div class="card border-0 shadow-sm">
@@ -136,10 +136,12 @@
                     <i class="fas fa-dog me-2"></i>
                     الكلاب المعمول معها اليوم - التقارير اليومية العامة
                 </h5>
+                {% if has_permission('handler_daily.reports.create') %}
                 <a href="{{ url_for('handler.select_daily_report') }}" class="btn btn-sm btn-success">
                     <i class="fas fa-file-alt me-1"></i>
                     إنشاء تقرير يومي عام
                 </a>
+                {% endif %}
             </div>
             <div class="card-body">
                 <div class="alert alert-info mb-3" role="alert">
@@ -285,11 +287,15 @@
                                     </td>
                                     <td>
                                         {% if not item.shift_report %}
+                                            {% if has_permission('handler_daily.reports.create') %}
                                             <a href="{{ url_for('handler.new_shift_report', schedule_item_id=item.id) }}" 
                                                class="btn btn-sm btn-primary">
                                                 <i class="fas fa-plus me-1"></i>
                                                 إنشاء تقرير الفترة
                                             </a>
+                                            {% else %}
+                                            <span class="badge bg-secondary">غير متاح</span>
+                                            {% endif %}
                                         {% else %}
                                             <div class="d-flex align-items-center">
                                                 {% if item.shift_report.status.value == 'DRAFT' %}
@@ -299,11 +305,13 @@
                                                 {% elif item.shift_report.status.value == 'APPROVED_BY_PM' %}
                                                     <span class="badge bg-success me-2">معتمد</span>
                                                 {% endif %}
+                                                {% if has_permission('handler_daily.reports.view') %}
                                                 <a href="{{ url_for('handler.view_shift_report', report_id=item.shift_report.id) }}" 
                                                    class="btn btn-sm btn-outline-primary">
                                                     <i class="fas fa-eye me-1"></i>
                                                     عرض
                                                 </a>
+                                                {% endif %}
                                             </div>
                                         {% endif %}
                                     </td>
@@ -369,11 +377,15 @@
                                 
                                 <div class="d-grid">
                                     {% if not item.shift_report %}
+                                        {% if has_permission('handler_daily.reports.create') %}
                                         <a href="{{ url_for('handler.new_shift_report', schedule_item_id=item.id) }}" 
                                            class="btn btn-primary">
                                             <i class="fas fa-plus me-1"></i>
                                             إنشاء تقرير الفترة
                                         </a>
+                                        {% else %}
+                                        <span class="badge bg-secondary">غير متاح</span>
+                                        {% endif %}
                                     {% else %}
                                         <div class="d-flex align-items-center justify-content-between">
                                             <div>
@@ -385,11 +397,13 @@
                                                     <span class="badge bg-success">معتمد</span>
                                                 {% endif %}
                                             </div>
+                                            {% if has_permission('handler_daily.reports.view') %}
                                             <a href="{{ url_for('handler.view_shift_report', report_id=item.shift_report.id) }}" 
                                                class="btn btn-sm btn-outline-primary">
                                                 <i class="fas fa-eye me-1"></i>
                                                 عرض التقرير
                                             </a>
+                                            {% endif %}
                                         </div>
                                     {% endif %}
                                 </div>
