@@ -6,7 +6,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from k9.models.models import User, UserRole, Employee, EmployeeRole, ProjectAssignment, Project
 from k9.utils.permissions_new import admin_required, require_permission, has_permission, grant_permission
-from k9.models.permissions_v2 import PermissionKey, PermissionOverride
+from k9.models.permissions_v2 import PermissionKey, PermissionOverride, ROLE_PERMISSIONS, RoleType
 from k9.services.permission_service import PermissionService
 from werkzeug.security import generate_password_hash
 from datetime import datetime
@@ -290,6 +290,52 @@ def reset_password(user_id):
                          user_role=user.role.value)
 
 
+def get_role_baseline_permissions(user_role):
+    """Get baseline permissions for a user's role from ROLE_PERMISSIONS mapping.
+    
+    Maps UserRole enum to RoleType and expands wildcard patterns to get all 
+    permission keys that are included in the role baseline.
+    """
+    role_mapping = {
+        UserRole.GENERAL_ADMIN: RoleType.GENERAL_ADMIN,
+        UserRole.PROJECT_MANAGER: RoleType.PROJECT_MANAGER,
+        UserRole.HANDLER: RoleType.HANDLER,
+        UserRole.TRAINER: RoleType.TRAINER,
+        UserRole.BREEDER: RoleType.BREEDER,
+        UserRole.VET: RoleType.VETERINARIAN,
+    }
+    
+    role_type = role_mapping.get(user_role)
+    if not role_type:
+        return set()
+    
+    role_permissions = ROLE_PERMISSIONS.get(role_type, [])
+    
+    all_permission_keys = set()
+    for attr_name in dir(PermissionKey):
+        if not attr_name.startswith('_'):
+            perm_key = getattr(PermissionKey, attr_name)
+            if isinstance(perm_key, str) and '.' in perm_key:
+                all_permission_keys.add(perm_key)
+    
+    baseline_permissions = set()
+    
+    for pattern in role_permissions:
+        if pattern == "*":
+            baseline_permissions = all_permission_keys.copy()
+            break
+        elif pattern.endswith(".*"):
+            module = pattern[:-2]
+            for perm_key in all_permission_keys:
+                if perm_key.startswith(module + "."):
+                    baseline_permissions.add(perm_key)
+        else:
+            if pattern in all_permission_keys:
+                baseline_permissions.add(pattern)
+    
+    return baseline_permissions
+
+
 def get_permission_categories():
     """Get all permission keys organized by module/category"""
     categories = {
@@ -406,6 +452,8 @@ def edit(user_id):
     
     permission_categories = get_permission_categories()
     
+    role_baseline_permissions = get_role_baseline_permissions(user.role)
+    
     current_overrides = {}
     overrides = PermissionOverride.query.filter_by(
         user_id=user.id,
@@ -419,6 +467,7 @@ def edit(user_id):
                          user=user,
                          employee=employee,
                          permission_categories=permission_categories,
+                         role_baseline_permissions=role_baseline_permissions,
                          current_overrides=current_overrides,
                          user_roles=UserRole)
 
@@ -427,7 +476,7 @@ def edit(user_id):
 @login_required
 @admin_required
 def save_permissions(user_id):
-    """حفظ صلاحيات المستخدم الإضافية"""
+    """حفظ صلاحيات المستخدم الإضافية (منح وحجب)"""
     if current_user.role != UserRole.GENERAL_ADMIN:
         return jsonify({'success': False, 'message': 'غير مصرح'}), 403
     
@@ -438,7 +487,8 @@ def save_permissions(user_id):
         if not data:
             return jsonify({'success': False, 'message': 'لا توجد بيانات'}), 400
         
-        granted_permissions = data.get('permissions', [])
+        grants = data.get('grants', [])
+        revokes = data.get('revokes', [])
         
         PermissionOverride.query.filter_by(
             user_id=user.id,
@@ -446,23 +496,46 @@ def save_permissions(user_id):
         ).delete()
         db.session.flush()
         
-        for perm_key in granted_permissions:
-            PermissionService.grant_permission(
+        for perm_key in grants:
+            override = PermissionOverride(
                 user_id=user.id,
                 permission_key=perm_key,
-                project_id=None,
+                is_granted=True,
                 granted_by_id=current_user.id,
-                reason='تعديل من إدارة الحسابات'
+                reason='منح إضافي من إدارة الحسابات'
             )
+            db.session.add(override)
+        
+        for perm_key in revokes:
+            override = PermissionOverride(
+                user_id=user.id,
+                permission_key=perm_key,
+                is_granted=False,
+                granted_by_id=current_user.id,
+                reason='حجب من إدارة الحسابات'
+            )
+            db.session.add(override)
         
         user.permissions_updated_at = datetime.utcnow()
         PermissionService.clear_cache(user.id)
         
         db.session.commit()
         
+        total_changes = len(grants) + len(revokes)
+        message_parts = []
+        if grants:
+            message_parts.append(f'{len(grants)} صلاحية ممنوحة')
+        if revokes:
+            message_parts.append(f'{len(revokes)} صلاحية محجوبة')
+        
+        if message_parts:
+            message = 'تم حفظ: ' + ' و '.join(message_parts)
+        else:
+            message = 'تم إعادة تعيين جميع الصلاحيات للقيم الافتراضية'
+        
         return jsonify({
             'success': True,
-            'message': f'تم حفظ {len(granted_permissions)} صلاحية بنجاح'
+            'message': message
         })
         
     except Exception as e:

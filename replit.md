@@ -29,7 +29,13 @@ Preferred communication style: Simple, everyday language.
 - **Core Management**: Tracks K9 lifecycle, employee information, training records, veterinary care, and breeding production.
 - **Project Operations**: Manages project lifecycle, resource allocation, incident logging, performance evaluations, and project locations.
 - **Attendance System**: Comprehensive tracking with shift management, scheduling, project-specific recording, and Arabic RTL PDF export, using an advanced Unified Matrix Attendance System.
-- **Role-Based Permission System (V2)**: Modern role-based access control with organized permissions grouped by module, supporting 6 predefined roles and wildcard matching.
+- **Hybrid Permission System (V2)**: Complete role-based access control with user-specific overrides, featuring:
+  - **Role Baseline Permissions**: Each role (HANDLER, PROJECT_MANAGER, GENERAL_ADMIN, etc.) has predefined permission sets
+  - **User-Specific Overrides**: GENERAL_ADMIN can grant or revoke individual permissions per user beyond their role baseline
+  - **Permission Formula**: `effective_permissions = role_baseline + granted_overrides - revoked_overrides`
+  - **Real-Time Updates**: Permission changes take effect immediately with automatic cache invalidation
+  - **Permission Management UI**: Admin interface to view baseline vs overrides, with 3-way controls (Default/Grant/Revoke)
+- **Handler Shift Report Enforcement**: Hard enforcement requiring handlers to submit shift reports for completed shifts before accessing system features. Blocked handlers are redirected to pending reports page until all reports are submitted.
 - **Excel Export System**: Comprehensive XLSX export functionality for reports with Arabic RTL support.
 - **Modern Reporting Hub**: Centralized dashboard with dynamic statistics, categorized report organization, and integrated chart visualization.
 - **Handler Daily System**: Comprehensive daily operations management for K9 handlers including schedule creation, two-tier reporting (Shift and Daily Reports), and a modern notification system.

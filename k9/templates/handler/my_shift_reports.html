@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}تقارير الفترات{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+[data-theme="dark"] .page-header {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+}
+
+.pending-banner {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: transform 0.2s ease;
+}
+
+[data-theme="dark"] .stat-card {
+    background: #2d2d2d;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+}
+
+.stat-card .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.stat-card .stat-label {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.report-table th {
+    font-weight: 600;
+    background: #f8f9fa;
+}
+
+[data-theme="dark"] .report-table th {
+    background: #1a1a1a;
+}
+
+.status-badge {
+    padding: 0.375rem 0.75rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-draft { background: #e9ecef; color: #495057; }
+.status-submitted { background: #cce5ff; color: #004085; }
+.status-approved { background: #d4edda; color: #155724; }
+.status-rejected { background: #f8d7da; color: #721c24; }
+
+.filter-card {
+    background: white;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+[data-theme="dark"] .filter-card {
+    background: #2d2d2d;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container-fluid px-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h1 class="mb-0">
+                    <i class="fas fa-clock me-2"></i>
+                    تقارير الفترات
+                </h1>
+                <p class="mb-0 mt-2 opacity-75">عرض وإدارة تقارير الفترات الخاصة بك</p>
+            </div>
+            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light">
+                <i class="fas fa-sign-out-alt me-2"></i>
+                تسجيل الخروج
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid px-4">
+    {% if pending_shift_reports and pending_shift_reports|length > 0 %}
+    <div class="pending-banner">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <i class="fas fa-exclamation-triangle fa-2x"></i>
+                <div>
+                    <h5 class="mb-0">تنبيه: لديك {{ pending_shift_reports|length }} فترات بدون تقارير</h5>
+                    <p class="mb-0 opacity-75">يجب إكمال التقارير للوصول إلى باقي النظام</p>
+                </div>
+            </div>
+            <a href="{{ url_for('handler.pending_reports_required') }}" class="btn btn-light">
+                <i class="fas fa-arrow-left me-2"></i>
+                عرض الفترات المطلوبة
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-value text-primary">{{ summary.total }}</div>
+                <div class="stat-label">إجمالي التقارير</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-value text-secondary">{{ summary.draft }}</div>
+                <div class="stat-label">مسودات</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-value text-warning">{{ summary.pending }}</div>
+                <div class="stat-label">قيد المراجعة</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card">
+                <div class="stat-value text-success">{{ summary.approved }}</div>
+                <div class="stat-label">معتمدة</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="filter-card">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">من تاريخ</label>
+                <input type="date" name="date_from" class="form-control" value="{{ request.args.get('date_from', '') }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">إلى تاريخ</label>
+                <input type="date" name="date_to" class="form-control" value="{{ request.args.get('date_to', '') }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">الحالة</label>
+                <select name="status" class="form-select">
+                    <option value="">الكل</option>
+                    <option value="DRAFT" {{ 'selected' if request.args.get('status') == 'DRAFT' }}>مسودة</option>
+                    <option value="SUBMITTED" {{ 'selected' if request.args.get('status') == 'SUBMITTED' }}>مرسل</option>
+                    <option value="APPROVED" {{ 'selected' if request.args.get('status') == 'APPROVED' }}>معتمد</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter me-2"></i>تصفية
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            {% if reports %}
+            <div class="table-responsive">
+                <table class="table table-hover report-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>الكلب</th>
+                            <th>الموقع</th>
+                            <th>الحالة</th>
+                            <th>تاريخ الإرسال</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in reports %}
+                        <tr>
+                            <td>
+                                <strong>{{ report.date.strftime('%Y-%m-%d') }}</strong>
+                            </td>
+                            <td>
+                                {% if report.dog %}
+                                {{ report.dog.name }}
+                                <br><small class="text-muted">{{ report.dog.code }}</small>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ report.location or '-' }}</td>
+                            <td>
+                                {% if report.status.value == 'DRAFT' %}
+                                <span class="status-badge status-draft">مسودة</span>
+                                {% elif report.status.value == 'SUBMITTED' %}
+                                <span class="status-badge status-submitted">مرسل</span>
+                                {% elif report.status.value == 'APPROVED' or report.status.value == 'APPROVED_BY_PM' %}
+                                <span class="status-badge status-approved">معتمد</span>
+                                {% elif 'REJECTED' in report.status.value %}
+                                <span class="status-badge status-rejected">مرفوض</span>
+                                {% else %}
+                                <span class="status-badge">{{ report.status.value }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if report.submitted_at %}
+                                {{ report.submitted_at.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('handler.view_shift_report', shift_report_id=report.id) }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if pagination.pages > 1 %}
+            <div class="d-flex justify-content-center p-3">
+                <nav>
+                    <ul class="pagination mb-0">
+                        {% if pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('handler.my_shift_reports', page=pagination.prev_num, **request.args) }}">السابق</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in pagination.iter_pages() %}
+                            {% if page_num %}
+                            <li class="page-item {{ 'active' if page_num == pagination.page }}">
+                                <a class="page-link" href="{{ url_for('handler.my_shift_reports', page=page_num, **request.args) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('handler.my_shift_reports', page=pagination.next_num, **request.args) }}">التالي</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">لا توجد تقارير</h5>
+                <p class="text-muted">لم يتم العثور على أي تقارير فترات بناءً على الفلاتر المحددة</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

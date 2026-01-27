@@ -1,0 +1,209 @@
+You are working on an existing Flask-based project (K9 system).
+Some permission system features have already been implemented, but the system is still incomplete from a business-logic and usability perspective.
+
+You are ALLOWED to:
+- Add new pages/screens if they are logically required to complete the workflow.
+- Add new routes/templates/components as needed.
+- Refactor or extend existing permission logic.
+- Add UI components where it improves clarity and control.
+
+You are NOT required to avoid new pages. Clarity and correctness come first.
+
+=====================================================
+CORE GOAL (VERY IMPORTANT)
+=====================================================
+Implement a COMPLETE, FLEXIBLE, REAL-WORLD permission system where:
+
+1) Each role (HANDLER / PROJECT_MANAGER / GENERAL_ADMIN) has baseline permissions.
+2) GENERAL_ADMIN can dynamically grant ANY additional permissions to ANY specific user
+   (Handler or Project Manager), including:
+   - Access to specific screens
+   - Access to specific actions (view / create / edit / delete / approve / export)
+3) These granted permissions must:
+   - Take effect immediately
+   - Reflect visually in the user’s UI (menus, buttons, navigation)
+   - Be enforced on the backend (route protection)
+4) The system must be scalable and maintainable.
+
+=====================================================
+PERMISSION MODEL (MANDATORY DESIGN)
+=====================================================
+
+Use a HYBRID permission model:
+
+A) Role-Based Baseline (RBAC)
+- Each role has a baseline permission set.
+- GENERAL_ADMIN baseline = full system access.
+
+B) Permission Keys (Granular)
+- Every screen/feature/action must be governed by permission keys:
+  Examples:
+    dogs.view
+    dogs.create
+    dogs.edit
+    dogs.delete
+
+    schedule.view
+    schedule.create
+    schedule.edit
+    schedule.lock
+
+    shift_report.view
+    shift_report.create
+    shift_report.submit
+    shift_report.edit
+
+- Reuse existing permission keys where possible.
+- If a screen/feature lacks permission keys, ADD them following the same naming convention.
+
+C) User-Specific Overrides (CRITICAL)
+- GENERAL_ADMIN must be able to grant or revoke permissions for an INDIVIDUAL USER,
+  beyond their role baseline.
+- Overrides must be stored per-user.
+- Effective permissions MUST be computed as:
+
+  effective_permissions(user) =
+      role_baseline_permissions
+    + user_granted_permissions
+    - user_revoked_permissions (if supported)
+
+=====================================================
+ADMIN PERMISSION MANAGEMENT UI
+=====================================================
+
+You MAY add a new page if it improves clarity.
+
+Implement one of the following (your choice, but be clean and clear):
+
+OPTION A:
+- A dedicated "User Permissions Management" page accessible ONLY to GENERAL_ADMIN.
+
+OPTION B:
+- An extended "User Edit" page with a full permissions management section.
+
+UI REQUIREMENTS:
+- Show all available permission keys grouped by module.
+- Allow GENERAL_ADMIN to:
+  - Grant permissions
+  - Revoke permissions
+- Changes must apply immediately.
+- UI must clearly indicate:
+  - Role baseline permissions
+  - User-specific overrides
+
+=====================================================
+UI VISIBILITY & NAVIGATION (MANDATORY)
+=====================================================
+
+- All menus, buttons, links, and UI actions MUST depend on effective_permissions(user).
+- Do NOT rely only on role checks.
+- When a permission is granted:
+  - Menu items appear
+  - Buttons become visible
+  - Pages become accessible
+
+If permission is revoked:
+  - UI elements must disappear
+  - Backend access must be blocked
+
+=====================================================
+BACKEND ENFORCEMENT (MANDATORY)
+=====================================================
+
+- All routes must be protected using effective permissions.
+- Direct URL access must be blocked if permission is missing.
+- Use decorators or centralized permission checking.
+- Ensure consistency across all modules.
+
+=====================================================
+PROJECT SCOPE RULES
+=====================================================
+
+- HANDLER:
+  - Can only access data related to their assigned shifts/schedules/projects.
+
+- PROJECT_MANAGER:
+  - Can manage schedules and data ONLY for projects they are assigned to.
+
+- GENERAL_ADMIN:
+  - Global access across all projects.
+
+=====================================================
+DAILY SCHEDULE LOGIC
+=====================================================
+
+- ONLY PROJECT_MANAGER and GENERAL_ADMIN can:
+  - Create daily schedules
+  - Edit daily schedules
+  - Lock/approve schedules
+
+- HANDLER:
+  - View assigned schedules only
+  - Cannot create or edit schedules
+
+=====================================================
+SHIFT REPORT (MANDATORY – HARD ENFORCEMENT)
+=====================================================
+
+Shift Reports are NOT optional.
+
+RULE:
+- Any completed shift MUST have a submitted Shift Report.
+
+ENFORCEMENT (choose best method or combine):
+- If a handler has completed shifts without reports:
+  - Block access to operational parts of the system
+  - Allow access ONLY to:
+    - Shift Report submission page
+    - Minimal navigation required to submit the report
+
+OR
+- Show a blocking modal or redirect until report is submitted.
+
+DO NOT rely on warnings only.
+
+=====================================================
+GENERAL_ADMIN FULL SYSTEM ACCESS
+=====================================================
+
+- GENERAL_ADMIN must be able to:
+  - Create
+  - Edit
+  - Delete
+  - Approve
+  across ALL existing system screens.
+
+- Fix any accidental restrictions.
+
+=====================================================
+REAL-TIME PERMISSION UPDATES
+=====================================================
+
+- When permissions are changed:
+  - No server restart required
+  - Cache must be invalidated if used
+  - Changes must reflect immediately on next request / refresh
+
+=====================================================
+DELIVERABLES REQUIRED FROM YOU
+=====================================================
+
+Explain clearly:
+1) How effective_permissions is calculated.
+2) Where permissions are stored (DB models).
+3) Which files were modified.
+4) How UI reacts to permission changes.
+5) How shift report enforcement works.
+6) Manual testing steps for:
+   - Granting permissions to a specific handler
+   - UI reflection
+   - Backend protection
+   - Schedule restriction
+   - Shift report blocking
+
+=====================================================
+FINAL NOTE
+=====================================================
+
+This is a REAL operational system.
+Favor correctness, clarity, and real-world usability over minimal code changes.

@@ -766,7 +766,79 @@ with app.app_context():
         print(f"⚠ Warning: Could not initialize security middleware: {e}")
         # Continue without enhanced security middleware for now
     
+    # ========================================================================
+    # HANDLER SHIFT REPORT ENFORCEMENT (App-level)
+    # Block handlers with pending shift reports from accessing the system
+    # ========================================================================
+    HANDLER_ALLOWED_ENDPOINTS = {
+        'handler.new_shift_report',
+        'handler.submit_shift_report',
+        'handler.my_shift_reports',
+        'handler.view_shift_report',
+        'handler.pending_reports_required',
+        'auth.logout',
+        'auth.login',
+        'static',
+        'uploaded_file',
+    }
     
+    @app.before_request
+    def enforce_handler_shift_report_submission():
+        """App-level enforcement: Block handlers with pending shift reports from accessing non-whitelisted routes"""
+        from flask import g, request, redirect, url_for, flash
+        from flask_login import current_user
+        from k9.models.models import UserRole
+        
+        # Skip if not authenticated
+        if not current_user.is_authenticated:
+            return None
+        
+        # Only enforce for HANDLER role
+        if current_user.role != UserRole.HANDLER:
+            return None
+        
+        # Get current endpoint
+        current_endpoint = request.endpoint
+        if not current_endpoint:
+            return None
+        
+        # Check if endpoint is in the whitelist
+        if current_endpoint in HANDLER_ALLOWED_ENDPOINTS:
+            return None
+        
+        # Allow static files and other resources
+        if current_endpoint.startswith('static') or current_endpoint == 'uploaded_file':
+            return None
+        
+        # Allow all handler blueprint routes that are already checked by the blueprint-level before_request
+        # The handler blueprint has its own before_request that enforces the rules
+        if current_endpoint.startswith('handler.'):
+            # The handler blueprint's own before_request will handle this
+            return None
+        
+        # For non-handler routes, check if the handler has pending shift reports
+        try:
+            from k9.routes.handler_routes import get_pending_shift_reports_for_handler
+            pending_reports = get_pending_shift_reports_for_handler(current_user.id)
+            
+            if pending_reports:
+                # Store in g for templates
+                g.pending_shift_reports_count = len(pending_reports)
+                g.pending_shift_reports = pending_reports
+                
+                flash(
+                    f'لديك {len(pending_reports)} تقارير فترات مطلوبة! يجب إكمال تقارير الفترات المنتهية قبل الوصول إلى النظام.',
+                    'danger'
+                )
+                return redirect(url_for('handler.pending_reports_required'))
+        except Exception as e:
+            # Log but don't block on error
+            import logging
+            logging.warning(f"Error checking pending shift reports: {e}")
+        
+        return None
+    
+    print("✓ Handler shift report enforcement initialized")
     
     # Add route to serve uploaded files
     from flask import send_from_directory

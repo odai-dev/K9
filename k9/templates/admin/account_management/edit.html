@@ -23,21 +23,62 @@
     padding: 1rem;
 }
 .permission-item {
-    padding: 0.5rem 0;
+    padding: 0.75rem;
     border-bottom: 1px dashed #e9ecef;
+    border-radius: 4px;
+    transition: background-color 0.2s;
 }
 .permission-item:last-child {
     border-bottom: none;
 }
+.permission-item:hover {
+    background-color: #f8f9fa;
+}
 .permission-key {
     font-family: monospace;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: #6c757d;
     direction: ltr;
     text-align: left;
 }
-.override-badge {
+.override-select {
+    min-width: 140px;
+    font-size: 0.85rem;
+}
+.baseline-badge {
     font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+}
+.status-indicator {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+}
+.status-baseline {
+    background-color: #e9ecef;
+    color: #495057;
+}
+.status-granted {
+    background-color: #d4edda;
+    color: #155724;
+}
+.status-revoked {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+.permission-name {
+    font-weight: 500;
+}
+.legend-box {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+.legend-item {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 1rem;
 }
 </style>
 {% endblock %}
@@ -134,23 +175,41 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="fas fa-key me-2 text-warning"></i>
-                        صلاحيات إضافية للمستخدم (Overrides)
+                        إدارة صلاحيات المستخدم
                     </h5>
                     <div>
-                        <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="selectAll">
-                            <i class="fas fa-check-double me-1"></i>
-                            تحديد الكل
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAll">
-                            <i class="fas fa-times me-1"></i>
-                            إلغاء الكل
+                        <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="resetAll">
+                            <i class="fas fa-undo me-1"></i>
+                            إعادة تعيين الكل
                         </button>
                     </div>
                 </div>
-                <p class="text-muted small mb-0 mt-2">
-                    <i class="fas fa-info-circle me-1"></i>
-                    يمكنك منح صلاحيات إضافية للمستخدم تتجاوز صلاحيات دوره الأساسي
-                </p>
+                <div class="legend-box mt-3">
+                    <strong class="d-block mb-2">
+                        <i class="fas fa-info-circle me-1 text-primary"></i>
+                        دليل الحالات:
+                    </strong>
+                    <div class="d-flex flex-wrap gap-3">
+                        <div class="legend-item">
+                            <span class="status-indicator status-baseline me-2">
+                                <i class="fas fa-shield-alt"></i>
+                            </span>
+                            <small>مضمّن في الدور (أساسي)</small>
+                        </div>
+                        <div class="legend-item">
+                            <span class="status-indicator status-granted me-2">
+                                <i class="fas fa-plus-circle"></i>
+                            </span>
+                            <small>ممنوح إضافياً</small>
+                        </div>
+                        <div class="legend-item">
+                            <span class="status-indicator status-revoked me-2">
+                                <i class="fas fa-minus-circle"></i>
+                            </span>
+                            <small>محجوب</small>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="card-body">
                 <form id="permissionsForm">
@@ -169,22 +228,56 @@
                         <div class="collapse" id="category-{{ module_key }}">
                             <div class="permission-category-body">
                                 {% for perm in category.permissions %}
-                                <div class="permission-item d-flex justify-content-between align-items-center">
-                                    <div class="form-check">
-                                        <input class="form-check-input permission-checkbox" 
-                                               type="checkbox" 
-                                               name="permissions[]"
-                                               value="{{ perm.key }}" 
-                                               id="perm-{{ perm.key|replace('.', '-') }}"
-                                               {% if current_overrides.get(perm.key) %}checked{% endif %}>
-                                        <label class="form-check-label" for="perm-{{ perm.key|replace('.', '-') }}">
-                                            {{ perm.action_ar }}
-                                            {% if current_overrides.get(perm.key) %}
-                                            <span class="badge bg-success override-badge ms-1">مفعّل</span>
-                                            {% endif %}
-                                        </label>
+                                {% set is_in_baseline = perm.key in role_baseline_permissions %}
+                                {% set current_state = current_overrides.get(perm.key, None) %}
+                                <div class="permission-item">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-5">
+                                            <div class="d-flex align-items-center">
+                                                <span class="permission-name">{{ perm.action_ar }}</span>
+                                                {% if is_in_baseline %}
+                                                <span class="baseline-badge bg-info text-white ms-2" title="مضمّن في الدور الأساسي">
+                                                    <i class="fas fa-shield-alt"></i>
+                                                    الدور
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                            <span class="permission-key">{{ perm.key }}</span>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select class="form-select form-select-sm override-select permission-override"
+                                                    data-perm-key="{{ perm.key }}"
+                                                    data-in-baseline="{{ 'true' if is_in_baseline else 'false' }}">
+                                                <option value="default" {% if current_state is none %}selected{% endif %}>
+                                                    افتراضي (استخدام الدور)
+                                                </option>
+                                                <option value="grant" {% if current_state == true %}selected{% endif %}>
+                                                    منح إضافي
+                                                </option>
+                                                <option value="revoke" {% if current_state == false %}selected{% endif %}>
+                                                    حجب
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3 text-end">
+                                            <span class="status-indicator 
+                                                {% if current_state == true %}status-granted
+                                                {% elif current_state == false %}status-revoked
+                                                {% elif is_in_baseline %}status-baseline
+                                                {% else %}text-muted{% endif %}"
+                                                id="status-{{ perm.key|replace('.', '-') }}">
+                                                {% if current_state == true %}
+                                                <i class="fas fa-plus-circle"></i> ممنوح
+                                                {% elif current_state == false %}
+                                                <i class="fas fa-minus-circle"></i> محجوب
+                                                {% elif is_in_baseline %}
+                                                <i class="fas fa-shield-alt"></i> أساسي
+                                                {% else %}
+                                                <i class="fas fa-ban"></i> غير متاح
+                                                {% endif %}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <span class="permission-key">{{ perm.key }}</span>
                                 </div>
                                 {% endfor %}
                             </div>
@@ -231,16 +324,51 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('permissionsForm');
     const saveBtn = document.getElementById('saveBtn');
-    const selectAllBtn = document.getElementById('selectAll');
-    const deselectAllBtn = document.getElementById('deselectAll');
+    const resetAllBtn = document.getElementById('resetAll');
     const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
     
-    selectAllBtn.addEventListener('click', function() {
-        document.querySelectorAll('.permission-checkbox').forEach(cb => cb.checked = true);
+    function updateStatusIndicator(selectElement) {
+        const permKey = selectElement.dataset.permKey;
+        const inBaseline = selectElement.dataset.inBaseline === 'true';
+        const statusId = 'status-' + permKey.replace(/\./g, '-');
+        const statusEl = document.getElementById(statusId);
+        
+        if (!statusEl) return;
+        
+        const value = selectElement.value;
+        
+        statusEl.classList.remove('status-granted', 'status-revoked', 'status-baseline', 'text-muted');
+        
+        if (value === 'grant') {
+            statusEl.classList.add('status-granted');
+            statusEl.innerHTML = '<i class="fas fa-plus-circle"></i> ممنوح';
+        } else if (value === 'revoke') {
+            statusEl.classList.add('status-revoked');
+            statusEl.innerHTML = '<i class="fas fa-minus-circle"></i> محجوب';
+        } else {
+            if (inBaseline) {
+                statusEl.classList.add('status-baseline');
+                statusEl.innerHTML = '<i class="fas fa-shield-alt"></i> أساسي';
+            } else {
+                statusEl.classList.add('text-muted');
+                statusEl.innerHTML = '<i class="fas fa-ban"></i> غير متاح';
+            }
+        }
+    }
+    
+    document.querySelectorAll('.permission-override').forEach(select => {
+        select.addEventListener('change', function() {
+            updateStatusIndicator(this);
+        });
     });
     
-    deselectAllBtn.addEventListener('click', function() {
-        document.querySelectorAll('.permission-checkbox').forEach(cb => cb.checked = false);
+    resetAllBtn.addEventListener('click', function() {
+        if (confirm('هل أنت متأكد من إعادة تعيين جميع الصلاحيات للقيم الافتراضية؟')) {
+            document.querySelectorAll('.permission-override').forEach(select => {
+                select.value = 'default';
+                updateStatusIndicator(select);
+            });
+        }
     });
     
     form.addEventListener('submit', function(e) {
@@ -249,9 +377,18 @@ document.addEventListener('DOMContentLoaded', function() {
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>جاري الحفظ...';
         
-        const permissions = [];
-        document.querySelectorAll('.permission-checkbox:checked').forEach(cb => {
-            permissions.push(cb.value);
+        const grants = [];
+        const revokes = [];
+        
+        document.querySelectorAll('.permission-override').forEach(select => {
+            const permKey = select.dataset.permKey;
+            const value = select.value;
+            
+            if (value === 'grant') {
+                grants.push(permKey);
+            } else if (value === 'revoke') {
+                revokes.push(permKey);
+            }
         });
         
         fetch('{{ url_for("account_management.save_permissions", user_id=user.id) }}', {
@@ -260,7 +397,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
             },
-            body: JSON.stringify({ permissions: permissions })
+            body: JSON.stringify({ grants: grants, revokes: revokes })
         })
         .then(response => response.json())
         .then(data => {

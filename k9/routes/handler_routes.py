@@ -24,6 +24,95 @@ from functools import wraps
 handler_bp = Blueprint('handler', __name__, url_prefix='/handler')
 
 
+# Whitelist of endpoints allowed when handler is blocked due to pending shift reports
+ALLOWED_ENDPOINTS_WHEN_BLOCKED = {
+    'handler.new_shift_report',
+    'handler.submit_shift_report', 
+    'handler.my_shift_reports',
+    'handler.view_shift_report',
+    'handler.pending_reports_required',
+    'auth.logout',
+    'static',
+}
+
+
+def get_pending_shift_reports_for_handler(user_id):
+    """Get all pending shift reports (completed shifts without submitted reports) for a handler"""
+    from k9.models.models_handler_daily import DailySchedule, DailyScheduleItem, ScheduleItemStatus, ShiftReport
+    from sqlalchemy import or_
+    
+    today = date.today()
+    now = datetime.now()
+    current_time = now.time()
+    
+    # Query for schedule items where:
+    # 1. Handler is assigned or is replacement handler
+    # 2. Status is PRESENT or REPLACED
+    # 3. Shift has ended (past dates or today with end_time passed)
+    # 4. No ShiftReport exists
+    schedule_items_query = db.session.query(DailyScheduleItem).join(
+        DailySchedule, DailyScheduleItem.daily_schedule_id == DailySchedule.id
+    ).filter(
+        or_(
+            DailyScheduleItem.handler_user_id == user_id,
+            DailyScheduleItem.replacement_handler_id == user_id
+        ),
+        DailyScheduleItem.status.in_([ScheduleItemStatus.PRESENT, ScheduleItemStatus.REPLACED]),
+        DailySchedule.date <= today
+    ).all()
+    
+    pending_reports = []
+    for item in schedule_items_query:
+        has_shift_report = ShiftReport.query.filter_by(schedule_item_id=item.id).first() is not None
+        if has_shift_report:
+            continue
+        
+        if item.shift and item.shift.end_time:
+            schedule_date_for_item = item.schedule.date
+            if schedule_date_for_item < today:
+                pending_reports.append(item)
+            elif schedule_date_for_item == today and item.shift.end_time <= current_time:
+                pending_reports.append(item)
+    
+    return pending_reports
+
+
+@handler_bp.before_request
+def enforce_shift_report_submission():
+    """Block handlers from accessing the system if they have pending shift reports"""
+    from flask import g
+    
+    # Skip if not authenticated or not a handler
+    if not current_user.is_authenticated or current_user.role != UserRole.HANDLER:
+        return None
+    
+    # Check if current endpoint is in the whitelist
+    current_endpoint = request.endpoint
+    if current_endpoint in ALLOWED_ENDPOINTS_WHEN_BLOCKED:
+        return None
+    
+    # Allow static files
+    if current_endpoint and current_endpoint.startswith('static'):
+        return None
+    
+    # Get pending shift reports
+    pending_reports = get_pending_shift_reports_for_handler(current_user.id)
+    
+    # Store pending reports count in g for use in templates
+    g.pending_shift_reports_count = len(pending_reports)
+    g.pending_shift_reports = pending_reports
+    
+    # If there are pending reports, redirect to the blocking page
+    if pending_reports:
+        flash(
+            f'لديك {len(pending_reports)} تقارير فترات مطلوبة! يجب إكمال تقارير الفترات المنتهية قبل الوصول إلى باقي النظام.',
+            'danger'
+        )
+        return redirect(url_for('handler.pending_reports_required'))
+    
+    return None
+
+
 def handler_required(f):
     """Decorator to require HANDLER role"""
     @wraps(f)
@@ -899,12 +988,21 @@ def new_shift_report(schedule_item_id):
             success, error = ShiftReportService.submit_shift_report(str(shift_report.id))
             if success:
                 flash('تم إرسال تقرير الوردية للمراجعة بنجاح', 'success')
+                # Check if more pending reports exist, redirect accordingly
+                remaining_pending = get_pending_shift_reports_for_handler(current_user.id)
+                if remaining_pending:
+                    flash(f'متبقي {len(remaining_pending)} تقارير فترات. أكمل جميع التقارير للوصول إلى النظام.', 'warning')
+                    return redirect(url_for('handler.pending_reports_required'))
                 return redirect(url_for('handler.dashboard'))
             else:
                 flash(f'تم حفظ التقرير لكن فشل الإرسال: {error}', 'warning')
         else:
             flash('تم حفظ تقرير الوردية كمسودة', 'success')
         
+        # Check if more pending reports exist, redirect accordingly
+        remaining_pending = get_pending_shift_reports_for_handler(current_user.id)
+        if remaining_pending:
+            return redirect(url_for('handler.pending_reports_required'))
         return redirect(url_for('handler.dashboard'))
     
     # GET request
@@ -913,11 +1011,15 @@ def new_shift_report(schedule_item_id):
     if schedule_item.dog_id:
         dog = Dog.query.get(schedule_item.dog_id)
     
+    # Get pending shift reports for banner
+    pending_shift_reports = get_pending_shift_reports_for_handler(current_user.id)
+    
     return render_template('handler/new_shift_report.html',
                          page_title='تقرير وردية جديد',
                          schedule_item=schedule_item,
                          dog=dog,
-                         today=schedule_item.schedule.date.strftime('%Y-%m-%d'))
+                         today=schedule_item.schedule.date.strftime('%Y-%m-%d'),
+                         pending_shift_reports=pending_shift_reports)
 
 
 @handler_bp.route('/shift-report/submit/<shift_report_id>', methods=['POST'])
@@ -941,6 +1043,72 @@ def submit_shift_report(shift_report_id):
         flash(f'فشل إرسال التقرير: {error}', 'danger')
     
     return redirect(url_for('handler.dashboard'))
+
+
+@handler_bp.route('/pending-reports-required')
+@login_required
+@handler_required
+def pending_reports_required():
+    """Page shown when handler is blocked due to pending shift reports"""
+    pending_reports = get_pending_shift_reports_for_handler(current_user.id)
+    
+    # If no pending reports, redirect to dashboard
+    if not pending_reports:
+        return redirect(url_for('handler.dashboard'))
+    
+    return render_template('handler/pending_reports_required.html',
+                          page_title='تقارير الفترات المطلوبة',
+                          pending_reports=pending_reports,
+                          pending_count=len(pending_reports))
+
+
+@handler_bp.route('/my-shift-reports')
+@login_required
+@handler_required
+def my_shift_reports():
+    """List handler's shift reports"""
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    
+    # Filters
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+    status_filter = request.args.get('status')
+    
+    # Build query
+    query = ShiftReport.query.filter_by(handler_user_id=current_user.id)
+    
+    if date_from:
+        query = query.filter(ShiftReport.date >= datetime.strptime(date_from, '%Y-%m-%d').date())
+    if date_to:
+        query = query.filter(ShiftReport.date <= datetime.strptime(date_to, '%Y-%m-%d').date())
+    if status_filter:
+        from k9.models.models_handler_daily import ReportStatus
+        query = query.filter_by(status=ReportStatus[status_filter])
+    
+    # Pagination
+    pagination = query.order_by(ShiftReport.date.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    # Summary stats
+    from k9.models.models_handler_daily import ReportStatus
+    summary = {
+        'total': ShiftReport.query.filter_by(handler_user_id=current_user.id).count(),
+        'draft': ShiftReport.query.filter_by(handler_user_id=current_user.id, status=ReportStatus.DRAFT).count(),
+        'pending': ShiftReport.query.filter_by(handler_user_id=current_user.id, status=ReportStatus.SUBMITTED).count(),
+        'approved': ShiftReport.query.filter_by(handler_user_id=current_user.id, status=ReportStatus.APPROVED).count(),
+    }
+    
+    # Get pending shift reports for banner
+    pending_shift_reports = get_pending_shift_reports_for_handler(current_user.id)
+    
+    return render_template('handler/my_shift_reports.html',
+                          page_title='تقارير الفترات',
+                          reports=pagination.items,
+                          pagination=pagination,
+                          summary=summary,
+                          pending_shift_reports=pending_shift_reports)
 
 
 @handler_bp.route('/profile', methods=['GET', 'POST'])

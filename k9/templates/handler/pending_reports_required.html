@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}تقارير الفترات المطلوبة{% endblock %}
+
+{% block extra_css %}
+<style>
+.blocked-container {
+    min-height: calc(100vh - 200px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.blocked-card {
+    max-width: 900px;
+    width: 100%;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    overflow: hidden;
+}
+
+[data-theme="dark"] .blocked-card {
+    background: #2d2d2d;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+}
+
+.blocked-header {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+}
+
+.blocked-header .icon-wrapper {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+}
+
+.blocked-header .icon-wrapper i {
+    font-size: 2.5rem;
+}
+
+.blocked-header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.blocked-header p {
+    margin: 0.5rem 0 0;
+    opacity: 0.9;
+}
+
+.blocked-body {
+    padding: 2rem;
+}
+
+.pending-count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #fff3cd;
+    color: #856404;
+    padding: 0.75rem 1.25rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+}
+
+[data-theme="dark"] .pending-count-badge {
+    background: #5a4e3a;
+    color: #ffc107;
+}
+
+.info-box {
+    background: #f8f9fa;
+    border-right: 4px solid #0d6efd;
+    padding: 1rem 1.25rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+[data-theme="dark"] .info-box {
+    background: #1a1a1a;
+}
+
+.pending-reports-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.pending-report-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 0.5rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .pending-report-item {
+    background: #1a1a1a;
+}
+
+.pending-report-item:hover {
+    transform: translateX(-5px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.report-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.report-date {
+    background: #dc3545;
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    text-align: center;
+    min-width: 80px;
+}
+
+.report-date .day {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.report-date .month {
+    font-size: 0.75rem;
+    opacity: 0.9;
+}
+
+.report-details h5 {
+    margin: 0 0 0.25rem;
+    font-weight: 600;
+}
+
+.report-details p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.blocked-footer {
+    background: #f8f9fa;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+[data-theme="dark"] .blocked-footer {
+    background: #1a1a1a;
+    border-top-color: #404040;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="blocked-container">
+    <div class="blocked-card">
+        <div class="blocked-header">
+            <div class="icon-wrapper">
+                <i class="fas fa-hand-paper"></i>
+            </div>
+            <h1>الوصول محظور مؤقتاً</h1>
+            <p>يجب إكمال تقارير الفترات المطلوبة قبل الوصول إلى النظام</p>
+        </div>
+        
+        <div class="blocked-body">
+            <div class="text-center mb-4">
+                <div class="pending-count-badge">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    لديك {{ pending_count }} تقارير فترات مطلوبة
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <h5 class="mb-2">
+                    <i class="fas fa-info-circle me-2 text-primary"></i>
+                    لماذا أنا محظور؟
+                </h5>
+                <p class="mb-0">
+                    لديك فترات عمل منتهية بدون تقارير. يجب إرسال تقرير لكل فترة عمل تم إكمالها.
+                    بعد إكمال جميع التقارير المطلوبة، سيتم فتح الوصول إلى النظام تلقائياً.
+                </p>
+            </div>
+            
+            <h5 class="mb-3">
+                <i class="fas fa-list me-2"></i>
+                الفترات المطلوب تقاريرها:
+            </h5>
+            
+            <div class="pending-reports-list">
+                {% for item in pending_reports %}
+                <div class="pending-report-item">
+                    <div class="report-info">
+                        <div class="report-date">
+                            <div class="day">{{ item.schedule.date.strftime('%d') }}</div>
+                            <div class="month">{{ item.schedule.date.strftime('%m/%Y') }}</div>
+                        </div>
+                        <div class="report-details">
+                            <h5>{{ item.shift.name if item.shift else 'فترة غير محددة' }}</h5>
+                            <p>
+                                {% if item.dog %}
+                                <i class="fas fa-dog me-1"></i>{{ item.dog.name }}
+                                {% endif %}
+                                {% if item.location %}
+                                <span class="ms-2"><i class="fas fa-map-marker-alt me-1"></i>{{ item.location.name }}</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('handler.new_shift_report', schedule_item_id=item.id) }}" 
+                       class="btn btn-danger">
+                        <i class="fas fa-file-alt me-2"></i>
+                        إنشاء التقرير
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="blocked-footer">
+            <div>
+                <a href="{{ url_for('handler.my_shift_reports') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-list me-2"></i>
+                    عرض تقاريري
+                </a>
+            </div>
+            <div>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger">
+                    <i class="fas fa-sign-out-alt me-2"></i>
+                    تسجيل الخروج
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
