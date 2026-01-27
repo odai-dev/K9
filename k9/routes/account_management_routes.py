@@ -151,7 +151,7 @@ def create():
             db.session.flush()
             
             # Create base permissions for the user based on their role
-            permissions_created = create_base_permissions_for_user(user, db.session)
+            create_base_permissions_for_user(user.id, current_user.id)
             
             # Auto-assign employee to project if creator is a PM and employee has no active assignments
             if is_pm(current_user):
@@ -175,6 +175,15 @@ def create():
             
             db.session.commit()
             
+            # Verify the user was actually saved
+            saved_user = User.query.filter_by(username=username).first()
+            if not saved_user:
+                flash('حدث خطأ: لم يتم حفظ الحساب بشكل صحيح', 'danger')
+                return redirect(url_for('account_management.create'))
+            
+            import logging
+            logging.info(f"Account created successfully: username={username}, user_id={saved_user.id}")
+            
             return render_template('admin/account_management/create_success.html',
                                  page_title='تم إنشاء الحساب بنجاح',
                                  username=username,
@@ -184,6 +193,8 @@ def create():
         
         except Exception as e:
             db.session.rollback()
+            import logging
+            logging.error(f"Error creating account: {str(e)}")
             flash(f'حدث خطأ أثناء إنشاء الحساب: {str(e)}', 'danger')
             return redirect(url_for('account_management.create'))
     

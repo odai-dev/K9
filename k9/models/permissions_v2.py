@@ -115,7 +115,8 @@ ROLE_PERMISSIONS = {
         "dogs.*", "employees.*", "projects.*", "training.*",
         "veterinary.*", "breeding.*", "reports.*", "schedule.*",
         "users.*", "admin.*", "handler_daily.*", "pm.*", "production.*",
-        "supervisor.*"
+        "supervisor.*", "account_management.*", "tasks.*", "notifications.*",
+        "incidents.*", "suspicions.*", "evaluations.*", "shifts.*"
     ],
     
     RoleType.PROJECT_MANAGER: [
