@@ -6,6 +6,50 @@
 
 {% block handler_content %}
 
+<!-- Pending Shift Reports Alert -->
+{% if pending_shift_reports and pending_shift_reports|length > 0 %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-danger border-0 shadow-sm" role="alert">
+            <div class="d-flex align-items-start">
+                <div class="me-3">
+                    <i class="fas fa-exclamation-triangle fa-2x"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="alert-heading mb-2">
+                        <strong>تنبيه: تقارير فترات مطلوبة!</strong>
+                    </h5>
+                    <p class="mb-2">
+                        يوجد لديك <strong>{{ pending_shift_reports|length }}</strong> فترة/فترات منتهية بدون تقرير. يجب إكمال تقارير الفترات قبل إتمام العمل.
+                    </p>
+                    <hr>
+                    <div class="row">
+                        {% for item in pending_shift_reports %}
+                        <div class="col-md-6 col-lg-4 mb-2">
+                            <div class="d-flex justify-content-between align-items-center bg-white p-2 rounded">
+                                <div>
+                                    <small class="d-block text-muted">{{ item.schedule.date.strftime('%Y-%m-%d') }}</small>
+                                    <span>{{ item.shift.name if item.shift else 'فترة غير محددة' }}</span>
+                                    {% if item.dog %}
+                                    <small class="d-block text-info">{{ item.dog.name }}</small>
+                                    {% endif %}
+                                </div>
+                                <a href="{{ url_for('handler.new_shift_report', schedule_item_id=item.id) }}" 
+                                   class="btn btn-sm btn-danger">
+                                    <i class="fas fa-file-alt me-1"></i>
+                                    إنشاء التقرير
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Welcome Card -->
 <div class="row mb-4">
     <div class="col-12">

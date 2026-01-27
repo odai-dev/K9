@@ -6,7 +6,10 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from k9.models.models import User, UserRole, Employee, EmployeeRole, ProjectAssignment, Project
 from k9.utils.permissions_new import admin_required, require_permission, has_permission, grant_permission
+from k9.models.permissions_v2 import PermissionKey, PermissionOverride
+from k9.services.permission_service import PermissionService
 from werkzeug.security import generate_password_hash
+from datetime import datetime
 from app import db
 
 
@@ -285,3 +288,183 @@ def reset_password(user_id):
                          password=new_password,
                          full_name=user.full_name,
                          user_role=user.role.value)
+
+
+def get_permission_categories():
+    """Get all permission keys organized by module/category"""
+    categories = {
+        'dogs': {
+            'name_ar': 'الكلاب',
+            'icon': 'fa-dog',
+            'permissions': []
+        },
+        'employees': {
+            'name_ar': 'الموظفين',
+            'icon': 'fa-users',
+            'permissions': []
+        },
+        'projects': {
+            'name_ar': 'المشاريع',
+            'icon': 'fa-project-diagram',
+            'permissions': []
+        },
+        'training': {
+            'name_ar': 'التدريب',
+            'icon': 'fa-dumbbell',
+            'permissions': []
+        },
+        'veterinary': {
+            'name_ar': 'البيطري',
+            'icon': 'fa-stethoscope',
+            'permissions': []
+        },
+        'breeding': {
+            'name_ar': 'التربية',
+            'icon': 'fa-leaf',
+            'permissions': []
+        },
+        'reports': {
+            'name_ar': 'التقارير',
+            'icon': 'fa-file-alt',
+            'permissions': []
+        },
+        'schedule': {
+            'name_ar': 'الجداول',
+            'icon': 'fa-calendar-alt',
+            'permissions': []
+        },
+        'users': {
+            'name_ar': 'المستخدمين',
+            'icon': 'fa-user-cog',
+            'permissions': []
+        },
+        'admin': {
+            'name_ar': 'الإدارة',
+            'icon': 'fa-cogs',
+            'permissions': []
+        },
+        'handler_daily': {
+            'name_ar': 'العمليات اليومية',
+            'icon': 'fa-clipboard-list',
+            'permissions': []
+        },
+        'pm': {
+            'name_ar': 'مسؤول المشروع',
+            'icon': 'fa-user-tie',
+            'permissions': []
+        }
+    }
+    
+    permission_labels = {
+        'view': 'عرض',
+        'create': 'إنشاء',
+        'edit': 'تعديل',
+        'delete': 'حذف',
+        'export': 'تصدير',
+        'approve': 'اعتماد',
+        'manage_team': 'إدارة الفريق',
+        'final_approve': 'الاعتماد النهائي',
+        'dashboard': 'لوحة التحكم',
+        'settings': 'الإعدادات',
+        'backup': 'النسخ الاحتياطي',
+        'audit': 'سجل التدقيق',
+        'review_reports': 'مراجعة التقارير',
+        'manage_project': 'إدارة المشروع',
+        'manage_permissions': 'إدارة الصلاحيات'
+    }
+    
+    for attr_name in dir(PermissionKey):
+        if not attr_name.startswith('_'):
+            perm_key = getattr(PermissionKey, attr_name)
+            if isinstance(perm_key, str) and '.' in perm_key:
+                parts = perm_key.split('.')
+                module = parts[0]
+                action = parts[1] if len(parts) > 1 else ''
+                
+                if module in categories:
+                    action_label = permission_labels.get(action, action)
+                    categories[module]['permissions'].append({
+                        'key': perm_key,
+                        'action': action,
+                        'action_ar': action_label
+                    })
+    
+    return {k: v for k, v in categories.items() if v['permissions']}
+
+
+@account_mgmt_bp.route('/<user_id>/edit')
+@login_required
+@admin_required
+def edit(user_id):
+    """تعديل حساب المستخدم وصلاحياته"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        flash('هذه الصفحة متاحة فقط للمدير العام', 'danger')
+        return redirect(url_for('account_management.index'))
+    
+    user = User.query.get_or_404(user_id)
+    employee = user.employee if user.employee else None
+    
+    permission_categories = get_permission_categories()
+    
+    current_overrides = {}
+    overrides = PermissionOverride.query.filter_by(
+        user_id=user.id,
+        project_id=None
+    ).all()
+    for override in overrides:
+        current_overrides[override.permission_key] = override.is_granted
+    
+    return render_template('admin/account_management/edit.html',
+                         page_title=f'تعديل حساب {user.username}',
+                         user=user,
+                         employee=employee,
+                         permission_categories=permission_categories,
+                         current_overrides=current_overrides,
+                         user_roles=UserRole)
+
+
+@account_mgmt_bp.route('/<user_id>/permissions', methods=['POST'])
+@login_required
+@admin_required
+def save_permissions(user_id):
+    """حفظ صلاحيات المستخدم الإضافية"""
+    if current_user.role != UserRole.GENERAL_ADMIN:
+        return jsonify({'success': False, 'message': 'غير مصرح'}), 403
+    
+    user = User.query.get_or_404(user_id)
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'لا توجد بيانات'}), 400
+        
+        granted_permissions = data.get('permissions', [])
+        
+        PermissionOverride.query.filter_by(
+            user_id=user.id,
+            project_id=None
+        ).delete()
+        db.session.flush()
+        
+        for perm_key in granted_permissions:
+            PermissionService.grant_permission(
+                user_id=user.id,
+                permission_key=perm_key,
+                project_id=None,
+                granted_by_id=current_user.id,
+                reason='تعديل من إدارة الحسابات'
+            )
+        
+        user.permissions_updated_at = datetime.utcnow()
+        PermissionService.clear_cache(user.id)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'تم حفظ {len(granted_permissions)} صلاحية بنجاح'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500

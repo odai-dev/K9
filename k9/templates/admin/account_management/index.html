@@ -86,6 +86,12 @@
                                 </td>
                                 <td>
                                     <div class="btn-group" role="group">
+                                        {% if current_user.role.name == 'GENERAL_ADMIN' %}
+                                        <a href="{{ url_for('account_management.edit', user_id=item.user.id) }}" 
+                                           class="btn btn-sm btn-outline-info" title="تعديل الصلاحيات">
+                                            <i class="fas fa-user-edit"></i>
+                                        </a>
+                                        {% endif %}
                                         <form action="{{ url_for('account_management.toggle_status', user_id=item.user.id) }}" method="POST" style="display: inline;">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             {% if item.user.active %}

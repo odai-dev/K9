@@ -196,10 +196,12 @@ def parse_shift_incidents_data(form_data, shift_report, request_obj):
 def dashboard():
     """لوحة تحكم السائس"""
     from k9.models.models import Project
-    from k9.models.models_handler_daily import ReportStatus, ShiftReport
+    from k9.models.models_handler_daily import ReportStatus, ShiftReport, DailyScheduleItem, ScheduleItemStatus
     from dateutil.relativedelta import relativedelta
+    from sqlalchemy import or_
     
     today = date.today()
+    now = datetime.now()
     
     # Get project and assigned dog
     project = None
@@ -226,6 +228,40 @@ def dashboard():
     for item in today_schedule:
         shift_report = ShiftReport.query.filter_by(schedule_item_id=item.id).first()
         item.shift_report = shift_report
+    
+    # Check for pending shift reports (shifts that have ended but no report submitted)
+    pending_shift_reports = []
+    current_time = now.time()
+    
+    # Get all schedule items for this handler where:
+    # 1. The handler is assigned (or is replacement handler)
+    # 2. Status is PRESENT or the user is replacement
+    # 3. The shift has ended (end_time < current time for today, or for past dates)
+    # 4. No ShiftReport exists
+    from k9.models.models_handler_daily import DailySchedule
+    
+    schedule_items_query = db.session.query(DailyScheduleItem).join(
+        DailySchedule, DailyScheduleItem.daily_schedule_id == DailySchedule.id
+    ).filter(
+        or_(
+            DailyScheduleItem.handler_user_id == current_user.id,
+            DailyScheduleItem.replacement_handler_id == current_user.id
+        ),
+        DailyScheduleItem.status.in_([ScheduleItemStatus.PRESENT, ScheduleItemStatus.REPLACED]),
+        DailySchedule.date <= today
+    ).all()
+    
+    for item in schedule_items_query:
+        has_shift_report = ShiftReport.query.filter_by(schedule_item_id=item.id).first() is not None
+        if has_shift_report:
+            continue
+        
+        if item.shift and item.shift.end_time:
+            schedule_date_for_item = item.schedule.date
+            if schedule_date_for_item < today:
+                pending_shift_reports.append(item)
+            elif schedule_date_for_item == today and item.shift.end_time <= current_time:
+                pending_shift_reports.append(item)
     
     # Get dogs worked with on the effective date and their report status
     dogs_worked_today = HandlerReportService.get_dogs_worked_today(str(current_user.id), effective_date)
@@ -274,7 +310,8 @@ def dashboard():
                          recent_notifications=recent_notifications,
                          unread_count=unread_count,
                          recent_reports=recent_reports,
-                         stats=stats)
+                         stats=stats,
+                         pending_shift_reports=pending_shift_reports)
 
 
 @handler_bp.route('/daily-reports/select', methods=['GET'])
