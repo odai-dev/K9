@@ -58,6 +58,12 @@ Preferred communication style: Simple, everyday language.
 - **Employee vs User/Handler Architecture**: Distinct `Employee` table for general workforce management and `User` table with `HANDLER` role for system access and daily operations, with mandatory linking.
 - **Unified Permission Decorators**: All access decorators consolidated with consistent admin_mode enforcement.
 - **Navbar Access Control**: Template-level permission checking ensures users see only relevant navigation options.
+- **Data-Driven UI Authorization Engine**: Centralized navigation registry (`k9/services/ui_navigation.py`) with:
+  - `UINavigationRegistry`: Single source of truth for all menu items with required permissions
+  - `NavigationFilter`: Filters navigation based on user's effective permissions (role + overrides)
+  - Parent menu gating: Parent items hidden if no children are visible to user
+  - `get_filtered_navigation()` context processor: Pre-filters all navigation for templates
+  - Reusable macros in `k9/templates/macros/navigation.html` for consistent rendering
 - **Production Readiness**: Complete removal of debug code, comprehensive error handling with structured logging, and robust security hardening.
 - **Unified PDF Design**: Minimal Elegant design system implemented across all PDF reports for consistent professional document generation.
 
