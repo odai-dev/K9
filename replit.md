@@ -64,6 +64,12 @@ Preferred communication style: Simple, everyday language.
   - Parent menu gating: Parent items hidden if no children are visible to user
   - `get_filtered_navigation()` context processor: Pre-filters all navigation for templates
   - Reusable macros in `k9/templates/macros/navigation.html` for consistent rendering
+- **Handler Permission Mapping**: Strict 1:1 alignment between UI and backend permission checks:
+  - Dashboard/Reports: `handler_daily.reports.view`, `handler_daily.reports.create`, `handler_daily.reports.edit`, `handler_daily.reports.delete`
+  - Tasks: `tasks.my_tasks.view`, `tasks.my_tasks.start`, `tasks.my_tasks.complete`
+  - Notifications: `notifications.view`
+  - Profile: `profile.view`
+  - All handler routes use `has_permission()` checks that match these exact keys
 - **Production Readiness**: Complete removal of debug code, comprehensive error handling with structured logging, and robust security hardening.
 - **Unified PDF Design**: Minimal Elegant design system implemented across all PDF reports for consistent professional document generation.
 
