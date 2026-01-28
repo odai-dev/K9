@@ -1,0 +1,238 @@
+{#
+Navigation Macros - Data-Driven UI Authorization
+=================================================
+These macros render navigation items from the UI Navigation Registry.
+All navigation is pre-filtered by effective permissions.
+Parent menus only appear if at least one child is visible.
+#}
+
+{# Render a dropdown menu item with children #}
+{% macro render_dropdown_menu(item, is_active=False) %}
+{% if item and item.children %}
+<li class="nav-item dropdown {% if is_active or item.is_active() %}active{% endif %}">
+    <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_active or item.is_active() %}active{% endif %}" 
+       href="#" id="{{ item.id }}Dropdown" role="button" data-bs-toggle="dropdown">
+        <i class="{{ item.icon }} me-1"></i>{{ item.label }}
+        {% if item.badge_func %}
+        {% set badge_count = item.badge_func() %}
+        {% if badge_count > 0 %}
+        <span class="badge bg-danger rounded-pill ms-1">{{ badge_count }}</span>
+        {% endif %}
+        {% endif %}
+    </a>
+    <ul class="dropdown-menu shadow">
+        {% for child in item.children %}
+            {{ render_dropdown_item(child) }}
+        {% endfor %}
+    </ul>
+</li>
+{% endif %}
+{% endmacro %}
+
+{# Render a single dropdown item (child of dropdown menu) #}
+{% macro render_dropdown_item(item) %}
+{% if item.header %}
+    {% if item.divider_before %}
+    <li><hr class="dropdown-divider"></li>
+    {% endif %}
+    <li><h6 class="dropdown-header">{{ item.header }}</h6></li>
+{% elif item.endpoint %}
+    {% if item.divider_before %}
+    <li><hr class="dropdown-divider"></li>
+    {% endif %}
+    <li>
+        <a class="dropdown-item {% if request.endpoint == item.endpoint %}active{% endif %}" 
+           href="{{ item.get_url() }}">
+            <i class="{{ item.icon }} me-2"></i>{{ item.label }}
+        </a>
+    </li>
+{% endif %}
+{% endmacro %}
+
+{# Render a simple nav link (no dropdown) #}
+{% macro render_nav_link(item) %}
+{% if item and item.endpoint %}
+<li class="nav-item {% if request.endpoint == item.endpoint %}active{% endif %}">
+    <a class="nav-link px-3 py-2 rounded-pill {% if request.endpoint == item.endpoint %}active{% endif %}" 
+       href="{{ item.get_url() }}">
+        <i class="{{ item.icon }} me-1"></i>{{ item.label }}
+    </a>
+</li>
+{% endif %}
+{% endmacro %}
+
+{# Render main navigation (handles both simple links and dropdowns) #}
+{% macro render_main_navigation(nav_items) %}
+{% for item in nav_items %}
+    {% if item.children %}
+        {{ render_dropdown_menu(item) }}
+    {% else %}
+        {{ render_nav_link(item) }}
+    {% endif %}
+{% endfor %}
+{% endmacro %}
+
+{# Render handler navigation dropdown #}
+{% macro render_handler_navigation(handler_nav, unread_count=0) %}
+{% if handler_nav and handler_nav.children %}
+{% set is_handler_active = request.endpoint and (request.endpoint.startswith('handler.') or request.endpoint.startswith('tasks.handler_')) %}
+<li class="nav-item dropdown {% if is_handler_active %}active{% endif %}">
+    <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_handler_active %}active{% endif %}" 
+       href="#" id="handlerDropdown" role="button" data-bs-toggle="dropdown">
+        <i class="{{ handler_nav.icon }} me-1"></i>{{ handler_nav.label }}
+        {% if unread_count > 0 %}
+        <span class="badge bg-danger rounded-pill ms-1">{{ unread_count }}</span>
+        {% endif %}
+    </a>
+    <ul class="dropdown-menu shadow">
+        {% for child in handler_nav.children %}
+            {% if child.divider_before %}
+            <li><hr class="dropdown-divider"></li>
+            {% endif %}
+            <li>
+                <a class="dropdown-item {% if request.endpoint == child.endpoint %}active{% endif %} 
+                   {% if child.id == 'handler_notifications' %}d-flex justify-content-between align-items-center{% endif %}" 
+                   href="{{ child.get_url() }}">
+                    <span><i class="{{ child.icon }} me-2"></i>{{ child.label }}</span>
+                    {% if child.id == 'handler_notifications' and unread_count > 0 %}
+                    <span class="badge bg-danger rounded-pill">{{ unread_count }}</span>
+                    {% endif %}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+</li>
+{% endif %}
+{% endmacro %}
+
+{# Render PM navigation dropdown #}
+{% macro render_pm_navigation(pm_nav, pending_count=0) %}
+{% if pm_nav and pm_nav.children %}
+{% set is_pm_active = request.endpoint and request.endpoint.startswith('pm.') %}
+<li class="nav-item dropdown {% if is_pm_active %}active{% endif %}">
+    <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_pm_active %}active{% endif %}" 
+       href="#" id="pmDropdown" role="button" data-bs-toggle="dropdown">
+        <i class="{{ pm_nav.icon }} me-1"></i>{{ pm_nav.label }}
+        {% if pending_count > 0 %}
+        <span class="badge bg-warning text-dark rounded-pill ms-1">{{ pending_count }}</span>
+        {% endif %}
+    </a>
+    <ul class="dropdown-menu shadow">
+        {% for child in pm_nav.children %}
+            <li>
+                <a class="dropdown-item {% if request.endpoint == child.endpoint %}active{% endif %}" 
+                   href="{{ child.get_url() }}">
+                    <i class="{{ child.icon }} me-2"></i>{{ child.label }}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+</li>
+{% endif %}
+{% endmacro %}
+
+{# Render admin navigation dropdown #}
+{% macro render_admin_navigation(admin_nav) %}
+{% if admin_nav and admin_nav.children %}
+{% set is_admin_active = request.endpoint and (
+    request.endpoint.startswith('permissions.') or 
+    request.endpoint.startswith('tasks.admin_') or 
+    request.endpoint.startswith('supervisor.') or
+    request.endpoint.startswith('admin.') or
+    request.endpoint.startswith('account_management.') or
+    request.endpoint.startswith('shifts.')
+) %}
+<li class="nav-item dropdown {% if is_admin_active %}active{% endif %}">
+    <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_admin_active %}active{% endif %}" 
+       href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
+        <i class="{{ admin_nav.icon }} me-1"></i>{{ admin_nav.label }}
+    </a>
+    <ul class="dropdown-menu shadow">
+        {% for child in admin_nav.children %}
+            {% if child.header %}
+                {% if child.divider_before %}
+                <li><hr class="dropdown-divider"></li>
+                {% endif %}
+                <li><h6 class="dropdown-header">{{ child.header }}</h6></li>
+            {% elif child.endpoint %}
+                {% if child.divider_before %}
+                <li><hr class="dropdown-divider"></li>
+                {% endif %}
+                <li>
+                    <a class="dropdown-item {% if request.endpoint == child.endpoint %}active{% endif %}" 
+                       href="{{ child.get_url() }}">
+                        <i class="{{ child.icon }} me-2"></i>{{ child.label }}
+                    </a>
+                </li>
+            {% endif %}
+        {% endfor %}
+    </ul>
+</li>
+{% endif %}
+{% endmacro %}
+
+{# Render PM quick navigation buttons #}
+{% macro render_pm_quick_nav(pm_quick_nav) %}
+{% for item in pm_quick_nav %}
+<a class="pm-quick-nav-btn {{ 'active' if request.endpoint == item.endpoint }}" 
+   href="{{ item.get_url() }}">
+    <i class="{{ item.icon }}"></i>
+    <span>{{ item.label }}</span>
+</a>
+{% endfor %}
+{% endmacro %}
+
+{# Mobile navigation - simplified version for off-canvas #}
+{% macro render_mobile_nav_item(item) %}
+{% if item.endpoint %}
+<a class="list-group-item list-group-item-action {% if request.endpoint == item.endpoint %}active{% endif %}" 
+   href="{{ item.get_url() }}">
+    <i class="{{ item.icon }} me-2"></i>{{ item.label }}
+</a>
+{% endif %}
+{% endmacro %}
+
+{% macro render_mobile_nav_section(item) %}
+{% if item and item.children %}
+<div class="mb-3">
+    <h6 class="text-muted px-3 mb-2">
+        <i class="{{ item.icon }} me-1"></i>{{ item.label }}
+    </h6>
+    <div class="list-group list-group-flush">
+        {% for child in item.children %}
+            {% if child.endpoint and not child.header %}
+            {{ render_mobile_nav_item(child) }}
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro render_mobile_navigation(nav_data, handler_unread_count=0) %}
+<div class="mobile-nav-content p-3">
+    {# Main navigation sections #}
+    {% for item in nav_data.main_nav %}
+        {% if item.children %}
+            {{ render_mobile_nav_section(item) }}
+        {% else %}
+            {{ render_mobile_nav_item(item) }}
+        {% endif %}
+    {% endfor %}
+    
+    {# Handler navigation if available #}
+    {% if nav_data.handler_nav %}
+        {{ render_mobile_nav_section(nav_data.handler_nav) }}
+    {% endif %}
+    
+    {# PM navigation if available #}
+    {% if nav_data.pm_nav %}
+        {{ render_mobile_nav_section(nav_data.pm_nav) }}
+    {% endif %}
+    
+    {# Admin navigation if available #}
+    {% if nav_data.admin_nav %}
+        {{ render_mobile_nav_section(nav_data.admin_nav) }}
+    {% endif %}
+</div>
+{% endmacro %}

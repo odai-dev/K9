@@ -1,0 +1,72 @@
+We have a systemic, rooted UI-authorization problem across the entire system (not only HANDLER). Backend denies some actions, but the UI still shows many unauthorized menus/sections and sometimes routes users into unauthorized hub/analytics pages via redirects/fallbacks.
+
+This must be solved as a ROOT FIX, not a patch for a few menu items.
+
+SCOPE:
+- Must apply consistently to BOTH: HANDLER and PROJECT_MANAGER (and any non-admin roles).
+- GENERAL_ADMIN can remain full-access.
+
+CORE REQUIREMENT (Deny-by-Default UI):
+For any non-admin user:
+1) If a screen/section/link is not allowed by effective permissions, it must NOT be visible anywhere in the UI (header/navbar, sidebar, dashboards, module hubs, reports centers, cards, quick actions, and internal links).
+2) The user should never see “click then unauthorized”. Unauthorized options must not appear in the first place.
+3) Any visible link must point to a destination route/page the user can actually access (final destination, not a hub they are denied from).
+4) No fallback/redirect is allowed to send a user into a page they are not permitted to view (example: clicking a specific report link should NOT land in an unauthorized analytics hub).
+
+ROOT CAUSE WE SEE IN PRACTICE:
+- Menus may be rendered from multiple layouts/templates (desktop/mobile variants) with inconsistent permission checks.
+- Parent menu groups render even when all children are hidden.
+- Some report links route to endpoints requiring different permissions than what UI checks.
+- Some flows have “fallback redirects” to generic hub pages (analytics/reports center) that the user doesn’t have permission to view.
+
+WHAT TO IMPLEMENT (ROOT SOLUTION, NOT PATCHES):
+
+A) Single UI Authorization Source of Truth (“UI Auth Engine”):
+- Create a single, reusable way to ask: “Can this user see this UI item?”
+- It MUST be based on effective_permissions(user) (baseline role + grants - revokes), and project scope rules if applicable.
+- Every template/component rendering navigation or actions must use this same logic (no role-only checks in some places and effective in others).
+
+B) Navigation Rendering Must Be Data-Driven and Consistent:
+- Identify ALL navigation entry points (desktop header, mobile menu, sidebar, dashboard tiles, module hubs like reports center/production center/resources center, internal shortcuts).
+- Ensure every entry point uses the same gating logic.
+
+C) Parent Menu Rule (Critical):
+- A parent menu group (e.g., Reports, Production, Resources, etc.) must only render if it has at least ONE visible child item for the current user.
+- If all children are hidden, the parent group must not appear at all.
+- This must work for both HANDLER and PM.
+
+D) “Final Destination Permission” Rule (Critical):
+- A link should only be shown if the user has permission to access the FINAL destination page/route it opens.
+- If a link currently points to a hub/analytics page as an intermediate fallback, fix that:
+  - Either route to a permitted page
+  - Or hide the link when the final destination isn’t allowed
+- Remove/adjust any fallback redirect that lands users into unauthorized hub pages.
+
+E) Reports/Modules Must Follow the Same Pattern:
+- Reports center/hub pages and any module center must not show sections/cards/links unless permitted.
+- If a user has a general permission to “view reports list”, they should still not see individual reports unless they have those report permissions.
+- Same for Production, Resources/HR, etc.
+
+ACCEPTANCE CRITERIA (Must Pass):
+Test 1 (Deny-by-default):
+- For a HANDLER with minimal permissions: they must see ONLY allowed items across ALL UI entry points. No extra top-level menus or hubs.
+
+Test 2 (PM consistency):
+- For a PROJECT_MANAGER with limited permissions: same deny-by-default behavior; no unauthorized menus/sections appear.
+
+Test 3 (Parent menu gating):
+- A parent menu group appears only when at least one child is visible (desktop + mobile).
+
+Test 4 (No unauthorized routing):
+- Clicking any visible link must never land the user in an unauthorized page.
+- If the system redirects, it must redirect only to permitted pages.
+- Direct URL access remains blocked by backend as a second layer.
+
+DELIVERABLES:
+1) Brief explanation of the root solution (how UI authorization is centralized and reused).
+2) List which UI entry points were updated (header/mobile/sidebar/dashboard/module hubs).
+3) Explain how you enforced:
+   - parent menu gating
+   - final-destination gating
+   - removed/fixed unauthorized fallback redirects
+4) Provide a short manual test checklist for HANDLER + PM (Tests 1–4).

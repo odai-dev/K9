@@ -467,6 +467,51 @@ with app.app_context():
         except Exception:
             return 0
     
+    # UI Navigation helper for data-driven menus
+    def get_filtered_navigation():
+        """Get navigation items filtered by current user's effective permissions"""
+        from flask_login import current_user
+        from k9.services.permission_service import PermissionService
+        from k9.services.ui_navigation import UINavigationRegistry, NavigationFilter
+        
+        if not current_user.is_authenticated:
+            return {
+                'main_nav': [],
+                'handler_nav': None,
+                'pm_nav': None,
+                'pm_quick_nav': [],
+                'admin_nav': None
+            }
+        
+        def check_permission(permission_key):
+            return PermissionService.has_permission(current_user.id, permission_key)
+        
+        def check_is_admin():
+            return PermissionService.is_admin(current_user.id)
+        
+        nav_filter = NavigationFilter(check_permission, check_is_admin)
+        
+        main_nav = nav_filter.filter_navigation(UINavigationRegistry.get_main_navigation())
+        
+        handler_nav_item = UINavigationRegistry.get_handler_navigation()
+        handler_nav = nav_filter.filter_nav_item(handler_nav_item)
+        
+        pm_nav_item = UINavigationRegistry.get_pm_navigation()
+        pm_nav = nav_filter.filter_nav_item(pm_nav_item)
+        
+        pm_quick_nav = nav_filter.filter_navigation(UINavigationRegistry.get_pm_quick_nav())
+        
+        admin_nav_item = UINavigationRegistry.get_admin_navigation()
+        admin_nav = nav_filter.filter_nav_item(admin_nav_item)
+        
+        return {
+            'main_nav': main_nav,
+            'handler_nav': handler_nav,
+            'pm_nav': pm_nav,
+            'pm_quick_nav': pm_quick_nav,
+            'admin_nav': admin_nav
+        }
+    
     # V2 Permission helper wrappers for templates
     def has_any_permission_v2(*permission_keys):
         """Check if current user has any of the specified permissions"""
@@ -515,6 +560,7 @@ with app.app_context():
         has_all_permissions=has_all_permissions_v2,
         has_role=has_role_v2,
         get_sections_for_user=get_sections_for_user,
+        get_filtered_navigation=get_filtered_navigation,
         date=date,
         datetime=datetime,
         RoleType=RoleType,
