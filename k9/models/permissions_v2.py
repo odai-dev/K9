@@ -170,7 +170,7 @@ ROLE_PERMISSIONS = {
         "handler_daily.view", "handler_daily.create", "handler_daily.edit",
         "handler_daily.reports.view", "handler_daily.reports.create",
         # Tasks (assigned to handler)
-        "tasks.view",
+        "tasks.my_tasks.view", "tasks.my_tasks.start", "tasks.my_tasks.complete",
         # Notifications
         "notifications.view"
         

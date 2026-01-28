@@ -418,7 +418,7 @@ def dashboard():
 @handler_required
 def select_daily_report():
     """عرض الكلاب المتاحة لإنشاء تقرير يومي"""
-    if not has_permission("handlers.reports.view"):
+    if not has_permission("handler_daily.reports.view"):
         return redirect("/unauthorized")
     
     today = date.today()
@@ -448,7 +448,7 @@ def select_daily_report():
 @handler_required
 def new_report():
     """إنشاء تقرير يومي جديد"""
-    if not has_permission("handlers.reports.create"):
+    if not has_permission("handler_daily.reports.create"):
         return redirect("/unauthorized")
     
     from k9.models.models import Shift
@@ -666,7 +666,7 @@ def new_report():
 @handler_required
 def edit_report(report_id):
     """تعديل التقرير اليومي"""
-    if not has_permission("handlers.reports.edit"):
+    if not has_permission("handler_daily.reports.create"):
         return redirect("/unauthorized")
     
     report = HandlerReport.query.get_or_404(report_id)
@@ -795,7 +795,7 @@ def view_shift_report(report_id):
 @handler_required
 def notifications():
     """عرض الإشعارات"""
-    if not has_permission("handlers.notifications.view"):
+    if not has_permission("notifications.view"):
         return redirect("/unauthorized")
     
     from k9.models.models_handler_daily import Notification
@@ -900,7 +900,7 @@ def my_reports():
 @handler_required
 def get_unread_count():
     """API: الحصول على عدد الإشعارات غير المقروءة"""
-    if not has_permission("handlers.general.access"):
+    if not has_permission("handler_daily.view"):
         return redirect("/unauthorized")
     
     count = len(NotificationService.get_user_notifications(
@@ -914,7 +914,7 @@ def get_unread_count():
 @handler_required
 def delete_report(report_id):
     """حذف تقرير (مسودة فقط)"""
-    if not has_permission("handlers.reports.delete"):
+    if not has_permission("handler_daily.reports.create"):
         return redirect("/unauthorized")
     
     report = HandlerReport.query.get_or_404(report_id)
@@ -1125,7 +1125,7 @@ def my_shift_reports():
 @login_required
 def profile():
     """صفحة البروفايل للسائس ومسؤول المشروع"""
-    if not has_permission("handlers.profile.view"):
+    if not has_permission("handler_daily.view"):
         return redirect("/unauthorized")
     
     from werkzeug.security import check_password_hash, generate_password_hash

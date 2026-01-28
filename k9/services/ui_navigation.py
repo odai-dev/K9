@@ -440,7 +440,7 @@ class UINavigationRegistry:
             id="handler_daily",
             label="التقرير اليومي",
             icon="fas fa-clipboard-check",
-            permissions=["handler_daily.reports.view", "handler_daily.reports.create", "tasks.view", "notifications.view"],
+            permissions=["handler_daily.view", "handler_daily.reports.view", "handler_daily.reports.create", "tasks.my_tasks.view", "notifications.view"],
             permission_mode="any",
             role_scope="handler",
             children=[
@@ -470,7 +470,7 @@ class UINavigationRegistry:
                     label="المهام المكلف بها",
                     icon="fas fa-tasks",
                     endpoint="tasks.handler_index",
-                    permissions=["tasks.view"]
+                    permissions=["tasks.my_tasks.view"]
                 ),
                 NavItem(
                     id="handler_notifications",
@@ -479,6 +479,13 @@ class UINavigationRegistry:
                     endpoint="handler.notifications",
                     permissions=["notifications.view"],
                     divider_before=True
+                ),
+                NavItem(
+                    id="handler_profile",
+                    label="الملف الشخصي",
+                    icon="fas fa-user",
+                    endpoint="handler.profile",
+                    permissions=["handler_daily.view"]
                 ),
             ]
         )
