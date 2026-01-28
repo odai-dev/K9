@@ -2680,7 +2680,109 @@ def project_assignment_edit(project_id, assignment_id):
     
     return redirect(url_for('main.project_assignments', project_id=project_id))
 
-# Enhanced Projects Section - Incidents
+# Global Incidents List (across all projects)
+@main_bp.route('/incidents')
+@login_required
+@require_permission('incidents.view')
+def incidents():
+    """Global list of all incidents across all projects"""
+    incidents_list = Incident.query.order_by(Incident.incident_date.desc()).all()
+    projects = Project.query.filter_by(status=ProjectStatus.ACTIVE).all()
+    return render_template('projects/incidents_global.html', incidents=incidents_list, projects=projects)
+
+@main_bp.route('/incidents/add', methods=['GET', 'POST'])
+@login_required
+@require_permission('incidents.create')
+def incident_add():
+    """Add incident - select project first"""
+    projects = Project.query.filter_by(status=ProjectStatus.ACTIVE).all()
+    
+    if request.method == 'POST':
+        project_id = request.form.get('project_id')
+        if not project_id:
+            flash('يجب اختيار المشروع', 'error')
+            return render_template('projects/incident_add_global.html', projects=projects)
+        
+        try:
+            project = Project.query.get_or_404(project_id)
+            incident = Incident(
+                project_id=project.id,
+                incident_date=datetime.strptime(request.form['incident_date'], '%Y-%m-%d').date(),
+                incident_time=datetime.strptime(request.form['incident_time'], '%H:%M').time() if request.form.get('incident_time') else None,
+                incident_type=request.form['incident_type'],
+                description=request.form['description'],
+                location=request.form.get('location'),
+                severity=request.form['severity'],
+                reported_by=request.form.get('reported_by'),
+                witnesses=request.form.get('witnesses'),
+                immediate_action_taken=request.form.get('immediate_action_taken'),
+                resolved=False
+            )
+            
+            db.session.add(incident)
+            db.session.commit()
+            
+            log_audit(current_user.id, AuditAction.CREATE, 'Incident', incident.id, f'حادث جديد في المشروع {project.name}', None, {'type': incident.incident_type, 'severity': incident.severity})
+            flash('تم تسجيل الحادث بنجاح', 'success')
+            return redirect(url_for('main.incidents'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء تسجيل الحادث: {str(e)}', 'error')
+    
+    return render_template('projects/incident_add_global.html', projects=projects)
+
+# Global Suspicions List (across all projects)
+@main_bp.route('/suspicions')
+@login_required
+@require_permission('suspicions.view')
+def suspicions():
+    """Global list of all suspicions across all projects"""
+    suspicions_list = Suspicion.query.order_by(Suspicion.discovery_date.desc()).all()
+    projects = Project.query.filter_by(status=ProjectStatus.ACTIVE).all()
+    return render_template('projects/suspicions_global.html', suspicions=suspicions_list, projects=projects)
+
+@main_bp.route('/suspicions/add', methods=['GET', 'POST'])
+@login_required
+@require_permission('suspicions.create')
+def suspicion_add():
+    """Add suspicion - select project first"""
+    projects = Project.query.filter_by(status=ProjectStatus.ACTIVE).all()
+    
+    if request.method == 'POST':
+        project_id = request.form.get('project_id')
+        if not project_id:
+            flash('يجب اختيار المشروع', 'error')
+            return render_template('projects/suspicion_add_global.html', projects=projects)
+        
+        try:
+            project = Project.query.get_or_404(project_id)
+            suspicion = Suspicion(
+                project_id=project.id,
+                discovery_date=datetime.strptime(request.form['discovery_date'], '%Y-%m-%d').date(),
+                discovery_time=datetime.strptime(request.form['discovery_time'], '%H:%M').time() if request.form.get('discovery_time') else None,
+                suspicion_type=request.form['suspicion_type'],
+                description=request.form['description'],
+                location=request.form.get('location'),
+                severity=request.form['severity'],
+                discovered_by=request.form.get('discovered_by'),
+                status='open'
+            )
+            
+            db.session.add(suspicion)
+            db.session.commit()
+            
+            log_audit(current_user.id, AuditAction.CREATE, 'Suspicion', suspicion.id, f'اشتباه جديد في المشروع {project.name}', None, {'type': suspicion.suspicion_type, 'severity': suspicion.severity})
+            flash('تم تسجيل الاشتباه بنجاح', 'success')
+            return redirect(url_for('main.suspicions'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'حدث خطأ أثناء تسجيل الاشتباه: {str(e)}', 'error')
+    
+    return render_template('projects/suspicion_add_global.html', projects=projects)
+
+# Enhanced Projects Section - Incidents (project-specific)
 @main_bp.route('/projects/<project_id>/incidents')
 @login_required
 @require_permission('incidents.view')

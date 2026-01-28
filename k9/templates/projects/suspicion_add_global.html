@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}تسجيل اشتباه جديد{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h4 class="mb-0">
+                                <i class="fas fa-search me-2"></i>
+                                تسجيل اشتباه جديد
+                            </h4>
+                        </div>
+                        <div class="col-auto">
+                            <a href="{{ url_for('main.suspicions') }}" class="btn btn-light btn-sm">
+                                <i class="fas fa-arrow-right me-2"></i>العودة للاشتباهات
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="project_id" class="form-label">المشروع *</label>
+                                    <select class="form-select" id="project_id" name="project_id" required>
+                                        <option value="">اختر المشروع...</option>
+                                        {% for project in projects %}
+                                        <option value="{{ project.id }}">{{ project.name }} - {{ project.code }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="suspicion_type" class="form-label">نوع الاشتباه *</label>
+                                    <select class="form-select" id="suspicion_type" name="suspicion_type" required>
+                                        <option value="">اختر نوع الاشتباه...</option>
+                                        <option value="سلاح">سلاح</option>
+                                        <option value="مخدرات">مخدرات</option>
+                                        <option value="متفجرات">متفجرات</option>
+                                        <option value="مواد محظورة">مواد محظورة</option>
+                                        <option value="أخرى">أخرى</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="discovery_date" class="form-label">تاريخ الاكتشاف *</label>
+                                    <input type="date" class="form-control" id="discovery_date" name="discovery_date" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="discovery_time" class="form-label">وقت الاكتشاف</label>
+                                    <input type="time" class="form-control" id="discovery_time" name="discovery_time">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="severity" class="form-label">درجة الخطورة *</label>
+                                    <select class="form-select" id="severity" name="severity" required>
+                                        <option value="LOW">منخفضة</option>
+                                        <option value="MEDIUM" selected>متوسطة</option>
+                                        <option value="HIGH">عالية</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="location" class="form-label">موقع الاكتشاف</label>
+                            <input type="text" class="form-control" id="location" name="location" placeholder="وصف تفصيلي لموقع الاكتشاف">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">وصف الاشتباه *</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" placeholder="وصف تفصيلي للاشتباه وظروف الاكتشاف" required></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="discovered_by" class="form-label">المكتشف</label>
+                            <input type="text" class="form-control" id="discovered_by" name="discovered_by" placeholder="اسم الشخص الذي اكتشف الاشتباه">
+                        </div>
+                        
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('main.suspicions') }}" class="btn btn-secondary">إلغاء</a>
+                            <button type="submit" class="btn btn-info">تسجيل الاشتباه</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('discovery_date').value = today;
+    
+    const now = new Date();
+    const timeString = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    document.getElementById('discovery_time').value = timeString;
+});
+</script>
+{% endblock %}
