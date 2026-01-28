@@ -55,28 +55,55 @@
                     {{ render_admin_navigation(nav_data.admin_nav) }}
                     {% endif %}
                     
-                    {% if has_permission('reports.view') %}
+                    {# Reports dropdown - only show if user has at least one report permission #}
+                    {% set has_training_reports = has_permission('reports.training.view') %}
+                    {% set has_breeding_reports = has_any_permission('reports.breeding.feeding.view', 'reports.breeding.checkup.view', 'reports.caretaker.view') %}
+                    {% set has_veterinary_reports = has_permission('reports.veterinary.view') %}
+                    {% set has_general_reports = has_permission('reports.view') %}
+                    {% set has_any_reports = has_training_reports or has_breeding_reports or has_veterinary_reports or has_general_reports %}
+                    
+                    {% if has_any_reports %}
                     {% set is_reports_active = request.endpoint and (request.endpoint.startswith('main.reports_') or request.endpoint.startswith('reports_') or request.endpoint.startswith('unified_') or request.endpoint.startswith('veterinary_reports_') or request.endpoint.startswith('caretaker_daily_reports_')) %}
                     <li class="nav-item dropdown {% if is_reports_active %}active{% endif %}">
                         <a class="nav-link dropdown-toggle px-3 py-2 rounded-pill {% if is_reports_active %}active{% endif %}" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-chart-bar me-1"></i>التقارير
                         </a>
                         <ul class="dropdown-menu dropdown-menu-long shadow">
+                            {% if has_general_reports %}
                             <li><a class="dropdown-item {% if request.endpoint == 'main.reports_hub' %}active{% endif %} fw-bold" href="{{ url_for('main.reports_hub') }}"><i class="fas fa-chart-line me-2 text-primary"></i>مركز التقارير</a></li>
                             <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            
+                            {% if has_training_reports %}
                             <li><h6 class="dropdown-header">تقارير التدريب</h6></li>
                             <li><a class="dropdown-item {% if request.path == '/reports/training/trainer-daily' %}active{% endif %}" href="/reports/training/trainer-daily"><i class="fas fa-dumbbell me-2"></i>التقرير اليومي للمدرب</a></li>
                             <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            
+                            {% if has_breeding_reports %}
                             <li><h6 class="dropdown-header">تقارير التربية والرعاية</h6></li>
+                            {% if has_permission('reports.breeding.feeding.view') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'unified_feeding_reports_ui.feeding' %}active{% endif %}" href="{{ url_for('unified_feeding_reports_ui.feeding') }}"><i class="fas fa-bone me-2"></i>تقرير التغذية الموحد</a></li>
+                            {% endif %}
+                            {% if has_permission('reports.breeding.checkup.view') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'unified_checkup_reports_ui.checkup' %}active{% endif %}" href="{{ url_for('unified_checkup_reports_ui.checkup') }}"><i class="fas fa-stethoscope me-2"></i>تقرير الفحص الظاهري الموحد</a></li>
+                            {% endif %}
+                            {% if has_permission('reports.caretaker.view') %}
                             <li><a class="dropdown-item {% if request.endpoint == 'caretaker_daily_reports_ui.caretaker_daily' %}active{% endif %}" href="{{ url_for('caretaker_daily_reports_ui.caretaker_daily') }}"><i class="fas fa-broom me-2"></i>تقرير الرعاية اليومية</a></li>
+                            {% endif %}
                             <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            
+                            {% if has_veterinary_reports %}
                             <li><h6 class="dropdown-header">تقارير بيطرية</h6></li>
                             <li><a class="dropdown-item {% if request.endpoint == 'veterinary_reports_ui.veterinary' %}active{% endif %}" href="{{ url_for('veterinary_reports_ui.veterinary') }}"><i class="fas fa-user-md me-2"></i>التقرير البيطري الموحد</a></li>
                             <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            
+                            {% if has_general_reports %}
                             <li><h6 class="dropdown-header">تقارير عامة</h6></li>
                             <li><a class="dropdown-item {% if request.endpoint == 'main.reports_index' %}active{% endif %}" href="{{ url_for('main.reports_index') }}"><i class="fas fa-chart-pie me-2"></i>التقارير العامة</a></li>
+                            {% endif %}
                         </ul>
                     </li>
                     {% endif %}

@@ -163,23 +163,23 @@ ROLE_PERMISSIONS = {
     ],
     
     RoleType.HANDLER: [
-        # Dogs module
-        "dogs.view",
-        # Training module
-        "training.view", "training.create",
-        # Veterinary module
-        "veterinary.view",
-        # Reports module
-        "reports.view", "reports.create",
-        # Schedule module
-        "schedule.view",
-        # Handler daily operations
+        # MINIMAL baseline - only core handler functions
+        # All other permissions must be explicitly granted by admin
+        
+        # Handler daily operations (core function)
         "handler_daily.view", "handler_daily.create", "handler_daily.edit",
         "handler_daily.reports.view", "handler_daily.reports.create",
-        # Tasks
+        # Tasks (assigned to handler)
         "tasks.view",
         # Notifications
         "notifications.view"
+        
+        # NOTE: The following permissions are NOT included by default
+        # and must be explicitly granted by admin:
+        # - dogs.view, training.view, veterinary.view, breeding.view
+        # - reports.view, reports.create
+        # - schedule.view
+        # - employees.view
     ],
     
     RoleType.VETERINARIAN: [
