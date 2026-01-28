@@ -169,8 +169,11 @@ ROLE_PERMISSIONS = {
         # Handler daily operations (core function)
         "handler_daily.view", "handler_daily.create", "handler_daily.edit",
         "handler_daily.reports.view", "handler_daily.reports.create",
+        "handler_daily.reports.edit", "handler_daily.reports.delete",
         # Tasks (assigned to handler)
         "tasks.my_tasks.view", "tasks.my_tasks.start", "tasks.my_tasks.complete",
+        # Profile access
+        "profile.view",
         # Notifications
         "notifications.view"
         

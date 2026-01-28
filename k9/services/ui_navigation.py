@@ -440,7 +440,7 @@ class UINavigationRegistry:
             id="handler_daily",
             label="التقرير اليومي",
             icon="fas fa-clipboard-check",
-            permissions=["handler_daily.view", "handler_daily.reports.view", "handler_daily.reports.create", "tasks.my_tasks.view", "notifications.view"],
+            permissions=["handler_daily.view", "handler_daily.reports.view", "handler_daily.reports.create", "tasks.my_tasks.view", "notifications.view", "profile.view"],
             permission_mode="any",
             role_scope="handler",
             children=[
@@ -485,7 +485,7 @@ class UINavigationRegistry:
                     label="الملف الشخصي",
                     icon="fas fa-user",
                     endpoint="handler.profile",
-                    permissions=["handler_daily.view"]
+                    permissions=["profile.view"]
                 ),
             ]
         )

@@ -666,7 +666,7 @@ def new_report():
 @handler_required
 def edit_report(report_id):
     """تعديل التقرير اليومي"""
-    if not has_permission("handler_daily.reports.create"):
+    if not has_permission("handler_daily.reports.edit"):
         return redirect("/unauthorized")
     
     report = HandlerReport.query.get_or_404(report_id)
@@ -914,7 +914,7 @@ def get_unread_count():
 @handler_required
 def delete_report(report_id):
     """حذف تقرير (مسودة فقط)"""
-    if not has_permission("handler_daily.reports.create"):
+    if not has_permission("handler_daily.reports.delete"):
         return redirect("/unauthorized")
     
     report = HandlerReport.query.get_or_404(report_id)
@@ -1125,7 +1125,7 @@ def my_shift_reports():
 @login_required
 def profile():
     """صفحة البروفايل للسائس ومسؤول المشروع"""
-    if not has_permission("handler_daily.view"):
+    if not has_permission("profile.view"):
         return redirect("/unauthorized")
     
     from werkzeug.security import check_password_hash, generate_password_hash

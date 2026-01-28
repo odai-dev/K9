@@ -428,8 +428,8 @@
             </a>
             {% endif %}
             
-            <!-- Tasks - Requires tasks.view permission -->
-            {% if has_permission('tasks.view') %}
+            <!-- Tasks - Requires tasks.my_tasks.view permission -->
+            {% if has_permission('tasks.my_tasks.view') %}
             <a class="handler-quick-nav-btn position-relative {{ 'active' if 'tasks' in request.endpoint|default('') }}" href="{{ url_for('tasks.handler_index') }}">
                 <i class="fas fa-tasks"></i>
                 <span>المهام</span>

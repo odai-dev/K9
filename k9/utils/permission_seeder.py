@@ -345,6 +345,7 @@ ADDITIONAL_PERMISSIONS = [
     {'key': 'handler_daily.reports.view', 'name_ar': 'يومي السائس - التقارير - عرض', 'category': 'handler_daily'},
     {'key': 'handler_daily.reports.create', 'name_ar': 'يومي السائس - التقارير - إضافة', 'category': 'handler_daily'},
     {'key': 'handler_daily.reports.edit', 'name_ar': 'يومي السائس - التقارير - تعديل', 'category': 'handler_daily'},
+    {'key': 'handler_daily.reports.delete', 'name_ar': 'يومي السائس - التقارير - حذف', 'category': 'handler_daily'},
     
     # PM additional permissions
     {'key': 'pm.general.access', 'name_ar': 'مدير المشروع - وصول عام', 'category': 'pm'},
