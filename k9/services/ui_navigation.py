@@ -77,7 +77,7 @@ class UINavigationRegistry:
                 id="resources",
                 label="الموارد",
                 icon="fas fa-users",
-                permissions=["dogs.view", "employees.view"],
+                permissions=["dogs.view", "dogs.create", "dogs.edit", "employees.view", "employees.create", "employees.edit"],
                 permission_mode="any",
                 children=[
                     NavItem(
@@ -85,14 +85,16 @@ class UINavigationRegistry:
                         label="الكلاب",
                         icon="",
                         header="الكلاب",
-                        permissions=["dogs.view"]
+                        permissions=["dogs.view", "dogs.create", "dogs.edit"],
+                        permission_mode="any"
                     ),
                     NavItem(
                         id="dogs_list",
                         label="قائمة الكلاب",
                         icon="fas fa-dog",
                         endpoint="main.dogs_list",
-                        permissions=["dogs.view"]
+                        permissions=["dogs.view", "dogs.edit"],
+                        permission_mode="any"
                     ),
                     NavItem(
                         id="dogs_add",
@@ -106,7 +108,8 @@ class UINavigationRegistry:
                         label="الموظفين",
                         icon="",
                         header="الموظفين",
-                        permissions=["employees.view"],
+                        permissions=["employees.view", "employees.create", "employees.edit"],
+                        permission_mode="any",
                         divider_before=True
                     ),
                     NavItem(
@@ -114,7 +117,8 @@ class UINavigationRegistry:
                         label="قائمة الموظفين",
                         icon="fas fa-users",
                         endpoint="main.employees_list",
-                        permissions=["employees.view"]
+                        permissions=["employees.view", "employees.edit"],
+                        permission_mode="any"
                     ),
                     NavItem(
                         id="employees_add",
@@ -129,7 +133,7 @@ class UINavigationRegistry:
                 id="breeding",
                 label="التربية",
                 icon="fas fa-leaf",
-                permissions=["training.view", "breeding.view"],
+                permissions=["training.view", "training.create", "training.edit", "training.delete", "breeding.view", "breeding.create", "breeding.edit"],
                 permission_mode="any",
                 children=[
                     NavItem(
@@ -137,14 +141,16 @@ class UINavigationRegistry:
                         label="التدريب",
                         icon="",
                         header="التدريب",
-                        permissions=["training.view"]
+                        permissions=["training.view", "training.create", "training.edit", "training.delete"],
+                        permission_mode="any"
                     ),
                     NavItem(
                         id="training_list",
                         label="جلسات التدريب",
                         icon="fas fa-clipboard",
                         endpoint="main.training_list",
-                        permissions=["training.view"]
+                        permissions=["training.view", "training.edit"],
+                        permission_mode="any"
                     ),
                     NavItem(
                         id="training_add",
@@ -218,7 +224,8 @@ class UINavigationRegistry:
                 id="veterinary",
                 label="الطبابة",
                 icon="fas fa-stethoscope",
-                permissions=["veterinary.view"],
+                permissions=["veterinary.view", "veterinary.create", "veterinary.edit"],
+                permission_mode="any",
                 children=[
                     NavItem(
                         id="veterinary_list",
@@ -240,21 +247,24 @@ class UINavigationRegistry:
                 id="production",
                 label="الإنتاج",
                 icon="fas fa-heart",
-                permissions=["production.view"],
+                permissions=["production.view", "production.create", "production.edit"],
+                permission_mode="any",
                 children=[
                     NavItem(
                         id="production_header",
                         label="إدارة الإنتاج",
                         icon="",
                         header="إدارة الإنتاج",
-                        permissions=["production.view"]
+                        permissions=["production.view", "production.create", "production.edit"],
+                        permission_mode="any"
                     ),
                     NavItem(
                         id="production_list",
                         label="لوحة الإنتاج",
                         icon="fas fa-tachometer-alt",
                         endpoint="main.production_list",
-                        permissions=["production.view"]
+                        permissions=["production.view", "production.edit"],
+                        permission_mode="any"
                     ),
                     NavItem(
                         id="lifecycle_header",
@@ -327,21 +337,24 @@ class UINavigationRegistry:
                 id="projects",
                 label="المشاريع",
                 icon="fas fa-project-diagram",
-                permissions=["projects.view"],
+                permissions=["projects.view", "projects.create", "projects.edit", "incidents.view", "incidents.create", "suspicions.view", "suspicions.create"],
+                permission_mode="any",
                 children=[
                     NavItem(
                         id="projects_header",
                         label="إدارة المشاريع",
                         icon="",
                         header="إدارة المشاريع",
-                        permissions=["projects.view"]
+                        permissions=["projects.view", "projects.create", "projects.edit"],
+                        permission_mode="any"
                     ),
                     NavItem(
                         id="projects_list",
                         label="قائمة المشاريع",
                         icon="fas fa-folder",
                         endpoint="main.projects",
-                        permissions=["projects.view"]
+                        permissions=["projects.view", "projects.edit"],
+                        permission_mode="any"
                     ),
                     NavItem(
                         id="project_add",
@@ -349,6 +362,54 @@ class UINavigationRegistry:
                         icon="fas fa-plus-circle",
                         endpoint="main.project_add",
                         permissions=["projects.create"]
+                    ),
+                    NavItem(
+                        id="incidents_header",
+                        label="الحوادث",
+                        icon="",
+                        header="الحوادث",
+                        permissions=["incidents.view", "incidents.create", "incidents.edit"],
+                        permission_mode="any",
+                        divider_before=True
+                    ),
+                    NavItem(
+                        id="incidents_list",
+                        label="قائمة الحوادث",
+                        icon="fas fa-exclamation-triangle",
+                        endpoint="main.incidents",
+                        permissions=["incidents.view", "incidents.edit"],
+                        permission_mode="any"
+                    ),
+                    NavItem(
+                        id="incident_add",
+                        label="إضافة حادثة",
+                        icon="fas fa-plus",
+                        endpoint="main.incident_add",
+                        permissions=["incidents.create"]
+                    ),
+                    NavItem(
+                        id="suspicions_header",
+                        label="الاشتباهات",
+                        icon="",
+                        header="الاشتباهات",
+                        permissions=["suspicions.view", "suspicions.create", "suspicions.edit"],
+                        permission_mode="any",
+                        divider_before=True
+                    ),
+                    NavItem(
+                        id="suspicions_list",
+                        label="قائمة الاشتباهات",
+                        icon="fas fa-search",
+                        endpoint="main.suspicions",
+                        permissions=["suspicions.view", "suspicions.edit"],
+                        permission_mode="any"
+                    ),
+                    NavItem(
+                        id="suspicion_add",
+                        label="إضافة اشتباه",
+                        icon="fas fa-plus",
+                        endpoint="main.suspicion_add",
+                        permissions=["suspicions.create"]
                     ),
                 ]
             ),
