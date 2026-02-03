@@ -166,6 +166,22 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
     normal_style = ParagraphStyle('NormalAr', parent=styles['Normal'], fontName=arabic_font,
                                   fontSize=10, alignment=2)
 
+    # Arabic day names
+    ARABIC_DAYS = {
+        'Monday': 'الإثنين',
+        'Tuesday': 'الثلاثاء',
+        'Wednesday': 'الأربعاء',
+        'Thursday': 'الخميس',
+        'Friday': 'الجمعة',
+        'Saturday': 'السبت',
+        'Sunday': 'الأحد'
+    }
+    
+    # Get current date info
+    now = datetime.now()
+    current_day_name = ARABIC_DAYS.get(now.strftime('%A'), now.strftime('%A'))
+    current_date = now.strftime('%Y/%m/%d')
+    
     # Draw header: logo (top left), title (centre), day/date (top right)
     def build_header(canvas_obj, doc_obj):
         width, height = A4
@@ -174,12 +190,12 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
         if os.path.exists(logo_path):
             canvas_obj.drawImage(logo_path, x=doc_obj.leftMargin,
                                  y=height - doc_obj.topMargin + 20, width=50, height=50, preserveAspectRatio=True)
-        # Day/Date placeholders on the right
+        # Day/Date with actual values
         canvas_obj.setFont(arabic_font, 12)
         canvas_obj.drawRightString(width - doc_obj.rightMargin, height - doc_obj.topMargin + 50,
-                                   safe_arabic_text("اليوم:               "))
+                                   safe_arabic_text(f"اليوم: {current_day_name}"))
         canvas_obj.drawRightString(width - doc_obj.rightMargin, height - doc_obj.topMargin + 30,
-                                   safe_arabic_text("التاريخ:          /  /     "))
+                                   safe_arabic_text(f"التاريخ: {current_date}"))
 
     # Leave space beneath the header
     story.append(Spacer(1, 60))
