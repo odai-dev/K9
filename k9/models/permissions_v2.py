@@ -177,6 +177,11 @@ ROLE_PERMISSIONS = {
         # Reports module - full access
         "reports.view", "reports.create", "reports.edit", "reports.approve", "reports.export",
         "reports.attendance.view",
+        # Breeding & Caretaker reports
+        "reports.breeding.feeding.view", "reports.breeding.feeding.create", "reports.breeding.feeding.edit",
+        "reports.breeding.checkup.view", "reports.breeding.checkup.create", "reports.breeding.checkup.edit",
+        "reports.breeding.caretaker_daily.view", "reports.breeding.caretaker_daily.create",
+        "reports.caretaker.view", "reports.caretaker.create", "reports.caretaker.edit",
         # Schedule module - all schedule operations
         "schedule.view", "schedule.create", "schedule.edit", "schedule.approve",
         "schedule.management.view", "schedule.management.create", 
