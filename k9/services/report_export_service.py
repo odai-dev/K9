@@ -36,56 +36,17 @@ from k9.utils.pdf_minimal_elegant import (
     add_page_number,
     MinimalColors
 )
-from k9.utils.utils_pdf_rtl import rtl, register_arabic_fonts, get_arabic_font_name
+from k9.utils.utils_pdf_rtl import rtl, register_arabic_fonts, get_arabic_font_name, format_pdf_text
 
 
 class ReportExportService:
     """Service for exporting reports to PDF and Excel"""
     
-    # Arabic font path (using DejaVu Sans which supports Arabic)
-    ARABIC_FONT_PATH = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
-    ARABIC_FONT_BOLD_PATH = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
-    
-    # Track if Arabic fonts are available
-    _arabic_fonts_available = None
-    
-    @staticmethod
-    def _setup_arabic_fonts():
-        """Register Arabic-compatible fonts with ReportLab"""
-        if ReportExportService._arabic_fonts_available is not None:
-            return ReportExportService._arabic_fonts_available
-        
-        try:
-            if os.path.exists(ReportExportService.ARABIC_FONT_PATH):
-                pdfmetrics.registerFont(TTFont('Arabic', ReportExportService.ARABIC_FONT_PATH))
-            else:
-                ReportExportService._arabic_fonts_available = False
-                return False
-            
-            if os.path.exists(ReportExportService.ARABIC_FONT_BOLD_PATH):
-                pdfmetrics.registerFont(TTFont('ArabicBold', ReportExportService.ARABIC_FONT_BOLD_PATH))
-            else:
-                ReportExportService._arabic_fonts_available = False
-                return False
-            
-            ReportExportService._arabic_fonts_available = True
-            return True
-        except Exception as e:
-            current_app.logger.error(f"Warning: Could not register Arabic fonts: {e}")
-            ReportExportService._arabic_fonts_available = False
-            return False
-    
-    @staticmethod
-    def _get_font_name(bold=False):
-        """Get appropriate font name based on availability"""
-        if ReportExportService._arabic_fonts_available:
-            return 'ArabicBold' if bold else 'Arabic'
-        return 'Helvetica-Bold' if bold else 'Helvetica'
-    
     @staticmethod
     def _get_table_style_base(header_color='#c5cae9'):
         """Get base table style with proper font fallback"""
-        font_name = ReportExportService._get_font_name()
+        register_arabic_fonts()
+        font_name = get_arabic_font_name()
         return TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(header_color)),
             ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
@@ -100,13 +61,14 @@ class ReportExportService:
     def _get_arabic_styles():
         """Get paragraph styles configured for Arabic text"""
         styles = getSampleStyleSheet()
-        has_arabic = ReportExportService._setup_arabic_fonts()
+        register_arabic_fonts()
+        font_name = get_arabic_font_name()
         
         # Title style
         title_style = ParagraphStyle(
             'ArabicTitle',
             parent=styles['Title'],
-            fontName='ArabicBold' if has_arabic else 'Helvetica-Bold',
+            fontName=font_name,
             fontSize=18,
             alignment=TA_CENTER,
             spaceAfter=12,
@@ -117,7 +79,7 @@ class ReportExportService:
         heading_style = ParagraphStyle(
             'ArabicHeading',
             parent=styles['Heading1'],
-            fontName='ArabicBold' if has_arabic else 'Helvetica-Bold',
+            fontName=font_name,
             fontSize=14,
             alignment=TA_RIGHT,
             spaceAfter=8,
@@ -128,7 +90,7 @@ class ReportExportService:
         normal_style = ParagraphStyle(
             'ArabicNormal',
             parent=styles['Normal'],
-            fontName='Arabic' if has_arabic else 'Helvetica',
+            fontName=font_name,
             fontSize=10,
             alignment=TA_RIGHT,
             spaceAfter=6
@@ -166,35 +128,36 @@ class ReportExportService:
         )
         
         styles = ReportExportService._get_arabic_styles()
-        font_name = ReportExportService._get_font_name()
+        register_arabic_fonts()
+        font_name = get_arabic_font_name()
         story = []
         
         # Title
-        title = Paragraph(f"تقرير السائس اليومي", styles['title'])
+        title = Paragraph(rtl("تقرير السائس اليومي"), styles['title'])
         story.append(title)
         story.append(Spacer(1, 0.5*cm))
         
         # Report metadata
         metadata_data = [
-            ['التاريخ', report.date.strftime('%Y-%m-%d')],
-            ['نوع التقرير', 'يومي شامل' if report.report_type.value == 'DAILY' else 'وردية'],
-            ['السائس', report.handler.username if report.handler else 'غير محدد'],
-            ['الكلب', report.dog.name if report.dog else 'غير محدد'],
-            ['المشروع', report.project.name if report.project else 'غير محدد'],
-            ['الموقع', report.location or 'غير محدد'],
-            ['الحالة', ReportExportService._get_status_arabic(report.status.value)],
+            [rtl('التاريخ'), report.date.strftime('%Y-%m-%d')],
+            [rtl('نوع التقرير'), rtl('يومي شامل' if report.report_type.value == 'DAILY' else 'وردية')],
+            [rtl('السائس'), format_pdf_text(report.handler.username if report.handler else 'غير محدد')],
+            [rtl('الكلب'), format_pdf_text(report.dog.name if report.dog else 'غير محدد')],
+            [rtl('المشروع'), format_pdf_text(report.project.name if report.project else 'غير محدد')],
+            [rtl('الموقع'), format_pdf_text(report.location or 'غير محدد')],
+            [rtl('الحالة'), rtl(ReportExportService._get_status_arabic(report.status.value))],
         ]
         
         if report.submitted_at:
-            metadata_data.append(['تاريخ الإرسال', report.submitted_at.strftime('%Y-%m-%d %H:%M')])
+            metadata_data.append([rtl('تاريخ الإرسال'), report.submitted_at.strftime('%Y-%m-%d %H:%M')])
         
         if report.reviewer:
-            metadata_data.append(['المراجع', report.reviewer.username])
+            metadata_data.append([rtl('المراجع'), format_pdf_text(report.reviewer.username)])
             if report.reviewed_at:
-                metadata_data.append(['تاريخ المراجعة', report.reviewed_at.strftime('%Y-%m-%d %H:%M')])
+                metadata_data.append([rtl('تاريخ المراجعة'), report.reviewed_at.strftime('%Y-%m-%d %H:%M')])
         
         if report.review_notes:
-            metadata_data.append(['ملاحظات المراجعة', report.review_notes])
+            metadata_data.append([rtl('ملاحظات المراجعة'), format_pdf_text(report.review_notes)])
         
         metadata_table = Table(metadata_data, colWidths=[5*cm, 10*cm])
         metadata_table.setStyle(TableStyle([
@@ -212,8 +175,8 @@ class ReportExportService:
         
         # Health section
         if report.health:
-            story.append(Paragraph("الفحص الصحي", styles['heading']))
-            health_data = [['الجزء', 'الحالة', 'الملاحظات']]
+            story.append(Paragraph(rtl("الفحص الصحي"), styles['heading']))
+            health_data = [[rtl('الجزء'), rtl('الحالة'), rtl('الملاحظات')]]
             
             health_fields = [
                 ('eyes', 'العيون'),
@@ -234,9 +197,9 @@ class ReportExportService:
                 notes = getattr(report.health, f'{field}_notes', None)
                 if status:
                     health_data.append([
-                        label,
-                        ReportExportService._get_health_status_arabic(status.value),
-                        notes or ''
+                        rtl(label),
+                        rtl(ReportExportService._get_health_status_arabic(status.value)),
+                        format_pdf_text(notes or '')
                     ])
             
             if len(health_data) > 1:
@@ -255,16 +218,16 @@ class ReportExportService:
         
         # Training sessions
         if report.training_sessions:
-            story.append(Paragraph("جلسات التدريب", styles['heading']))
-            training_data = [['النوع', 'الوصف', 'من', 'إلى', 'ملاحظات']]
+            story.append(Paragraph(rtl("جلسات التدريب"), styles['heading']))
+            training_data = [[rtl('النوع'), rtl('الوصف'), rtl('من'), rtl('إلى'), rtl('ملاحظات')]]
             
             for session in report.training_sessions:
                 training_data.append([
-                    session.training_type.value if session.training_type else '',
-                    session.description or '',
+                    format_pdf_text(session.training_type.value if session.training_type else ''),
+                    format_pdf_text(session.description or ''),
                     session.time_from.strftime('%H:%M') if session.time_from else '',
                     session.time_to.strftime('%H:%M') if session.time_to else '',
-                    session.notes or ''
+                    format_pdf_text(session.notes or '')
                 ])
             
             training_table = Table(training_data, colWidths=[3*cm, 4*cm, 2*cm, 2*cm, 4*cm])
@@ -282,27 +245,27 @@ class ReportExportService:
         
         # Care section
         if report.care:
-            story.append(Paragraph("العناية", styles['heading']))
+            story.append(Paragraph(rtl("العناية"), styles['heading']))
             care_data = []
             
             if report.care.food_amount:
-                care_data.append(['كمية الطعام', report.care.food_amount])
+                care_data.append([rtl('كمية الطعام'), format_pdf_text(report.care.food_amount)])
             if report.care.food_type:
-                care_data.append(['نوع الطعام', report.care.food_type])
+                care_data.append([rtl('نوع الطعام'), format_pdf_text(report.care.food_type)])
             if report.care.supplements:
-                care_data.append(['المكملات', report.care.supplements])
+                care_data.append([rtl('المكملات'), format_pdf_text(report.care.supplements)])
             if report.care.water_amount:
-                care_data.append(['كمية الماء', report.care.water_amount])
+                care_data.append([rtl('كمية الماء'), format_pdf_text(report.care.water_amount)])
             
-            care_data.append(['التمشيط', 'نعم' if report.care.grooming_done else 'لا'])
-            care_data.append(['الغسل', 'نعم' if report.care.washing_done else 'لا'])
+            care_data.append([rtl('التمشيط'), rtl('نعم' if report.care.grooming_done else 'لا')])
+            care_data.append([rtl('الغسل'), rtl('نعم' if report.care.washing_done else 'لا')])
             
             if report.care.excretion_location:
-                care_data.append(['مكان التبرز', report.care.excretion_location])
+                care_data.append([rtl('مكان التبرز'), format_pdf_text(report.care.excretion_location)])
             if report.care.stool_color:
-                care_data.append(['لون البراز', report.care.stool_color.value])
+                care_data.append([rtl('لون البراز'), format_pdf_text(report.care.stool_color.value)])
             if report.care.stool_shape:
-                care_data.append(['شكل البراز', report.care.stool_shape.value])
+                care_data.append([rtl('شكل البراز'), format_pdf_text(report.care.stool_shape.value)])
             
             if care_data:
                 care_table = Table(care_data, colWidths=[5*cm, 10*cm])
@@ -320,13 +283,13 @@ class ReportExportService:
         
         # Behavior section
         if report.behavior:
-            story.append(Paragraph("السلوك", styles['heading']))
+            story.append(Paragraph(rtl("السلوك"), styles['heading']))
             behavior_data = []
             
             if report.behavior.good_behavior_notes:
-                behavior_data.append(['السلوك الجيد', report.behavior.good_behavior_notes])
+                behavior_data.append([rtl('السلوك الجيد'), format_pdf_text(report.behavior.good_behavior_notes)])
             if report.behavior.bad_behavior_notes:
-                behavior_data.append(['السلوك السيئ', report.behavior.bad_behavior_notes])
+                behavior_data.append([rtl('السلوك السيئ'), format_pdf_text(report.behavior.bad_behavior_notes)])
             
             if behavior_data:
                 behavior_table = Table(behavior_data, colWidths=[5*cm, 10*cm])
@@ -344,15 +307,15 @@ class ReportExportService:
         
         # Incidents section
         if report.incidents:
-            story.append(Paragraph("الحوادث والاشتباهات", styles['heading']))
-            incident_data = [['النوع', 'الوصف', 'التاريخ والوقت', 'الموقع']]
+            story.append(Paragraph(rtl("الحوادث والاشتباهات"), styles['heading']))
+            incident_data = [[rtl('النوع'), rtl('الوصف'), rtl('التاريخ والوقت'), rtl('الموقع')]]
             
             for incident in report.incidents:
                 incident_data.append([
-                    incident.incident_type.value if incident.incident_type else '',
-                    incident.description or '',
+                    format_pdf_text(incident.incident_type.value if incident.incident_type else ''),
+                    format_pdf_text(incident.description or ''),
                     incident.incident_datetime.strftime('%Y-%m-%d %H:%M') if incident.incident_datetime else '',
-                    incident.location or ''
+                    format_pdf_text(incident.location or '')
                 ])
             
             incident_table = Table(incident_data, colWidths=[3*cm, 6*cm, 3.5*cm, 2.5*cm])
@@ -692,34 +655,35 @@ class ReportExportService:
         )
         
         styles = ReportExportService._get_arabic_styles()
-        font_name = ReportExportService._get_font_name()
+        register_arabic_fonts()
+        font_name = get_arabic_font_name()
         story = []
         
         # Title
-        title = Paragraph(f"تقرير الوردية", styles['title'])
+        title = Paragraph(rtl("تقرير الوردية"), styles['title'])
         story.append(title)
         story.append(Spacer(1, 0.5*cm))
         
         # Report metadata
         metadata_data = [
-            ['التاريخ', report.date.strftime('%Y-%m-%d')],
-            ['السائس', report.handler.username if report.handler else 'غير محدد'],
-            ['الكلب', report.dog.name if report.dog else 'غير محدد'],
-            ['المشروع', report.project.name if report.project else 'غير محدد'],
-            ['الموقع', report.location or 'غير محدد'],
-            ['الحالة', ReportExportService._get_status_arabic(report.status.value)],
+            [rtl('التاريخ'), report.date.strftime('%Y-%m-%d')],
+            [rtl('السائس'), format_pdf_text(report.handler.username if report.handler else 'غير محدد')],
+            [rtl('الكلب'), format_pdf_text(report.dog.name if report.dog else 'غير محدد')],
+            [rtl('المشروع'), format_pdf_text(report.project.name if report.project else 'غير محدد')],
+            [rtl('الموقع'), format_pdf_text(report.location or 'غير محدد')],
+            [rtl('الحالة'), rtl(ReportExportService._get_status_arabic(report.status.value))],
         ]
         
         if report.submitted_at:
-            metadata_data.append(['تاريخ الإرسال', report.submitted_at.strftime('%Y-%m-%d %H:%M')])
+            metadata_data.append([rtl('تاريخ الإرسال'), report.submitted_at.strftime('%Y-%m-%d %H:%M')])
         
         if report.reviewer:
-            metadata_data.append(['المراجع', report.reviewer.username])
+            metadata_data.append([rtl('المراجع'), format_pdf_text(report.reviewer.username)])
             if report.reviewed_at:
-                metadata_data.append(['تاريخ المراجعة', report.reviewed_at.strftime('%Y-%m-%d %H:%M')])
+                metadata_data.append([rtl('تاريخ المراجعة'), report.reviewed_at.strftime('%Y-%m-%d %H:%M')])
         
         if report.review_notes:
-            metadata_data.append(['ملاحظات المراجعة', report.review_notes])
+            metadata_data.append([rtl('ملاحظات المراجعة'), format_pdf_text(report.review_notes)])
         
         metadata_table = Table(metadata_data, colWidths=[5*cm, 10*cm])
         metadata_table.setStyle(TableStyle([
@@ -737,8 +701,8 @@ class ReportExportService:
         
         # Health section
         if report.health:
-            story.append(Paragraph("الفحص الصحي", styles['heading']))
-            health_data = [['الجزء', 'الحالة', 'الملاحظات']]
+            story.append(Paragraph(rtl("الفحص الصحي"), styles['heading']))
+            health_data = [[rtl('الجزء'), rtl('الحالة'), rtl('الملاحظات')]]
             
             health_fields = [
                 ('eyes', 'العيون'),
@@ -759,9 +723,9 @@ class ReportExportService:
                 notes = getattr(report.health, f'{field}_notes', None)
                 if status:
                     health_data.append([
-                        label,
-                        ReportExportService._get_health_status_arabic(status.value),
-                        notes or ''
+                        rtl(label),
+                        rtl(ReportExportService._get_health_status_arabic(status.value)),
+                        format_pdf_text(notes or '')
                     ])
             
             if len(health_data) > 1:
@@ -780,13 +744,13 @@ class ReportExportService:
         
         # Behavior section
         if report.behavior:
-            story.append(Paragraph("السلوك", styles['heading']))
+            story.append(Paragraph(rtl("السلوك"), styles['heading']))
             behavior_data = []
             
             if report.behavior.good_behavior_notes:
-                behavior_data.append(['السلوك الجيد', report.behavior.good_behavior_notes])
+                behavior_data.append([rtl('السلوك الجيد'), format_pdf_text(report.behavior.good_behavior_notes)])
             if report.behavior.bad_behavior_notes:
-                behavior_data.append(['السلوك السيئ', report.behavior.bad_behavior_notes])
+                behavior_data.append([rtl('السلوك السيئ'), format_pdf_text(report.behavior.bad_behavior_notes)])
             
             if behavior_data:
                 behavior_table = Table(behavior_data, colWidths=[5*cm, 10*cm])
@@ -804,15 +768,15 @@ class ReportExportService:
         
         # Incidents section
         if report.incidents:
-            story.append(Paragraph("الحوادث والاشتباهات", styles['heading']))
-            incident_data = [['النوع', 'الوصف', 'التاريخ والوقت', 'الموقع']]
+            story.append(Paragraph(rtl("الحوادث والاشتباهات"), styles['heading']))
+            incident_data = [[rtl('النوع'), rtl('الوصف'), rtl('التاريخ والوقت'), rtl('الموقع')]]
             
             for incident in report.incidents:
                 incident_data.append([
-                    incident.incident_type.value if incident.incident_type else '',
-                    incident.description or '',
+                    format_pdf_text(incident.incident_type.value if incident.incident_type else ''),
+                    format_pdf_text(incident.description or ''),
                     incident.incident_datetime.strftime('%Y-%m-%d %H:%M') if incident.incident_datetime else '',
-                    incident.location or ''
+                    format_pdf_text(incident.location or '')
                 ])
             
             incident_table = Table(incident_data, colWidths=[3*cm, 6*cm, 3.5*cm, 2.5*cm])

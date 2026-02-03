@@ -41,7 +41,7 @@ from k9.utils.pdf_minimal_elegant import (
     MinimalColors,
     create_spacer
 )
-from k9.utils.utils_pdf_rtl import rtl, register_arabic_fonts, get_arabic_font_name
+from k9.utils.utils_pdf_rtl import rtl, register_arabic_fonts, get_arabic_font_name, format_pdf_text
 
 logger = logging.getLogger(__name__)
 

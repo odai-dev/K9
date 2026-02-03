@@ -160,6 +160,21 @@ def format_arabic_time(time_obj) -> str:
     # Format as HH:MM with standard numerals
     return time_obj.strftime("%H:%M")
 
+def format_pdf_text(text) -> str:
+    """
+    Format text for PDF - handles None and applies RTL processing
+    
+    Args:
+        text: Text to format (can be None, string, or any other type)
+        
+    Returns:
+        RTL-processed string ready for PDF display, or empty string if None
+    """
+    if text is None:
+        return ""
+    return rtl(str(text))
+
+
 def get_page_dimensions():
     """
     Get standard page dimensions for the daily sheet report
