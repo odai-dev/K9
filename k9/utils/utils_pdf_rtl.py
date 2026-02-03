@@ -35,11 +35,11 @@ def register_arabic_fonts():
         return True
     
     try:
-        # First priority: DejaVuSans - supports BOTH Arabic AND Latin characters
+        # First priority: Amiri - supports BOTH Arabic AND Latin characters
         # This is critical for displaying mixed text (Arabic names + English names)
         local_font_paths = [
-            ('DejaVuSans', 'k9/static/fonts/DejaVuSans.ttf'),
             ('Amiri', 'k9/static/fonts/Amiri-Regular.ttf'),
+            ('DejaVuSans', 'k9/static/fonts/DejaVuSans.ttf'),
             ('NotoSansArabic', 'k9/static/fonts/NotoSansArabic-Regular.ttf'),
         ]
         

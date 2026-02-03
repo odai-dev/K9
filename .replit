@@ -3,7 +3,7 @@ run = "run"
 
 [nix]
 channel = "stable-25_05"
-packages = ["cacert", "freetype", "glibcLocales", "grpc", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "openssl", "postgresql", "sqlite", "tcl", "tk", "zlib"]
+packages = ["cacert", "freetype", "glibcLocales", "grpc", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "openssl", "postgresql", "sqlite", "tcl", "tk", "zlib", "dejavu_fonts"]
 
 [deployment]
 deploymentTarget = "autoscale"
