@@ -3064,10 +3064,12 @@ def generate_unified_pdf(report_type, records, user, start_date=None, end_date=N
     if not records:
         return None
     
-    headers = list(records[0].keys())
+    # Add row number column (م) to match HTML preview exactly
+    headers = ['م'] + list(records[0].keys())
     data_rows = [headers]
-    for record in records:
-        data_rows.append([str(record.get(h, '')) for h in headers])
+    for idx, record in enumerate(records, 1):
+        row = [str(idx)] + [str(record.get(h, '')) for h in list(records[0].keys())]
+        data_rows.append(row)
     
     pdf_buffer = generate_simple_pdf_report(
         report_type=report_type,
