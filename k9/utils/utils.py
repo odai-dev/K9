@@ -180,7 +180,8 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
     # Get current date info
     now = datetime.now()
     current_day_name = ARABIC_DAYS.get(now.strftime('%A'), now.strftime('%A'))
-    current_date = now.strftime('%Y/%m/%d')
+    # Use dash separator for better RTL display
+    current_date = now.strftime('%d-%m-%Y')
     
     # Draw header: logo (top left), title (centre), day/date (top right)
     def build_header(canvas_obj, doc_obj):
@@ -257,18 +258,29 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
         ]
         
         rows = [header]
+        # Role mapping for English enum values
         role_map = {
-            'مدرب': 'مدرب', 'سائس': 'معالج', 'طبيب': 'طبيب بيطري',
-            'مسؤول مشروع': 'مدير', 'مربي': 'مربي'
+            'TRAINER': 'مدرب',
+            'HANDLER': 'معالج', 
+            'VET': 'طبيب بيطري',
+            'PROJECT_MANAGER': 'مدير',
+            'BREEDER': 'مربي',
+            'CARETAKER': 'مربي',
+            'ADMIN': 'مشرف',
+            'GENERAL_ADMIN': 'مشرف عام'
         }
         
         for i, emp in enumerate(employees, start=1):
             status_ar = 'نشط' if emp.is_active else 'غير نشط'
+            # Get role display name
+            role_value = emp.role.value if hasattr(emp.role, 'value') else str(emp.role)
+            role_display = role_map.get(role_value, role_value)
+            
             rows.append([
                 para_ltr(i),
-                para_ar(emp.name),
+                para_ar(emp.name or ''),
                 para_ltr(emp.employee_id or ''),
-                para_ar(role_map.get(emp.role.value, emp.role.value)),
+                para_ar(role_display),
                 para_ltr(emp.hire_date.strftime('%Y-%m-%d') if emp.hire_date else ''),
                 para_ar(status_ar),
                 para_ltr(emp.phone or ''),
