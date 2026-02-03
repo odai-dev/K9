@@ -23,10 +23,16 @@
                     </div>
                     <h5 class="card-title">تقرير الكلاب</h5>
                     <p class="card-text">تقرير شامل بجميع معلومات الكلاب المسجلة في النظام</p>
-                    <button class="btn btn-primary" onclick="generateReport('dogs')">
-                        <i class="fas fa-download me-2"></i>
-                        إنشاء تقرير
-                    </button>
+                    <div class="btn-group w-100">
+                        <button class="btn btn-outline-primary" onclick="previewReport('dogs')">
+                            <i class="fas fa-eye me-1"></i>
+                            معاينة
+                        </button>
+                        <button class="btn btn-primary" onclick="generateReport('dogs')">
+                            <i class="fas fa-download me-1"></i>
+                            تصدير PDF
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -41,10 +47,16 @@
                     </div>
                     <h5 class="card-title">تقرير الموظفين</h5>
                     <p class="card-text">قائمة شاملة بجميع الموظفين ومعلوماتهم الوظيفية</p>
-                    <button class="btn btn-success" onclick="generateReport('employees')">
-                        <i class="fas fa-download me-2"></i>
-                        إنشاء تقرير
-                    </button>
+                    <div class="btn-group w-100">
+                        <button class="btn btn-outline-success" onclick="previewReport('employees')">
+                            <i class="fas fa-eye me-1"></i>
+                            معاينة
+                        </button>
+                        <button class="btn btn-success" onclick="generateReport('employees')">
+                            <i class="fas fa-download me-1"></i>
+                            تصدير PDF
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -219,11 +231,92 @@
         </div>
     </div>
 </div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye me-2"></i>
+                    معاينة التقرير
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0" id="previewContent" style="background: #f5f5f5; min-height: 500px;">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-3">جاري تحميل المعاينة...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>
+                    إغلاق
+                </button>
+                <button type="button" class="btn btn-success" id="downloadFromPreviewBtn">
+                    <i class="fas fa-download me-1"></i>
+                    تصدير PDF
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 let currentReportType = '';
+let previewReportType = '';
+
+function previewReport(reportType) {
+    previewReportType = reportType;
+    const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+    previewModal.show();
+    
+    // Load preview content
+    const previewContent = document.getElementById('previewContent');
+    previewContent.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-3">جاري تحميل المعاينة...</p>
+        </div>
+    `;
+    
+    // Fetch preview from server
+    const formData = new FormData();
+    formData.append('report_type', reportType);
+    formData.append('csrf_token', '{{ csrf_token() }}');
+    
+    fetch('{{ url_for("main.reports_preview_pdf") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(html => {
+        previewContent.innerHTML = `
+            <div class="p-4">
+                <div class="bg-white shadow-sm rounded p-4" style="max-width: 900px; margin: 0 auto;">
+                    ${html}
+                </div>
+            </div>
+        `;
+    })
+    .catch(error => {
+        previewContent.innerHTML = `
+            <div class="alert alert-danger m-4">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                حدث خطأ في تحميل المعاينة
+            </div>
+        `;
+    });
+    
+    // Setup download button
+    document.getElementById('downloadFromPreviewBtn').onclick = function() {
+        generateReport(previewReportType);
+        previewModal.hide();
+    };
+}
 
 function generateReport(reportType) {
     if (reportType === 'dogs' || reportType === 'employees') {
