@@ -35,18 +35,19 @@ def register_arabic_fonts():
         return True
     
     try:
-        # First priority: Local Arabic fonts in the project
+        # First priority: DejaVuSans - supports BOTH Arabic AND Latin characters
+        # This is critical for displaying mixed text (Arabic names + English names)
         local_font_paths = [
-            ('NotoSansArabic', 'k9/static/fonts/NotoSansArabic-Regular.ttf'),
-            ('Amiri', 'k9/static/fonts/Amiri-Regular.ttf'),
             ('DejaVuSans', 'k9/static/fonts/DejaVuSans.ttf'),
+            ('Amiri', 'k9/static/fonts/Amiri-Regular.ttf'),
+            ('NotoSansArabic', 'k9/static/fonts/NotoSansArabic-Regular.ttf'),
         ]
         
         for font_name, font_path in local_font_paths:
             if os.path.exists(font_path):
                 pdfmetrics.registerFont(TTFont(font_name, font_path))
                 addMapping(font_name, 0, 0, font_name)  # normal
-                logger.debug(f"Successfully registered {font_name} font from: {font_path}")
+                logger.info(f"Successfully registered {font_name} font from: {font_path}")
                 _FONTS_REGISTERED = True
                 return True
         
