@@ -17,6 +17,7 @@ from reportlab.pdfgen import canvas
 from flask import current_app
 
 from k9.utils.utils_pdf_rtl import register_arabic_fonts, get_arabic_font_name, format_pdf_text
+from k9.services.report_registry import get_report_registry, ColumnDefinition
 
 logger = logging.getLogger(__name__)
 
@@ -738,6 +739,80 @@ def generate_simple_pdf_report(
         data=data_rows,
         columns=None,  # Will use simple table builder
         title=title,
+        start_date=start_date,
+        end_date=end_date,
+        user=user,
+        **kwargs
+    )
+
+
+def generate_report_from_registry(
+    report_type: str,
+    records: list,
+    start_date=None,
+    end_date=None,
+    user=None,
+    **kwargs
+) -> BytesIO:
+    """
+    Generate a PDF report using the report registry for column definitions.
+    This ensures PDF output matches HTML preview exactly.
+    
+    Args:
+        report_type: Type of report (must be registered in ReportRegistry)
+        records: List of dict records with header keys (pre-formatted)
+        start_date: Optional start date
+        end_date: Optional end date
+        user: User who generated the report
+        **kwargs: Additional options
+    
+    Returns:
+        BytesIO buffer containing the PDF
+    """
+    registry = get_report_registry()
+    report_def = registry.get_report(report_type)
+    
+    if not report_def:
+        logger.warning(f"Report type '{report_type}' not found in registry, using simple generator")
+        # Fallback to simple generator
+        if records:
+            headers = list(records[0].keys())
+            data_rows = [headers]
+            for record in records:
+                data_rows.append([str(record.get(h, '')) for h in headers])
+            return generate_simple_pdf_report(
+                report_type=report_type,
+                data_rows=data_rows,
+                title=kwargs.get('title', 'تقرير'),
+                start_date=start_date,
+                end_date=end_date,
+                user=user
+            )
+        return generate_simple_pdf_report(
+            report_type=report_type,
+            data_rows=[],
+            title=kwargs.get('title', 'تقرير'),
+            start_date=start_date,
+            end_date=end_date,
+            user=user
+        )
+    
+    # Convert ColumnDefinition objects to dict format for the generator
+    column_defs = []
+    for col in report_def.columns:
+        column_defs.append({
+            'key': col.header,  # Use header as key since records use headers
+            'header': col.header,
+            'width': col.width_mm,
+            'arabic': col.is_arabic
+        })
+    
+    generator = get_pdf_generator()
+    return generator.generate_pdf_report(
+        report_type=report_type,
+        data=records,
+        columns=column_defs,
+        title=report_def.title_ar,
         start_date=start_date,
         end_date=end_date,
         user=user,

@@ -23,7 +23,9 @@ from k9.models.models import (Dog, Employee, TrainingSession, VeterinaryVisit, P
                    # Shift models
                    Shift)
 from k9.utils.utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
-from k9.services.pdf_report_generator import generate_simple_pdf_report
+from k9.services.pdf_report_generator import generate_simple_pdf_report, generate_report_from_registry
+from k9.services.report_data_service import get_report_data_service
+from k9.services.report_registry import get_report_registry
 from io import BytesIO
 from k9.utils.permissions_new import (
     admin_or_pm_required, has_permission, _is_admin_mode, require_permission, 
@@ -3030,11 +3032,11 @@ def reports_hub():
     return render_template('reports/hub.html', stats=stats)
 
 def generate_unified_pdf(report_type, records, user, start_date=None, end_date=None):
-    """Generate PDF using the new unified generator
+    """Generate PDF using the registry-based unified generator
     
     Args:
         report_type: Type of report (dogs, employees, training, etc.)
-        records: List of dict records to include in the report
+        records: List of dict records to include in the report (pre-formatted with Arabic headers)
         user: Current user generating the report
         start_date: Optional start date for date range
         end_date: Optional end date for date range
@@ -3042,39 +3044,13 @@ def generate_unified_pdf(report_type, records, user, start_date=None, end_date=N
     Returns:
         filename of the generated PDF, or None if no records
     """
-    report_titles = {
-        'dogs': 'تقرير الكلاب',
-        'employees': 'تقرير الموظفين',
-        'training': 'تقرير التدريب',
-        'veterinary': 'تقرير الطبابة',
-        'breeding': 'تقرير التكاثر',
-        'projects': 'تقرير المشاريع',
-        'training_trainer_daily': 'تقرير المدرب اليومي',
-        'production_maturity': 'تقرير البلوغ',
-        'production_heat_cycles': 'تقرير الدورة',
-        'production_mating': 'تقرير التزاوج',
-        'production_pregnancy': 'تقرير الحمل',
-        'production_delivery': 'تقرير الولادة',
-        'production_puppies': 'تقرير الجراء',
-        'production_puppy_training': 'تقرير تدريب الجراء'
-    }
-    
-    title = report_titles.get(report_type, 'تقرير')
-    
     if not records:
         return None
     
-    # Add row number column (م) to match HTML preview exactly
-    headers = ['م'] + list(records[0].keys())
-    data_rows = [headers]
-    for idx, record in enumerate(records, 1):
-        row = [str(idx)] + [str(record.get(h, '')) for h in list(records[0].keys())]
-        data_rows.append(row)
-    
-    pdf_buffer = generate_simple_pdf_report(
+    # Use the registry-based generator which ensures PDF matches preview exactly
+    pdf_buffer = generate_report_from_registry(
         report_type=report_type,
-        data_rows=data_rows,
-        title=title,
+        records=records,
         start_date=start_date,
         end_date=end_date,
         user=user
@@ -3111,16 +3087,7 @@ def reports_simple():
 def reports_generate():
     """
     Generate a report based on type, optional date range and optional filters.
-    Supported report types: 'dogs', 'employees', 'training', 'veterinary',
-                            'breeding', 'projects',
-                            'training_trainer_daily', plus production sub-types.
-    Additional filters (passed via POST form) vary by type:
-      - dogs: status, gender
-      - employees: role, status
-      - training: category
-      - veterinary: visit_type
-      - breeding: cycle_type
-      - projects: project_status
+    Uses the unified data service to ensure PDF matches HTML preview exactly.
     """
     report_type = request.form.get('report_type')
     start_date_str = request.form.get('start_date')
@@ -3132,10 +3099,19 @@ def reports_generate():
 
     # Extract filter values from the POST data into a dict
     filters = {}
-    for field in ['status', 'gender', 'role', 'category', 'visit_type', 'cycle_type', 'project_status']:
+    
+    # Basic filters
+    for field in ['status', 'gender', 'role', 'category', 'visit_type', 'cycle_type', 'project_status', 'keyword', 'breed']:
         value = request.form.get(field)
         if value:
             filters[field] = value
+    
+    # Multi-select filters
+    for field in ['gender[]', 'status[]', 'role[]', 'category[]', 'visit_type[]', 'cycle_type[]']:
+        values = request.form.getlist(field)
+        if values:
+            base_field = field.replace('[]', '')
+            filters[base_field] = values
 
     # Check export format
     export_format = request.form.get('export_format', 'pdf')
@@ -3145,12 +3121,16 @@ def reports_generate():
             from k9.utils.utils import generate_excel_report
             filename = generate_excel_report(report_type, start_date, end_date, current_user, filters)
         else:
-            preview_response = reports_preview()
-            if isinstance(preview_response, tuple):
-                raise Exception('فشل في تحميل بيانات التقرير')
-            data = preview_response.get_json()
+            # Use unified data service - single source of truth
+            data_service = get_report_data_service()
+            records = data_service.fetch_report_data(
+                report_type=report_type,
+                filters=filters,
+                start_date=start_date,
+                end_date=end_date,
+                user=current_user
+            )
             
-            records = data.get('records', [])
             if not records:
                 flash('لا توجد بيانات لإنشاء التقرير', 'warning')
                 return redirect(url_for('main.reports_hub'))
@@ -3177,9 +3157,9 @@ def reports_generate():
 @main_bp.route('/reports/preview', methods=['POST'])
 @login_required
 def reports_preview():
-    """Get filtered data for live preview in advanced reports"""
-    from k9.models.models import Dog, Employee, TrainingSession, VeterinaryVisit, ProductionCycle, Project
-    
+    """Get filtered data for live preview in advanced reports.
+    Uses the unified data service to ensure consistency with PDF export.
+    """
     report_type = request.form.get('report_type')
     start_date_str = request.form.get('start_date')
     end_date_str = request.form.get('end_date')
@@ -3191,322 +3171,33 @@ def reports_preview():
     filters = {}
     
     # Basic filters
-    basic_fields = ['status', 'gender', 'role', 'category', 'visit_type', 'cycle_type', 'project_status']
+    basic_fields = ['status', 'gender', 'role', 'category', 'visit_type', 'cycle_type', 'project_status', 'keyword', 'breed']
     for field in basic_fields:
         value = request.form.get(field)
         if value:
             filters[field] = value
     
     # Multi-select filters (handle arrays)
-    multi_select_fields = ['gender[]', 'training_status[]', 'role[]', 'shift[]', 'employment_status[]', 
-                          'project_status[]', 'priority_level[]', 'project_type[]', 'training_category[]',
-                          'visit_type[]', 'cycle_type[]', 'cycle_outcome[]', 'manager[]']
-    
+    multi_select_fields = ['gender[]', 'status[]', 'role[]', 'category[]', 'visit_type[]', 'cycle_type[]']
     for field in multi_select_fields:
         values = request.form.getlist(field)
         if values:
             base_field = field.replace('[]', '')
             filters[base_field] = values
     
-    # Range filters
-    range_fields = {
-        'age': ('age_min', 'age_max'),
-        'hire_date': ('hire_date_min', 'hire_date_max'),
-        'rating': ('rating_min', 'rating_max'),
-        'duration': ('duration_min', 'duration_max'),
-        'puppies': ('puppies_min', 'puppies_max')
-    }
+    # Use unified data service - single source of truth
+    data_service = get_report_data_service()
+    records = data_service.fetch_report_data(
+        report_type=report_type,
+        filters=filters,
+        start_date=start_date,
+        end_date=end_date,
+        user=current_user
+    )
     
-    for range_name, (min_field, max_field) in range_fields.items():
-        min_val = request.form.get(min_field)
-        max_val = request.form.get(max_field)
-        if min_val or max_val:
-            filters[range_name] = {'min': min_val, 'max': max_val}
-    
-    # Text and keyword filters
-    text_fields = ['breed', 'location_cluster', 'diagnosis_keyword', 'treatment_type', 'custom_tags']
-    for field in text_fields:
-        value = request.form.get(field)
-        if value:
-            filters[field] = value.strip()
-    
-    # Special filters
-    keyword = request.form.get('keyword', '').strip()
-    if keyword:
-        filters['keyword'] = keyword
-        
-    has_attachments = request.form.get('has_attachments')
-    if has_attachments:
-        filters['has_attachments'] = has_attachments == 'true'
-        
-    activity_filter = request.form.get('activity_filter')
-    if activity_filter:
-        filters['activity_filter'] = activity_filter
-        
-    filter_logic = request.form.get('filter_logic', 'AND')
-    filters['logic'] = filter_logic
-    
-    # Get data based on report type
-    records = []
-    if report_type == 'dogs':
-        dogs = Dog.query.all() if current_user.role.value == 'GENERAL_ADMIN' \
-            else Dog.query.filter_by(assigned_to_user_id=current_user.id).all()
-        
-        # Apply advanced filters
-        filtered_dogs = []
-        for dog in dogs:
-            include = True
-            
-            # Gender filter (multi-select)
-            if filters.get('gender') and isinstance(filters['gender'], list):
-                if dog.gender.value not in filters['gender']:
-                    include = False
-            elif filters.get('gender') and dog.gender.value != filters['gender']:
-                include = False
-            
-            # Training status filter (multi-select) 
-            if filters.get('training_status') and isinstance(filters['training_status'], list):
-                if dog.current_status.value not in filters['training_status']:
-                    include = False
-            elif filters.get('status') and dog.current_status.value != filters['status']:
-                include = False
-                
-            # Breed filter (text search)
-            if filters.get('breed') and filters['breed'].lower() not in (dog.breed or '').lower():
-                include = False
-                
-            # Age range filter 
-            if filters.get('age'):
-                age_min = filters['age'].get('min')
-                age_max = filters['age'].get('max')
-                dog_age = (datetime.now().date() - dog.birth_date).days / 365 if dog.birth_date else 0
-                if age_min and dog_age < float(age_min):
-                    include = False
-                if age_max and dog_age > float(age_max):
-                    include = False
-            
-            # Keyword search in all text fields
-            if filters.get('keyword'):
-                keyword = filters['keyword'].lower()
-                searchable_text = ' '.join([
-                    dog.name or '', dog.code or '', dog.breed or '', 
-                    dog.location or '', dog.microchip_id or '', dog.notes or ''
-                ]).lower()
-                if keyword not in searchable_text:
-                    include = False
-            
-            # Activity filters
-            if filters.get('activity_filter') == 'no_activity_30':
-                # Check if dog has no training sessions in last 30 days
-                from k9.models.models import TrainingSession
-                thirty_days_ago = datetime.now().date() - timedelta(days=30)
-                recent_sessions = TrainingSession.query.filter(
-                    TrainingSession.dog_id == dog.id,
-                    TrainingSession.session_date >= thirty_days_ago
-                ).count()
-                if recent_sessions > 0:
-                    include = False
-            
-            if include:
-                filtered_dogs.append(dog)
-            
-        for dog in filtered_dogs:
-            records.append({
-                'اسم الكلب': dog.name or '',
-                'الكود': dog.code or '',
-                'السلالة': dog.breed or '',
-                'الجنس': 'ذكر' if dog.gender.value == 'MALE' else 'أنثى',
-                'الحالة': {'ACTIVE': 'نشط', 'RETIRED': 'متقاعد', 'DECEASED': 'متوفى', 'TRAINING': 'تدريب'}.get(dog.current_status.value, ''),
-                'الموقع': dog.location or '',
-                'العمر': str(int((datetime.now().date() - dog.birth_date).days / 365)) + ' سنة' if dog.birth_date else 'غير محدد'
-            })
-    
-    elif report_type == 'employees':
-        employees = Employee.query.all()
-        
-        # Apply advanced filters
-        filtered_employees = []
-        for emp in employees:
-            include = True
-            
-            # Role filter (multi-select)
-            if filters.get('role') and isinstance(filters['role'], list):
-                if emp.role.value not in filters['role']:
-                    include = False
-            elif filters.get('role') and emp.role.value != filters['role']:
-                include = False
-            
-            # Employment status filter
-            if filters.get('employment_status') and isinstance(filters['employment_status'], list):
-                emp_status = 'ACTIVE' if emp.is_active else 'INACTIVE'
-                if emp_status not in filters['employment_status']:
-                    include = False
-            elif filters.get('status'):
-                is_active = (filters['status'] == 'ACTIVE')
-                if emp.is_active != is_active:
-                    include = False
-            
-            # Hire date range filter
-            if filters.get('hire_date') and emp.hire_date:
-                hire_min = filters['hire_date'].get('min')
-                hire_max = filters['hire_date'].get('max')
-                if hire_min and emp.hire_date < datetime.strptime(hire_min, '%Y-%m-%d').date():
-                    include = False
-                if hire_max and emp.hire_date > datetime.strptime(hire_max, '%Y-%m-%d').date():
-                    include = False
-            
-            # Shift filter (multi-select)
-            if filters.get('shift') and isinstance(filters['shift'], list):
-                emp_shift = 'MORNING'  # Default shift for existing employees
-                if emp_shift not in filters['shift']:
-                    include = False
-            
-            # Keyword search
-            if filters.get('keyword'):
-                keyword = filters['keyword'].lower()
-                searchable_text = ' '.join([
-                    emp.name or '', emp.employee_id or '', emp.phone or '', 
-                    emp.email or '', emp.address or ''
-                ]).lower()
-                if keyword not in searchable_text:
-                    include = False
-            
-            if include:
-                filtered_employees.append(emp)
-            
-        for emp in filtered_employees:
-            records.append({
-                'الاسم': emp.name,
-                'الرقم الوظيفي': emp.employee_id or '',
-                'الوظيفة': {'HANDLER': 'معالج', 'TRAINER': 'مدرب', 'VET': 'طبيب بيطري', 'PROJECT_MANAGER': 'مدير مشروع', 'BREEDER': 'مربي'}.get(emp.role.value, emp.role.value),
-                'تاريخ التعيين': emp.hire_date.strftime('%Y-%m-%d') if emp.hire_date else '',
-                'الحالة': 'نشط' if emp.is_active else 'غير نشط',
-                'الهاتف': emp.phone or '',
-                'البريد': emp.email or ''
-            })
-    
-    elif report_type == 'training':
-        sessions = TrainingSession.query
-        if start_date and end_date:
-            sessions = sessions.filter(TrainingSession.session_date >= start_date,
-                                     TrainingSession.session_date <= end_date)
-        if current_user.role.value != 'GENERAL_ADMIN':
-            assigned_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
-            sessions = sessions.filter(TrainingSession.dog_id.in_(assigned_ids))
-        if filters.get('category'):
-            if isinstance(filters['category'], list):
-                sessions = sessions.filter(TrainingSession.category.in_(filters['category']))
-            else:
-                sessions = sessions.filter(TrainingSession.category == filters['category'])
-        sessions = sessions.all()
-        
-        category_map = {'OBEDIENCE': 'طاعة', 'DETECTION': 'كشف', 'AGILITY': 'رشاقة', 'ATTACK': 'هجوم', 'FITNESS': 'لياقة'}
-        for s in sessions:
-            records.append({
-                'اسم الكلب': s.dog.name,
-                'المدرب': s.trainer.name,
-                'الفئة': category_map.get(s.category.value, s.category.value),
-                'الموضوع': s.subject or '',
-                'التاريخ': s.session_date.strftime('%Y-%m-%d'),
-                'المدة (دقيقة)': str(s.duration),
-                'التقييم': f"{s.success_rating}/10"
-            })
-    
-    elif report_type == 'veterinary':
-        visits = VeterinaryVisit.query
-        if start_date and end_date:
-            visits = visits.filter(VeterinaryVisit.visit_date >= start_date,
-                                 VeterinaryVisit.visit_date <= end_date)
-        if current_user.role.value != 'GENERAL_ADMIN':
-            assigned_ids = [d.id for d in Dog.query.filter_by(assigned_to_user_id=current_user.id).all()]
-            visits = visits.filter(VeterinaryVisit.dog_id.in_(assigned_ids))
-        if filters.get('visit_type'):
-            if isinstance(filters['visit_type'], list):
-                visits = visits.filter(VeterinaryVisit.visit_type.in_(filters['visit_type']))
-            else:
-                visits = visits.filter(VeterinaryVisit.visit_type == filters['visit_type'])
-        visits = visits.all()
-        
-        visit_type_map = {'ROUTINE': 'روتينية', 'EMERGENCY': 'طارئة', 'VACCINATION': 'تطعيم'}
-        for v in visits:
-            records.append({
-                'الكلب': v.dog.name,
-                'الطبيب': v.vet.name,
-                'نوع الزيارة': visit_type_map.get(v.visit_type.value, v.visit_type.value),
-                'التاريخ': v.visit_date.strftime('%Y-%m-%d'),
-                'التشخيص': v.diagnosis or '',
-                'العلاج': v.treatment or ''
-            })
-    
-    elif report_type == 'breeding' or report_type.startswith('production_'):
-        # Handle production/breeding reports
-        cycles = ProductionCycle.query
-        if start_date and end_date:
-            cycles = cycles.filter(ProductionCycle.mating_date >= start_date,
-                                 ProductionCycle.mating_date <= end_date)
-        if filters.get('cycle_type'):
-            if isinstance(filters['cycle_type'], list):
-                cycles = cycles.filter(ProductionCycle.cycle_type.in_(filters['cycle_type']))
-            else:
-                cycles = cycles.filter(ProductionCycle.cycle_type == filters['cycle_type'])
-        cycles = cycles.all()
-        
-        cycle_map = {'NATURAL': 'طبيعي', 'ARTIFICIAL': 'صناعي'}
-        result_map = {'SUCCESSFUL': 'ناجحة', 'FAILED': 'فاشلة', 'UNKNOWN': 'غير معروف'}
-        for c in cycles:
-            records.append({
-                'الأم': c.female.name if c.female else '',
-                'الأب': c.male.name if c.male else '',
-                'نوع الدورة': cycle_map.get(c.cycle_type.value, c.cycle_type.value),
-                'تاريخ التزاوج': c.mating_date.strftime('%Y-%m-%d') if c.mating_date else '',
-                'تاريخ الولادة المتوقع': c.expected_delivery_date.strftime('%Y-%m-%d') if c.expected_delivery_date else '',
-                'تاريخ الولادة': c.actual_delivery_date.strftime('%Y-%m-%d') if c.actual_delivery_date else '',
-                'النتيجة': result_map.get(c.result.value, '') if c.result else '',
-                'عدد الجراء': c.number_of_puppies or '',
-                'الناجون': c.puppies_survived or ''
-            })
-    
-    # New report types for daily reports
-    elif report_type == 'training_trainer_daily':
-        # Get trainer daily data
-        try:
-            from k9.services.trainer_daily_services import get_trainer_daily_summary
-            summary_data = get_trainer_daily_summary(start_date, end_date, current_user)
-            for item in summary_data:
-                records.append({
-                    'المدرب': item.get('trainer_name', ''),
-                    'التاريخ': item.get('date', ''),
-                    'الكلب': item.get('dog_name', ''),
-                    'التمرين': item.get('exercise_type', ''),
-                    'التقييم': item.get('rating', ''),
-                    'الملاحظات': item.get('notes', '')
-                })
-        except Exception:
-            records = []
-    
-    elif report_type == 'projects':
-        projects = Project.query
-        if start_date and end_date:
-            projects = projects.filter(Project.start_date >= start_date,
-                                     Project.start_date <= end_date)
-        if filters.get('project_status'):
-            if isinstance(filters['project_status'], list):
-                projects = projects.filter(Project.status.in_(filters['project_status']))
-            else:
-                projects = projects.filter(Project.status == filters['project_status'])
-        projects = projects.all()
-        
-        status_map = {'ACTIVE': 'نشط', 'COMPLETED': 'منجز', 'CANCELLED': 'ملغى', 'PLANNED': 'مخطط'}
-        for p in projects:
-            records.append({
-                'اسم المشروع': p.name,
-                'الكود': p.code or '',
-                'الحالة': status_map.get(p.status.value, p.status.value),
-                'تاريخ البداية': p.start_date.strftime('%Y-%m-%d') if p.start_date else '',
-                'تاريخ النهاية': p.end_date.strftime('%Y-%m-%d') if p.end_date else '',
-                'المدير': p.manager.full_name if p.manager else '',
-                'الموقع': p.location or ''
-            })
+    # Handle legacy report types not in registry (training_trainer_daily)
+    if not records and report_type == 'training_trainer_daily':
+        records = _fetch_trainer_daily_legacy(start_date, end_date, current_user)
     
     try:
         return jsonify({
@@ -3525,38 +3216,67 @@ def reports_preview():
             'report_type': report_type
         }), 500
 
+
+def _fetch_trainer_daily_legacy(start_date, end_date, user):
+    """Legacy fetcher for trainer daily reports"""
+    records = []
+    try:
+        from k9.services.trainer_daily_services import get_trainer_daily_summary
+        summary_data = get_trainer_daily_summary(start_date, end_date, user)
+        for item in summary_data:
+            records.append({
+                'م': str(len(records) + 1),
+                'المدرب': item.get('trainer_name', ''),
+                'التاريخ': item.get('date', ''),
+                'الكلب': item.get('dog_name', ''),
+                'التمرين': item.get('exercise_type', ''),
+                'التقييم': item.get('rating', ''),
+                'الملاحظات': item.get('notes', '')
+            })
+    except Exception:
+        pass
+    return records
+
+
 @main_bp.route('/reports/preview-pdf', methods=['POST'])
 @login_required
 def reports_preview_pdf():
-    """Generate HTML preview that mimics PDF layout"""
+    """Generate HTML preview that mimics PDF layout exactly.
+    Uses unified data service for consistency with PDF export.
+    """
     report_type = request.form.get('report_type')
+    start_date_str = request.form.get('start_date')
+    end_date_str = request.form.get('end_date')
     
-    # Get the same data as preview
-    preview_response = reports_preview()
-    if hasattr(preview_response, 'get_json'):
-        data = preview_response.get_json()
-    else:
-        # Handle error case
-        return f"<div class='alert alert-danger'>حدث خطأ في تحميل البيانات</div>"
+    start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date() if start_date_str else None
+    end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else None
     
-    # Generate HTML that looks like the PDF
-    report_titles = {
-        'dogs': 'تقرير الكلاب', 
-        'employees': 'تقرير الموظفين', 
-        'training': 'تقرير التدريب', 
-        'veterinary': 'تقرير الطبابة', 
-        'breeding': 'تقرير التكاثر', 
-        'projects': 'تقرير المشاريع',
-        'training_trainer_daily': 'تقرير المدرب اليومي',
-        'production_maturity': 'تقرير البلوغ',
-        'production_heat_cycles': 'تقرير الدورة',
-        'production_mating': 'تقرير التزاوج',
-        'production_pregnancy': 'تقرير الحمل',
-        'production_delivery': 'تقرير الولادة',
-        'production_puppies': 'تقرير الجراء',
-        'production_puppy_training': 'تقرير تدريب الجراء'
-    }
-    report_title = report_titles.get(report_type, 'تقرير')
+    # Build filters from form
+    filters = {}
+    for field in ['status', 'gender', 'role', 'category', 'visit_type', 'cycle_type', 'keyword', 'breed']:
+        value = request.form.get(field)
+        if value:
+            filters[field] = value
+    
+    for field in ['gender[]', 'status[]', 'role[]', 'category[]', 'visit_type[]', 'cycle_type[]']:
+        values = request.form.getlist(field)
+        if values:
+            filters[field.replace('[]', '')] = values
+    
+    # Use unified data service - same source as PDF export
+    data_service = get_report_data_service()
+    records = data_service.fetch_report_data(
+        report_type=report_type,
+        filters=filters,
+        start_date=start_date,
+        end_date=end_date,
+        user=current_user
+    )
+    
+    # Get report title from registry
+    registry = get_report_registry()
+    report_def = registry.get_report(report_type)
+    report_title = report_def.title_ar if report_def else 'تقرير'
     
     # Render the header template
     header_html = render_template('reports/_header.html')
@@ -3566,7 +3286,7 @@ def reports_preview_pdf():
         {header_html}
         
         <div style="text-align: center; margin-bottom: 30px;">
-            <h3 style="color: #C00000; font-family: 'Cairo', 'Amiri', sans-serif;">
+            <h3 style="color: #603913; font-family: 'Cairo', 'Amiri', sans-serif;">
                 {report_title}
             </h3>
             <p style="font-size: 12px; color: #666;">
@@ -3578,26 +3298,21 @@ def reports_preview_pdf():
             <table style="width: 100%; border-collapse: collapse; font-family: 'Cairo', 'Amiri', sans-serif; font-size: 10px;">
     """
     
-    if data['records']:
-        # Table headers
-        headers = list(data['records'][0].keys())
+    if records:
+        # Table headers - use headers from registry for consistent order
+        headers = list(records[0].keys())
         html_content += "<thead><tr style='background-color: #603913; color: white;'>"
-        html_content += "<th style='border: 1px solid #603913; padding: 8px; text-align: center;'>م</th>"
         for header in headers:
             html_content += f"<th style='border: 1px solid #603913; padding: 8px; text-align: center;'>{header}</th>"
         html_content += "</tr></thead><tbody>"
         
-        # Table rows
-        for idx, record in enumerate(data['records'][:20], 1):  # Show first 20 records in preview
+        # Table rows - show all records (PDF shows all, so preview should too)
+        for idx, record in enumerate(records, 1):
             bg_color = '#f8f9fa' if idx % 2 == 0 else 'white'
             html_content += f"<tr style='background-color: {bg_color};'>"
-            html_content += f"<td style='border: 1px solid #ddd; padding: 6px; text-align: center;'>{idx}</td>"
             for header in headers:
                 html_content += f"<td style='border: 1px solid #ddd; padding: 6px; text-align: center;'>{record.get(header, '')}</td>"
             html_content += "</tr>"
-        
-        if len(data['records']) > 20:
-            html_content += f"<tr><td colspan='{len(headers)+1}' style='text-align: center; padding: 10px; font-style: italic;'>... و {len(data['records'])-20} سجل آخر</td></tr>"
         
         html_content += "</tbody>"
     else:
