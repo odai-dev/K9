@@ -98,11 +98,46 @@ class PermissionKey:
     HANDLER_DAILY_VIEW = "handler_daily.view"
     HANDLER_DAILY_CREATE = "handler_daily.create"
     HANDLER_DAILY_EDIT = "handler_daily.edit"
+    HANDLER_DAILY_REPORTS_VIEW = "handler_daily.reports.view"
+    HANDLER_DAILY_REPORTS_CREATE = "handler_daily.reports.create"
+    HANDLER_DAILY_REPORTS_EDIT = "handler_daily.reports.edit"
+    HANDLER_DAILY_REPORTS_DELETE = "handler_daily.reports.delete"
     
     # PM operations
     PM_DASHBOARD = "pm.dashboard"
     PM_REVIEW_REPORTS = "pm.review_reports"
     PM_MANAGE_PROJECT = "pm.manage_project"
+    PM_APPROVALS_VIEW = "pm.approvals.view"
+    PM_REPORTS_APPROVE = "pm.reports.approve"
+    PM_REPORTS_REJECT = "pm.reports.reject"
+    PM_REPORTS_EXPORT = "pm.reports.export"
+    
+    # Training extended
+    TRAINING_SESSIONS_VIEW = "training.sessions.view"
+    
+    # Breeding extended
+    BREEDING_DEWORMING_VIEW = "breeding.deworming.view"
+    BREEDING_DEWORMING_CREATE = "breeding.deworming.create"
+    BREEDING_DEWORMING_EDIT = "breeding.deworming.edit"
+    
+    # Basic access
+    PROFILE_VIEW = "profile.view"
+    NOTIFICATIONS_VIEW = "notifications.view"
+    DASHBOARD_VIEW = "dashboard.view"
+    
+    # Supervisor operations
+    SUPERVISOR_REPORTS_VIEW = "supervisor.reports.view"
+    SUPERVISOR_REPORTS_APPROVE = "supervisor.reports.approve"
+    SUPERVISOR_REPORTS_REJECT = "supervisor.reports.reject"
+    
+    # Tasks operations
+    TASKS_MANAGEMENT_VIEW = "tasks.management.view"
+    TASKS_MANAGEMENT_CREATE = "tasks.management.create"
+    TASKS_MANAGEMENT_EDIT = "tasks.management.edit"
+    TASKS_MANAGEMENT_DELETE = "tasks.management.delete"
+    TASKS_MY_TASKS_VIEW = "tasks.my_tasks.view"
+    TASKS_MY_TASKS_START = "tasks.my_tasks.start"
+    TASKS_MY_TASKS_COMPLETE = "tasks.my_tasks.complete"
 
 
 # Role to permissions mapping - defines what each role can do
@@ -131,10 +166,12 @@ ROLE_PERMISSIONS = {
         "evaluations.view", "evaluations.create", "evaluations.edit",
         # Training module - full access
         "training.view", "training.create", "training.edit", "training.delete",
+        "training.sessions.view",
         # Veterinary module - full access
         "veterinary.view", "veterinary.create", "veterinary.edit", "veterinary.delete",
         # Breeding module - full access
         "breeding.view", "breeding.create", "breeding.edit", "breeding.delete",
+        "breeding.deworming.view", "breeding.deworming.create", "breeding.deworming.edit",
         # Production module - full access
         "production.view", "production.create", "production.edit",
         # Reports module - full access
@@ -154,12 +191,16 @@ ROLE_PERMISSIONS = {
         "pm.dashboard", "pm.review_reports", "pm.manage_project",
         "pm.project.view", "pm.team.view", "pm.approvals.view",
         "pm.reports.approve", "pm.reports.reject", "pm.reports.export",
-        # Handler daily - full access
+        # Handler daily - full access (including handler reports management)
         "handler_daily.view", "handler_daily.create", "handler_daily.edit",
+        "handler_daily.reports.view", "handler_daily.reports.create",
+        "handler_daily.reports.edit", "handler_daily.reports.delete",
         # Supervisor - full access to schedules and reports
         "supervisor.reports.view", "supervisor.reports.approve", "supervisor.reports.reject",
         "supervisor.schedules.view", "supervisor.schedules.create", 
-        "supervisor.schedules.lock", "supervisor.schedules.delete"
+        "supervisor.schedules.lock", "supervisor.schedules.delete",
+        # Basic access
+        "profile.view", "notifications.view", "dashboard.view"
     ],
     
     RoleType.HANDLER: [

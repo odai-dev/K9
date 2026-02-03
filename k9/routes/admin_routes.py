@@ -2613,6 +2613,10 @@ def access_control_save():
         
         db.session.commit()
         
+        # Update user.permissions_updated_at to trigger session-based permission reload
+        user.permissions_updated_at = datetime.utcnow()
+        db.session.commit()
+        
         # Clear the permission cache for this user so changes take effect immediately
         PermissionService.clear_cache(user_id)
         

@@ -309,6 +309,7 @@ def get_permission_url(permission_key):
         'pm.dogs': 'pm.my_dogs',
         'pm.team': 'pm.my_team',
         'pm.approvals': 'pm.pending_approvals',
+        'pm.approvals.view': 'pm.pending_approvals',
         'admin.dashboard': 'admin.dashboard',
         'admin.permissions.view': 'admin.access_control_hub',
         'schedule.view': 'handler_daily.schedules',
@@ -318,6 +319,7 @@ def get_permission_url(permission_key):
         'reports.caretaker.view': 'caretaker_daily_reports_ui.caretaker_daily',
         'reports.training.view': 'reports_training_trainer_daily_ui.trainer_daily',
         'handler_reports.view': 'handler_daily.my_reports',
+        'handler_daily.reports.view': 'handler_daily.my_reports',
     }
     
     endpoint = url_mapping.get(permission_key)

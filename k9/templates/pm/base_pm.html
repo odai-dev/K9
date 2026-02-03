@@ -368,7 +368,7 @@
             {% endif %}
             
             <!-- Pending Approvals -->
-            {% if has_any_permission('handler_reports.approve', 'supervisor.approve', 'tasks.approve', 'pm.approvals') %}
+            {% if has_any_permission('pm.reports.approve', 'supervisor.reports.approve', 'tasks.management.edit', 'pm.approvals.view') %}
             <a class="pm-quick-nav-btn position-relative {{ 'active' if request.endpoint == 'pm.pending_approvals' }}" href="{{ url_for('pm.pending_approvals') }}">
                 <i class="fas fa-clipboard-check"></i>
                 <span>الموافقات</span>
@@ -488,7 +488,7 @@
             {% endif %}
             
             <!-- Administration Dropdown -->
-            {% if has_any_permission('handler_reports.view', 'handler_reports.approve', 'tasks.management.view', 'tasks.management.create', 'supervisor.reports', 'supervisor.schedules', 'admin.permissions.view', 'admin.backup', 'admin.audit', 'notifications.view', 'notifications.manage') %}
+            {% if has_any_permission('handler_daily.reports.view', 'pm.reports.approve', 'tasks.management.view', 'tasks.management.create', 'supervisor.reports.view', 'supervisor.schedules.view', 'admin.permissions.view', 'admin.backup', 'admin.audit', 'notifications.view', 'notifications.manage') %}
             <div class="dropdown">
                 <a class="pm-quick-nav-btn dropdown-toggle position-relative {{ 'active' if 'admin' in request.endpoint|default('') or 'tasks' in request.endpoint|default('') or 'supervisor' in request.endpoint|default('') }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-users-cog"></i>
@@ -501,7 +501,7 @@
                     {% if has_any_permission('tasks.management.view', 'tasks.management.create', 'tasks.management.edit') %}
                     <li><a class="dropdown-item" href="{{ url_for('tasks.admin_index') }}"><i class="fas fa-tasks me-2 text-primary"></i>إرسال المهام</a></li>
                     {% endif %}
-                    {% if has_any_permission('handler_reports.view', 'supervisor.reports') %}
+                    {% if has_any_permission('handler_daily.reports.view', 'supervisor.reports.view') %}
                     <li>
                         <a class="dropdown-item d-flex justify-content-between align-items-center" href="{{ url_for('supervisor.reports_index') }}">
                             <span><i class="fas fa-file-alt me-2 text-info"></i>تقارير السائسين</span>

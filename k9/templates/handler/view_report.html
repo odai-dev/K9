@@ -97,7 +97,7 @@
                 </a>
                 {% endif %}
                 
-                {% if has_permission('handler_reports.export') %}
+                {% if has_permission('reports.export') or has_permission('handler_daily.reports.view') %}
                 <div class="btn-group" role="group">
                     <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fas fa-download me-2"></i>

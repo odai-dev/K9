@@ -736,7 +736,8 @@ const BUNDLES = {
             { key: 'training.view', name: 'عرض جلسات التدريب' },
             { key: 'training.create', name: 'إضافة جلسة تدريب' },
             { key: 'training.edit', name: 'تعديل جلسات التدريب' },
-            { key: 'training.delete', name: 'حذف جلسات التدريب' }
+            { key: 'training.delete', name: 'حذف جلسات التدريب' },
+            { key: 'training.sessions.view', name: 'عرض تفاصيل الجلسات' }
         ]
     },
     'veterinary': {
@@ -756,7 +757,10 @@ const BUNDLES = {
             { key: 'breeding.view', name: 'عرض بيانات التربية' },
             { key: 'breeding.create', name: 'إضافة سجلات التربية' },
             { key: 'breeding.edit', name: 'تعديل سجلات التربية' },
-            { key: 'breeding.delete', name: 'حذف سجلات التربية' }
+            { key: 'breeding.delete', name: 'حذف سجلات التربية' },
+            { key: 'breeding.deworming.view', name: 'عرض سجلات التطعيم' },
+            { key: 'breeding.deworming.create', name: 'إضافة سجل تطعيم' },
+            { key: 'breeding.deworming.edit', name: 'تعديل سجل تطعيم' }
         ]
     },
     'reports': {
@@ -869,7 +873,20 @@ const BUNDLES = {
         permissions: [
             { key: 'handler_daily.view', name: 'عرض العمليات اليومية' },
             { key: 'handler_daily.create', name: 'إنشاء تقرير يومي' },
-            { key: 'handler_daily.edit', name: 'تعديل التقارير اليومية' }
+            { key: 'handler_daily.edit', name: 'تعديل التقارير اليومية' },
+            { key: 'handler_daily.reports.view', name: 'عرض تقارير السائس' },
+            { key: 'handler_daily.reports.create', name: 'إنشاء تقرير السائس' },
+            { key: 'handler_daily.reports.edit', name: 'تعديل تقرير السائس' },
+            { key: 'handler_daily.reports.delete', name: 'حذف تقرير السائس' }
+        ]
+    },
+    'handler_basics': {
+        name: 'صلاحيات السائس الأساسية',
+        icon: 'fa-user',
+        permissions: [
+            { key: 'profile.view', name: 'عرض الملف الشخصي' },
+            { key: 'notifications.view', name: 'عرض الإشعارات' },
+            { key: 'dashboard.view', name: 'عرض الرئيسية' }
         ]
     },
     'pm': {
@@ -878,7 +895,13 @@ const BUNDLES = {
         permissions: [
             { key: 'pm.dashboard', name: 'لوحة تحكم مدير المشروع' },
             { key: 'pm.review_reports', name: 'مراجعة التقارير' },
-            { key: 'pm.manage_project', name: 'إدارة المشروع' }
+            { key: 'pm.manage_project', name: 'إدارة المشروع' },
+            { key: 'pm.project.view', name: 'عرض المشروع' },
+            { key: 'pm.team.view', name: 'عرض الفريق' },
+            { key: 'pm.approvals.view', name: 'عرض الموافقات' },
+            { key: 'pm.reports.approve', name: 'اعتماد التقارير' },
+            { key: 'pm.reports.reject', name: 'رفض التقارير' },
+            { key: 'pm.reports.export', name: 'تصدير التقارير' }
         ]
     }
 };

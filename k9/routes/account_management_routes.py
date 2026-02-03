@@ -21,7 +21,7 @@ def create_base_permissions_for_user(user_id, granted_by_id=None):
     """
     base_permissions = [
         'dashboard.view',
-        'handler.profile.view'
+        'profile.view'
     ]
     
     for perm_key in base_permissions:

@@ -499,7 +499,7 @@ class UINavigationRegistry:
             id="pm_management",
             label="إدارة المشروع",
             icon="fas fa-project-diagram",
-            permissions=["pm.dashboard.view", "pm.reports.review", "pm.schedules.view", "pm.attendance.view"],
+            permissions=["pm.dashboard", "pm.review_reports", "pm.project.view", "pm.approvals.view"],
             permission_mode="any",
             role_scope="project_manager",
             children=[
@@ -508,28 +508,28 @@ class UINavigationRegistry:
                     label="لوحة التحكم",
                     icon="fas fa-tachometer-alt",
                     endpoint="pm.dashboard",
-                    permissions=["pm.dashboard.view"]
+                    permissions=["pm.dashboard"]
                 ),
                 NavItem(
                     id="pm_approvals",
                     label="طلبات الموافقة",
                     icon="fas fa-check-circle",
                     endpoint="pm.approvals",
-                    permissions=["pm.reports.review"]
+                    permissions=["pm.approvals.view"]
                 ),
                 NavItem(
                     id="pm_schedules",
                     label="إدارة الجداول",
                     icon="fas fa-calendar-alt",
                     endpoint="pm.schedules",
-                    permissions=["pm.schedules.view"]
+                    permissions=["schedule.view"]
                 ),
                 NavItem(
                     id="pm_attendance",
                     label="الحضور والغياب",
                     icon="fas fa-user-clock",
                     endpoint="pm.attendance",
-                    permissions=["pm.attendance.view"]
+                    permissions=["reports.attendance.view"]
                 ),
                 NavItem(
                     id="pm_team",
@@ -662,28 +662,28 @@ class UINavigationRegistry:
                 label="لوحة التحكم",
                 icon="fas fa-tachometer-alt",
                 endpoint="pm.dashboard",
-                permissions=["pm.dashboard.view"]
+                permissions=["pm.dashboard"]
             ),
             NavItem(
                 id="pm_quick_approvals",
                 label="طلبات الموافقة",
                 icon="fas fa-check-circle",
                 endpoint="pm.approvals",
-                permissions=["pm.reports.review"]
+                permissions=["pm.approvals.view"]
             ),
             NavItem(
                 id="pm_quick_schedules",
                 label="إدارة الجداول",
                 icon="fas fa-calendar-alt",
                 endpoint="pm.schedules",
-                permissions=["pm.schedules.view"]
+                permissions=["schedule.view"]
             ),
             NavItem(
                 id="pm_quick_attendance",
                 label="الحضور والغياب",
                 icon="fas fa-user-clock",
                 endpoint="pm.attendance",
-                permissions=["pm.attendance.view"]
+                permissions=["reports.attendance.view"]
             ),
             NavItem(
                 id="pm_quick_team",
