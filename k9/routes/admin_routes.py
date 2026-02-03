@@ -2613,6 +2613,9 @@ def access_control_save():
         
         db.session.commit()
         
+        # Clear the permission cache for this user so changes take effect immediately
+        PermissionService.clear_cache(user_id)
+        
         logger.info(f"Access control updated for user {user.username} by {current_user.username}")
         
         return jsonify({

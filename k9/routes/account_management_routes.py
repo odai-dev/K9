@@ -528,9 +528,11 @@ def save_permissions(user_id):
             db.session.add(override)
         
         user.permissions_updated_at = datetime.utcnow()
-        PermissionService.clear_cache(user.id)
         
         db.session.commit()
+        
+        # Clear the permission cache AFTER commit so changes take effect
+        PermissionService.clear_cache(user.id)
         
         total_changes = len(grants) + len(revokes)
         message_parts = []
