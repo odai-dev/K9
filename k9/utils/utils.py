@@ -16,6 +16,7 @@ import arabic_reshaper
 from bidi.algorithm import get_display
 import re
 from k9.utils.permissions_new import _is_admin_mode
+from k9.utils.utils_pdf_rtl import register_arabic_fonts, get_arabic_font_name, rtl, format_pdf_text
 
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx'}
 
@@ -69,74 +70,21 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
     from k9.models.models import Dog, Employee, TrainingSession, VeterinaryVisit, ProductionCycle, Project
     filters = filters or {}
 
-    # Try to register an Arabic-capable font, fall back to default if not available
-    arabic_font = 'Helvetica'  # Default fallback
+    # Use centralized font registration
+    register_arabic_fonts()
+    arabic_font = get_arabic_font_name()
+    latin_font = arabic_font  # Same font supports Latin
     
-    # Register fonts with fallbacks
-    font_files = {
-        'Amiri': 'static/fonts/Amiri-Regular.ttf',
-        'NotoSansArabic': 'static/fonts/NotoSansArabic-Regular.ttf',
-        'DejaVuSans': 'static/fonts/DejaVuSans.ttf'
-    }
-    
-    registered_fonts = []
-    
-    for font_name, font_file in font_files.items():
-        try:
-            font_path = os.path.join(current_app.root_path, font_file)
-            if os.path.exists(font_path):
-                # Verify it's a valid font file (not ZIP)
-                with open(font_path, 'rb') as f:
-                    header = f.read(4)
-                    if header[:2] == b'PK':  # ZIP file signature
-                        current_app.logger.warning(f"Font file {font_file} is corrupted (ZIP file)")
-                        continue
-                
-                pdfmetrics.registerFont(TTFont(font_name, font_path))
-                registered_fonts.append(font_name)
-                current_app.logger.debug(f"Successfully registered font: {font_name}")
-        except Exception as e:
-            current_app.logger.error(f"Font registration error for {font_file}: {e}")
-            continue
-    
-    # Set primary Arabic font
-    if 'Amiri' in registered_fonts:
-        arabic_font = 'Amiri'
-    elif 'NotoSansArabic' in registered_fonts:
-        arabic_font = 'NotoSansArabic'
-    else:
-        arabic_font = 'Helvetica'
-    
-    # Set Latin fallback font  
-    latin_font = 'DejaVuSans' if 'DejaVuSans' in registered_fonts else 'Helvetica'
-    
-    # Initialize Arabic text processing
+    # Arabic text regex pattern for detecting Arabic characters
     ARABIC_RE = re.compile(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]+')
-    reshaper = arabic_reshaper.ArabicReshaper({
-        'delete_harakat': False,
-        'support_ligatures': True,
-        'use_unshaped_instead_of_isolated': False
-    })
     
     def shape_mixed(txt):
-        """Reshape only Arabic segments, preserve Latin text"""
-        if not txt:
-            return ''
-        txt = str(txt)
-        def _reshape(m):
-            return reshaper.reshape(m.group(0))
-        reshaped = ARABIC_RE.sub(_reshape, txt)
-        return get_display(reshaped, base_dir='R')
+        """Reshape Arabic text using centralized rtl function"""
+        return format_pdf_text(txt)
     
     def safe_arabic_text(txt):
         """Safe Arabic text processing for direct canvas drawing"""
-        if not txt:
-            return ''
-        txt = str(txt)
-        def _reshape(m):
-            return reshaper.reshape(m.group(0))
-        reshaped = ARABIC_RE.sub(_reshape, txt)
-        return get_display(reshaped, base_dir='R')
+        return format_pdf_text(txt)
     
     # Define paragraph styles
     STYLE_AR_R = ParagraphStyle('AR_R', fontName=arabic_font, fontSize=10, alignment=2)  # RIGHT
