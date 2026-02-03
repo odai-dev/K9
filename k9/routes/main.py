@@ -23,6 +23,8 @@ from k9.models.models import (Dog, Employee, TrainingSession, VeterinaryVisit, P
                    # Shift models
                    Shift)
 from k9.utils.utils import log_audit, allowed_file, generate_pdf_report, get_project_manager_permissions, get_employee_profile_for_user, get_user_active_projects, validate_project_manager_assignment, get_user_assigned_projects, get_user_accessible_dogs, get_user_accessible_employees
+from k9.services.pdf_report_generator import generate_simple_pdf_report
+from io import BytesIO
 from k9.utils.permissions_new import (
     admin_or_pm_required, has_permission, _is_admin_mode, require_permission, 
     get_sections_for_user
@@ -3027,6 +3029,63 @@ def reports_hub():
     }
     return render_template('reports/hub.html', stats=stats)
 
+def generate_unified_pdf(report_type, records, user, start_date=None, end_date=None):
+    """Generate PDF using the new unified generator
+    
+    Args:
+        report_type: Type of report (dogs, employees, training, etc.)
+        records: List of dict records to include in the report
+        user: Current user generating the report
+        start_date: Optional start date for date range
+        end_date: Optional end date for date range
+    
+    Returns:
+        filename of the generated PDF, or None if no records
+    """
+    report_titles = {
+        'dogs': 'تقرير الكلاب',
+        'employees': 'تقرير الموظفين',
+        'training': 'تقرير التدريب',
+        'veterinary': 'تقرير الطبابة',
+        'breeding': 'تقرير التكاثر',
+        'projects': 'تقرير المشاريع',
+        'training_trainer_daily': 'تقرير المدرب اليومي',
+        'production_maturity': 'تقرير البلوغ',
+        'production_heat_cycles': 'تقرير الدورة',
+        'production_mating': 'تقرير التزاوج',
+        'production_pregnancy': 'تقرير الحمل',
+        'production_delivery': 'تقرير الولادة',
+        'production_puppies': 'تقرير الجراء',
+        'production_puppy_training': 'تقرير تدريب الجراء'
+    }
+    
+    title = report_titles.get(report_type, 'تقرير')
+    
+    if not records:
+        return None
+    
+    headers = list(records[0].keys())
+    data_rows = [headers]
+    for record in records:
+        data_rows.append([str(record.get(h, '')) for h in headers])
+    
+    pdf_buffer = generate_simple_pdf_report(
+        report_type=report_type,
+        data_rows=data_rows,
+        title=title,
+        start_date=start_date,
+        end_date=end_date,
+        user=user
+    )
+    
+    filename = f"report_{report_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+    with open(filepath, 'wb') as f:
+        f.write(pdf_buffer.getvalue())
+    
+    return filename
+
+
 @main_bp.route('/reports/simple')
 @login_required
 def reports_simple():
@@ -3084,20 +3143,32 @@ def reports_generate():
             from k9.utils.utils import generate_excel_report
             filename = generate_excel_report(report_type, start_date, end_date, current_user, filters)
         else:
-            # Map new report types to existing system for PDF generation
-            if report_type.startswith('production_'):
-                pdf_report_type = 'breeding'  # Use breeding for all production reports
-            elif report_type in ['training_trainer_daily']:
-                # For daily reports, redirect to training
-                pdf_report_type = 'training'
-            else:
-                pdf_report_type = report_type
+            preview_response = reports_preview()
+            if isinstance(preview_response, tuple):
+                raise Exception('فشل في تحميل بيانات التقرير')
+            data = preview_response.get_json()
             
-            filename = generate_pdf_report(pdf_report_type, start_date, end_date, current_user, filters)
+            records = data.get('records', [])
+            if not records:
+                flash('لا توجد بيانات لإنشاء التقرير', 'warning')
+                return redirect(url_for('main.reports_hub'))
+            
+            filename = generate_unified_pdf(
+                report_type=report_type,
+                records=records,
+                user=current_user,
+                start_date=start_date,
+                end_date=end_date
+            )
+            
+            if not filename:
+                flash('لا توجد بيانات لإنشاء التقرير', 'warning')
+                return redirect(url_for('main.reports_hub'))
         
         upload_dir = current_app.config['UPLOAD_FOLDER']
         return send_from_directory(upload_dir, filename, as_attachment=True)
     except Exception as e:
+        current_app.logger.error(f'Error generating report: {str(e)}')
         flash(f'تعذّر إنشاء التقرير: {str(e)}', 'error')
         return redirect(url_for('main.reports_hub'))
 

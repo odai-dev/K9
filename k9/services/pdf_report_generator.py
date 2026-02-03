@@ -206,10 +206,6 @@ class UnifiedPDFReportGenerator:
             except Exception as e:
                 logger.warning(f"Could not draw logo: {e}")
         
-        # "K9 Operations" text below logo
-        canvas_obj.setFont('Helvetica-Bold', 12)
-        canvas_obj.drawCentredString(width / 2, header_top - 75, "K9 Operations")
-        
         # Arabic company info (Right side)
         canvas_obj.setFont(self.arabic_font, 9)
         canvas_obj.drawRightString(

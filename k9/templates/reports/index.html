@@ -71,15 +71,44 @@
                     </div>
                     <h5 class="card-title">تقرير التدريب</h5>
                     <p class="card-text">إحصائيات جلسات التدريب وتقييم الأداء</p>
-                    <button class="btn btn-warning" onclick="showDateRangeModal('training')">
-                        <i class="fas fa-download me-2"></i>
-                        إنشاء تقرير
-                    </button>
+                    <div class="btn-group w-100">
+                        <button class="btn btn-outline-warning" onclick="previewReport('training')">
+                            <i class="fas fa-eye me-1"></i>
+                            معاينة
+                        </button>
+                        <button class="btn btn-warning" onclick="generateReport('training')">
+                            <i class="fas fa-download me-1"></i>
+                            تصدير PDF
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="report-card">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="report-icon mb-3">
+                        <i class="fas fa-stethoscope fa-3x text-info"></i>
+                    </div>
+                    <h5 class="card-title">تقرير الطبابة</h5>
+                    <p class="card-text">سجلات الزيارات الطبية والفحوصات البيطرية</p>
+                    <div class="btn-group w-100">
+                        <button class="btn btn-outline-info" onclick="previewReport('veterinary')">
+                            <i class="fas fa-eye me-1"></i>
+                            معاينة
+                        </button>
+                        <button class="btn btn-info" onclick="generateReport('veterinary')">
+                            <i class="fas fa-download me-1"></i>
+                            تصدير PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <div class="col-md-6 col-lg-4 mb-4">
         <div class="report-card">
@@ -88,12 +117,18 @@
                     <div class="report-icon mb-3">
                         <i class="fas fa-heart fa-3x text-danger"></i>
                     </div>
-                    <h5 class="card-title">تقرير الإنتاج</h5>
+                    <h5 class="card-title">تقرير التكاثر</h5>
                     <p class="card-text">إحصائيات دورات الإنتاج والجراء المولودة</p>
-                    <button class="btn btn-danger" onclick="showDateRangeModal('production')">
-                        <i class="fas fa-download me-2"></i>
-                        إنشاء تقرير
-                    </button>
+                    <div class="btn-group w-100">
+                        <button class="btn btn-outline-danger" onclick="previewReport('breeding')">
+                            <i class="fas fa-eye me-1"></i>
+                            معاينة
+                        </button>
+                        <button class="btn btn-danger" onclick="generateReport('breeding')">
+                            <i class="fas fa-download me-1"></i>
+                            تصدير PDF
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -108,10 +143,16 @@
                     </div>
                     <h5 class="card-title">تقرير المشاريع</h5>
                     <p class="card-text">إحصائيات وتفاصيل المشاريع النشطة والمكتملة</p>
-                    <button class="btn btn-dark" onclick="showDateRangeModal('projects')">
-                        <i class="fas fa-download me-2"></i>
-                        إنشاء تقرير
-                    </button>
+                    <div class="btn-group w-100">
+                        <button class="btn btn-outline-dark" onclick="previewReport('projects')">
+                            <i class="fas fa-eye me-1"></i>
+                            معاينة
+                        </button>
+                        <button class="btn btn-dark" onclick="generateReport('projects')">
+                            <i class="fas fa-download me-1"></i>
+                            تصدير PDF
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -319,37 +360,33 @@ function previewReport(reportType) {
 }
 
 function generateReport(reportType) {
-    if (reportType === 'dogs' || reportType === 'employees') {
-        // Generate immediate report
-        showLoadingModal();
-        
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '{{ url_for("main.reports_generate") }}';
-        
-        // Add CSRF token
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrf_token';
-        csrfInput.value = '{{ csrf_token() }}';
-        form.appendChild(csrfInput);
-        
-        const reportTypeInput = document.createElement('input');
-        reportTypeInput.type = 'hidden';
-        reportTypeInput.name = 'report_type';
-        reportTypeInput.value = reportType;
-        
-        form.appendChild(reportTypeInput);
-        document.body.appendChild(form);
-        form.submit();
-        
-        setTimeout(() => {
-            hideLoadingModal();
-            document.body.removeChild(form);
-        }, 2000);
-    } else {
-        showDateRangeModal(reportType);
-    }
+    // Generate immediate report for all report types
+    showLoadingModal();
+    
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("main.reports_generate") }}';
+    
+    // Add CSRF token
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrf_token';
+    csrfInput.value = '{{ csrf_token() }}';
+    form.appendChild(csrfInput);
+    
+    const reportTypeInput = document.createElement('input');
+    reportTypeInput.type = 'hidden';
+    reportTypeInput.name = 'report_type';
+    reportTypeInput.value = reportType;
+    
+    form.appendChild(reportTypeInput);
+    document.body.appendChild(form);
+    form.submit();
+    
+    setTimeout(() => {
+        hideLoadingModal();
+        document.body.removeChild(form);
+    }, 2000);
 }
 
 function showDateRangeModal(reportType) {

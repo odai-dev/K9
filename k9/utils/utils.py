@@ -225,10 +225,6 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
             except:
                 pass
         
-        # "K9 Operations" text below logo
-        canvas_obj.setFont('Helvetica-Bold', 12)
-        canvas_obj.drawCentredString(width / 2, header_top - 75, "K9 Operations")
-        
         # Arabic company info (Right side)
         canvas_obj.setFont(arabic_font, 9)
         canvas_obj.drawRightString(width - doc_obj.rightMargin, header_top, 
