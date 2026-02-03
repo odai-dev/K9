@@ -91,7 +91,7 @@
     <!-- Reports Categories -->
     <div class="row">
         <!-- Training Reports Section -->
-        {% if has_permission('training.view') %}
+        {% if has_permission('training.view') or has_permission('training.sessions.view') %}
         <div class="col-lg-6 mb-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-warning text-dark">
@@ -102,12 +102,12 @@
                 </div>
                 <div class="card-body">
                     <div class="list-group list-group-flush">
-                        <a href="{{ url_for('reports_training_trainer_daily_ui.trainer_daily') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('main.reports_hub') }}?preview=training" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                             <div>
-                                <i class="fas fa-user-graduate text-warning me-2"></i>
-                                <strong>التقرير اليومي للمدرب</strong>
+                                <i class="fas fa-dumbbell text-warning me-2"></i>
+                                <strong>تقرير جلسات التدريب</strong>
                                 <br>
-                                <small class="text-muted">تقرير شامل لجلسات التدريب والأداء</small>
+                                <small class="text-muted">إحصائيات جلسات التدريب وتقييم الأداء</small>
                             </div>
                             <i class="fas fa-chevron-left"></i>
                         </a>
