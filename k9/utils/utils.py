@@ -183,23 +183,69 @@ def generate_pdf_report(report_type, start_date, end_date, user, filters=None):
     # Use dash separator for better RTL display
     current_date = now.strftime('%d-%m-%Y')
     
-    # Draw header: logo (top left), title (centre), day/date (top right)
+    # Company info for header
+    COMPANY_NAME_EN = "Peregrine Security and Safety Services"
+    COMPANY_INFO_EN = ["Security guard service", "Haddah, West of the German", "Embassy, Sana'a, Yemen"]
+    COMPANY_NAME_AR = "نشاط خدمات الأمن والسلامة"
+    COMPANY_INFO_AR = ["خدمة حراسة الأمن", "حدة غرب السفارة الألمانية صنعاء", "الجمهورية اليمنية"]
+    
+    # Draw professional header with logo and company info
     def build_header(canvas_obj, doc_obj):
         width, height = A4
-        # Company logo; put a PNG named 'logo.png' inside static/img or adjust path accordingly
-        logo_path = os.path.join(current_app.root_path, 'static/img/logo.png')
-        if os.path.exists(logo_path):
-            canvas_obj.drawImage(logo_path, x=doc_obj.leftMargin,
-                                 y=height - doc_obj.topMargin + 20, width=50, height=50, preserveAspectRatio=True)
-        # Day/Date with actual values
-        canvas_obj.setFont(arabic_font, 12)
-        canvas_obj.drawRightString(width - doc_obj.rightMargin, height - doc_obj.topMargin + 50,
+        top_margin = height - 30
+        
+        # Day and Date at very top right
+        canvas_obj.setFont(arabic_font, 10)
+        canvas_obj.drawRightString(width - doc_obj.rightMargin, top_margin,
                                    safe_arabic_text(f"اليوم: {current_day_name}"))
-        canvas_obj.drawRightString(width - doc_obj.rightMargin, height - doc_obj.topMargin + 30,
+        canvas_obj.drawRightString(width - doc_obj.rightMargin, top_margin - 15,
                                    safe_arabic_text(f"التاريخ: {current_date}"))
+        
+        # Header section starts below date
+        header_top = top_margin - 45
+        
+        # English company info (Left side)
+        canvas_obj.setFont('Helvetica-Bold', 9)
+        canvas_obj.drawString(doc_obj.leftMargin, header_top, COMPANY_NAME_EN)
+        canvas_obj.setFont('Helvetica', 8)
+        for i, line in enumerate(COMPANY_INFO_EN):
+            canvas_obj.drawString(doc_obj.leftMargin, header_top - 12 - (i * 10), line)
+        
+        # Company logo (Center)
+        logo_path = os.path.join(current_app.root_path, 'static/img/company_logo.png')
+        if os.path.exists(logo_path):
+            logo_width = 70
+            logo_height = 70
+            logo_x = (width - logo_width) / 2
+            logo_y = header_top - 55
+            try:
+                canvas_obj.drawImage(logo_path, x=logo_x, y=logo_y, 
+                                    width=logo_width, height=logo_height, 
+                                    preserveAspectRatio=True, mask='auto')
+            except:
+                pass
+        
+        # "K9 Operations" text below logo
+        canvas_obj.setFont('Helvetica-Bold', 12)
+        canvas_obj.drawCentredString(width / 2, header_top - 75, "K9 Operations")
+        
+        # Arabic company info (Right side)
+        canvas_obj.setFont(arabic_font, 9)
+        canvas_obj.drawRightString(width - doc_obj.rightMargin, header_top, 
+                                   safe_arabic_text(COMPANY_NAME_AR))
+        canvas_obj.setFont(arabic_font, 8)
+        for i, line in enumerate(COMPANY_INFO_AR):
+            canvas_obj.drawRightString(width - doc_obj.rightMargin, header_top - 12 - (i * 10), 
+                                       safe_arabic_text(line))
+        
+        # Horizontal line separator
+        canvas_obj.setStrokeColor(colors.HexColor('#333333'))
+        canvas_obj.setLineWidth(1.5)
+        canvas_obj.line(doc_obj.leftMargin, header_top - 90, 
+                       width - doc_obj.rightMargin, header_top - 90)
 
-    # Leave space beneath the header
-    story.append(Spacer(1, 60))
+    # Leave space beneath the header for content
+    story.append(Spacer(1, 120))
 
     # Helper to build specific report tables
     def build_dogs_table(dogs):
