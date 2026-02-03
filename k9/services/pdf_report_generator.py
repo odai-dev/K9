@@ -124,12 +124,25 @@ class UnifiedPDFReportGenerator:
     
     def _get_logo_path(self):
         """Get the path to company logo"""
+        # Try multiple possible paths
+        possible_paths = [
+            'k9/static/img/company_logo.png',  # Direct path from project root
+            os.path.join(os.path.dirname(__file__), '..', 'static/img/company_logo.png'),  # Relative to this file
+        ]
+        
         try:
+            # Also try Flask app root path
             logo_path = os.path.join(current_app.root_path, 'static/img/company_logo.png')
-            if os.path.exists(logo_path):
-                return logo_path
-        except Exception as e:
-            logger.warning(f"Could not get logo path: {e}")
+            possible_paths.insert(0, logo_path)
+        except Exception:
+            pass
+        
+        for path in possible_paths:
+            abs_path = os.path.abspath(path)
+            if os.path.exists(abs_path):
+                return abs_path
+        
+        logger.warning("Company logo not found in any expected location")
         return None
     
     def _format_arabic(self, text):
