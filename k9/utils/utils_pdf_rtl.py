@@ -73,22 +73,48 @@ def register_arabic_fonts():
         logger.error(f"Error registering Arabic fonts: {e}")
         return False
 
+def contains_arabic(text: str) -> bool:
+    """
+    Check if text contains any Arabic characters.
+    Arabic Unicode range: U+0600 to U+06FF (Arabic block)
+    Plus U+0750 to U+077F (Arabic Supplement)
+    Plus U+08A0 to U+08FF (Arabic Extended-A)
+    """
+    if not text:
+        return False
+    for char in text:
+        code = ord(char)
+        if (0x0600 <= code <= 0x06FF or 
+            0x0750 <= code <= 0x077F or 
+            0x08A0 <= code <= 0x08FF):
+            return True
+    return False
+
+
 def rtl(text: str) -> str:
     """
-    Process Arabic text for RTL display in PDFs
+    Process text for RTL display in PDFs.
+    Only applies Arabic reshaping if text contains Arabic characters.
+    Latin-only text is returned as-is to prevent corruption.
     
     Args:
-        text: Arabic text string
+        text: Text string (may be Arabic, Latin, or mixed)
         
     Returns:
-        Processed text ready for RTL display
+        Processed text ready for PDF display
     """
-    if not text or not ARABIC_SUPPORT:
+    if not text:
         return text
+    
+    text_str = str(text)
+    
+    # If no Arabic support or text is purely Latin, return as-is
+    if not ARABIC_SUPPORT or not contains_arabic(text_str):
+        return text_str
     
     try:
         # Reshape Arabic text (connect letters properly)
-        reshaped_text = arabic_reshaper.reshape(text)
+        reshaped_text = arabic_reshaper.reshape(text_str)
         
         # Apply bidirectional algorithm for proper RTL ordering
         display_text = get_display(reshaped_text)
@@ -96,7 +122,7 @@ def rtl(text: str) -> str:
         return display_text
     except Exception as e:
         logger.error(f"Error processing Arabic text: {e}")
-        return text
+        return text_str
 
 def get_arabic_font_name() -> str:
     """
