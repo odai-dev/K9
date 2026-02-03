@@ -696,8 +696,9 @@ class UINavigationRegistry:
                 id="pm_quick_reports",
                 label="التقارير",
                 icon="fas fa-file-alt",
-                endpoint="pm.reports",
-                permissions=["pm.reports.view"]
+                endpoint="pm.unified_reports",
+                permissions=["pm.reports.approve", "pm.reports.reject"],
+                permission_mode="any"
             ),
         ]
 
