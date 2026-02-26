@@ -3,18 +3,12 @@ Shared utility functions for database models
 Prevents circular import issues between model files
 """
 import uuid
-import os
-from sqlalchemy import String
+from sqlalchemy.dialects.postgresql import UUID
 
 
 def get_uuid_column():
-    """Get appropriate UUID column type based on database"""
-    database_url = os.environ.get("DATABASE_URL", "")
-    if database_url.startswith("sqlite") or not database_url:
-        return String(36)
-    else:
-        from sqlalchemy.dialects.postgresql import UUID
-        return UUID(as_uuid=True)
+    """Get PostgreSQL native UUID column type."""
+    return UUID(as_uuid=True)
 
 
 def default_uuid():

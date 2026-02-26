@@ -1,428 +1,486 @@
-import pytest
-import os
-from datetime import datetime, date, timedelta
-from flask import Flask
-from flask_login import login_user
+"""
+K9 Test Configuration — PostgreSQL App Factory
 
-# Import the app and database
-from app import app, db
-from k9.models.models import (
-    User, Project, Dog, FeedingLog, SubPermission, UserRole, 
-    PermissionType, BodyConditionScale, PrepMethod, DogGender,
-    VeterinaryVisit, VisitType, Employee, EmployeeRole, CaretakerDailyLog,
-    AuditLog
-)
+Fully isolated test environment:
+  - PostgreSQL (TEST_DATABASE_URL or DATABASE_URL) — tables are dropped/recreated per session
+  - WTF_CSRF_ENABLED=False → no CSRF tokens needed in tests
+  - Tables truncated before each test function for clean isolation
+"""
+import os
+import uuid
+import pytest
+from datetime import date, datetime, timedelta
+
+# ── import after env is set ──────────────────────────────────────────────────
+from sqlalchemy.pool import StaticPool  # kept for import compatibility
+from app import app as flask_app, db as _db
 from werkzeug.security import generate_password_hash
 
 
-@pytest.fixture(scope='session')
-def app_instance():
-    """Create application instance for testing
-    
-    WARNING: This fixture needs refactoring to use app-factory pattern.
-    Currently DISABLED to prevent accidental data loss on production database.
-    
-    TODO: Implement create_app() factory function that accepts config
-    so tests can instantiate a fresh Flask app with SQLite in-memory database.
+# ─────────────────────────────────────────────────
+# App / DB session-level setup
+# ─────────────────────────────────────────────────
+
+@pytest.fixture(scope="function")
+def app():
+    """Create application configured for testing against a PostgreSQL test database."""
+    test_db_url = os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL")
+    if not test_db_url:
+        pytest.skip("No database URL set. Set TEST_DATABASE_URL or DATABASE_URL to run tests.")
+
+    flask_app.config.update(
+        TESTING=True,
+        SQLALCHEMY_DATABASE_URI=test_db_url,
+        SQLALCHEMY_ENGINE_OPTIONS={
+            "pool_recycle": 300,
+            "pool_pre_ping": True,
+        },
+        WTF_CSRF_ENABLED=False,
+        WTF_CSRF_CHECK_DEFAULT=False,
+        SECRET_KEY="test-secret-key-not-for-production",
+        SERVER_NAME=None,
+    )
+    with flask_app.app_context():
+        _db.create_all()
+        yield flask_app
+        _db.drop_all()
+
+
+@pytest.fixture(scope="function")
+def db(app):
+    """Database bound to the session-scoped app."""
+    return _db
+
+
+@pytest.fixture(scope="function", autouse=True)
+def clean_db(app, db):
     """
-    pytest.skip("Test configuration needs refactoring - currently unsafe. "
-                "Tests would run against production PostgreSQL database. "
-                "Need to implement app-factory pattern first.")
-
-
-@pytest.fixture(scope='function')
-def client(app_instance):
-    """Create test client"""
-    return app_instance.test_client()
-
-
-@pytest.fixture(scope='function')
-def db_session(app_instance):
-    """Create database session for testing"""
-    with app_instance.app_context():
-        # Clean up any existing data in correct order (child tables first to avoid FK violations)
-        db.session.query(FeedingLog).delete()
-        db.session.query(CaretakerDailyLog).delete()
-        db.session.query(VeterinaryVisit).delete()
-        db.session.query(SubPermission).delete()
-        db.session.query(Dog).delete()
-        db.session.query(Project).delete()
-        db.session.query(AuditLog).delete()
-        db.session.query(Employee).delete()
-        db.session.query(User).delete()
-        db.session.commit()
-        yield db.session
-        db.session.rollback()
-
-
-@pytest.fixture(scope='function')
-def test_user(db_session):
-    """Create test user with PROJECT_MANAGER role"""
-    user = User(
-        username='test_manager',
-        email='manager@test.com',
-        password_hash=generate_password_hash('testpass123'),
-        full_name='Test Manager',
-        role=UserRole.PROJECT_MANAGER,
-        active=True
-    )
-    db.session.add(user)
-    db.session.commit()
-    return user
-
-
-@pytest.fixture(scope='function')
-def test_project(db_session, test_user):
-    """Create test project"""
-    project = Project(
-        name='Test K9 Project',
-        code='TK9P001',
-        description='Test project for feeding reports',
-        start_date=date.today() - timedelta(days=30),
-        manager_id=test_user.id
-    )
-    db.session.add(project)
-    db.session.commit()
-    return project
-
-
-@pytest.fixture(scope='function')
-def test_dogs(db_session, test_project):
-    """Create test dogs"""
-    dogs = []
-    for i in range(3):
-        dog = Dog(
-            code=f'K9-{i+1:03d}',
-            name=f'Test Dog {i+1}',
-            breed='German Shepherd',
-            birth_date=date(2020, 1, 1),
-            gender=DogGender.MALE if i % 2 == 0 else DogGender.FEMALE
-        )
-        db.session.add(dog)
-        dogs.append(dog)
+    Wipe all table data before each test, then yield, then commit nothing.
+    This is simpler and more reliable than savepoint-rollback with SQLite.
+    """
+    # Delete in reverse dependency order to avoid FK violations
+    _delete_all_data(db)
     
-    db.session.commit()
-    return dogs
-
-
-@pytest.fixture(scope='function')
-def test_feeding_logs(db_session, test_dogs, test_project):
-    """Create test feeding logs"""
-    logs = []
-    base_date = date.today()
-    
-    for day_offset in range(7):  # Create data for a week
-        test_date = base_date - timedelta(days=day_offset)
+    # Clear PermissionService cache to avoid test isolation failures
+    try:
+        from k9.services.permission_service import PermissionService
+        PermissionService._cache = {}
+    except ImportError:
+        pass
         
-        for i, dog in enumerate(test_dogs):
-            # Morning meal
-            morning_log = FeedingLog(
-                project_id=test_project.id,
-                dog_id=dog.id,
-                date=test_date,
-                time=datetime.strptime('08:00:00', '%H:%M:%S').time(),
-                meal_name=f'إفطار كلب {dog.name}',
-                grams=500 + (i * 100),
-                water_ml=250 + (i * 50),
-                meal_type_fresh=True,
-                meal_type_dry=False,
-                prep_method=PrepMethod.BOILED,
-                body_condition=BodyConditionScale.IDEAL if i == 0 else BodyConditionScale.ABOVE_IDEAL,
-                supplements=['فيتامين د', 'أوميجا 3'] if i == 0 else [],
-                notes=f'وجبة صباحية لـ {dog.name}'
-            )
-            db.session.add(morning_log)
-            logs.append(morning_log)
-            
-            # Evening meal  
-            evening_log = FeedingLog(
-                project_id=test_project.id,
-                dog_id=dog.id,
-                date=test_date,
-                time=datetime.strptime('18:00:00', '%H:%M:%S').time(),
-                meal_name=f'عشاء كلب {dog.name}',
-                grams=400 + (i * 80),
-                water_ml=200 + (i * 40),
-                meal_type_fresh=False,
-                meal_type_dry=True,
-                prep_method=PrepMethod.STEAMED,
-                body_condition=BodyConditionScale.THIN if i == 2 else BodyConditionScale.IDEAL,
-                supplements=['بروتين'] if i == 1 else [],
-                notes=f'وجبة مسائية لـ {dog.name}'
-            )
-            db.session.add(evening_log)
-            logs.append(evening_log)
-    
-    db.session.commit()
-    return logs
+    yield
+    _delete_all_data(db)
 
 
-@pytest.fixture(scope='function')
-def authenticated_client(client, test_user):
-    """Create authenticated test client"""
+def _delete_all_data(db):
+    """Truncate all tables in safe order using PostgreSQL syntax."""
+    from sqlalchemy import text, inspect
+    with db.engine.connect() as conn:
+        conn.execute(text("SET session_replication_role = replica"))  # Disable FK checks
+        inspector = inspect(db.engine)
+        for table_name in reversed(inspector.get_table_names()):
+            conn.execute(text(f'TRUNCATE TABLE "{table_name}" RESTART IDENTITY CASCADE'))
+        conn.execute(text("SET session_replication_role = DEFAULT"))  # Re-enable FK checks
+        conn.commit()
+
+
+@pytest.fixture(scope="function")
+def db_session(app, clean_db):
+    """Provide a database session for a single test."""
+    yield _db.session
+    _db.session.remove()
+
+
+@pytest.fixture(scope="function")
+def client(app):
+    """Test client for HTTP requests."""
+    return app.test_client()
+
+
+# ─────────────────────────────────────────────────
+# Authenticated client helpers
+# ─────────────────────────────────────────────────
+
+@pytest.fixture(scope="function")
+def auth_client(client, admin_user, app):
     with client.session_transaction() as sess:
-        sess['_user_id'] = str(test_user.id)
-        sess['_fresh'] = True
+        sess["_user_id"] = str(admin_user.id)
+        sess["_fresh"] = True
+        sess["admin_mode"] = "general_admin"
+        sess["user_permissions"] = ["*"]  # Force all permissions in session cache
     return client
 
 
-@pytest.fixture(scope='function')
-def admin_user(db_session):
-    """Create admin user for permission testing"""
-    user = User(
-        username='admin_user',
-        email='admin@test.com',
-        password_hash=generate_password_hash('adminpass123'),
-        full_name='Admin User',
-        role=UserRole.GENERAL_ADMIN,
-        active=True
-    )
-    db.session.add(user)
-    db.session.commit()
-    return user
+@pytest.fixture(scope="function")
+def pm_client(client, pm_user, app):
+    """HTTP client with an active PM session."""
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(pm_user.id)
+        sess["_fresh"] = True
+        sess["user_permissions"] = ["pm.*", "projects.*", "dogs.*", "reports.*"]
+    return client
 
 
-@pytest.fixture(scope='function')
-def unauthorized_user(db_session):
-    """Create user without permissions for testing"""
-    user = User(
-        username='no_permissions',
-        email='noperm@test.com',
-        password_hash=generate_password_hash('nopass123'),
-        full_name='No Permissions User',
-        role=UserRole.PROJECT_MANAGER,  # Will be restricted via SubPermission
-        active=True
-    )
-    db.session.add(user)
-    db.session.commit()
-    return user
+@pytest.fixture(scope="function")
+def handler_client(client, handler_user, app):
+    """HTTP client with an active handler session."""
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(handler_user.id)
+        sess["_fresh"] = True
+        sess["user_permissions"] = ["handler_daily.*", "notifications.view", "profile.view"]
+    return client
 
 
-@pytest.fixture(scope='function')
-def test_vet_employee(db_session):
-    """Create test veterinarian employee"""
-    vet = Employee(
-        name='د. أحمد الطبيب البيطري',
-        employee_id='VET001',
-        role=EmployeeRole.VETERINARIAN,
-        phone='123456789',
-        email='vet@test.com',
+# ─────────────────────────────────────────────────
+# Unique value helpers (avoid UNIQUE constraint failures)
+# ─────────────────────────────────────────────────
+
+def _uid():
+    """Short unique suffix for phone numbers / IDs."""
+    return uuid.uuid4().hex[:6]
+
+
+# ─────────────────────────────────────────────────
+# Core entity fixtures
+# ─────────────────────────────────────────────────
+
+@pytest.fixture(scope="function")
+def admin_employee(db_session, app):
+    from k9.models.models import Employee, EmployeeRole
+    emp = Employee(
+        name="مدير النظام",
+        employee_id=f"EMP-ADMIN-{_uid()}",
+        role=EmployeeRole.PROJECT_MANAGER,
+        phone=f"711{_uid()}",
+        email=f"admin_{_uid()}@k9test.com",
         hire_date=date(2020, 1, 1),
+        is_active=True,
+    )
+    _db.session.add(emp)
+    _db.session.commit()
+    return emp
+
+
+@pytest.fixture(scope="function")
+def admin_user(db_session, admin_employee, app):
+    from k9.models.models import User, UserRole
+    from k9.models.permissions_v2 import Role, UserRoleAssignment, RoleType
+    user = User(
+        username=f"admin_{_uid()}",
+        email=f"admin_{_uid()}@k9test.com",
+        password_hash=generate_password_hash("Test1234!"),
+        role=UserRole.GENERAL_ADMIN,
+        full_name="مدير النظام",
+        phone=f"799{_uid()}",
+        active=True,
+        employee_id=admin_employee.id,
+    )
+    _db.session.add(user)
+    _db.session.commit()
+
+    # Seed V2 role and assignment
+    role = Role.query.filter_by(name=RoleType.GENERAL_ADMIN).first()
+    if not role:
+        role = Role(name=RoleType.GENERAL_ADMIN, name_ar="مشرف عام", is_system=True, is_active=True)
+        _db.session.add(role)
+        _db.session.commit()
+    
+    assignment = UserRoleAssignment(
+        user_id=user.id,
+        role_id=role.id,
         is_active=True
     )
-    db.session.add(vet)
-    db.session.commit()
-    return vet
+    _db.session.add(assignment)
+    _db.session.commit()
+
+    return user
 
 
-@pytest.fixture(scope='function')
-def test_veterinary_visits(db_session, test_dogs, test_project, test_vet_employee):
-    """Create test veterinary visits"""
-    visits = []
-    base_date = datetime.now()
-    
-    # Create different types of visits for testing
-    for day_offset in range(7):  # Create data for a week
-        visit_date = base_date - timedelta(days=day_offset)
-        
-        for i, dog in enumerate(test_dogs):
-            # Routine checkup
-            routine_visit = VeterinaryVisit(
-                dog_id=dog.id,
-                vet_id=test_vet_employee.id,
-                project_id=test_project.id if i != 2 else None,  # Some without project
-                visit_type=VisitType.ROUTINE,
-                visit_date=visit_date,
-                weight=25.5 + (i * 2),
-                temperature=38.2 + (i * 0.3),
-                heart_rate=80 + (i * 10),
-                blood_pressure='120/80',
-                symptoms=f'فحص روتيني لـ {dog.name}',
-                diagnosis='حالة جيدة',
-                treatment='لا يوجد علاج مطلوب',
-                medications=[
-                    {'name': 'فيتامين د', 'dose': '200 وحدة', 'duration': '7 أيام', 'frequency': 'مرة يومياً'},
-                    {'name': 'مكملات غذائية', 'dose': '1 كبسولة', 'duration': '30 يوم', 'frequency': 'مع الطعام'}
-                ] if i == 0 else [],
-                stool_color='بني طبيعي',
-                stool_consistency='طبيعية',
-                urine_color='أصفر فاتح',
-                vaccinations_given=['التطعيم السنوي'] if day_offset == 0 and i == 0 else [],
-                next_visit_date=visit_date.date() + timedelta(days=30),
-                notes=f'زيارة روتينية لفحص {dog.name} - حالة ممتازة',
-                cost=150.0 + (i * 25),
-                location='العيادة البيطرية',
-                weather='مشمس معتدل',
-                vital_signs={
-                    'temp': 38.2 + (i * 0.3),
-                    'hr': 80 + (i * 10),
-                    'resp': 20 + (i * 2),
-                    'bp': '120/80'
-                }
-            )
-            db.session.add(routine_visit)
-            visits.append(routine_visit)
-            
-            # Add emergency visit every few days for variety
-            if day_offset % 3 == 0 and i == 1:
-                emergency_visit = VeterinaryVisit(
-                    dog_id=dog.id,
-                    vet_id=test_vet_employee.id,
-                    project_id=test_project.id,
-                    visit_type=VisitType.EMERGENCY,
-                    visit_date=visit_date + timedelta(hours=6),
-                    weight=27.0,
-                    temperature=39.5,
-                    heart_rate=120,
-                    blood_pressure='140/90',
-                    symptoms='تعب وخمول مفاجئ',
-                    diagnosis='التهاب معوي بسيط',
-                    treatment='علاج بالمضادات الحيوية والراحة',
-                    medications=[
-                        {'name': 'أموكسيسيلين', 'dose': '500mg', 'duration': '7 أيام', 'frequency': 'كل 8 ساعات'},
-                        {'name': 'مسكن ألم', 'dose': '200mg', 'duration': '3 أيام', 'frequency': 'كل 12 ساعة'}
-                    ],
-                    stool_color='أخضر فاتح',
-                    stool_consistency='لينة',
-                    urine_color='أصفر داكن',
-                    vaccinations_given=[],
-                    next_visit_date=visit_date.date() + timedelta(days=7),
-                    notes=f'زيارة طارئة لـ {dog.name} - تم العلاج بنجاح',
-                    cost=350.0,
-                    location='عيادة الطوارئ',
-                    weather='ممطر',
-                    vital_signs={
-                        'temp': 39.5,
-                        'hr': 120,
-                        'resp': 32,
-                        'bp': '140/90'
-                    }
-                )
-                db.session.add(emergency_visit)
-                visits.append(emergency_visit)
-            
-            # Add vaccination visit once per week
-            if day_offset == 0:
-                vaccination_visit = VeterinaryVisit(
-                    dog_id=dog.id,
-                    vet_id=test_vet_employee.id,
-                    project_id=test_project.id,
-                    visit_type=VisitType.VACCINATION,
-                    visit_date=visit_date + timedelta(hours=12),
-                    weight=26.0 + i,
-                    temperature=38.0,
-                    heart_rate=75 + (i * 5),
-                    blood_pressure='115/75',
-                    symptoms='لا يوجد أعراض',
-                    diagnosis='سليم للتطعيم',
-                    treatment='تطعيم وقائي',
-                    medications=[],
-                    stool_color='بني',
-                    stool_consistency='طبيعية',
-                    urine_color='أصفر',
-                    vaccinations_given=[
-                        'تطعيم الكلب',
-                        'تطعيم البارفو',
-                        'تطعيم الديستمبر'
-                    ],
-                    next_visit_date=visit_date.date() + timedelta(days=365),
-                    notes=f'تطعيم سنوي لـ {dog.name} - تم بنجاح',
-                    cost=200.0,
-                    location='العيادة البيطرية',
-                    weather='معتدل',
-                    vital_signs={
-                        'temp': 38.0,
-                        'hr': 75 + (i * 5),
-                        'resp': 18,
-                        'bp': '115/75'
-                    }
-                )
-                db.session.add(vaccination_visit)
-                visits.append(vaccination_visit)
-    
-    db.session.commit()
-    return visits
-
-
-@pytest.fixture(scope='function')
-def test_other_project(db_session, admin_user):
-    """Create another test project for permission testing"""
-    project = Project(
-        name='Other K9 Project',
-        code='OK9P002',
-        description='Another test project for access control testing',
-        start_date=date.today() - timedelta(days=20),
-        manager_id=admin_user.id
+@pytest.fixture(scope="function")
+def pm_employee(db_session, app):
+    from k9.models.models import Employee, EmployeeRole
+    emp = Employee(
+        name="مدير مشروع",
+        employee_id=f"EMP-PM-{_uid()}",
+        role=EmployeeRole.PROJECT_MANAGER,
+        phone=f"712{_uid()}",
+        email=f"pm_{_uid()}@k9test.com",
+        hire_date=date(2020, 6, 1),
+        is_active=True,
     )
-    db.session.add(project)
-    db.session.commit()
+    _db.session.add(emp)
+    _db.session.commit()
+    return emp
+
+
+@pytest.fixture(scope="function")
+def test_project(db_session, pm_employee, app):
+    from k9.models.models import Project, ProjectStatus
+    project = Project(
+        name="مشروع الاختبار",
+        code=f"TST-{_uid()}",
+        description="مشروع مخصص للاختبارات",
+        status=ProjectStatus.ACTIVE,
+        start_date=date.today() - timedelta(days=60),
+        project_manager_id=pm_employee.id,
+    )
+    _db.session.add(project)
+    _db.session.commit()
     return project
 
 
-@pytest.fixture(scope='function')
-def test_user_without_permissions(db_session):
-    """Create user without veterinary report permissions"""
+@pytest.fixture(scope="function")
+def pm_user(db_session, pm_employee, test_project, app):
+    from k9.models.models import User, UserRole
+    from k9.models.permissions_v2 import Role, UserRoleAssignment, RoleType
     user = User(
-        username='limited_user',
-        email='limited@test.com',
-        password_hash=generate_password_hash('limitedpass123'),
-        full_name='Limited User',
+        username=f"pm_{_uid()}",
+        email=f"pm_{_uid()}@k9test.com",
+        password_hash=generate_password_hash("Test1234!"),
         role=UserRole.PROJECT_MANAGER,
-        active=True
+        full_name="مدير مشروع",
+        phone=f"713{_uid()}",
+        active=True,
+        employee_id=pm_employee.id,
+        project_id=test_project.id,
     )
-    db.session.add(user)
-    db.session.commit()
+    _db.session.add(user)
+    _db.session.commit()
+
+    # Seed V2 role and assignment
+    role = Role.query.filter_by(name=RoleType.PROJECT_MANAGER).first()
+    if not role:
+        role = Role(name=RoleType.PROJECT_MANAGER, name_ar="مدير مشروع", is_system=True, is_active=True)
+        _db.session.add(role)
+        _db.session.commit()
+    
+    assignment = UserRoleAssignment(
+        user_id=user.id,
+        role_id=role.id,
+        project_id=test_project.id,
+        is_active=True
+    )
+    _db.session.add(assignment)
+    _db.session.commit()
+
     return user
 
 
-@pytest.fixture(scope='function')
-def test_caretaker_employee(db_session):
-    """Create test caretaker employee"""
-    caretaker = Employee(
-        name='أحمد القائم بالرعاية',
-        employee_id='CARE001',
+@pytest.fixture(scope="function")
+def handler_employee(db_session, app):
+    from k9.models.models import Employee, EmployeeRole
+    emp = Employee(
+        name="سائس الكلاب",
+        employee_id=f"EMP-HDL-{_uid()}",
         role=EmployeeRole.HANDLER,
-        phone='987654321',
-        email='caretaker@test.com',
-        hire_date=date(2021, 1, 1),
+        phone=f"714{_uid()}",
+        email=f"handler_{_uid()}@k9test.com",
+        hire_date=date(2021, 3, 1),
+        is_active=True,
+    )
+    _db.session.add(emp)
+    _db.session.commit()
+    return emp
+
+
+@pytest.fixture(scope="function")
+def test_dog(db_session, app):
+    from k9.models.models import Dog, DogGender, DogStatus
+    dog = Dog(
+        name="ريكس",
+        code=f"K9-{_uid()}",
+        breed="جيرمن شيبرد",
+        gender=DogGender.MALE,
+        birth_date=date(2021, 5, 15),
+        current_status=DogStatus.ACTIVE,
+    )
+    _db.session.add(dog)
+    _db.session.commit()
+    return dog
+
+
+@pytest.fixture(scope="function")
+def test_dog_female(db_session, app):
+    from k9.models.models import Dog, DogGender, DogStatus
+    dog = Dog(
+        name="لونا",
+        code=f"K9F-{_uid()}",
+        breed="جيرمن شيبرد",
+        gender=DogGender.FEMALE,
+        birth_date=date(2020, 3, 10),
+        current_status=DogStatus.ACTIVE,
+    )
+    _db.session.add(dog)
+    _db.session.commit()
+    return dog
+
+
+@pytest.fixture(scope="function")
+def handler_user(db_session, handler_employee, test_project, test_dog, app):
+    from k9.models.models import User, UserRole
+    from k9.models.permissions_v2 import Role, UserRoleAssignment, RoleType
+    user = User(
+        username=f"handler_{_uid()}",
+        email=f"handler_{_uid()}@k9test.com",
+        password_hash=generate_password_hash("Test1234!"),
+        role=UserRole.HANDLER,
+        full_name="سائس الكلاب",
+        phone=f"715{_uid()}",
+        active=True,
+        employee_id=handler_employee.id,
+        project_id=test_project.id,
+        dog_id=test_dog.id,
+    )
+    _db.session.add(user)
+    _db.session.commit()
+
+    # Seed V2 role and assignment
+    role = Role.query.filter_by(name=RoleType.HANDLER).first()
+    if not role:
+        role = Role(name=RoleType.HANDLER, name_ar="سائس", is_system=True, is_active=True)
+        _db.session.add(role)
+        _db.session.commit()
+    
+    assignment = UserRoleAssignment(
+        user_id=user.id,
+        role_id=role.id,
+        project_id=test_project.id,
         is_active=True
     )
-    db.session.add(caretaker)
-    db.session.commit()
-    return caretaker
+    _db.session.add(assignment)
+    _db.session.commit()
+
+    return user
 
 
-@pytest.fixture(scope='function')
-def test_caretaker_logs(db_session, test_dogs, test_project, test_caretaker_employee, test_user):
-    """Create test caretaker daily logs"""
-    logs = []
-    base_date = date.today()
-    
-    # Create caretaker logs for testing
-    for day_offset in range(7):  # Create data for a week
-        log_date = base_date - timedelta(days=day_offset)
-        
-        for i, dog in enumerate(test_dogs):
-            caretaker_log = CaretakerDailyLog(
-                dog_id=dog.id,
-                project_id=test_project.id,
-                caretaker_employee_id=test_caretaker_employee.id,
-                date=log_date,
-                house_number=f"H{i+1:03d}",
-                house_clean=True if i % 2 == 0 else False,
-                house_vacuum=True if i % 3 == 0 else False,
-                house_tap_clean=True if i % 2 == 1 else False,
-                house_drain_clean=True if i % 4 == 0 else False,
-                dog_clean=True if i % 2 == 0 else False,
-                dog_washed=True if i % 3 == 1 else False,
-                dog_brushed=True if i % 2 == 1 else False,
-                bowls_bucket_clean=True if i % 3 == 0 else False,
-                notes=f'رعاية يومية لـ {dog.name} - يوم {day_offset + 1}',
-                created_by=test_user.id,
-                created_at=datetime.combine(log_date, datetime.min.time().replace(hour=9, minute=30))
-            )
-            db.session.add(caretaker_log)
-            logs.append(caretaker_log)
-    
-    db.session.commit()
-    return logs
+@pytest.fixture(scope="function")
+def vet_employee(db_session, app):
+    from k9.models.models import Employee, EmployeeRole
+    emp = Employee(
+        name="الطبيب البيطري",
+        employee_id=f"EMP-VET-{_uid()}",
+        role=EmployeeRole.VET,
+        phone=f"716{_uid()}",
+        email=f"vet_{_uid()}@k9test.com",
+        hire_date=date(2019, 1, 1),
+        is_active=True,
+    )
+    _db.session.add(emp)
+    _db.session.commit()
+    return emp
+
+
+@pytest.fixture(scope="function")
+def test_shift(db_session, app):
+    from k9.models.models import Shift
+    from datetime import time as t
+    shift = Shift(
+        name="الفترة الصباحية",
+        start_time=t(6, 0),
+        end_time=t(14, 0),
+    )
+    _db.session.add(shift)
+    _db.session.commit()
+    return shift
+
+
+@pytest.fixture(scope="function")
+def test_daily_schedule(db_session, test_project, admin_user, app):
+    from k9.models.models_handler_daily import DailySchedule
+    sched = DailySchedule(
+        date=date.today(),
+        project_id=test_project.id,
+        created_by_user_id=admin_user.id,
+        notes="جدول اختبار",
+    )
+    _db.session.add(sched)
+    _db.session.commit()
+    return sched
+
+
+@pytest.fixture(scope="function")
+def test_schedule_item(db_session, test_daily_schedule, handler_user, test_dog, test_shift, app):
+    from k9.models.models_handler_daily import DailyScheduleItem, ScheduleItemStatus
+    item = DailyScheduleItem(
+        daily_schedule_id=test_daily_schedule.id,
+        handler_user_id=handler_user.id,
+        dog_id=test_dog.id,
+        shift_id=test_shift.id,
+        status=ScheduleItemStatus.PRESENT,
+    )
+    _db.session.add(item)
+    _db.session.commit()
+    return item
+
+
+@pytest.fixture(scope="function")
+def test_handler_report(db_session, handler_user, test_dog, test_project, test_schedule_item, app):
+    from k9.models.models_handler_daily import (
+        HandlerReport, HandlerReportHealth, HandlerReportCare,
+        HandlerReportBehavior, ReportStatus,
+    )
+    report = HandlerReport(
+        handler_user_id=handler_user.id,
+        dog_id=test_dog.id,
+        project_id=test_project.id,
+        schedule_item_id=test_schedule_item.id,
+        date=date.today(),
+        status=ReportStatus.DRAFT,
+        location="موقع الاختبار",
+    )
+    _db.session.add(report)
+    _db.session.commit()
+
+    health = HandlerReportHealth(report_id=report.id)
+    _db.session.add(health)
+
+    care = HandlerReportCare(report_id=report.id)
+    _db.session.add(care)
+
+    behavior = HandlerReportBehavior(report_id=report.id)
+    _db.session.add(behavior)
+
+    _db.session.commit()
+    return report
+
+
+@pytest.fixture(scope="function")
+def test_submitted_report(db_session, test_handler_report, app):
+    from k9.models.models_handler_daily import ReportStatus
+    test_handler_report.status = ReportStatus.SUBMITTED
+    test_handler_report.submitted_at = datetime.utcnow()
+    _db.session.commit()
+    return test_handler_report
+
+
+@pytest.fixture(scope="function")
+def test_vet_visit(db_session, test_dog, vet_employee, test_project, app):
+    from k9.models.models import VeterinaryVisit, VisitType
+    visit = VeterinaryVisit(
+        dog_id=test_dog.id,
+        vet_id=vet_employee.id,
+        project_id=test_project.id,
+        visit_type=VisitType.ROUTINE,
+        visit_date=datetime.utcnow(),
+        diagnosis="حالة صحية جيدة",
+        treatment="لا يلزم علاج",
+        status="PENDING_PM_REVIEW",
+    )
+    _db.session.add(visit)
+    _db.session.commit()
+    return visit
+
+
+@pytest.fixture(scope="function")
+def test_notification(db_session, handler_user, app):
+    from k9.models.models_handler_daily import Notification, NotificationType
+    notif = Notification(
+        user_id=handler_user.id,
+        type=NotificationType.REPORT_APPROVED,
+        title="اختبار إشعار",
+        message="هذا إشعار اختباري",
+        read=False,
+    )
+    _db.session.add(notif)
+    _db.session.commit()
+    return notif

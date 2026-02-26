@@ -50,40 +50,34 @@ app.config['WTF_CSRF_HEADERS'] = ['X-CSRFToken', 'X-CSRF-Token']
 app.config['WTF_CSRF_SSL_STRICT'] = True if flask_env == "production" else False  # Enable SSL strict in production
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
 
-# Configure database - enforce PostgreSQL in production
+# Configure database — PostgreSQL required in all environments
 database_url = os.environ.get("DATABASE_URL")
 flask_env = os.environ.get("FLASK_ENV", "development")
 
-if flask_env == "production":
-    if not database_url:
-        raise RuntimeError(
-            "DATABASE_URL environment variable is required in production. "
-            "Please set it to a PostgreSQL connection string."
-        )
-    if not database_url.startswith(("postgresql://", "postgres://")):
-        raise RuntimeError(
-            "Production environment requires PostgreSQL database. "
-            f"Got: {database_url[:20]}..."
-        )
-    # Ensure postgresql:// prefix for compatibility
-    if database_url.startswith("postgres://"):
-        database_url = database_url.replace("postgres://", "postgresql://", 1)
-else:
-    # Development/Replit environment: use PostgreSQL if available, SQLite as fallback
-    if not database_url:
-        database_url = 'sqlite:///k9_operations.db'
+if not database_url:
+    raise RuntimeError(
+        "DATABASE_URL environment variable is not set. "
+        "PostgreSQL is required to run this application."
+    )
 
-# Configure engine options based on database type
-if database_url.startswith(("postgresql://", "postgres://")):
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_recycle": 300,
-        "pool_pre_ping": True,
-        "connect_args": {
-            "client_encoding": "utf8"
-        }
+if not database_url.startswith(("postgresql://", "postgres://")):
+    raise RuntimeError(
+        "DATABASE_URL must be a PostgreSQL connection string "
+        f"(got: {database_url[:30]}...)"
+    )
+
+# Normalize legacy postgres:// scheme
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+# PostgreSQL engine options
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_recycle": 300,
+    "pool_pre_ping": True,
+    "connect_args": {
+        "client_encoding": "utf8"
     }
-else:
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {}
+}
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -100,13 +94,14 @@ if flask_env == "production":
     app.config["REMEMBER_COOKIE_HTTPONLY"] = True
     app.config["REMEMBER_COOKIE_SAMESITE"] = "None"
 else:
-    # For Replit development, use HTTPS-compatible settings for iframe
-    app.config["SESSION_COOKIE_SECURE"] = True
+    # For local development, enable secure cookies only if using HTTPS (like in Replit iframes)
+    # But for testing, we MUST keep it False unless we use a secure test client
+    app.config["SESSION_COOKIE_SECURE"] = False
     app.config["SESSION_COOKIE_HTTPONLY"] = True
-    app.config["SESSION_COOKIE_SAMESITE"] = "None"
-    app.config["REMEMBER_COOKIE_SECURE"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config["REMEMBER_COOKIE_SECURE"] = False
     app.config["REMEMBER_COOKIE_HTTPONLY"] = True
-    app.config["REMEMBER_COOKIE_SAMESITE"] = "None"
+    app.config["REMEMBER_COOKIE_SAMESITE"] = "Lax"
 
 # Ensure upload directory exists
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
@@ -194,11 +189,8 @@ with app.app_context():
     def load_user(user_id):
         from k9.models.models import User
         import uuid
-        
-        # Validate that user_id is a valid UUID
-        try:
-            uuid.UUID(str(user_id))
-            return User.query.get(user_id)
+            u = User.query.get(user_id)
+            return u
         except (ValueError, TypeError):
             # Invalid UUID format, return None
             return None
