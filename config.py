@@ -2,7 +2,7 @@ import os
 from datetime import timedelta
 
 class Config:
-    SECRET_KEY = os.environ.get('SESSION_SECRET') or 'k9-operations-secret-key'
+    SECRET_KEY = os.environ.get('SESSION_SECRET')
     
     # Smart database URL detection for Replit/SQLite compatibility
     database_url = os.environ.get('DATABASE_URL')

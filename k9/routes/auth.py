@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
+from urllib.parse import urlparse, urljoin
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from app import db, csrf
@@ -11,6 +12,13 @@ from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 
 auth_bp = Blueprint('auth', __name__)
+
+def is_safe_url(target):
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and \
+           ref_url.netloc == test_url.netloc
+
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 @csrf.exempt
@@ -136,7 +144,7 @@ def login():
         
         # For other users or admins without employee records, go to dashboard
         next_page = request.args.get('next')
-        if next_page:
+        if next_page and is_safe_url(next_page):
             return redirect(next_page)
         return redirect(url_for('main.dashboard'))
     
