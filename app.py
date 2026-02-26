@@ -153,15 +153,9 @@ with app.app_context():
     else:
         print("✓ Production mode: Using migrations for database schema (flask db upgrade)")
     
-    # CRITICAL: Auto-seed permissions on every startup
-    # Permissions are the foundation of the system and must NEVER be empty
-    try:
-        from k9.utils.permission_seeder import ensure_permissions_exist
-        from k9.models.permissions_new import Permission
-        ensure_permissions_exist(db, Permission)
-    except Exception as e:
-        print(f"⚠ Warning: Could not auto-seed permissions: {e}")
-    
+    # Permissions are seeded via Alembic data migration (7e8f529ec334).
+    # Run: flask db upgrade
+
     # Initialize V2 Permission System (new role-based system)
     try:
         from k9.services.permission_service import init_permission_context_processor, seed_default_roles
@@ -189,6 +183,7 @@ with app.app_context():
     def load_user(user_id):
         from k9.models.models import User
         import uuid
+        try:
             u = User.query.get(user_id)
             return u
         except (ValueError, TypeError):
